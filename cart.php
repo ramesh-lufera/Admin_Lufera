@@ -19,8 +19,9 @@
         $pages = $_POST['pages'];
         $support = $_POST['support'];
 
-        $gst = $price * 0.10; // 10% GST
+        $gst = $price * 0.18; // 10% GST
         $total_price = $price + $gst;
+        $auto_id = rand(10000000, 99999999);
     }
 ?>
     <div class="mb-40">
@@ -52,7 +53,7 @@
                     <label class="tagline">Subtotal does not iclude applicable taxes</label>
 
                     <div class="d-flex justify-content-between mt-5">
-                        <label>Gst 10%</label>
+                        <label>Gst 18%</label>
                         <h5>$<?php echo $total_price?></h5>
                     </div>
                     <?php
@@ -63,9 +64,18 @@
 
                         if($row["username"] && $row["email"] && $row["phone"] && $row["first_name"] && $row["last_name"] && $row["business_name"] && $row["address"] && $row["city"] && $row["state"] && $row["country"] && $row["pincode"] != ""){
                     ?>
-                    <a class="d-block" href="payment.php"> 
+                    <form action="payment.php" method="POST">
+                        <input type="hidden" name="plan_name" value="<?php echo $plan_name; ?>">
+                        <input type="hidden" name="price" value="<?php echo $price; ?>">
+                        <input type="hidden" name="duration" value="<?php echo $duration; ?>">
+                        <input type="hidden" name="total_price" value="<?php echo $total_price; ?>">
+                        <input type="hidden" name="receipt_id" value="<?php echo $auto_id; ?>">
+                        
+                        <button type="submit" class="lufera-bg text-center text-white text-sm btn-sm px-12 py-10 w-100 radius-8 mt-28">Get started</button>
+                    </form>
+                    <!-- <a class="d-block" href="payment.php"> 
                         <button class="lufera-bg text-center text-white text-sm btn-sm px-12 py-10 w-100 radius-8 mt-28">Continue</button>
-                    </a>
+                    </a> -->
                     <?php } 
                         else{
                     ?>
@@ -77,7 +87,7 @@
                         <div class="modal-dialog modal-lg">
                             <div class="modal-content">
                             <div class="modal-header">
-                                <h5 class="modal-title" id="exampleModalLabel">Modal title</h5>
+                                <h5 class="modal-title" id="exampleModalLabel">Update User Details</h5>
                                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                             </div>
                             <div class="modal-body">
@@ -87,74 +97,74 @@
                                                 <div class="mb-20">
                                                     <label for="" class="form-label fw-semibold text-primary-light text-sm mb-8">First Name <span class="text-danger-600">*</span></label>
                                                     <input type="hidden" name="id" value="<?php echo $_SESSION['user_id']; ?>">
-                                                    <input type="text" class="form-control radius-8" id="" name="fname" value="<?php echo $row['first_name']; ?>" required>
+                                                    <!-- <input type="text" class="form-control radius-8" id="" name="fname" value="<?php echo $row['first_name']; ?>" required> -->
+                                                    <input type="text" class="form-control radius-8" name="fname" value="<?php echo $row['first_name']; ?>" <?php echo !empty($row['first_name']) ? 'readonly' : ''; ?> required>
                                                 </div>
                                             </div>
                                             <div class="col-sm-6">
                                                 <div class="mb-20">
                                                     <label for="" class="form-label fw-semibold text-primary-light text-sm mb-8">Last Name <span class="text-danger-600">*</span></label>
-                                                    <input type="text" class="form-control radius-8" id="" name="lname" value="<?php echo $row['last_name']; ?>" required>
+                                                    <input type="text" class="form-control radius-8" name="lname" value="<?php echo $row['last_name']; ?>" <?php echo !empty($row['last_name']) ? 'readonly' : ''; ?> required>
                                                 </div>
                                             </div>
                                             <div class="col-sm-6">
                                                 <div class="mb-20">
                                                     <label for="" class="form-label fw-semibold text-primary-light text-sm mb-8">Username <span class="text-danger-600">*</span></label>
-                                                    <input type="text" class="form-control radius-8" id="" name="uname" value="<?php echo $row['username']; ?>" required>
+                                                    <input type="text" class="form-control radius-8" name="uname" value="<?php echo $row['username']; ?>" <?php echo !empty($row['username']) ? 'readonly' : ''; ?> required>
                                                 </div>
                                             </div>
                                             <div class="col-sm-6">
                                                 <div class="mb-20">
                                                     <label for="" class="form-label fw-semibold text-primary-light text-sm mb-8">Bussiness Name <span class="text-danger-600">*</span></label>
-                                                    <input type="text" class="form-control radius-8" id="" name="bname" value="<?php echo $row['business_name']; ?>" required>
+                                                    <input type="text" class="form-control radius-8" name="bname" value="<?php echo $row['business_name']; ?>" <?php echo !empty($row['business_name']) ? 'readonly' : ''; ?> required>
                                                 </div>
                                             </div>
                                             <div class="col-sm-6">
                                                 <div class="mb-20">
                                                     <label for="" class="form-label fw-semibold text-primary-light text-sm mb-8">Email <span class="text-danger-600">*</span></label>
-                                                    <input type="email" class="form-control radius-8" id="" name="email" value="<?php echo $row['email']; ?>" required>
+                                                    <input type="text" class="form-control radius-8" name="email" value="<?php echo $row['email']; ?>" <?php echo !empty($row['email']) ? 'readonly' : ''; ?> required>
                                                 </div>
                                             </div>
                                             <div class="col-sm-6">
                                                 <div class="mb-20">
                                                     <label for="" class="form-label fw-semibold text-primary-light text-sm mb-8">Phone <span class="text-danger-600">*</span></label>
-                                                    <input type="text" class="form-control radius-8" id="" name="phone" value="<?php echo $row['phone']; ?>" required>
+                                                    <input type="text" class="form-control radius-8" name="phone" value="<?php echo $row['phone']; ?>" <?php echo !empty($row['phone']) ? 'readonly' : ''; ?> required>
                                                 </div>
                                             </div>
                                             <div class="col-sm-6">
                                                 <div class="mb-20">
                                                     <label for="" class="form-label fw-semibold text-primary-light text-sm mb-8">Date of Birth <span class="text-danger-600">*</span></label>
-                                                    <input type="date" class="form-control radius-8" id="" name="dob" value="<?php echo $row['dob']; ?>" required>
+                                                    <input type="date" class="form-control radius-8" name="dob" value="<?php echo $row['dob']; ?>" <?php echo !empty($row['dob']) ? 'readonly' : ''; ?> required>
                                                 </div>
                                             </div>
                                             <div class="col-sm-6">
                                                 <div class="mb-20">
                                                     <label for="" class="form-label fw-semibold text-primary-light text-sm mb-8">Address <span class="text-danger-600">*</span></label>
-                                                    <!-- <textarea class="form-control radius-8" id="" name="address" required><?php echo $row['address']; ?></textarea> -->
-                                                    <input type="text" class="form-control radius-8" id="" name="address" value="<?php echo $row['address']; ?>" required>
+                                                    <input type="text" class="form-control radius-8" name="address" value="<?php echo $row['address']; ?>" <?php echo !empty($row['address']) ? 'readonly' : ''; ?> required>
                                                 </div>
                                             </div>
                                             <div class="col-sm-6">
                                                 <div class="mb-20">
                                                     <label for="" class="form-label fw-semibold text-primary-light text-sm mb-8">City <span class="text-danger-600">*</span></label>
-                                                    <input type="text" class="form-control radius-8" name="city" value="<?php echo $row['city']; ?>" required>
+                                                    <input type="text" class="form-control radius-8" name="city" value="<?php echo $row['city']; ?>" <?php echo !empty($row['city']) ? 'readonly' : ''; ?> required>
                                                 </div>
                                             </div>
                                             <div class="col-sm-6">
                                                 <div class="mb-20">
                                                     <label for="" class="form-label fw-semibold text-primary-light text-sm mb-8">State <span class="text-danger-600">*</span></label>
-                                                    <input type="text" class="form-control radius-8" id="" name="state" value="<?php echo $row['state']; ?>" required>
+                                                    <input type="text" class="form-control radius-8" name="state" value="<?php echo $row['state']; ?>" <?php echo !empty($row['state']) ? 'readonly' : ''; ?> required>
                                                 </div>
                                             </div>
                                             <div class="col-sm-6">
                                                 <div class="mb-20">
                                                     <label for="" class="form-label fw-semibold text-primary-light text-sm mb-8">Country <span class="text-danger-600">*</span></label>
-                                                    <input type="text" class="form-control radius-8" id="" name="country" value="<?php echo $row['country']; ?>" required>
+                                                    <input type="text" class="form-control radius-8" name="country" value="<?php echo $row['country']; ?>" <?php echo !empty($row['country']) ? 'readonly' : ''; ?> required>
                                                 </div>
                                             </div>
                                             <div class="col-sm-6">
                                                 <div class="mb-20">
                                                     <label for="" class="form-label fw-semibold text-primary-light text-sm mb-8">Pin <span class="text-danger-600">*</span></label>
-                                                    <input type="text" class="form-control radius-8" id="" name="pin" value="<?php echo $row['pincode']; ?>" required>
+                                                    <input type="text" class="form-control radius-8" name="pin" value="<?php echo $row['pincode']; ?>" <?php echo !empty($row['pincode']) ? 'readonly' : ''; ?> required>
                                                 </div>
                                             </div>
                                         </div>

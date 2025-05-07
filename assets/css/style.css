@@ -15134,4 +15134,13 @@ td.fc-header-center {
 .navbar-search input:focus {
   border-color: #101010 !important;
 }
+.swal2-confirm{
+  background-color: #fec700 !important;
+}
+.swal2-title{
+  font-size:24px !important;
+}
+.toggle-password{
+  inset-inline-start: auto !important;
+}
 /* === footer css end === */

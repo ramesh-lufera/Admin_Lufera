@@ -1,3 +1,9 @@
+<?php
+    $userid = $_SESSION['user_id'];
+    $sql = "select role from users where id = $userid";
+    $result = $conn ->query($sql);
+    $row = $result ->fetch_assoc();
+?>
 <aside class="sidebar">
     <button type="button" class="sidebar-close-btn">
         <iconify-icon icon="radix-icons:cross-2"></iconify-icon>
@@ -25,10 +31,17 @@
                 </ul>
             </li> -->
             <li>
+            <?php if($row['role']=="Admin"){ ?>
                 <a href="admin-dashboard.php">
                 <iconify-icon icon="solar:home-smile-angle-outline" class="menu-icon"></iconify-icon>
                     <span>Dashboard</span>
                 </a>
+            <?php } else{ ?>
+            <a href="user-dashboard.php">
+                <iconify-icon icon="solar:home-smile-angle-outline" class="menu-icon"></iconify-icon>
+                    <span>Dashboard</span>
+                </a>
+            <?php } ?>
             </li>
             <li>
                 <a href="websites.php">
@@ -82,6 +95,7 @@
                     </li>
                 </ul>
             </li> -->
+            <?php if($row['role']=="Admin") { ?>
             <li class="dropdown">
                 <a href="javascript:void(0)">
                     <iconify-icon icon="flowbite:users-group-outline" class="menu-icon"></iconify-icon>
@@ -102,6 +116,7 @@
                     </li> -->
                 </ul>
             </li>
+            <?php } ?>
         </ul>
     </div>
 </aside>
