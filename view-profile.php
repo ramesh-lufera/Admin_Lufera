@@ -41,21 +41,26 @@ $user_id = $_SESSION['user_id'];
 $sql = "SELECT * FROM `users` WHERE id = $user_id";
 $result = $conn->query($sql);
 $row = $result->fetch_assoc();
+
+// Check if the user has a profile image
+$profileImage = !empty($row['photo']) ? $row['photo'] : 'assets/images/1.jpg';
+
+$row['username'] = explode('@', $row['email'])[0];
 ?>
 
 
         <div class="dashboard-main-body">
             <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-24">
-                <h6 class="fw-semibold mb-0">View Profile</h6>
+                <h6 class="fw-semibold mb-0">View Account</h6>
                 
             </div>
             <div class="row gy-4">
                 <div class="col-lg-4">
                     <div class="user-grid-card position-relative border radius-16 overflow-hidden bg-base h-100">
-                        <img src="assets/images/user-grid/user-grid-bg1.png" alt="" class="w-100 object-fit-cover">
+                        <img src="<?php echo $profileImage; ?>" alt="" class="w-100 object-fit-cover">
                         <div class="pb-24 ms-16 mb-24 me-16  mt--100">
                             <div class="text-center border border-top-0 border-start-0 border-end-0">
-                                <img src="assets/images/user-grid/user-grid-img14.png" alt="" class="border br-white border-width-2-px w-200-px h-200-px rounded-circle object-fit-cover">
+                                <img src="<?php echo $profileImage; ?>" alt="" class="border br-white border-width-2-px w-200-px h-200-px rounded-circle object-fit-cover">
                                 <h6 class="mb-0 mt-16"><?php echo $row['username']; ?></h6>
                                 <span class="text-secondary-light mb-16"><?php echo $row['email']; ?></span>
                             </div>
@@ -121,7 +126,7 @@ $row = $result->fetch_assoc();
                             <ul class="nav border-gradient-tab nav-pills mb-20 d-inline-flex" id="pills-tab" role="tablist">
                                 <li class="nav-item" role="presentation">
                                     <button class="nav-link d-flex align-items-center px-24 active" id="pills-edit-profile-tab" data-bs-toggle="pill" data-bs-target="#pills-edit-profile" type="button" role="tab" aria-controls="pills-edit-profile" aria-selected="true">
-                                        Edit Profile
+                                        Edit Account
                                     </button>
                                 </li>
                                 <li class="nav-item" role="presentation">
@@ -139,23 +144,23 @@ $row = $result->fetch_assoc();
                             <div class="tab-content" id="pills-tabContent">
                                 <div class="tab-pane fade show active" id="pills-edit-profile" role="tabpanel" aria-labelledby="pills-edit-profile-tab" tabindex="0">
                                     <h6 class="text-md text-primary-light mb-16">Profile Image</h6>
+                                    <form id="updateForm" enctype="multipart/form-data">
                                     <!-- Upload Image Start -->
                                     <div class="mb-24 mt-16">
                                         <div class="avatar-upload">
                                             <div class="avatar-edit position-absolute bottom-0 end-0 me-24 mt-16 z-1 cursor-pointer">
-                                                <input type='file' id="imageUpload" accept=".png, .jpg, .jpeg" hidden>
+                                                <input type='file' name="photo" id="imageUpload" accept=".png, .jpg, .jpeg" hidden>
                                                 <label for="imageUpload" class="w-32-px h-32-px d-flex justify-content-center align-items-center bg-primary-50 text-primary-600 border border-primary-600 bg-hover-primary-100 text-lg rounded-circle">
                                                     <iconify-icon icon="solar:camera-outline" class="icon"></iconify-icon>
                                                 </label>
                                             </div>
                                             <div class="avatar-preview">
-                                                <div id="imagePreview">
+                                                <div id="imagePreview" style="background-image: url('<?php echo $profileImage; ?>');">
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
                                     <!-- Upload Image End -->
-                                    <form id="updateForm">
                                         <div class="row">
                                             <div class="col-sm-6">
                                                 <div class="mb-20">
@@ -306,13 +311,35 @@ $row = $result->fetch_assoc();
 
 
 <script>
-    $('#updateForm').submit(function(e) {
+//     $('#updateForm').submit(function(e) {
+//     e.preventDefault();
+
+//     $.ajax({
+//         url: 'update.php',
+//         type: 'POST',
+//         data: $(this).serialize(),
+//         success: function(response) {
+//             $('#result').html(response);
+//             loadUserData(); // Reload user data after update
+//         },
+//         error: function(xhr) {
+//             $('#result').html("Error updating data.");
+//         }
+//     });
+// });
+
+// loadUserData();
+
+$('#updateForm').submit(function(e) {
     e.preventDefault();
 
+    var formData = new FormData(this); // Create FormData object, includes files
     $.ajax({
         url: 'update.php',
         type: 'POST',
-        data: $(this).serialize(),
+        data: formData,
+        processData: false, // Don't process the data
+        contentType: false, // Don't set content type
         success: function(response) {
             $('#result').html(response);
             loadUserData(); // Reload user data after update
@@ -323,7 +350,33 @@ $row = $result->fetch_assoc();
     });
 });
 
-loadUserData();
+// $('#updateForm').submit(function(e) {
+//     e.preventDefault(); // Prevent the default form submission
+
+//     var formData = new FormData(this); // Create FormData to send with AJAX
+//     $.ajax({
+//         url: 'update.php', // URL to PHP file for handling image upload
+//         type: 'POST',
+//         data: formData,
+//         processData: false, // Don't process the data
+//         contentType: false, // Don't set content type
+//         success: function(response) {
+//             var data = JSON.parse(response); // Parse the response
+//             if (data.status === 'success') {
+//                 // Update the preview with the new image
+//                 $('#imagePreview').css("background-image", "url(" + data.image + ")");
+//                 $('#imagePreview').hide().fadeIn(650); // Fade in the preview
+//             } else {
+//                 alert('Error: ' + data.message); // Show error message if something went wrong
+//             }
+//         },
+//         error: function(xhr) {
+//             alert('An error occurred while uploading the image.');
+//         }
+//     });
+// });
+
+
 </script>
 
 <?php include './partials/layouts/layoutBottom.php' ?>
