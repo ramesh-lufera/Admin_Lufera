@@ -11,19 +11,22 @@ if (isset($_POST['email']) && isset($_POST['password'])) {
     $email = $_POST['email'];
     $password = $_POST['password'];
 
-    $stmt = $conn->prepare("SELECT id, password, username FROM users WHERE email = ?");
+    $stmt = $conn->prepare("SELECT id, password, username, photo FROM users WHERE email = ?");
     $stmt->bind_param("s", $email);
     $stmt->execute();
     $stmt->store_result();
 
     if ($stmt->num_rows > 0) {
-        $stmt->bind_result($user_id, $db_password, $username);
+        $stmt->bind_result($user_id, $db_password, $username, $photo);
         $stmt->fetch();
 
         if ($password === $db_password) {
             $_SESSION['user_id'] = $user_id;
             $_SESSION['username'] = $username;
+            $_SESSION['user'] = $username;
             $_SESSION['email'] = $email;
+            $_SESSION["photo"] = $photo;
+
             $response['success'] = true;
         } else {
             $response['errors']['password'] = 'Incorrect password!';
