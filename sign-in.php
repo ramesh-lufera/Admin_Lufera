@@ -11,10 +11,13 @@
     $client = new Google_Client();
     $client->setClientId($_ENV['GOOGLE_CLIENT_ID']);
     $client->setClientSecret($_ENV['GOOGLE_CLIENT_SECRET']);
-    $client->setRedirectUri('http://localhost/Lufera-Infotech/sign-in-redirect.php');
+    $client->setRedirectUri('http://localhost/Admin_Lufera/sign-in-redirect.php');
     // $client->setRedirectUri('https://admin.luferatech.com/sign-in-redirect.php');
     $client->addScope('email');
     $client->addScope('profile');
+
+    // Force account selection every time
+    $client->setPrompt('select_account');
 
     $loginUrl = $client->createAuthUrl();
 ?>
@@ -110,6 +113,7 @@
             </div>
         </div>
     </section>
+
     <?php $script = '<script>
                          // ================== Password Show Hide Js Start ==========
                          function initializePasswordToggle(toggleSelector) {
@@ -127,7 +131,9 @@
                          initializePasswordToggle(".toggle-password");
                          // ========================= Password Show Hide Js End ===========================
                      </script>';?>
+
 <?php include './partials/scripts.php' ?>
+
 <script>
     document.getElementById("login-form").addEventListener("submit", function (e) {
         e.preventDefault();
@@ -166,7 +172,6 @@
         .catch(error => console.error("Error:", error));
     });
 </script>
-
 
 </body>
 
