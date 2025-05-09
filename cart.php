@@ -16,8 +16,6 @@
         $plan_name = $_POST['plan_name'];
         $price = $_POST['price'];
         $duration = $_POST['duration'];
-        $pages = $_POST['pages'];
-        $support = $_POST['support'];
 
         $gst = $price * 0.18; // 10% GST
         $total_price = $price + $gst;
