@@ -1,14 +1,6 @@
 <?php
 // update.php
-$host = 'localhost';
-$db = 'lufera infotech';
-$user = 'root';
-$pass = '';
- 
-$conn = new mysqli($host, $user, $pass, $db);
-if ($conn->connect_error) {
-    die("Connection failed: " . $conn->connect_error);
-}
+include './partials/connection.php';
  
 $id    = $_POST['id'];
 $fname  = $_POST['fname'];

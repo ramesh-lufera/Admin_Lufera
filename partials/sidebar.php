@@ -117,6 +117,18 @@
                 </ul>
             </li>
             <?php } ?>
+            <li>
+                <a href="orders.php">
+                    <iconify-icon icon="hugeicons:invoice-03" class="menu-icon"></iconify-icon>
+                    <span>Orders</span>
+                </a>
+            </li>
+            <li>
+                <a href="logout.php">
+                    <iconify-icon icon="bi:x-circle" class="menu-icon"></iconify-icon>
+                    <span>Exit</span>
+                </a>
+            </li>
         </ul>
     </div>
 </aside>

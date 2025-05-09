@@ -29,7 +29,7 @@
                                     </div>
                                 </div>
 
-                                <div class="max-h-400-px overflow-y-auto scroll-sm pe-8">
+                                <!-- <div class="max-h-400-px overflow-y-auto scroll-sm pe-8">
                                     <div class="form-check style-check d-flex align-items-center justify-content-between mb-16">
                                         <label class="form-check-label line-height-1 fw-medium text-secondary-light" for="english">
                                             <span class="text-black hover-bg-transparent hover-text-primary d-flex align-items-center gap-3">
@@ -108,7 +108,7 @@
                                         </label>
                                         <input class="form-check-input" type="radio" name="crypto" id="canada">
                                     </div>
-                                </div>
+                                </div> -->
                             </div>
                         </div><!-- Language dropdown end -->
 
@@ -124,7 +124,7 @@
                                     <span class="text-primary-600 fw-semibold text-lg w-40-px h-40-px rounded-circle bg-base d-flex justify-content-center align-items-center">05</span>
                                 </div>
 
-                                <div class="max-h-400-px overflow-y-auto scroll-sm pe-4">
+                                <!-- <div class="max-h-400-px overflow-y-auto scroll-sm pe-4">
 
                                     <a href="javascript:void(0)" class="px-24 py-12 d-flex align-items-start gap-3 mb-2 justify-content-between">
                                         <div class="text-black hover-bg-transparent hover-text-primary d-flex align-items-center gap-3">
@@ -211,7 +211,7 @@
                                         </div>
                                     </a>
 
-                                </div>
+                                </div> -->
                                 <div class="text-center py-12 px-16">
                                     <a href="javascript:void(0)" class="text-primary-600 fw-semibold text-md">See All Message</a>
                                 </div>
@@ -230,7 +230,7 @@
                                     <span class="text-primary-600 fw-semibold text-lg w-40-px h-40-px rounded-circle bg-base d-flex justify-content-center align-items-center">05</span>
                                 </div>
 
-                                <div class="max-h-400-px overflow-y-auto scroll-sm pe-4">
+                                <!-- <div class="max-h-400-px overflow-y-auto scroll-sm pe-4">
                                     <a href="javascript:void(0)" class="px-24 py-12 d-flex align-items-start gap-3 mb-2 justify-content-between">
                                         <div class="text-black hover-bg-transparent hover-text-primary d-flex align-items-center gap-3">
                                             <span class="w-44-px h-44-px bg-success-subtle text-success-main rounded-circle d-flex justify-content-center align-items-center flex-shrink-0">
@@ -295,7 +295,7 @@
                                         </div>
                                         <span class="text-sm text-secondary-light flex-shrink-0">23 Mins ago</span>
                                     </a>
-                                </div>
+                                </div> -->
 
                                 <div class="text-center py-12 px-16">
                                     <a href="javascript:void(0)" class="text-primary-600 fw-semibold text-md">See All Notification</a>
