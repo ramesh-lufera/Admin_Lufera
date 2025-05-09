@@ -12,8 +12,6 @@
         $plan_name = $_POST['plan_name'];
         $price = $_POST['price'];
         $duration = $_POST['duration'];
-        $pages = $_POST['pages'];
-        $support = $_POST['support'];
         $total_price = $_POST['total_price'];
         $rec_id = $_POST['receipt_id'];
 
@@ -27,22 +25,24 @@
         $pay_method = $_POST['pay_method'];
         $rec_id = $_POST['rec_id'];
         $plan_name = $_POST['plan_name'];
+        $duration = $_POST['duration'];
         $total_price = $_POST['total_price'];
         $created_at = date("Y-m-d H:i:s");
-
+        $price = $_POST['price'];
         $user_id = $_SESSION['user_id'];
         $sql = "SELECT user_id FROM users WHERE id = $user_id";
         $result = mysqli_query($conn, $sql);
         $row = mysqli_fetch_assoc($result);
         $client_id = $row['user_id'];
 
-        $sql = "INSERT INTO orders (user, rec_id,plan,amount,status,payment_method,created_on) VALUES ('$client_id', '$rec_id', '$plan_name', '$total_price', 'pending', '$pay_method', '$created_at')";
+        $sql = "INSERT INTO orders (user_id, invoice_id, plan, duration, amount, price, status, payment_method, created_on) VALUES 
+                                   ('$client_id', '$rec_id', '$plan_name', '$duration' ,'$total_price', '$price','pending', '$pay_method', '$created_at')";
 
         if (mysqli_query($conn, $sql)) {
             //echo "Record inserted successfully.";
             echo "<script>
                 alert('Record inserted successfully.');
-                window.location.href = 'admin-dashboard.php';
+                window.location.href = 'invoice-preview.php?id=$rec_id';
               </script>";
             exit();
         } else {
@@ -72,9 +72,9 @@
                                         <label for="" class="form-label fw-semibold text-primary-light text-sm mb-8">How would you like to make the payment ? <span class="text-danger-600">*</span></label>
                                         <select class="form-control" name="pay_method">
                                             <option>Select Payment Method</option>
-                                            <option value="Increase sales">Bank Transfer</option>
-                                            <option value="Generate leads">Wire Transfer</option>
-                                            <option value="Improve brand awareness">Cash</option>
+                                            <option value="Bank Transfer">Bank Transfer</option>
+                                            <option value="Wire Transfer">Wire Transfer</option>
+                                            <option value="Cash">Cash</option>
                                         </select>
                                     </div>
                                     <button type="button" class="btn lufera-bg text-white" data-bs-toggle="modal" data-bs-target="#myModal">Continue</button>
@@ -92,6 +92,7 @@
                     <div class="card h-100 radius-12">
                         <div class="card-header">
                             <h6>Order Summary</h6>
+                            <input type="hidden" value="<?php echo $duration; ?>" name="duration">
                         </div>
                         <div class="card-body p-16">
                         <div class="mb-20 text-center">
