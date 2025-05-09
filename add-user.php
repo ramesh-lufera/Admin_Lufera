@@ -18,6 +18,27 @@
                             })
                         })()
             </script>';?>
+            <style>
+                .toggle-icon-pass {
+                    position: absolute;
+                    top: 50%;
+                    right: 20px;
+                    transform: translateY(-50%);
+                    cursor: pointer;
+                    user-select: none;
+                    font-size: 20px;
+                }
+                input::-webkit-outer-spin-button,
+                input::-webkit-inner-spin-button {
+                -webkit-appearance: none;
+                margin: 0;
+                }
+
+                /* Firefox */
+                input[type=number] {
+                -moz-appearance: textfield;
+                }
+                </style>
 
 <?php
 function generateRandomPassword($length = 10) {
@@ -70,8 +91,8 @@ error_reporting(E_ALL);
         // $sql = "INSERT INTO users (user_id,first_name, last_name, business_name, email, phone, address, city, state, country, pincode, dob, created_at)
         //         VALUES ('$newUserId', '$first_name', '$last_name', '$business_name', '$email', '$phone', '$address', '$city', '$state', '$country', '$pincode', '$dob', NOW())";
 
-        $stmt = $conn->prepare("INSERT INTO users (user_id, username, email, phone, password, first_name,last_name,business_name,address,city,state,country,pincode,dob,created_at,method,role,photo,google_photo ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-        $stmt->bind_param("sssssssssssssssssss", $newUserId, $username, $email, $phone, $password, $fname, $lname, $business_name, $address, $city, $state, $country, $pincode, $dob, $created_at, $method, $role, $photo, $google_photo);
+        $stmt = $conn->prepare("INSERT INTO users (user_id, username, email, phone, password, first_name,last_name,business_name,address,city,state,country,pincode,dob,created_at,method,role,photo ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+        $stmt->bind_param("ssssssssssssssssss", $newUserId, $username, $email, $phone, $password, $fname, $lname, $business_name, $address, $city, $state, $country, $pincode, $dob, $created_at, $method, $role, $photo);
             
         if ($stmt->execute()) {
             echo "
@@ -120,7 +141,7 @@ error_reporting(E_ALL);
                                         <span class="icon" style="top: 12px !important">
                                             <iconify-icon icon="f7:person"></iconify-icon>
                                         </span>
-                                        <input type="text" class="form-control radius-8" name="fname" placeholder="Enter First Name" required>
+                                        <input type="text" class="form-control radius-8" name="fname" placeholder="Enter First Name" required maxlength="20">
                                         <div class="invalid-feedback">
                                             First name is required
                                         </div>
@@ -132,7 +153,7 @@ error_reporting(E_ALL);
                                         <span class="icon" style="top: 12px !important">
                                             <iconify-icon icon="mdi:user"></iconify-icon>
                                         </span>
-                                        <input type="text" class="form-control radius-8" name="lname" placeholder="Enter Last Name" required>
+                                        <input type="text" class="form-control radius-8" name="lname" placeholder="Enter Last Name" required maxlength="20">
                                         <div class="invalid-feedback">
                                             Last name is required
                                         </div>
@@ -144,7 +165,7 @@ error_reporting(E_ALL);
                                         <span class="icon" style="top: 12px !important">
                                             <iconify-icon icon="mdi:business"></iconify-icon>
                                         </span>
-                                        <input type="text" class="form-control radius-8" name="bname" placeholder="Enter Business Name" required>
+                                        <input type="text" class="form-control radius-8" name="bname" placeholder="Enter Business Name" required maxlength="20">
                                         <div class="invalid-feedback">
                                             Business name is required
                                         </div>
@@ -177,9 +198,9 @@ error_reporting(E_ALL);
                                         <span class="icon" style="top: 12px !important">
                                             <iconify-icon icon="mage:email"></iconify-icon>
                                         </span>
-                                        <input type="email" class="form-control radius-8" name="email" placeholder="Enter email address" required>
+                                        <input type="email" class="form-control radius-8" name="email" placeholder="Enter email address" required maxlength="30">
                                         <div class="invalid-feedback">
-                                            Email address is required
+                                            Enter a valid Email Address
                                         </div>
                                     </div>
                                 </div>
@@ -189,7 +210,7 @@ error_reporting(E_ALL);
                                         <span class="icon" style="top: 12px !important">
                                             <iconify-icon icon="solar:phone-calling-linear"></iconify-icon>
                                         </span>
-                                        <input type="text" class="form-control radius-8" name="phone" placeholder="Enter phone number" required>
+                                        <input type="number" class="form-control radius-8" name="phone" placeholder="Enter phone number" required onkeydown="return event.key !== 'e'" maxlength="20">
                                         <div class="invalid-feedback">
                                             Phone number is required
                                         </div>
@@ -201,7 +222,7 @@ error_reporting(E_ALL);
                                         <span class="icon" style="top: 12px !important">
                                             <iconify-icon icon="mdi:user"></iconify-icon>
                                         </span>
-                                        <input type="text" class="form-control radius-8" name="username" placeholder="Enter Username" required>
+                                        <input type="text" class="form-control radius-8" name="username" placeholder="Enter Username" required readonly maxlength="20">
                                         <div class="invalid-feedback">
                                             Username is required
                                         </div>
@@ -213,7 +234,8 @@ error_reporting(E_ALL);
                                         <span class="icon" style="top: 12px !important">
                                             <iconify-icon icon="mdi:lock"></iconify-icon>
                                         </span>
-                                        <input type="password" class="form-control radius-8" name="password" placeholder="Enter Password" value="<?php echo $generatedPassword; ?>" required>
+                                        <input type="password" class="form-control radius-8" name="password" id="password" placeholder="Enter Password" value="<?php echo $generatedPassword; ?>" required maxlength="20">
+                                        <i class="ri-eye-line toggle-icon-pass" id="togglePassword"></i>
                                         <div class="invalid-feedback">
                                             Password is required
                                         </div>
@@ -243,7 +265,7 @@ error_reporting(E_ALL);
                                         <span class="icon" style="top: 12px !important">
                                             <iconify-icon icon="mdi:city-variant-outline"></iconify-icon>
                                         </span>
-                                        <input type="text" class="form-control radius-8" name="city" placeholder="City">
+                                        <input type="text" class="form-control radius-8" name="city" placeholder="City" maxlength="20">
                                     </div>
                                 </div>
                                 <div class="mb-2">
@@ -252,7 +274,7 @@ error_reporting(E_ALL);
                                         <span class="icon" style="top: 12px !important">
                                             <iconify-icon icon="mdi:map-marker-radius-outline"></iconify-icon>
                                         </span>
-                                        <input type="text" class="form-control radius-8" name="state" placeholder="State">
+                                        <input type="text" class="form-control radius-8" name="state" placeholder="State" maxlength="20">
                                     </div>
                                 </div>
                                 <div class="mb-2">
@@ -261,7 +283,7 @@ error_reporting(E_ALL);
                                         <span class="icon" style="top: 12px !important">
                                             <iconify-icon icon="mdi:earth"></iconify-icon>
                                         </span>
-                                        <input type="text" class="form-control radius-8" name="country" placeholder="Country">
+                                        <input type="text" class="form-control radius-8" name="country" placeholder="Country" maxlength="20">
                                     </div>
                                 </div>
                                 <div class="mb-2">
@@ -270,7 +292,7 @@ error_reporting(E_ALL);
                                     <span class="icon" style="top: 12px !important">
                                         <iconify-icon icon="mdi:pin"></iconify-icon>
                                     </span>
-                                    <input type="text" class="form-control radius-8" name="pincode" placeholder="Pincode">
+                                    <input type="text" class="form-control radius-8" name="pincode" placeholder="Pincode" maxlength="10">
                                     </div>
                                 </div>
                                 
@@ -288,21 +310,59 @@ error_reporting(E_ALL);
                 </div>
             </div>
         </div>
-        <?php $script = '<script>
-            // ================== Password Show Hide Js Start ==========
-            function initializePasswordToggle(toggleSelector) {
-                $(toggleSelector).on("click", function() {
-                    $(this).toggleClass("ri-eye-off-line");
-                    var input = $($(this).attr("data-toggle"));
-                    if (input.attr("type") === "password") {
-                        input.attr("type", "text");
-                    } else {
-                        input.attr("type", "password");
-                    }
+        <script>
+            const passwordInput = document.getElementById("password");
+            const toggleIcon = document.getElementById("togglePassword");
+
+            toggleIcon.addEventListener("click", () => {
+                const isPassword = passwordInput.type === "password";
+                passwordInput.type = isPassword ? "text" : "password";
+                toggleIcon.classList.toggle("ri-eye-line");
+                toggleIcon.classList.toggle("ri-eye-off-line");
+            });
+
+            document.addEventListener("DOMContentLoaded", function () {
+                const emailInput = document.querySelector('input[name="email"]');
+                const usernameInput = document.querySelector('input[name="username"]');
+
+                emailInput.addEventListener("input", function () {
+                    const emailValue = emailInput.value;
+                    const usernamePart = emailValue.split("@")[0];
+                    usernameInput.value = usernamePart;
                 });
-            }
-            // Call the function
-            initializePasswordToggle(".toggle-password");
-            // ========================= Password Show Hide Js End ===========================
-        </script>';?>
+            });
+
+           
+            document.addEventListener("DOMContentLoaded", function () {
+                const emailInput = document.querySelector('input[name="email"]');
+                const emailFeedback = emailInput.nextElementSibling;
+
+                emailInput.addEventListener("blur", function () {
+                    const email = emailInput.value.trim();
+                    if (!email) return;
+
+                    fetch('check_email.php', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ email }),
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.exists) {
+                            emailInput.classList.add('is-invalid');
+                            emailFeedback.textContent = "Email already exists";
+                        } else {
+                            emailInput.classList.remove('is-invalid');
+                            emailFeedback.textContent = "";
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error checking email:', error);
+                    });
+                });
+            });
+
+        </script>
 <?php include './partials/layouts/layoutBottom.php' ?>

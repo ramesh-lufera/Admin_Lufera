@@ -1,3 +1,15 @@
+<style>
+    input::-webkit-outer-spin-button,
+    input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+    }
+
+    /* Firefox */
+    input[type=number] {
+    -moz-appearance: textfield;
+    }
+</style>
 <?php
 include 'partials/connection.php';
 
@@ -9,29 +21,7 @@ if (isset($_POST['id'])) {
 
     if ($user) {
         ?>
-        <!-- <input type="hidden" name="id" value="<?php echo $user['id']; ?>">
-        <div class="mb-3">
-            <label>First Name</label>
-            <input type="text" name="first_name" class="form-control" value="<?php echo htmlspecialchars($user['first_name']); ?>">
-        </div>
-        <div class="mb-3">
-            <label>Last Name</label>
-            <input type="text" name="last_name" class="form-control" value="<?php echo htmlspecialchars($user['last_name']); ?>">
-        </div>
-        <div class="mb-3">
-            <label>Email</label>
-            <input type="email" name="email" class="form-control" value="<?php echo htmlspecialchars($user['email']); ?>">
-        </div>
-        <div class="mb-3">
-            <label>Phone</label>
-            <input type="text" name="phone" class="form-control" value="<?php echo htmlspecialchars($user['phone']); ?>">
-        </div>
-        <div class="mb-3">
-            <label>Username</label>
-            <input type="text" name="username" class="form-control" value="<?php echo htmlspecialchars($user['username']); ?>">
-        </div> -->
-
-
+       
         <input type="hidden" name="id" value="<?php echo $user['id']; ?>">
         <div class="row">
             <div class="col-sm-6">
@@ -49,7 +39,8 @@ if (isset($_POST['id'])) {
             <div class="col-sm-6">
                 <div class="mb-20">
                     <label for="" class="form-label fw-semibold text-primary-light text-sm mb-8">Username <span class="text-danger-600">*</span></label>
-                    <input type="text" class="form-control radius-8" id="" name="uname" value="<?php echo htmlspecialchars($user['username']); ?>" required>
+                    <input type="text" class="form-control radius-8" id="uname" name="uname" value="<?php echo htmlspecialchars($user['username']); ?>" required readonly>
+
                 </div>
             </div>
             <div class="col-sm-6">
@@ -62,7 +53,7 @@ if (isset($_POST['id'])) {
                 <div class="mb-20">
                     <label for="" class="form-label fw-semibold text-primary-light text-sm mb-8">Role <span class="text-danger-600">*</span></label>
                     <select class="form-control" name="role" required>
-                        <option value="<?php echo htmlspecialchars($user['role']); ?>" disabled selected><?php echo htmlspecialchars($user['role']); ?></option>
+                        <option value="<?php echo htmlspecialchars($user['role']); ?>" selected><?php echo htmlspecialchars($user['role']); ?></option>
                         <option value="Admin">Admin</option>
                         <option value="Sales">Sales</option>
                         <option value="Accounts">Accounts</option>
@@ -81,13 +72,13 @@ if (isset($_POST['id'])) {
             <div class="col-sm-6">
                 <div class="mb-20">
                     <label for="" class="form-label fw-semibold text-primary-light text-sm mb-8">Email <span class="text-danger-600">*</span></label>
-                    <input type="email" class="form-control radius-8" id="" name="email" value="<?php echo htmlspecialchars($user['email']); ?>" required>
+                    <input type="email" class="form-control radius-8" id="email" name="email" value="<?php echo htmlspecialchars($user['email']); ?>" required>
                 </div>
             </div>
             <div class="col-sm-6">
                 <div class="mb-20">
                     <label for="" class="form-label fw-semibold text-primary-light text-sm mb-8">Phone <span class="text-danger-600">*</span></label>
-                    <input type="text" class="form-control radius-8" id="" name="phone" value="<?php echo htmlspecialchars($user['phone']); ?>" required>
+                    <input type="number" class="form-control radius-8" name="phone" value="<?php echo htmlspecialchars($user['phone']); ?>" required onkeydown="return event.key !== 'e'" maxlength="20">
                 </div>
             </div>
             <div class="col-sm-6">
@@ -134,3 +125,13 @@ if (isset($_POST['id'])) {
     }
 }
 ?>
+<script>
+    document.getElementById('email').addEventListener('input', function() {
+        const email = this.value;
+        const usernameField = document.getElementById('uname');
+        const atIndex = email.indexOf('@');
+        if (atIndex > 0) {
+            usernameField.value = email.substring(0, atIndex);
+        }
+    });
+</script>
