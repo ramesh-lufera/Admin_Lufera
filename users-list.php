@@ -307,29 +307,40 @@ $(document).ready(function () {
         });
     });
 
-    // Handle form submission
-    $('#editUserForm').submit(function (e) {
-        e.preventDefault();
+document.getElementById('editUserForm').addEventListener('submit', function (e) {
+    e.preventDefault(); // Prevent default form submission
 
-        $.ajax({
-            url: 'update-user.php',
-            type: 'POST',
-            data: $(this).serialize(),
-            success: function (response) {
-                var result = JSON.parse(response);
-                if (result.success) {
-                    Swal.fire('Success!', 'User updated successfully.', 'success');
-                    $('#editUserModal').modal('hide');
-                    setTimeout(() => location.reload(), 1000); // reload after short delay
-                } else {
-                    Swal.fire('Error', result.error || 'Failed to update user.', 'error');
-                }
-            },
-            error: function () {
-                Swal.fire('Error', 'Server error.', 'error');
-            }
+    if (!emailValid) {
+       
+        return; // Stop submission
+    }
+
+    const formData = new FormData(this);
+
+    fetch('update-user.php', {
+        method: 'POST',
+        body: formData
+    })
+    .then(res => res.text())
+    .then(response => {
+        // Optional: parse JSON if response is structured that way
+        // let data = JSON.parse(response);
+
+        Swal.fire('Success!', 'User updated successfully.', 'success');
+            $('#editUserModal').modal('hide');
+            setTimeout(() => location.reload(), 1000); // reload after short delay
+
+        // Optional: close modal, refresh list, etc.
+    })
+    .catch(error => {
+        Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: 'Something went wrong. Please try again later.'
         });
+        console.error('Error:', error);
     });
+});
 });
 
 </script>

@@ -59,18 +59,7 @@ if (mysqli_query($conn, $sql)) {
         window.history.back();
     </script>";
 }
-
-        // if (mysqli_query($conn, $sql)) {
-        //     //echo "Record inserted successfully.";
-        //     echo "<script>
-        //         alert('Record inserted successfully.');
-        //         window.location.href = 'invoice-preview.php?id=$rec_id';
-        //       </script>";
-        //     exit();
-        // } else {
-        //     echo "Error: " . $conn->error;
-        // }
-    }
+}
     
 ?>
 <div class="dashboard-main-body">
@@ -103,10 +92,8 @@ if (mysqli_query($conn, $sql)) {
                                             <option value="Wire Transfer">Wire Transfer</option>
                                             <option value="Cash">Cash</option>
                                         </select>
-                                        <!-- <input type="text" class="form-control" name="pay_method" required> -->
                                     </div>
                                     <input type="submit" name="save" class="btn lufera-bg text-white" value="Submit">
-                                    <!-- <button type="button" class="btn btn-primary btn-lg" data-backdrop="static" data-keyboard="false" data-bs-target="#myModal" data-bs-toggle="modal">Continue</button> -->
                                 </div>
                             </div>
                         </form>
@@ -144,31 +131,8 @@ if (mysqli_query($conn, $sql)) {
                         </div>
                     </div>
                 </div>
-
-                <!-- <div class="modal fade" id="myModal" data-bs-backdrop="static" data-bs-keyboard="false">
-                    <div class="modal-dialog modal-dialog-centered">
-                        <div class="modal-content">
-                        
-                            <div class="text-center modal-body" style="padding: 2rem;">
-                                <h5 style="line-height: 60px; letter-spacing: 1px">Thank you for your confirmation, one of our representatives will contact you for confirmation</h5>
-                                
-                                    <button type="submit" class="btn lufera-bg text-white mt-20" style="padding: 1rem 5rem" name="save">Close</button>
-                               
-                            </div>
-                        </div>
-                    </div>
-                </div> -->
-
             </div>
         </div>
    
 </div>
-<script>
-    $(document).ready(function () {
-    $('#myModal').modal({
-           backdrop: 'static',
-           keyboard: false
-    })
-   });
-</script>
 <?php include './partials/layouts/layoutBottom.php' ?>
