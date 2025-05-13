@@ -52,15 +52,31 @@ if (isset($_POST['id'])) {
             <div class="col-sm-6">
                 <div class="mb-20">
                     <label for="" class="form-label fw-semibold text-primary-light text-sm mb-8">Role <span class="text-danger-600">*</span></label>
+                    <?php
+                    $roles = [
+                        1 => 'Admin',
+                        2 => 'Sales',
+                        3 => 'Accounts',
+                        4 => 'Developer',
+                        5 => 'Marketing',
+                        6 => 'User'
+                    ];
+
+                    $currentRoleValue = $user['role'];
+                    $currentRoleLabel = isset($roles[$currentRoleValue]) ? $roles[$currentRoleValue] : 'Unknown';
+                    ?>
+
                     <select class="form-control" name="role" required>
-                        <option value="<?php echo htmlspecialchars($user['role']); ?>" selected><?php echo htmlspecialchars($user['role']); ?></option>
-                        <option value="Admin">Admin</option>
-                        <option value="Sales">Sales</option>
-                        <option value="Accounts">Accounts</option>
-                        <option value="Developer">Developer</option>
-                        <option value="Marketing">Marketing</option>
-                        <option value="User">User</option>
+                        <option value="<?php echo htmlspecialchars($currentRoleValue); ?>" selected>
+                            <?php echo htmlspecialchars($currentRoleLabel); ?>
+                        </option>
+                        <?php foreach ($roles as $value => $label): ?>
+                            <?php if ($value != $currentRoleValue): ?>
+                                <option value="<?php echo $value; ?>"><?php echo $label; ?></option>
+                            <?php endif; ?>
+                        <?php endforeach; ?>
                     </select>
+
                 </div>
             </div>
             <div class="col-sm-6">

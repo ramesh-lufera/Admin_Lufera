@@ -108,8 +108,21 @@ $row['username'] = explode('@', $row['email'])[0];
                                         <span class="w-70 text-secondary-light fw-medium">: <?php echo $row['pincode']; ?></span>
                                     </li>
                                     <li class="d-flex align-items-center gap-1 mb-12">
+                                    <?php
+                                        $roles = [
+                                            1 => 'Admin',
+                                            2 => 'Sales',
+                                            3 => 'Accounts',
+                                            4 => 'Developer',
+                                            5 => 'Marketing',
+                                            6 => 'User'
+                                        ];
+
+                                        $currentRoleValue = $row['role'];
+                                        $currentRoleLabel = isset($roles[$currentRoleValue]) ? $roles[$currentRoleValue] : 'Unknown';
+                                    ?>
                                         <span class="w-30 text-md fw-semibold text-primary-light"> Role</span>
-                                        <span class="w-70 text-secondary-light fw-medium">: <?php echo $row['role']; ?></span>
+                                        <span class="w-70 text-secondary-light fw-medium">: <?php echo htmlspecialchars($currentRoleLabel); ?></span>
                                     </li>
                                     <li class="d-flex align-items-center gap-1 mb-12">
                                         <span class="w-30 text-md fw-semibold text-primary-light"> Client ID</span>

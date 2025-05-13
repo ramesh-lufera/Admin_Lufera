@@ -31,7 +31,7 @@
                 </ul>
             </li> -->
             <li>
-            <?php if($row['role']=="Admin"){ ?>
+            <?php if($row['role']=="1"){ ?>
                 <a href="admin-dashboard.php">
                 <iconify-icon icon="solar:home-smile-angle-outline" class="menu-icon"></iconify-icon>
                     <span>Dashboard</span>
@@ -95,7 +95,7 @@
                     </li>
                 </ul>
             </li> -->
-            <?php if($row['role']=="Admin") { ?>
+            <?php if($row['role']=="1") { ?>
             <li class="dropdown">
                 <a href="javascript:void(0)">
                     <iconify-icon icon="flowbite:users-group-outline" class="menu-icon"></iconify-icon>

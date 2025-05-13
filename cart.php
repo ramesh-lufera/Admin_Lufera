@@ -48,7 +48,7 @@
                         <h5>Sub Total</h5>
                         <h5>$<?php echo $price; ?></h5>
                     </div>
-                    <label class="tagline">Subtotal does not iclude applicable taxes</label>
+                    <label class="tagline">Subtotal does not include applicable taxes</label>
 
                     <div class="d-flex justify-content-between mt-5">
                         <label>Gst 18%</label>
@@ -69,7 +69,7 @@
                         <input type="hidden" name="total_price" value="<?php echo $total_price; ?>">
                         <input type="hidden" name="receipt_id" value="<?php echo $auto_id; ?>">
                         
-                        <button type="submit" class="lufera-bg text-center text-white text-sm btn-sm px-12 py-10 w-100 radius-8 mt-28">Get started</button>
+                        <button type="submit" class="lufera-bg text-center text-white text-sm btn-sm px-12 py-10 w-100 radius-8 mt-28">Continue</button>
                     </form>
                     <!-- <a class="d-block" href="payment.php"> 
                         <button class="lufera-bg text-center text-white text-sm btn-sm px-12 py-10 w-100 radius-8 mt-28">Continue</button>

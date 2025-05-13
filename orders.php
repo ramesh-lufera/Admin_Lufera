@@ -45,7 +45,7 @@
     INNER JOIN users ON orders.user_id = users.user_id
     ";
 
-    if ($role !== 'admin') {
+    if ($role !== '1') {
         if (!empty($UserId)) {
             $query .= " WHERE orders.user_id = '$UserId'";
         } else {
@@ -104,17 +104,10 @@
                 <table class="table bordered-table mb-0">
                     <thead>
                         <tr>
-                            <th scope="col">
-                                <div class="form-check style-check d-flex align-items-center">
-                                    <input class="form-check-input" type="checkbox" value="" id="checkAll">
-                                    <label class="form-check-label" for="checkAll">
-                                        No
-                                    </label>
-                                </div>
-                            </th>
-                            <th scope="col">Invoice</th>
+                            
+                            <th scope="col">Invoice ID</th>
                             <th scope="col">Name</th>
-                            <th scope="col">Issued Date</th>
+                            <th scope="col">Date</th>
                             <th scope="col">Amount</th>
                             <th scope="col">Status</th>
                             <th scope="col">Action</th>
@@ -128,15 +121,8 @@
                         $status = $row['status'];
                     ?>
                         <tr>
-                            <td>
-                                <div class="form-check style-check d-flex align-items-center">
-                                    <input class="form-check-input" type="checkbox" value="" id="check1">
-                                    <label class="form-check-label" for="check1">
-                                    <?php echo $row['id']; ?>
-                                    </label>
-                                </div>
-                            </td>
-                            <td><a href="javascript:void(0)" class="text-primary-600"><?php echo $row['invoice_id']; ?></a></td>
+                            
+                            <td><?php echo $row['invoice_id']; ?></td>
                             <td>
                                 <div class="d-flex align-items-center">
                                     <img src="<?= $photo ?>" alt="" class="flex-shrink-0 me-12 radius-8" style="width: 40px; height: 40px;">
@@ -152,7 +138,7 @@
                                 </a>
                             </td> -->
                             <td>
-                                <?php if ($role === 'admin' && $row['status'] === 'pending'): ?>
+                                <?php if ($role === '1' && $row['status'] === 'pending'): ?>
                                     <form method="POST" style="display:inline;">
                                         <input type="hidden" name="approve_id" value="<?= $row['id'] ?>">
                                         <button type="submit" class="btn btn-success btn-sm fw-medium text-white me-2">
@@ -166,15 +152,15 @@
                                 <?php endif; ?>
                             </td>
                             <td>
-                                <a href="javascript:void(0)" class="w-32-px h-32-px bg-primary-light text-primary-600 rounded-circle d-inline-flex align-items-center justify-content-center">
+                                <a href="invoice-preview.php?id=<?php echo $row['invoice_id']; ?>" class="w-32-px h-32-px bg-primary-light text-primary-600 rounded-circle d-inline-flex align-items-center justify-content-center">
                                     <iconify-icon icon="iconamoon:eye-light"></iconify-icon>
                                 </a>
-                                <a href="javascript:void(0)" class="w-32-px h-32-px bg-success-focus text-success-main rounded-circle d-inline-flex align-items-center justify-content-center">
+                                <!-- <a href="javascript:void(0)" class="w-32-px h-32-px bg-success-focus text-success-main rounded-circle d-inline-flex align-items-center justify-content-center">
                                     <iconify-icon icon="lucide:edit"></iconify-icon>
                                 </a>
                                 <a href="javascript:void(0)" class="w-32-px h-32-px bg-danger-focus text-danger-main rounded-circle d-inline-flex align-items-center justify-content-center">
                                     <iconify-icon icon="mingcute:delete-2-line"></iconify-icon>
-                                </a>
+                                </a> -->
                             </td>
                         </tr>
                         <?php endwhile; ?>

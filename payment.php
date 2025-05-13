@@ -6,6 +6,7 @@
         padding: 15px 0;
     }
 </style>
+<script src='https://cdn.jsdelivr.net/npm/sweetalert2@11'></script>
 <?php
 
     if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -38,16 +39,37 @@
         $sql = "INSERT INTO orders (user_id, invoice_id, plan, duration, amount, price, status, payment_method, created_on) VALUES 
                                    ('$client_id', '$rec_id', '$plan_name', '$duration' ,'$total_price', '$price','pending', '$pay_method', '$created_at')";
 
-        if (mysqli_query($conn, $sql)) {
-            //echo "Record inserted successfully.";
-            echo "<script>
-                alert('Record inserted successfully.');
+
+if (mysqli_query($conn, $sql)) {
+    echo "
+    <script>
+        Swal.fire({
+            title: 'Success!',
+            text: 'Invoice Created Successfully.',
+            confirmButtonText: 'OK'
+        }).then((result) => {
+            if (result.isConfirmed) {
                 window.location.href = 'invoice-preview.php?id=$rec_id';
-              </script>";
-            exit();
-        } else {
-            echo "Error: " . $conn->error;
-        }
+            }
+        });
+    </script>";
+} else {
+    echo "<script>
+        alert('Error: " . $stmt->error . "');
+        window.history.back();
+    </script>";
+}
+
+        // if (mysqli_query($conn, $sql)) {
+        //     //echo "Record inserted successfully.";
+        //     echo "<script>
+        //         alert('Record inserted successfully.');
+        //         window.location.href = 'invoice-preview.php?id=$rec_id';
+        //       </script>";
+        //     exit();
+        // } else {
+        //     echo "Error: " . $conn->error;
+        // }
     }
     
 ?>
@@ -56,7 +78,6 @@
         <h6 class="fw-semibold mb-0">Payment Page</h6>
         
     </div>
-    <form method="post">
         <div class="mb-40">
             <div class="row gy-4">
                 <div class="col-xxl-8 col-sm-6">
@@ -65,19 +86,26 @@
                             <h6>Direct Pay</h6>
                         </div>
                         <div class="card-body p-16">
-                        <form id="updateForm">
+                        <form method="post">
+                        <input type="hidden" value="<?php echo $duration; ?>" name="duration">
+                        <input type="hidden" value="<?php echo $rec_id; ?>" name="rec_id">
+                        <input type="hidden" value="<?php echo $plan_name; ?>" name="plan_name">
+                        <input type="hidden" value="<?php echo $price; ?>" name="price">
+                        <input type="hidden" value="<?php echo $gst; ?>" name="gst">
+                        <input type="hidden" value="<?php echo $total_price; ?>" name="total_price">
                             <div class="row">
                                 <div class="col-sm-6">
                                     <div class="mb-20">
                                         <label for="" class="form-label fw-semibold text-primary-light text-sm mb-8">How would you like to make the payment ? <span class="text-danger-600">*</span></label>
-                                        <select class="form-control" name="pay_method">
-                                            <option>Select Payment Method</option>
+                                        <select class="form-control" name="pay_method" required>
+                                            <option value="">Select Payment Method</option>
                                             <option value="Bank Transfer">Bank Transfer</option>
                                             <option value="Wire Transfer">Wire Transfer</option>
                                             <option value="Cash">Cash</option>
                                         </select>
+                                        <!-- <input type="text" class="form-control" name="pay_method" required> -->
                                     </div>
-                                    <button type="button" class="btn lufera-bg text-white" data-bs-toggle="modal" data-bs-target="#myModal">Continue</button>
+                                    <input type="submit" name="save" class="btn lufera-bg text-white" value="Submit">
                                     <!-- <button type="button" class="btn btn-primary btn-lg" data-backdrop="static" data-keyboard="false" data-bs-target="#myModal" data-bs-toggle="modal">Continue</button> -->
                                 </div>
                             </div>
@@ -92,50 +120,48 @@
                     <div class="card h-100 radius-12">
                         <div class="card-header">
                             <h6>Order Summary</h6>
-                            <input type="hidden" value="<?php echo $duration; ?>" name="duration">
                         </div>
                         <div class="card-body p-16">
                         <div class="mb-20 text-center">
                             <label>Receipt ID : <?php echo $rec_id; ?></label>
-                            <input type="hidden" value="<?php echo $rec_id; ?>" name="rec_id">
+                            
                         </div>
                         <div class="d-flex justify-content-between order-card">
                             <label><?php echo $plan_name; ?></label>
                             <h6 class="mb-0">$ <?php echo $price; ?></h6>
-                            <input type="hidden" value="<?php echo $plan_name; ?>" name="plan_name">
-                            <input type="hidden" value="<?php echo $price; ?>" name="price">
+                            
                         </div>
                         <div class="d-flex justify-content-between order-card">
                             <label>GST 18%</label>
                             <h6 class="mb-0">$ <?php echo $gst; ?></h6>
-                            <input type="hidden" value="<?php echo $gst; ?>" name="gst">
+                            
                         </div>
                         <div class="d-flex justify-content-between order-card px-0 border-0">
                             <h5>Total</h5>
                             <h5 class="mb-0">$ <?php echo $total_price; ?></h5>
-                            <input type="hidden" value="<?php echo $total_price; ?>" name="total_price">
+                            
                         </div>
                         </div>
                     </div>
                 </div>
 
-                <div class="modal fade" id="myModal" data-bs-backdrop="static" data-bs-keyboard="false">
+                <!-- <div class="modal fade" id="myModal" data-bs-backdrop="static" data-bs-keyboard="false">
                     <div class="modal-dialog modal-dialog-centered">
                         <div class="modal-content">
                         
                             <div class="text-center modal-body" style="padding: 2rem;">
                                 <h5 style="line-height: 60px; letter-spacing: 1px">Thank you for your confirmation, one of our representatives will contact you for confirmation</h5>
-                                <!-- <a href="websites.php"> -->
+                                
                                     <button type="submit" class="btn lufera-bg text-white mt-20" style="padding: 1rem 5rem" name="save">Close</button>
-                                <!-- </a> -->
+                               
                             </div>
                         </div>
                     </div>
-                </div>
+                </div> -->
 
             </div>
         </div>
-    </form>
+   
 </div>
 <script>
     $(document).ready(function () {
