@@ -21,8 +21,8 @@
             <style>
                 .toggle-icon-pass {
                     position: absolute;
-                    top: 50%;
-                    right: 20px;
+                    top: 22px;
+                    right: 28px;
                     transform: translateY(-50%);
                     cursor: pointer;
                     user-select: none;
@@ -336,6 +336,8 @@ error_reporting(E_ALL);
             document.addEventListener("DOMContentLoaded", function () {
                 const emailInput = document.querySelector('input[name="email"]');
                 const emailFeedback = emailInput.nextElementSibling;
+                const form = emailInput.closest("form");
+                let emailExists = false; // <--- flag
 
                 emailInput.addEventListener("blur", function () {
                     const email = emailInput.value.trim();
@@ -350,7 +352,8 @@ error_reporting(E_ALL);
                     })
                     .then(response => response.json())
                     .then(data => {
-                        if (data.exists) {
+                        emailExists = data.exists;
+                        if (emailExists) {
                             emailInput.classList.add('is-invalid');
                             emailFeedback.textContent = "Email already exists";
                         } else {
@@ -362,7 +365,15 @@ error_reporting(E_ALL);
                         console.error('Error checking email:', error);
                     });
                 });
+
+                form.addEventListener("submit", function (e) {
+                    if (emailExists) {
+                        e.preventDefault(); // Prevent form submission
+                        emailInput.focus(); // Optionally refocus the input
+                    }
+                });
             });
+
 
         </script>
 <?php include './partials/layouts/layoutBottom.php' ?>
