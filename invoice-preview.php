@@ -41,8 +41,8 @@
                     $rows = $results->fetch_assoc();
                     $user_ids = $rows['email'];
                     
-                    $gst = $row['amount'] * 0.18; 
-                    $total_price = $price + $gst;
+                    // $gst = $row['amount'] * 0.18; 
+                    // $total_price = $price + $gst;
                 ?>
                 <div class="card-body py-40">
                     <div class="row justify-content-center" id="invoice">

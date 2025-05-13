@@ -180,12 +180,12 @@ error_reporting(E_ALL);
                                         <!-- <input type="text" class="form-control radius-8" name="bname" placeholder="Enter Business Name" required> -->
                                         <select class="form-control" name="role" required>
                                             <option value="" disabled selected>Select Role</option>
-                                            <option value="Admin">Admin</option>
-                                            <option value="Sales">Sales</option>
-                                            <option value="Accounts">Accounts</option>
-                                            <option value="Developer">Developer</option>
-                                            <option value="Marketing">Marketing</option>
-                                            <option value="User">User</option>
+                                            <option value="1">Admin</option>
+                                            <option value="2">Sales</option>
+                                            <option value="3">Accounts</option>
+                                            <option value="4">Developer</option>
+                                            <option value="5">Marketing</option>
+                                            <option value="6">User</option>
                                         </select>
                                         <div class="invalid-feedback">
                                             Role is required
