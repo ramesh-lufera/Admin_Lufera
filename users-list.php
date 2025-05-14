@@ -8,7 +8,7 @@
     $result = mysqli_query($conn, $sql);
 
     // Set the number of records per page
-    $records_per_page = 6;
+    $records_per_page = 5;
 
     // Get the current page from the URL (if not set, default to 1)
     $current_page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
@@ -123,6 +123,7 @@
                     </tbody>
                 </table>
             </div>
+            <!-- Pagination -->
             <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mt-24">
                 <span>Showing <?php echo ($start_from + 1); ?> to <?php echo min($start_from + $records_per_page, $total_records); ?> of <?php echo $total_records; ?> entries</span>
                 
