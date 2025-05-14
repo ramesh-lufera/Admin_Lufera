@@ -112,7 +112,7 @@
                             </div>
                         </div><!-- Language dropdown end -->
 
-                        <div class="dropdown">
+                        <!-- <div class="dropdown">
                             <button class="has-indicator w-40-px h-40-px bg-neutral-200 rounded-circle d-flex justify-content-center align-items-center" type="button" data-bs-toggle="dropdown">
                                 <iconify-icon icon="mage:email" class="text-primary-light text-xl"></iconify-icon>
                             </button>
@@ -124,7 +124,7 @@
                                     <span class="text-primary-600 fw-semibold text-lg w-40-px h-40-px rounded-circle bg-base d-flex justify-content-center align-items-center">05</span>
                                 </div>
 
-                                <!-- <div class="max-h-400-px overflow-y-auto scroll-sm pe-4">
+                                <div class="max-h-400-px overflow-y-auto scroll-sm pe-4">
 
                                     <a href="javascript:void(0)" class="px-24 py-12 d-flex align-items-start gap-3 mb-2 justify-content-between">
                                         <div class="text-black hover-bg-transparent hover-text-primary d-flex align-items-center gap-3">
@@ -211,14 +211,15 @@
                                         </div>
                                     </a>
 
-                                </div> -->
+                                </div>
                                 <div class="text-center py-12 px-16">
                                     <a href="javascript:void(0)" class="text-primary-600 fw-semibold text-md">See All Message</a>
                                 </div>
                             </div>
-                        </div><!-- Message dropdown end -->
+                        </div> -->
+                        <!-- Message dropdown end -->
 
-                        <div class="dropdown">
+                        <!-- <div class="dropdown">
                             <button class="has-indicator w-40-px h-40-px bg-neutral-200 rounded-circle d-flex justify-content-center align-items-center" type="button" data-bs-toggle="dropdown">
                                 <iconify-icon icon="iconoir:bell" class="text-primary-light text-xl"></iconify-icon>
                             </button>
@@ -230,7 +231,7 @@
                                     <span class="text-primary-600 fw-semibold text-lg w-40-px h-40-px rounded-circle bg-base d-flex justify-content-center align-items-center">05</span>
                                 </div>
 
-                                <!-- <div class="max-h-400-px overflow-y-auto scroll-sm pe-4">
+                                <div class="max-h-400-px overflow-y-auto scroll-sm pe-4">
                                     <a href="javascript:void(0)" class="px-24 py-12 d-flex align-items-start gap-3 mb-2 justify-content-between">
                                         <div class="text-black hover-bg-transparent hover-text-primary d-flex align-items-center gap-3">
                                             <span class="w-44-px h-44-px bg-success-subtle text-success-main rounded-circle d-flex justify-content-center align-items-center flex-shrink-0">
@@ -295,12 +296,51 @@
                                         </div>
                                         <span class="text-sm text-secondary-light flex-shrink-0">23 Mins ago</span>
                                     </a>
-                                </div> -->
+                                </div>
 
                                 <div class="text-center py-12 px-16">
                                     <a href="javascript:void(0)" class="text-primary-600 fw-semibold text-md">See All Notification</a>
                                 </div>
 
+                            </div>
+                        </div> -->
+                        <!-- Notification dropdown end -->
+
+                        <div class="dropdown">
+                            <button class="has-indicator w-40-px h-40-px bg-neutral-200 rounded-circle d-flex justify-content-center align-items-center" type="button" data-bs-toggle="dropdown">
+                                <iconify-icon icon="iconoir:bell" class="text-primary-light text-xl"></iconify-icon>
+                                <?php if ($notiCount > 0): ?>
+                                    <!-- <span class="indicator bg-danger rounded-circle" style="width:10px; height:10px; position:absolute; top:5px; right:5px;"></span> -->
+
+                                    <span class="position-absolute top-0 end-0 translate-middle badge rounded-pill bg-danger text-white" style="font-size: 10px; padding: 4px 6px;">
+                                        <?= $notiCount ?>
+                                    </span>
+                                <?php endif; ?>
+                            </button>
+                            <div class="dropdown-menu to-top dropdown-menu-lg p-0">
+                                <div class="m-16 py-12 px-16 radius-8 bg-primary-50 mb-16 d-flex align-items-center justify-content-between gap-2">
+                                    <div>
+                                        <h6 class="text-lg text-primary-light fw-semibold mb-0">Notifications</h6>
+                                    </div>
+                                    <span class="text-primary-600 fw-semibold text-lg w-40-px h-40-px rounded-circle bg-base d-flex justify-content-center align-items-center"><?= $notiCount ?></span>
+                                </div>
+                                <div class="max-h-400-px overflow-y-auto scroll-sm pe-4">
+                                    <?php if ($notiCount > 0): ?>
+                                        <div class="text-center py-12 px-16">
+                                            <?php while ($noti = $notifications->fetch_assoc()): ?>
+                                                <div class="py-8 border-bottom">
+                                                    <p class="text-sm mb-1"><?= htmlspecialchars($noti['message']) ?></p>
+                                                    <small class="text-muted"><?= date('d M Y, h:i A', strtotime($noti['created_at'])) ?></small>
+                                                </div>
+                                            <?php endwhile; ?>
+                                        </div>
+                                        <div class="text-center py-12 px-16">
+                                            <a href="javascript:void(0)" class="text-primary-600 fw-semibold text-md">See All Notification</a>
+                                        </div>
+                                    <?php else: ?>
+                                        <div class="px-16 py-12 text-center text-muted">No new notifications</div>
+                                    <?php endif; ?>
+                                </div>
                             </div>
                         </div><!-- Notification dropdown end -->
 
