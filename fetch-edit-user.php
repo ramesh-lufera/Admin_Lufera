@@ -89,6 +89,7 @@ if (isset($_POST['id'])) {
                 <div class="mb-20">
                     <label for="" class="form-label fw-semibold text-primary-light text-sm mb-8">Email <span class="text-danger-600">*</span></label>
                     <input type="email" class="form-control radius-8" id="email" name="email" value="<?php echo htmlspecialchars($user['email']); ?>" required>
+                    <div id="email-msg" class="text-danger mt-2"></div>
                 </div>
             </div>
             <div class="col-sm-6">
@@ -150,4 +151,34 @@ if (isset($_POST['id'])) {
             usernameField.value = email.substring(0, atIndex);
         }
     });
+
+document.getElementById('email').addEventListener('input', function () {
+    const email = this.value.trim();
+    const userId = document.querySelector('input[name="id"]').value;
+
+    if (email === '') {
+        document.getElementById('email-msg').innerHTML = '';
+        emailValid = true;
+        return;
+    }
+
+    fetch('check_email_update.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: `email=${encodeURIComponent(email)}&id=${encodeURIComponent(userId)}`
+    })
+    .then(response => response.text())
+    .then(data => {
+        const msg = document.getElementById('email-msg');
+        if (data.trim() !== '') {
+            msg.innerHTML = data;
+            emailValid = false;
+        } else {
+            msg.innerHTML = '';
+            emailValid = true;
+        }
+    });
+});
+
 </script>
+
