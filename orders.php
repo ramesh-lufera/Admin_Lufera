@@ -74,18 +74,19 @@
 
     $Id = $_SESSION['user_id'];
     
-    $sql = "select role, user_id from users where id = $Id";
+    $sql = "select user_id, role, photo from users where id = $Id";
     $result = $conn ->query($sql);
     $row = $result ->fetch_assoc();
     $role = $row['role'];
     $UserId = $row['user_id'];
+    $photo = !empty($row['photo']) ? $row['photo'] : 'assets/images/user1.png';
 
-    // Handle approval
+    // ADMIN approves → Notify USER
     if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['approve_id']) && $role === '1') {
         $orderId = intval($_POST['approve_id']);
 
         // Approve order
-        $conn->query("UPDATE orders SET status = 'approved' WHERE id = $orderId");
+        $conn->query("UPDATE orders SET status = 'Approved' WHERE id = $orderId");
 
         // Get user_id for notification
         $res = $conn->query("SELECT user_id FROM orders WHERE id = $orderId");
@@ -94,8 +95,8 @@
 
         // Add notification
         $msg = "Your payment has been approved.";
-        $stmt = $conn->prepare("INSERT INTO notifications (user_id, message) VALUES (?, ?)");
-        $stmt->bind_param("ss", $userId, $msg);
+        $stmt = $conn->prepare("INSERT INTO notifications (user_id, message, n_photo) VALUES (?, ?, ?)");
+        $stmt->bind_param("sss", $userId, $msg, $photo);
         $stmt->execute();
     }
     
@@ -207,7 +208,7 @@
                                 </a>
                             </td> -->
                             <td>
-                                <?php if ($role === '1' && $row['status'] === 'pending'): ?>
+                                <?php if ($role === '1' && $row['status'] === 'Pending'): ?>
                                     <form method="POST" style="display:inline;">
                                         <input type="hidden" name="approve_id" value="<?= $row['id'] ?>">
                                         <button type="submit" class="btn btn-success btn-sm fw-medium text-white me-2">

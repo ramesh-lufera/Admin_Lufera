@@ -37,7 +37,7 @@
         $client_id = $row['user_id'];
 
         $sql = "INSERT INTO orders (user_id, invoice_id, plan, duration, amount, price, status, payment_method, created_on) VALUES 
-                                   ('$client_id', '$rec_id', '$plan_name', '$duration' ,'$total_price', '$price','pending', '$pay_method', '$created_at')";
+                                   ('$client_id', '$rec_id', '$plan_name', '$duration' ,'$total_price', '$price', 'Pending', '$pay_method', '$created_at')";
 
 
 if (mysqli_query($conn, $sql)) {
@@ -61,6 +61,29 @@ if (mysqli_query($conn, $sql)) {
 }
 }
     
+    $Id = $_SESSION['user_id'];
+    
+    $sql = "select user_id, username, role, photo from users where id = $Id";
+    $result = $conn ->query($sql);
+    $row = $result ->fetch_assoc();
+    $role = $row['role'];
+    $UserId = $row['user_id'];
+    $username = $row['username'];
+    $photo = !empty($row['photo']) ? $row['photo'] : 'assets/images/user1.png';
+
+    // USER sends payment request (→ notify all admins)
+    if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save']) && $role != '1') {
+        $msg = "$username has sent a payment request.";
+
+        $adminQuery = $conn->query("SELECT user_id FROM users WHERE role = '1'");
+        while ($adminRow = $adminQuery->fetch_assoc()) {
+            $adminUserId = $adminRow['user_id'];
+
+            $stmt = $conn->prepare("INSERT INTO notifications (user_id, message, n_photo) VALUES (?, ?, ?)");
+            $stmt->bind_param("sss", $adminUserId, $msg, $photo);
+            $stmt->execute();
+        }
+    }
 ?>
 <div class="dashboard-main-body">
     <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-24">
