@@ -73,7 +73,7 @@
 <body>
 
     <?php include './partials/sidebar.php' ?>
-
+    <script src='https://cdn.jsdelivr.net/npm/sweetalert2@11'></script>
     <main class="dashboard-main">
         <?php include './partials/navbar.php' ?>
 

@@ -35,6 +35,11 @@
 
 <?php include './partials/layouts/layoutTop.php' ?>
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<style>
+.toggle-password{
+    top:23px !important;
+}
+</style>
 <?php
 
 $user_id = $_SESSION['user_id'];
@@ -260,20 +265,39 @@ $row['username'] = explode('@', $row['email'])[0];
                                 </div>
 
                                 <div class="tab-pane fade" id="pills-change-passwork" role="tabpanel" aria-labelledby="pills-change-passwork-tab" tabindex="0">
+                                    <form id="change-password-form">
                                     <div class="mb-20">
-                                        <label for="your-password" class="form-label fw-semibold text-primary-light text-sm mb-8">New Password <span class="text-danger-600">*</span></label>
+                                        <label for="old-password" class="form-label fw-semibold text-primary-light text-sm mb-8">Old Password <span class="text-danger-600">*</span></label>
                                         <div class="position-relative">
-                                            <input type="password" class="form-control radius-8" id="your-password" placeholder="Enter New Password*">
-                                            <span class="toggle-password ri-eye-line cursor-pointer position-absolute end-0 top-50 translate-middle-y me-16 text-secondary-light" data-toggle="#your-password"></span>
+                                            <input type="password" class="form-control radius-8" id="old-password" placeholder="Enter Old Password*">
+                                            <span class="toggle-password ri-eye-line cursor-pointer position-absolute end-0 top-50 translate-middle-y me-16 text-secondary-light" data-toggle="#old-password"></span>
+                                            
+                                            <div class="text-danger mt-2" id="error-old-password"></div>
+                                        </div>
+                                    </div>    
+                                    <div class="mb-20">
+                                        <label for="new-password" class="form-label fw-semibold text-primary-light text-sm mb-8">New Password <span class="text-danger-600">*</span></label>
+                                        <div class="position-relative">
+                                            <input type="password" class="form-control radius-8" id="new-password" placeholder="Enter New Password*">
+                                            <span class="toggle-password ri-eye-line cursor-pointer position-absolute end-0 top-50 translate-middle-y me-16 text-secondary-light" data-toggle="#new-password"></span>
+                                            <div class="text-danger mt-2" id="error-new-password"></div>
                                         </div>
                                     </div>
                                     <div class="mb-20">
                                         <label for="confirm-password" class="form-label fw-semibold text-primary-light text-sm mb-8">Confirmed Password <span class="text-danger-600">*</span></label>
                                         <div class="position-relative">
                                             <input type="password" class="form-control radius-8" id="confirm-password" placeholder="Confirm Password*">
-                                            <span class="toggle-password ri-eye-line cursor-pointer position-absolute end-0 top-50 translate-middle-y me-16 text-secondary-light" data-toggle="#confirm-password"></span>
+                                            <span class="toggle-password ri-eye-line cursor-pointer position-absolute end-0 top-50 translate-middle-y me-16 text-secondary-light" ></span>
+                                            <div class="text-danger mt-2" id="error-confirm-password"></div>
                                         </div>
                                     </div>
+                                    <div class="d-flex align-items-center justify-content-center gap-3">
+                                        <button type="button" class="border border-danger-600 bg-hover-danger-200 text-danger-600 text-md px-56 py-11 radius-8">
+                                            Cancel
+                                        </button>
+                                        <button type="submit" class="lufera-bg bg-hover-warning-400 text-white text-md px-56 py-11 radius-8">Update</button> 
+                                    </div>
+                                    </form>
                                 </div>
 
                                 <div class="tab-pane fade" id="pills-notification" role="tabpanel" aria-labelledby="pills-notification-tab" tabindex="0">
@@ -323,25 +347,6 @@ $row['username'] = explode('@', $row['email'])[0];
 
 
 <script>
-//     $('#updateForm').submit(function(e) {
-//     e.preventDefault();
-
-//     $.ajax({
-//         url: 'update.php',
-//         type: 'POST',
-//         data: $(this).serialize(),
-//         success: function(response) {
-//             $('#result').html(response);
-//             loadUserData(); // Reload user data after update
-//         },
-//         error: function(xhr) {
-//             $('#result').html("Error updating data.");
-//         }
-//     });
-// });
-
-// loadUserData();
-
 $('#updateForm').submit(function(e) {
     e.preventDefault();
 
@@ -361,34 +366,98 @@ $('#updateForm').submit(function(e) {
         }
     });
 });
+</script>
+<script>
+    $('#change-password-form').on('submit', function (e) {
+        e.preventDefault();
 
-// $('#updateForm').submit(function(e) {
-//     e.preventDefault(); // Prevent the default form submission
+        // Clear previous errors
+        $('#error-old-password').text('');
+        $('#error-new-password').text('');
+        $('#error-confirm-password').text('');
 
-//     var formData = new FormData(this); // Create FormData to send with AJAX
-//     $.ajax({
-//         url: 'update.php', // URL to PHP file for handling image upload
-//         type: 'POST',
-//         data: formData,
-//         processData: false, // Don't process the data
-//         contentType: false, // Don't set content type
-//         success: function(response) {
-//             var data = JSON.parse(response); // Parse the response
-//             if (data.status === 'success') {
-//                 // Update the preview with the new image
-//                 $('#imagePreview').css("background-image", "url(" + data.image + ")");
-//                 $('#imagePreview').hide().fadeIn(650); // Fade in the preview
-//             } else {
-//                 alert('Error: ' + data.message); // Show error message if something went wrong
-//             }
-//         },
-//         error: function(xhr) {
-//             alert('An error occurred while uploading the image.');
-//         }
-//     });
-// });
+        const oldPassword = $('#old-password').val().trim();
+        const newPassword = $('#new-password').val().trim();
+        const confirmPassword = $('#confirm-password').val().trim();
 
+        let hasError = false;
 
+        if (!oldPassword) {
+            $('#error-old-password').text('Old password is required.');
+            hasError = true;
+        }
+
+        if (!newPassword) {
+            $('#error-new-password').text('New password is required.');
+            hasError = true;
+        }
+
+        if (!confirmPassword) {
+            $('#error-confirm-password').text('Please confirm your new password.');
+            hasError = true;
+        } else if (newPassword && confirmPassword !== newPassword) {
+            $('#error-confirm-password').text('Passwords do not match.');
+            hasError = true;
+        }
+
+        if (hasError) return;
+
+        $.ajax({
+            url: 'change_password.php',
+            method: 'POST',
+            data: {
+                old_password: oldPassword,
+                new_password: newPassword
+            },
+            success: function (response) {
+                let res = JSON.parse(response);
+
+                if (res.status === 'success') {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Success!',
+                        text: res.message,
+                        confirmButtonColor: '#3085d6'
+                    });
+                    // Optionally reset the form
+                    $('#change-password-form')[0].reset();
+                } else {
+                    // Show error under old password if it's incorrect
+                    $('#error-old-password').text(res.message);
+                }
+            },
+            error: function () {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Oops!',
+                    text: 'Something went wrong. Please try again later.',
+                });
+            }
+        });
+    });
+</script>
+<script>
+    function clearErrorOnInput(inputId, errorId) {
+        $(`#${inputId}`).on('input', function () {
+            if ($(this).val().trim() !== '') {
+                $(`#${errorId}`).text('');s
+            }
+        });
+    }
+
+    // Attach to each field
+    clearErrorOnInput('old-password', 'error-old-password');
+    clearErrorOnInput('new-password', 'error-new-password');
+    clearErrorOnInput('confirm-password', 'error-confirm-password');
+
+    // Also clear confirm-password mismatch error if passwords match during typing
+    $('#confirm-password').on('input', function () {
+        const newPassword = $('#new-password').val().trim();
+        const confirmPassword = $(this).val().trim();
+        if (confirmPassword === newPassword) {
+            $('#error-confirm-password').text('');
+        }
+    });
 </script>
 
 <?php include './partials/layouts/layoutBottom.php' ?>

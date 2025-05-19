@@ -18,6 +18,18 @@
     width:300px;
 }
 </style>
+<?php
+    $invoice_id = $_GET['id'];
+    $invoice = "select * from orders where invoice_id = $invoice_id";
+    $result = $conn->query($invoice);
+    $row = $result->fetch_assoc();
+    $user_id = $row['user_id'];
+    
+    $user = "select * from users where user_id = '$user_id'"; 
+    $results = $conn->query($user);
+    $rows = $results->fetch_assoc();
+    $user_ids = $rows['email'];
+?>
         <div class="dashboard-main-body">
 
             <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-24">
@@ -27,6 +39,15 @@
             <div class="card">
                 <div class="card-header">
                     <div class="d-flex flex-wrap align-items-center justify-content-end gap-2">
+                    <?php 
+                    if($rows['role'] == "1") {?>  
+                    <a href="invoice-preview-edit.php?id=<?php echo $invoice_id; ?>">  
+                        <button type="button" class="btn btn-sm btn-success radius-8 d-inline-flex align-items-center gap-1" >
+                            <iconify-icon icon="basil:edit-outline" class="text-xl"></iconify-icon>
+                            Edit
+                        </button>
+                    </a> 
+                        <?php } ?>   
                         <button type="button" class="btn btn-sm btn-danger radius-8 d-inline-flex align-items-center gap-1" onclick="printInvoice()">
                             <iconify-icon icon="basil:printer-outline" class="text-xl"></iconify-icon>
                             Print
@@ -34,21 +55,7 @@
                     </div>
                 </div>
 
-                <?php
-                    $invoice_id = $_GET['id'];
-                    $invoice = "select * from orders where invoice_id = $invoice_id";
-                    $result = $conn->query($invoice);
-                    $row = $result->fetch_assoc();
-                    $user_id = $row['user_id'];
-                    
-                    $user = "select * from users where user_id = '$user_id'"; 
-                    $results = $conn->query($user);
-                    $rows = $results->fetch_assoc();
-                    $user_ids = $rows['email'];
-                    
-                    // $gst = $row['amount'] * 0.18; 
-                    // $total_price = $price + $gst;
-                ?>
+                
                 <div class="card-body py-40">
                     <div class="row justify-content-center" id="invoice">
                         <div class="col-lg-8">
@@ -57,7 +64,7 @@
                                     <div>
                                         <!-- <h3 class="text-xl">Invoice No: <?php echo $invoice_id; ?></h3>
                                         <p class="mb-1 text-sm">Date : <?php echo date('d/m/Y', strtotime($row['created_on'])); ?></p> -->
-                                        <img src="assets/images/logo_lufera.png" alt="image" class="mb-8" width="300px">
+                                        <img src="assets/images/logo_lufera.png" alt="image" class="mb-8" width="200px">
                                     </div>
                                     <div class="text-end">
                                        <p class="mb-0"><b>Lufera Infotech Pvt. Ltd. (OPC)</b></p>
@@ -102,7 +109,7 @@
                                 </div>
 
                                 <div class="py-28 px-20">
-                                    <div class="mt-24">
+                                    <div class="">
                                         <div class="table-responsive scroll-sm">
                                             <table class="table table-bordered text-sm">
                                                 <thead>
@@ -130,16 +137,24 @@
                                             <div>
                                                 <table class="invoice_table text-end">
                                                     <tbody>
+                                                        <?php if($row['discount'] != null){ ?>
+                                                        <tr>
+                                                            <td class="pe-64 border-bottom p-8">Discount</td>
+                                                            <td class="border-bottom p-8">
+                                                                <span class="text-primary-light fw-semibold"> <?php echo $row['discount']; ?>%</span>
+                                                            </td>
+                                                        </tr>
+                                                        <?php } ?>
                                                         <tr>
                                                             <td class="pe-64 border-bottom p-8">Subtotal</td>
                                                             <td class="border-bottom p-8">
-                                                                <span class="text-primary-light fw-semibold">$ <?php echo $row['price']; ?></span>
+                                                                <span class="text-primary-light fw-semibold">$ <?php echo $row['subtotal']; ?></span>
                                                             </td>
                                                         </tr>
                                                         <tr>
-                                                            <td class="pe-64 border-bottom p-8">Tax 18%</td>
+                                                            <td class="pe-64 border-bottom p-8">GST 18%</td>
                                                             <td class="border-bottom p-8">
-                                                                <span class="text-primary-light fw-semibold">$ <?php echo $row['amount'] - $row['price']; ?></span>
+                                                                <span class="text-primary-light fw-semibold">$ <?php echo $row['gst']; ?></span>
                                                             </td>
                                                         </tr>
                                                         <tr>
@@ -148,6 +163,22 @@
                                                             </td>
                                                             <td class="border-bottom p-8">
                                                                 <span class="text-primary-light fw-semibold">$ <?php echo $row['amount']; ?></span>
+                                                            </td>
+                                                        </tr>
+                                                        <?php if($row['payment_made'] != null){ ?>
+                                                        <tr>
+                                                            <td class="pe-64 border-bottom p-8">Payment Made</td>
+                                                            <td class="border-bottom p-8">
+                                                                <span class="text-primary-light fw-semibold">$ <?php echo $row['payment_made']; ?></span>
+                                                            </td>
+                                                        </tr>
+                                                        <?php } ?>
+                                                        <tr>
+                                                            <td class="pe-64 border-bottom p-8">
+                                                                <span class="text-primary-light fw-semibold">Balance Due</span>
+                                                            </td>
+                                                            <td class="border-bottom p-8">
+                                                                <span class="text-primary-light fw-semibold">$ <?php echo $row['balance_due']; ?></span>
                                                             </td>
                                                         </tr>
                                                     </tbody>
