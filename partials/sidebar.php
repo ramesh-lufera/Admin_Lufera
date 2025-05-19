@@ -49,7 +49,13 @@
                     <span>Website</span>
                 </a>
             </li>
-            <li class="dropdown">
+            <li>
+                <a href="#">
+                <iconify-icon icon="ion:megaphone-outline" class="menu-icon" /></iconify-icon>
+                    <span>Marketing</span>
+                </a>
+            </li>
+            <!-- <li class="dropdown">
                 <a href="javascript:void(0)">
                     <iconify-icon icon="hugeicons:source-code-circle" class="menu-icon"></iconify-icon>
                     <span>Domain</span>
@@ -62,6 +68,18 @@
                         <a href="#"><i class="ri-circle-fill circle-icon text-warning-main w-auto"></i> Get a new domain</a>
                     </li>
                 </ul>
+            </li> -->
+            <li>
+                <a href="#">
+                <iconify-icon icon="hugeicons:source-code-circle" class="menu-icon" /></iconify-icon>
+                    <span>Domain</span>
+                </a>
+            </li>
+            <li>
+                <a href="#">
+                    <iconify-icon icon="mage:database" class="menu-icon"></iconify-icon>
+                    <span>Hosting</span>
+                </a>
             </li>
             <li>
                 <a href="email.php">
@@ -69,12 +87,12 @@
                     <span>Email</span>
                 </a>
             </li>
-            <li>
+            <!-- <li>
                 <a href="chat-message.php">
                     <iconify-icon icon="bi:chat-dots" class="menu-icon"></iconify-icon>
                     <span>Chat</span>
                 </a>
-            </li>
+            </li> -->
             <!-- <li class="dropdown">
                 <a href="javascript:void(0)">
                     <iconify-icon icon="hugeicons:invoice-03" class="menu-icon"></iconify-icon>
@@ -95,6 +113,12 @@
                     </li>
                 </ul>
             </li> -->
+            <li>
+                <a href="orders.php">
+                    <iconify-icon icon="hugeicons:invoice-03" class="menu-icon"></iconify-icon>
+                    <span>Orders</span>
+                </a>
+            </li>
             <?php if($row['role']=="1") { ?>
             <li class="dropdown">
                 <a href="javascript:void(0)">
@@ -118,15 +142,9 @@
             </li>
             <?php } ?>
             <li>
-                <a href="orders.php">
-                    <iconify-icon icon="hugeicons:invoice-03" class="menu-icon"></iconify-icon>
-                    <span>Orders</span>
-                </a>
-            </li>
-            <li>
                 <a href="logout.php">
                     <iconify-icon icon="bi:x-circle" class="menu-icon"></iconify-icon>
-                    <span>Exit</span>
+                    <span>Log-Out</span>
                 </a>
             </li>
         </ul>
