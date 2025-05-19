@@ -14985,8 +14985,8 @@ td.fc-header-center {
     font-size: 1rem;
   }
 }
-.sidebar-menu li a:hover {
-  color: #fec700;
+.sidebar-menu li a:hover, .to-top-list li .hover-text-primary:hover {
+  color: #fec700 !important;
 }
 
 .sidebar-menu li a .menu-icon {
