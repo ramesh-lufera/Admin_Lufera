@@ -53,7 +53,9 @@
         if (mysqli_query($conn, $sql)) {
 
             // Generate a domain from the username
-            $domain = strtolower(preg_replace('/\s+/', '', $username)) . ".lufera.com";
+            // $domain = strtolower(preg_replace('/\s+/', '', $username)) . ".lufera.com";
+
+            $domain = "N/A";
 
             // Insert new website record
             $siteInsert = "INSERT INTO websites (user_id, domain, plan, status) 

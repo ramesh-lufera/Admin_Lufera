@@ -3,10 +3,11 @@
 <?php
   $Id = $_SESSION['user_id'];
 
-  $sql = "select user_id from users where id = $Id";
+  $sql = "select user_id, business_name from users where id = $Id";
   $res = $conn ->query($sql);
   $row = $res ->fetch_assoc();
   $UserId = $row['user_id'];
+  $BusinessName = $row['business_name'];
 
   // Get all websites for this user
   $sql = "SELECT * FROM websites WHERE user_id = '$UserId' ORDER BY created_at DESC";
@@ -250,7 +251,7 @@
 
     /* Increase font sizes */
     .site-info-header h6 {
-      font-size: 20px;
+      font-size: 20px !important;
     }
 
     .site-info-meta {
@@ -351,11 +352,8 @@
             <div class="site-info">
               <!-- Domain Title -->
               <div class="site-info-header">
-                <!-- <h6>
-                  <?php echo !empty($site['domain_title']) ? htmlspecialchars($site['domain_title']) : 'Untitled Website'; ?>
-                </h6> -->
                 <h6>
-                  Lufera Infotech
+                  <?php echo htmlspecialchars($BusinessName); ?>
                 </h6>
               </div>
               <!-- Website (no link, color applied only to domain text) -->
@@ -366,10 +364,12 @@
                 </span>
               </div>
               <!-- Expiry Date (normal text, larger font) -->
-              <div class="site-info-meta <?php echo 'domain-text-' . $status; ?>">
+              <div class="site-info-meta domain-text-<?php echo $status; ?>">
                 <strong>Expires:</strong>
                 <?php 
-                  if (!empty($site['created_at']) && $site['created_at'] != '0000-00-00 00:00:00') {
+                  if ($status === 'pending') {
+                    echo 'Approval Pending';
+                  } elseif (!empty($site['created_at']) && $site['created_at'] != '0000-00-00 00:00:00') {
                     echo date('d-m-Y', strtotime($site['created_at']));
                   } else {
                     echo "N/A";
@@ -379,7 +379,8 @@
             </div>
             <div class="manage-btn-wrapper">
               <div class="plan">Plan: <?php echo htmlspecialchars($site['plan']); ?></div>
-              <a href="dashboard.php?site=<?php echo urlencode($site['domain']); ?>" class="dashboard-btn">Manage</a>
+              <!-- <a href="dashboard.php?site=<?php echo urlencode($site['domain']); ?>" class="dashboard-btn">Manage</a> -->
+              <a href="#" class="dashboard-btn">Manage</a>
             </div>
           </div>
         <?php endforeach; ?>
