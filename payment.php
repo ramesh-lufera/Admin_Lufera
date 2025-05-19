@@ -6,8 +6,16 @@
         padding: 15px 0;
     }
 </style>
-<script src='https://cdn.jsdelivr.net/npm/sweetalert2@11'></script>
 <?php
+    $Id = $_SESSION['user_id'];
+    
+    $sql = "select user_id, username, role, photo from users where id = $Id";
+    $result = $conn ->query($sql);
+    $row = $result ->fetch_assoc();
+    $role = $row['role'];
+    $UserId = $row['user_id'];
+    $username = $row['username'];
+    $photo = !empty($row['photo']) ? $row['photo'] : 'assets/images/user1.png';
 
     if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $plan_name = $_POST['plan_name'];
@@ -35,42 +43,44 @@
         $result = mysqli_query($conn, $sql);
         $row = mysqli_fetch_assoc($result);
         $client_id = $row['user_id'];
+        $gst = $_POST['gst'];
+        $discount = $payment_made = NULL;
+ 
+        $sql = "INSERT INTO orders (user_id, invoice_id, plan, duration, amount, gst, price, status, payment_method, discount, payment_made, created_on, subtotal, balance_due) VALUES 
+                ('$client_id', '$rec_id', '$plan_name', '$duration' ,'$total_price', '$gst', '$price', 'Pending', '$pay_method', '$discount', '$payment_made', '$created_at', '$total_price', '$total_price')";
 
-        $sql = "INSERT INTO orders (user_id, invoice_id, plan, duration, amount, price, status, payment_method, created_on) VALUES 
-                                   ('$client_id', '$rec_id', '$plan_name', '$duration' ,'$total_price', '$price', 'Pending', '$pay_method', '$created_at')";
+
+        if (mysqli_query($conn, $sql)) {
+
+            // Generate a domain from the username
+            $domain = strtolower(preg_replace('/\s+/', '', $username)) . ".lufera.com";
+
+            // Insert new website record
+            $siteInsert = "INSERT INTO websites (user_id, domain, plan, status) 
+                        VALUES ('$client_id', '$domain', '$plan_name', 'Pending')";
+            mysqli_query($conn, $siteInsert);
 
 
-if (mysqli_query($conn, $sql)) {
-    echo "
-    <script>
-        Swal.fire({
-            title: 'Success!',
-            text: 'Invoice Created Successfully.',
-            confirmButtonText: 'OK'
-        }).then((result) => {
-            if (result.isConfirmed) {
-                window.location.href = 'invoice-preview.php?id=$rec_id';
-            }
-        });
-    </script>";
-} else {
-    echo "<script>
-        alert('Error: " . $stmt->error . "');
-        window.history.back();
-    </script>";
+            echo "
+            <script>
+                Swal.fire({
+                    title: 'Success!',
+                    text: 'Invoice Created Successfully.',
+                    confirmButtonText: 'OK',
+                    allowOutsideClick: false
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        window.location.href = 'invoice-preview.php?id=$rec_id';
+                    }
+                });
+            </script>";
+        } else {
+            echo "<script>
+                alert('Error: " . $stmt->error . "');
+                window.history.back();
+            </script>";
+        }
 }
-}
-    
-    $Id = $_SESSION['user_id'];
-    
-    $sql = "select user_id, username, role, photo from users where id = $Id";
-    $result = $conn ->query($sql);
-    $row = $result ->fetch_assoc();
-    $role = $row['role'];
-    $UserId = $row['user_id'];
-    $username = $row['username'];
-    $photo = !empty($row['photo']) ? $row['photo'] : 'assets/images/user1.png';
-
     // USER sends payment request (→ notify all admins)
     if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save']) && $role != '1') {
         $msg = "$username has sent a payment request.";
