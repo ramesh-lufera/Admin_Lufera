@@ -55,7 +55,6 @@ function generateRandomPassword($length = 10) {
 $generatedPassword = generateRandomPassword();
 ?>
 <?php include './partials/layouts/layoutTop.php' ?>
-<script src='https://cdn.jsdelivr.net/npm/sweetalert2@11'></script>
 <?php
 
 ini_set('display_errors', 1);
@@ -80,7 +79,7 @@ error_reporting(E_ALL);
         $method = "2";
         $role = $_POST['role'];
         $created_at = date("Y-m-d H:i:s");
-        $photo = $google_photo = NULL;
+        $photo = NULL;
         function generateUserId() {
             $letters = substr(str_shuffle('ABCDEFGHIJKLMNOPQRSTUVWXYZ'), 0, 3);
             $numbers = substr(str_shuffle('0123456789'), 0, 3);
