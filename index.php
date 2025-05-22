@@ -1,25 +1,25 @@
 <?php
     session_start();
 
-    //require_once 'vendor/autoload.php';
+    require_once 'vendor/autoload.php';
     include './partials/connection.php';
 
-    // $dotenv = Dotenv\Dotenv::createImmutable(__DIR__);
-    // $dotenv->load();
+    $dotenv = Dotenv\Dotenv::createImmutable(__DIR__);
+    $dotenv->load();
 
-    // // Google Client setup
-    // $client = new Google_Client();
-    // $client->setClientId($_ENV['GOOGLE_CLIENT_ID']);
-    // $client->setClientSecret($_ENV['GOOGLE_CLIENT_SECRET']);
-    // $client->setRedirectUri('http://localhost/Admin_Lufera/sign-in-redirect.php');
-    // // $client->setRedirectUri('https://admin.luferatech.com/sign-in-redirect.php');
-    // $client->addScope('email');
-    // $client->addScope('profile');
+    // Google Client setup
+    $client = new Google_Client();
+    $client->setClientId($_ENV['GOOGLE_CLIENT_ID']);
+    $client->setClientSecret($_ENV['GOOGLE_CLIENT_SECRET']);
+    $client->setRedirectUri('http://localhost/Admin_Lufera/sign-in-redirect.php');
+    // $client->setRedirectUri('https://admin.luferatech.com/sign-in-redirect.php');
+    $client->addScope('email');
+    $client->addScope('profile');
 
-    // // Force account selection every time
-    // $client->setPrompt('select_account');
+    // Force account selection every time
+    $client->setPrompt('select_account');
 
-    // $loginUrl = $client->createAuthUrl();
+    $loginUrl = $client->createAuthUrl();
 ?>
 
 <!-- meta tags and other links -->

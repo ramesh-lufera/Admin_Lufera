@@ -98,14 +98,10 @@
         }
     }
 
-    // Google Client Setup (to create sign-in URL)
-    $client = new Google_Client();
-    $client->setClientId($_ENV['GOOGLE_CLIENT_ID']);
-    $client->setClientSecret($_ENV['GOOGLE_CLIENT_SECRET']);
-    $client->setRedirectUri('http://localhost/Admin_Lufera/sign-up-redirect.php');
+    // Google Client Configuration
+    require './partials/google-config.php';
     // $client->setRedirectUri('https://admin.luferatech.com/sign-up-redirect.php');
-    $client->addScope('email');
-    $client->addScope('profile');
+    $client->setRedirectUri('http://localhost/Admin_Lufera/sign-up-redirect.php');
 
     // Force account selection every time
     $client->setPrompt('select_account');

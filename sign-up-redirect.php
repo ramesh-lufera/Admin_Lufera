@@ -7,13 +7,9 @@
     $dotenv->load();
 
     // Google Client Configuration
-    $client = new Google_Client();
-    $client->setClientId($_ENV['GOOGLE_CLIENT_ID']);
-    $client->setClientSecret($_ENV['GOOGLE_CLIENT_SECRET']);
-    $client->setRedirectUri('http://localhost/Admin_Lufera/sign-up-redirect.php');
+    require './partials/google-config.php';
     // $client->setRedirectUri('https://admin.luferatech.com/sign-up-redirect.php');
-    $client->addScope('email');
-    $client->addScope('profile');
+    $client->setRedirectUri('http://localhost/Admin_Lufera/sign-up-redirect.php');
 
     if (isset($_GET['code'])) {
         $token = $client->fetchAccessTokenWithAuthCode($_GET['code']);
@@ -22,37 +18,33 @@
         $google_service = new Google_Service_Oauth2($client);
         $google_user = $google_service->userinfo->get();
 
+        $fname = $google_user->givenName;
+        $lname = $google_user->familyName;
         $email = $google_user->email;
         $username = explode('@', $email)[0];
         $password = '';
-        $first_name = $google_user->name;
-        $nameParts = explode(' ', trim($first_name));
-        $fname = $nameParts[0];
         $phone = '';
         $created_at = date("Y-m-d H:i:s");
         $method = "1";
         $role = "user";
         $photo = $google_user->picture;
-        $lname = $business_name = $address = $city = $state = $country = $pincode = $dob = null;
+        $business_name = $address = $city = $state = $country = $pincode = $dob = null;
 
-        // Check if user already exists
-        $stmt = $conn->prepare("SELECT id, username, photo FROM users WHERE email = ?");
+        // Check if user exists
+        $stmt = $conn->prepare("SELECT id, username FROM users WHERE email = ?");
         $stmt->bind_param("s", $email);
         $stmt->execute();
-        $result = $stmt->get_result();
+        $stmt->store_result();
 
-        if ($user = $result->fetch_assoc()) {
+        if ($stmt->num_rows > 0) {
             // User exists - log in
             $_SESSION['user_id'] = $user['id'];
             $_SESSION['username'] = $user['username'];
 
-            // Update the photo column with the Google photo if it's not already the same
-            if ($user['photo'] !== $photo) {
-                $updateStmt = $conn->prepare("UPDATE users SET photo = ? WHERE email = ?");
-                $updateStmt->bind_param("ss", $photo, $email);
-                $updateStmt->execute();
-                $updateStmt->close();
-            }
+            // User exists: update photo
+            $update = $conn->prepare("UPDATE users SET photo = ? WHERE email = ?");
+            $update->bind_param("ss", $photo, $email);
+            $update->execute();
         } else {
             // User doesn't exist - insert new
             function generateUserId() {
@@ -63,16 +55,14 @@
             
             $newUserId = generateUserId();
 
-            $stmt = $conn->prepare("INSERT INTO users (user_id, username, email, phone, password, first_name,last_name,business_name,address,city,state,country,pincode,dob,created_at,method,role,photo ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-            $stmt->bind_param("ssssssssssssssssss", $newUserId, $username, $email, $phone, $password, $fname, $lname, $business_name, $address, $city, $state, $country, $pincode, $dob, $created_at, $method, $role, $photo);
-            $stmt->execute();
-    
-            $_SESSION['user_id'] = $stmt->insert_id;
+            $insert = $conn->prepare("INSERT INTO users (user_id, username, email, phone, password, first_name, last_name, business_name, address, city, state, country, pincode, dob, created_at, method, role, photo) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+            $insert->bind_param("ssssssssssssssssss", $newUserId, $username, $email, $phone, $password, $fname, $lname, $business_name, $address, $city, $state, $country, $pincode, $dob, $created_at, $method, $role, $photo);
+            $insert->execute();
+
+            $_SESSION['user_id'] = $insert->insert_id;
             $_SESSION['username'] = $username;
-            $_SESSION['photo'] = $photo;
         }
 
-        $stmt->close();
         header('Location: admin-dashboard.php');
         exit;
     } else {

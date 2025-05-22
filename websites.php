@@ -280,6 +280,12 @@
       color: #f44336;
     }
 
+    .no-website {
+      justify-content: center;
+      font-size: 18px; 
+      color: #888;
+    }
+
     /* Responsive */
     @media (max-width: 700px) {
       .list-item {
@@ -323,7 +329,7 @@
   </div>
 
   <!-- Search + Add -->
-  <div class="search-card">
+  <div class="search-card bg-base">
     <div class="search-container">
       <span class="search-icon">&#128269;</span>
       <input type="text" id="searchInput" placeholder="Search websites..." />
@@ -337,7 +343,7 @@
 
     <div class="list-wrapper" id="websiteList">
       <?php if (empty($websitesOnPage)): ?>
-        <div class="list-item" style="justify-content: center; font-size: 18px; color: #888;">
+        <div class="list-item bg-base no-website">
           No websites found.
         </div>
       <?php else: ?>
@@ -348,7 +354,7 @@
             if ($status === 'active') $statusClass = 'status-active';
             elseif ($status === 'expired') $statusClass = 'status-expired';
           ?>
-          <div class="list-item <?php echo $statusClass; ?>">
+          <div class="list-item bg-base <?php echo $statusClass; ?>">
             <div class="site-info">
               <!-- Domain Title -->
               <div class="site-info-header">
@@ -380,7 +386,7 @@
             <div class="manage-btn-wrapper">
               <div class="plan">Plan: <?php echo htmlspecialchars($site['plan']); ?></div>
               <!-- <a href="dashboard.php?site=<?php echo urlencode($site['domain']); ?>" class="dashboard-btn">Manage</a> -->
-              <a href="#" class="dashboard-btn">Manage</a>
+              <a href="websites-details.php" class="dashboard-btn">Manage</a>
             </div>
           </div>
         <?php endforeach; ?>

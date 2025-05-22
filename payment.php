@@ -44,7 +44,7 @@
         $row = mysqli_fetch_assoc($result);
         $client_id = $row['user_id'];
         $gst = $_POST['gst'];
-        $discount = $payment_made = NULL;
+        $discount = $payment_made = "0";
  
         $sql = "INSERT INTO orders (user_id, invoice_id, plan, duration, amount, gst, price, status, payment_method, discount, payment_made, created_on, subtotal, balance_due) VALUES 
                 ('$client_id', '$rec_id', '$plan_name', '$duration' ,'$total_price', '$gst', '$price', 'Pending', '$pay_method', '$discount', '$payment_made', '$created_at', '$total_price', '$total_price')";
@@ -58,8 +58,8 @@
             $domain = "N/A";
 
             // Insert new website record
-            $siteInsert = "INSERT INTO websites (user_id, domain, plan, status) 
-                        VALUES ('$client_id', '$domain', '$plan_name', 'Pending')";
+            $siteInsert = "INSERT INTO websites (user_id, domain, plan, duration, status) 
+                        VALUES ('$client_id', '$domain', '$plan_name', '$duration', 'Pending')";
             mysqli_query($conn, $siteInsert);
 
 
