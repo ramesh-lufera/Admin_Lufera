@@ -30,7 +30,7 @@ if (isset($_POST['id'])) {
                         </li>
                         <li class='d-flex align-items-center gap-1 mb-12'>
                             <span class='w-30 text-md fw-semibold text-primary-light'>Date of Birth</span>
-                            <span class='w-70 text-secondary-light fw-medium'>: " . htmlspecialchars($user['dob']) . "</span>
+                            <span class='w-70 text-secondary-light fw-medium'>: " . date('d/m/Y', strtotime($user['dob'])) . "</span>
                         </li>
                         <li class='d-flex align-items-center gap-1 mb-12'>
                             <span class='w-30 text-md fw-semibold text-primary-light'>Address</span>
