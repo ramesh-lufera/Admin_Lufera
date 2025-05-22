@@ -77,7 +77,7 @@
                                                     <input type="hidden" name="plan_name" value="Personal">
                                                     <input type="hidden" name="price" value="2000">
                                                     <input type="hidden" name="duration" value="1 Year">
-                                                    
+                                                    <input type="hidden" name="created_on" value="<?php echo date("Y-m-d"); ?>">
                                                     <button type="submit" class="lufera-bg text-center text-white text-sm btn-sm px-12 py-10 w-100 radius-8 mt-28">Get started</button>
                                                 </form>
                                             </div>
@@ -133,7 +133,7 @@
                                                     <input type="hidden" name="plan_name" value="Business">
                                                     <input type="hidden" name="price" value="3000">
                                                     <input type="hidden" name="duration" value="1 Year">
-                                                    
+                                                    <input type="hidden" name="created_on" value="<?php echo date("Y-m-d"); ?>">
                                                     <button type="submit" class="lufera-bg text-center text-white text-sm btn-sm px-12 py-10 w-100 radius-8 mt-28">Get started</button>
                                                 </form>
                                             </div>
@@ -188,7 +188,7 @@
                                                     <input type="hidden" name="plan_name" value="Business Pro">
                                                     <input type="hidden" name="price" value="4000">
                                                     <input type="hidden" name="duration" value="1 Year">
-                                                    
+                                                    <input type="hidden" name="created_on" value="<?php echo date("Y-m-d"); ?>">
                                                     <button type="submit" class="lufera-bg text-center text-white text-sm btn-sm px-12 py-10 w-100 radius-8 mt-28">Get started</button>
                                                 </form>
                                             </div>
@@ -247,7 +247,7 @@
                                                     <input type="hidden" name="plan_name" value="Personal">
                                                     <input type="hidden" name="price" value="3500">
                                                     <input type="hidden" name="duration" value="3 Years">
-                                                    
+                                                    <input type="hidden" name="created_on" value="<?php echo date("Y-m-d"); ?>">
                                                     <button type="submit" class="lufera-bg text-center text-white text-sm btn-sm px-12 py-10 w-100 radius-8 mt-28">Get started</button>
                                                 </form>
                                             </div>
@@ -303,7 +303,7 @@
                                                     <input type="hidden" name="plan_name" value="Bussiness">
                                                     <input type="hidden" name="price" value="5000">
                                                     <input type="hidden" name="duration" value="3 Years">
-                                                    
+                                                    <input type="hidden" name="created_on" value="<?php echo date("Y-m-d"); ?>">
                                                     <button type="submit" class="lufera-bg text-center text-white text-sm btn-sm px-12 py-10 w-100 radius-8 mt-28">Get started</button>
                                                 </form>
                                             </div>
@@ -358,7 +358,7 @@
                                                     <input type="hidden" name="plan_name" value="Bussiness Pro">
                                                     <input type="hidden" name="price" value="6000">
                                                     <input type="hidden" name="duration" value="3 Years">
-                                                    
+                                                    <input type="hidden" name="created_on" value="<?php echo date("Y-m-d"); ?>">
                                                     <button type="submit" class="lufera-bg text-center text-white text-sm btn-sm px-12 py-10 w-100 radius-8 mt-28">Get started</button>
                                                 </form>
                                             </div>

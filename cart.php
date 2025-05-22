@@ -26,7 +26,7 @@
         $plan_name = $_POST['plan_name'];
         $price = $_POST['price'];
         $duration = $_POST['duration'];
-
+        $created_on = $_POST['created_on'];
         $gst = $price * 0.18; // 10% GST
         $total_price = $price + $gst;
         $auto_id = rand(10000000, 99999999);
@@ -51,7 +51,7 @@
                                     <td>Validity</td>
                                     <td>
                                         <?php
-                                            $start_date = new DateTime($row['created_on']);
+                                            $start_date = new DateTime($created_on);
 
                                             // Parse duration (assumes format like '1 year', '6 months', '2 weeks', etc.)
                                             $duration_str = $duration;
