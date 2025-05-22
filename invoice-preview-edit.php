@@ -216,7 +216,7 @@ input[type=number] {
                                                                     <span class="text-primary-light fw-semibold">Payment Made</span>
                                                                 </td>
                                                                 <td class="border-bottom p-8">
-                                                                    <input type="text" id="numericInputs" class="border-1 radius-8 px-10" name="payment_made" style="width:100px; " value="<?php echo $row['payment_made'] ?>">
+                                                                    <input type="text" id="numericInputs" name="payment_made" style="width:100px; " value="<?php echo $row['payment_made'] ?>" readonly>
                                                                 </td>
                                                             </tr>
                                                             <tr>
@@ -271,10 +271,10 @@ input[type=number] {
     const total = newSubtotal + gst;
     const balance_due = total - paymentMade;
 
-    document.getElementById("subtotal").value = " " + newSubtotal.toFixed(2);
-    document.getElementById("gst").value = " " + gst.toFixed(2);
-    document.getElementById("total").value = " " + total.toFixed(2);
-    document.getElementById("balance_due").value = " " + balance_due.toFixed(2);
+    document.getElementById("subtotal").value = " " + newSubtotal;
+    document.getElementById("gst").value = " " + gst;
+    document.getElementById("total").value = " " + total;
+    document.getElementById("balance_due").value = " " + balance_due;
   }
 
   discountInput.addEventListener("input", function () {

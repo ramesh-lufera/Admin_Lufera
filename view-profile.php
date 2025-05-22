@@ -34,7 +34,6 @@
     </script>';?>
 
 <?php include './partials/layouts/layoutTop.php' ?>
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <style>
 .toggle-password{
     top:23px !important;

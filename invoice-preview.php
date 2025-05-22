@@ -24,6 +24,11 @@
     $result = $conn->query($invoice);
     $row = $result->fetch_assoc();
     $user_id = $row['user_id'];
+
+    $userId = $_SESSION['user_id'];
+    $session_user = "select * from users where id = $userId";
+    $result2 = $conn->query($session_user);
+    $row2 = $result2->fetch_assoc();
     
     $user = "select * from users where user_id = '$user_id'"; 
     $results = $conn->query($user);
@@ -40,7 +45,7 @@
                 <div class="card-header">
                     <div class="d-flex flex-wrap align-items-center justify-content-end gap-2">
                     <?php 
-                    if($rows['role'] == "1") {?>  
+                    if($row2['role'] == "1") {?>  
                     <a href="invoice-preview-edit.php?id=<?php echo $invoice_id; ?>">  
                         <button type="button" class="btn btn-sm btn-success radius-8 d-inline-flex align-items-center gap-1" >
                             <iconify-icon icon="basil:edit-outline" class="text-xl"></iconify-icon>
@@ -159,7 +164,7 @@
                                                         </tr>
                                                         <tr>
                                                             <td class="pe-64 border-bottom p-8">
-                                                                <span class="text-primary-light fw-semibold">Total</span>
+                                                                <span class="text-primary-light">Total</span>
                                                             </td>
                                                             <td class="border-bottom p-8">
                                                                 <span class="text-primary-light fw-semibold">$ <?php echo $row['amount']; ?></span>
@@ -167,7 +172,9 @@
                                                         </tr>
                                                         <?php if($row['payment_made'] != null){ ?>
                                                         <tr>
-                                                            <td class="pe-64 border-bottom p-8">Payment Made</td>
+                                                            <td class="pe-64 border-bottom p-8">
+                                                                <span class="text-primary-light">Payment Made</span>
+                                                            </td>
                                                             <td class="border-bottom p-8">
                                                                 <span class="text-primary-light fw-semibold">$ <?php echo $row['payment_made']; ?></span>
                                                             </td>
@@ -175,7 +182,7 @@
                                                         <?php } ?>
                                                         <tr>
                                                             <td class="pe-64 border-bottom p-8">
-                                                                <span class="text-primary-light fw-semibold">Balance Due</span>
+                                                                <span class="text-primary-light">Balance Due</span>
                                                             </td>
                                                             <td class="border-bottom p-8">
                                                                 <span class="text-primary-light fw-semibold">$ <?php echo $row['balance_due']; ?></span>
