@@ -122,7 +122,7 @@
 
         if($row["username"] && $row["email"] && $row["phone"] && $row["first_name"] && $row["last_name"] && $row["business_name"] && $row["address"] && $row["city"] && $row["state"] && $row["country"] && $row["pincode"] != ""){
     ?>
-    <form action="payment.php" method="POST">
+    <form action="cart-payment.php" method="POST">
         <input type="hidden" name="plan_name" value="<?php echo $plan_name; ?>">
         <input type="hidden" name="price" value="<?php echo $price; ?>">
         <input type="hidden" name="duration" value="<?php echo $duration; ?>">

@@ -6,14 +6,10 @@
     $dotenv = Dotenv\Dotenv::createImmutable(__DIR__);
     $dotenv->load();
 
-    // Google Client setup
-    $client = new Google_Client();
-    $client->setClientId($_ENV['GOOGLE_CLIENT_ID']);
-    $client->setClientSecret($_ENV['GOOGLE_CLIENT_SECRET']);
-    $client->setRedirectUri('http://localhost/Admin_Lufera/sign-in-redirect.php');
+    // Google Client Configuration
+    require './partials/google-config.php';
     // $client->setRedirectUri('https://admin.luferatech.com/sign-in-redirect.php');
-    $client->addScope('email');
-    $client->addScope('profile');
+    $client->setRedirectUri('http://localhost/Admin_Lufera/sign-in-redirect.php');
 
     function generateUserId() {
         $letters = substr(str_shuffle('ABCDEFGHIJKLMNOPQRSTUVWXYZ'), 0, 3);
@@ -21,8 +17,8 @@
         return $letters . $numbers;
     }
 
-$newUserId = generateUserId();
-$method = "1";
+    $newUserId = generateUserId();
+    $method = "1";
 
 if (isset($_GET['code'])) {
     $token = $client->fetchAccessTokenWithAuthCode($_GET['code']);
@@ -32,50 +28,54 @@ if (isset($_GET['code'])) {
         $google_service = new Google_Service_Oauth2($client);
         $userInfo = $google_service->userinfo->get();
 
+        $fname = $userInfo->givenName;
+        $lname = $userInfo->familyName;
         $email = $userInfo->email;
-        // $username = $userInfo->name;
-        $username = explode('@', $email)[0]; // Username from email
+        $username = explode('@', $email)[0];
+        $password = '';
+        $phone = '';
+        $created_at = date("Y-m-d H:i:s");
+        $method = "1";
+        $role = "user";
         $google_photo = $userInfo->picture;
+        $business_name = $address = $city = $state = $country = $pincode = $dob = null;
 
         // Check if user exists
-        $stmt = $conn->prepare("SELECT id, username, photo FROM users WHERE email = ?");
+        $stmt = $conn->prepare("SELECT id FROM users WHERE email = ?");
         $stmt->bind_param("s", $email);
         $stmt->execute();
         $stmt->store_result();
 
-        if ($stmt->num_rows == 0) {
-            // New user, insert into database
-            // $stmt_insert = $conn->prepare("INSERT INTO users (username, email, password) VALUES (?, ?, ?)");
-            // $stmt_insert->bind_param("sss", $username, $email, $password);
-            $stmt_insert = $conn->prepare("INSERT INTO users (user_id, username, email, phone, password, first_name,last_name,business_name,address,city,state,country,pincode,dob,created_at,method,role, photo ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-            $stmt_insert->bind_param("ssssssssssssssssss", $newUserId, $username, $email, $phone, $password, $fname, $lname, $business_name, $address, $city, $state, $country, $pincode, $dob, $created_at, $method, $role, $google_photo);
-            $stmt_insert->execute();
-            $stmt_insert->close();
+        if ($stmt->num_rows > 0) {
+            // User exists: update photo
+            $update = $conn->prepare("UPDATE users SET photo = ? WHERE email = ?");
+            $update->bind_param("ss", $google_photo, $email);
+            $update->execute();
         } else {
-            // Existing user: Update the photo column with the Google photo (regardless of previous photo)
-            $stmt_update = $conn->prepare("UPDATE users SET photo = ? WHERE email = ?");
-            $stmt_update->bind_param("ss", $google_photo, $email);
-            $stmt_update->execute();
-            $stmt_update->close();
+            // Insert new user
+            $insert = $conn->prepare("INSERT INTO users (user_id, username, email, phone, password, first_name, last_name, business_name, address, city, state, country, pincode, dob, created_at, method, role, photo) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+            $insert->bind_param("ssssssssssssssssss", $newUserId, $username, $email, $phone, $password, $fname, $lname, $business_name, $address, $city, $state, $country, $pincode, $dob, $created_at, $method, $role, $google_photo);
+            $insert->execute();
         }
 
-        // Get user ID, username, and the updated photo
-        $stmt2 = $conn->prepare("SELECT id, username, photo FROM users WHERE email = ?");
-        $stmt2->bind_param("s", $email);
-        $stmt2->execute();
-        $stmt2->bind_result($id, $usernameFetched, $currentPhoto);
-        $stmt2->fetch();
-        $stmt2->close();
+        // Get user ID and username
+        $stmt1 = $conn->prepare("SELECT id, username FROM users WHERE email = ?");
+        $stmt1->bind_param("s", $email);
+        $stmt1->execute();
+        $stmt1->bind_result($id, $username);
+        $stmt1->fetch();
+        $stmt1->close();
 
         // Store in session
         $_SESSION['user_id'] = $id;
         $_SESSION['email'] = $email;
-        $_SESSION['username'] = $usernameFetched;
-        $_SESSION['photo'] = $currentPhoto;
+        $_SESSION['username'] = $username;
 
         // Redirect to dashboard
         header("Location: admin-dashboard.php");
         exit;
+    } else {
+        echo "Google login failed.";
     }
 }
 
