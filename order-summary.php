@@ -108,7 +108,7 @@
                             <div class="col-sm-6">
                                 <div class="mb-20">
                                     <label for="" class="form-label fw-semibold text-primary-light text-sm mb-8">Payment Method <span class="text-danger-600">*</span></label>
-                                    <select class="form-control" name="payment_method" required>
+                                    <select class="form-control" name="payment_method" required <?php echo $row['balance_due'] == "0" ? 'disabled' : ''; ?> >
                                         <option value="">Select payment method</option>
                                         <option value="Cash">Cash</option>
                                         <option value="Card">Card</option>
@@ -123,7 +123,7 @@
                                     
                                     <input type="hidden" class="form-control radius-8" name="payment_made" id="payment_made" value="<?php echo $row['payment_made'] ?>">
 
-                                    <input type="text" class="form-control radius-8" name="amount" id="numericInput" required>
+                                    <input type="text" class="form-control radius-8" name="amount" id="numericInput" required <?php echo $row['balance_due'] == "0" ? 'readonly' : ''; ?> >
                                     
                                     <input type="hidden" class="form-control radius-8" name="balance_due" id="balance_due" value="<?php echo $row['balance_due'] ?>">
                                 </div>
@@ -131,9 +131,13 @@
                             <div class="col-sm-6">
                                 <div class="mb-20">
                                     <label for="" class="form-label fw-semibold text-primary-light text-sm mb-8">Remarks <span class="text-danger-600">*</span></label>
-                                    <input type="text" class="form-control radius-8" name="remarks" value="" required>
+                                    <input type="text" class="form-control radius-8" name="remarks" value="" required <?php echo $row['balance_due'] == "0" ? 'readonly' : ''; ?> >
                                 </div>
                             </div>
+
+                            <?php if ($row['balance_due'] == '0') { ?>
+                                <p class="text-danger">Payment fully paid</p>
+                                <?php } ?>
                         </div>
                     </div>
                     <div class="modal-footer d-flex align-items-center justify-content-center gap-3">

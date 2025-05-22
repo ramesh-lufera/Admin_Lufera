@@ -74,7 +74,7 @@
 
     $Id = $_SESSION['user_id'];
     
-    $sql = "select user_id, role, photo from users where id = $Id";
+    $sql = "select * from users where id = $Id";
     $result = $conn ->query($sql);
     $row = $result ->fetch_assoc();
     $role = $row['role'];
@@ -110,6 +110,8 @@
         orders.status,
         orders.created_on,
         users.username,
+        users.first_name,
+        users.last_name,
         users.photo
     FROM orders
     INNER JOIN users ON orders.user_id = users.user_id
@@ -161,16 +163,17 @@
                 </div> -->
             </div>
             <div class="card-body">
+            <div class="table-responsive scroll-sm">
                 <table class="table bordered-table mb-0" id="userTable">
                     <thead>
                         <tr>
                             
                             <th scope="col">Invoice ID</th>
-                            <th scope="col">Name</th>
-                            <th scope="col">Date</th>
-                            <th scope="col">Amount</th>
-                            <th scope="col">Status</th>
-                            <th scope="col">Action</th>
+                            <th scope="col" class="text-center" style="width:250px">Name</th>
+                            <th scope="col" class="text-center">Date</th>
+                            <th scope="col" class="text-center">Amount</th>
+                            <th scope="col" class="text-center">Status</th>
+                            <th scope="col" class="text-center">Action</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -186,38 +189,46 @@
                             <td>
                                 <div class="d-flex align-items-center">
                                     <img src="<?= $photo ?>" alt="" class="flex-shrink-0 me-12 radius-8" style="width: 40px; height: 40px;">
-                                    <h6 class="text-md mb-0 fw-medium flex-grow-1"><?php echo $row['username']; ?></h6>
+                                    <h6 class="text-md mb-0 fw-medium flex-grow-1"><?php echo $row['first_name']; ?> <?php echo $row['last_name']; ?></h6>
                                 </div>
                             </td>
-                            <td><?= date('d M Y', strtotime($row['created_on'])) ?></td>
-                            <td>$ <?= number_format($row['amount'], 2) ?></td>
+                            <td class="text-center"><?= date('d M Y', strtotime($row['created_on'])) ?></td>
+                            <td class="text-center">$ <?= number_format($row['amount'], 2) ?></td>
                             <!-- <td> <span class="bg-success-focus text-success-main px-24 py-4 rounded-pill fw-medium text-sm">Paid</span> </td> -->
                             <!-- <td>
                                 <a href="javascript:void(0)" class="btn btn-success btn-sm fw-medium text-white me-2" id="approveButton" onclick="approveAction()">
                                     Approve
                                 </a>
                             </td> -->
-                            <td>
-                                <?php if ($role === '1' && $row['status'] === 'Pending'): ?>
-                                    <form method="POST" style="display:inline;">
-                                        <input type="hidden" name="approve_id" value="<?= $row['id'] ?>">
-                                        <button type="submit" class="btn btn-success btn-sm fw-medium text-white me-2">
-                                            Approve
-                                        </button>
-                                    </form>
-                                <?php else: ?>
-                                    <button class="btn btn-secondary btn-sm fw-medium text-white me-2" disabled>
-                                        <?= ucfirst($row['status']) ?>
+                            <td class="text-center">
+                                <?php if ($role === '1' && $row['status'] === 'Pending'){ ?>
+                                    
+                                    <input type="hidden" name="approve_id" value="<?= $row['id'] ?>">
+                                    <button class="btn btn-danger btn-sm fw-medium text-white me-2">
+                                            New Order
                                     </button>
-                                <?php endif; ?>
+                                <?php } else if($role != '1' && $row['status'] === 'Pending'){ ?>
+                                    <button class="btn btn-danger btn-sm fw-medium text-white me-2">
+                                        Pending Confirmation
+                                    </button>
+                                <?php } ?>
                             </td>
-                            <td>
+                            <td class="text-center">
                                 <a href="order-summary.php?id=<?php echo $row['invoice_id']; ?>" class="w-32-px h-32-px bg-primary-light text-primary-600 rounded-circle d-inline-flex align-items-center justify-content-center">
                                     <iconify-icon icon="iconamoon:eye-light"></iconify-icon>
                                 </a>
-                                <a href="invoice-preview.php?id=<?php echo $row['invoice_id']; ?>" class="w-32-px h-32-px bg-success-focus text-success-main rounded-circle d-inline-flex align-items-center justify-content-center">
+                                <a href="invoice-preview.php?id=<?php echo $row['invoice_id']; ?>" class="w-32-px h-32-px bg-warning-focus text-warning-main rounded-circle d-inline-flex align-items-center justify-content-center">
                                     <iconify-icon icon="iconamoon:invoice"></iconify-icon>
                                 </a>
+
+                                <?php if ($role === '1' && $row['status'] === 'Pending'){ ?>
+                                    <form method="POST" style="display:inline;">
+                                        <input type="hidden" name="approve_id" value="<?= $row['id'] ?>">
+                                        <button type="submit" class="w-32-px h-32-px bg-success-focus text-success-main rounded-circle d-inline-flex align-items-center justify-content-center mb-8">
+                                        <iconify-icon icon="iconamoon:check"></iconify-icon>
+                                        </button>
+                                    </form>
+                                <?php } ?>
                                 <!-- <a href="javascript:void(0)" class="w-32-px h-32-px bg-success-focus text-success-main rounded-circle d-inline-flex align-items-center justify-content-center">
                                     <iconify-icon icon="lucide:edit"></iconify-icon>
                                 </a>
@@ -234,6 +245,7 @@
                         <?php endif; ?>
                     </tbody>
                 </table>
+            </div>
 
                 <!-- <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mt-24">
                     <span>Showing 1 to 10 of 12 entries</span>
