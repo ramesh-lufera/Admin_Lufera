@@ -128,6 +128,7 @@
         <input type="hidden" name="duration" value="<?php echo $duration; ?>">
         <input type="hidden" name="total_price" value="<?php echo $total_price; ?>">
         <input type="hidden" name="receipt_id" value="<?php echo $auto_id; ?>">
+        <input type="hidden" name="created_on" value="<?php echo $created_on; ?>">
         
         <button type="submit" class="lufera-bg text-center btn-sm px-12 py-10 float-end" style="width:150px; border: 1px solid #000">Continue</button>
     </form>
