@@ -26,11 +26,11 @@
         $payment_made = $_POST['payment_made'];
 
         $total_amount = $amount + $payment_made;
-
+        $created_at = date("Y-m-d H:i:s");
         $remarks = $_POST['remarks'];
         $balance_due = $_POST['balance_due'];
-        $sql = "INSERT INTO record_payment (orders_id, invoice_no, payment_method, amount, remarks) 
-                        VALUES ('$order_id', '$invoice_no', '$payment_method', '$amount', '$remarks')";
+        $sql = "INSERT INTO record_payment (orders_id, invoice_no, payment_method, amount, remarks, paid_date) 
+                        VALUES ('$order_id', '$invoice_no', '$payment_method', '$amount', '$remarks', '$created_at')";
             if (mysqli_query($conn, $sql)) {
 
                 $siteInsert = "UPDATE orders
@@ -74,8 +74,12 @@
         <?php 
             if($row2['role'] == "1") {?>  
             <button type="button" class="btn btn-sm btn-primary radius-8 d-inline-flex align-items-center gap-1" data-bs-toggle="modal" data-bs-target="#exampleModal">
-                <iconify-icon icon="basil:edit-outline" class="text-xl"></iconify-icon>
+                <iconify-icon icon="lucide:edit" class="text-xl"></iconify-icon>
                 Record Payment
+            </button>
+            <button type="button" class="btn btn-sm btn-primary radius-8 d-inline-flex align-items-center gap-1" data-bs-toggle="modal" data-bs-target="#Payment">
+                <iconify-icon icon="lucide:dollar-sign" class="text-xl"></iconify-icon>
+                Payment History
             </button>
             <?php } ?>
             <!-- <button type="button" class="btn btn-sm btn-success radius-8 d-inline-flex align-items-center gap-1" >
@@ -86,6 +90,51 @@
                 <iconify-icon icon="basil:printer-outline" class="text-xl"></iconify-icon>
                 Print
             </button> -->
+        </div>
+    </div>
+    <div class="modal fade" id="payment" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="exampleModalLabel">Payment History</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="table-responsive scroll-sm">
+                        <table class="table bordered-table sm-table mb-20">
+                            <thead>
+                                <tr>
+                                    <th scope="col">Invoice No</th>
+                                    <th scope="col">Payment Method</th>
+                                    <th scope="col">Paid Amount</th>
+                                    <th scope="col">Remarks</th>
+                                    <th scope="col">Paid Date</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                    <?php 
+                    $sql = "SELECT * FROM record_payment where invoice_no = '$invoice_id'";
+                    $result = mysqli_query($conn, $sql);
+
+                    if (mysqli_num_rows($result) > 0) {
+                        while ($row_history = mysqli_fetch_assoc($result)) {
+                            echo '<tr>
+                                    <td>' . htmlspecialchars($row_history['invoice_no']) . '</td>
+                                    <td>' . htmlspecialchars($row_history['payment_method']) . '</td>
+                                    <td>' . htmlspecialchars($row_history['amount']) . '</td>
+                                    <td>' . htmlspecialchars($row_history['remarks']) . '</td>
+                                    <td>' . date('d/m/Y', strtotime($row_history['paid_date'])) . '</td>
+                                </tr>';
+                                }
+                            } else {
+                                echo '<tr><td colspan="13" class="text-center">No users found.</td></tr>';
+                            }
+                        ?>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
     <div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
@@ -148,6 +197,7 @@
             </form>
         </div>
     </div>
+
     <div class="mb-40">
         <div class="row gy-4">
             <div class="col-xxl-6 col-sm-6">

@@ -60,7 +60,8 @@ input[type=number] {
                 Swal.fire({
                     title: 'Success!',
                     text: 'Invoice updated successfully.',
-                    confirmButtonText: 'OK'
+                    confirmButtonText: 'OK',
+                    allowOutsideClick: false
                 }).then((result) => {
                     if (result.isConfirmed) {
                         window.location.href = 'invoice-preview.php?id=$invoice_id';
