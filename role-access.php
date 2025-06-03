@@ -5,20 +5,41 @@
                 </script>';?>
 
 <?php include './partials/layouts/layoutTop.php' ?>
+<?php
+if (isset($_POST['save'])) {
+    $name = $_POST['role_name'];
+    $description = $_POST['description'];
+    $isActive = $_POST['isActive'];
 
+    $created_at = date("Y-m-d H:i:s");
+    
+    $sql = "INSERT INTO roles (name, description, isActive, created_on) 
+                    VALUES ('$name', '$description', '$isActive', '$created_at')";
+        if (mysqli_query($conn, $sql)) {
+            echo "
+            <script>
+                Swal.fire({
+                    title: 'Success!',
+                    text: 'Role Created Successfully.',
+                    confirmButtonText: 'OK',
+                    allowOutsideClick: false
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        window.location.reload('');
+                    }
+                });
+            </script>";
+            } else {
+            echo "<script>
+                alert('Error: " . $stmt->error . "');
+                window.history.back();
+            </script>";
+        }
+}
+?>
         <div class="dashboard-main-body">
             <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-24">
-                <h6 class="fw-semibold mb-0">Role & Access</h6>
-                <ul class="d-flex align-items-center gap-2">
-                    <li class="fw-medium">
-                        <a href="index.php" class="d-flex align-items-center gap-1 hover-text-primary">
-                            <iconify-icon icon="solar:home-smile-angle-outline" class="icon text-lg"></iconify-icon>
-                            Dashboard
-                        </a>
-                    </li>
-                    <li>-</li>
-                    <li class="fw-medium">Role & Access</li>
-                </ul>
+                <h6 class="fw-semibold mb-0">Role</h6>
             </div>
 
             <div class="card h-100 p-0 radius-12">
@@ -401,29 +422,29 @@
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body p-24">
-                        <form action="#">
+                        <form method="post">
                             <div class="row">
                                 <div class="col-12 mb-20">
                                     <label class="form-label fw-semibold text-primary-light text-sm mb-8">Role Name</label>
-                                    <input type="text" class="form-control radius-8" placeholder="Enter Role  Name">
+                                    <input type="text" class="form-control radius-8" placeholder="Enter Role  Name" name="role_name">
                                 </div>
                                 <div class="col-12 mb-20">
                                     <label for="desc" class="form-label fw-semibold text-primary-light text-sm mb-8">Description</label>
-                                    <textarea class="form-control" id="desc" rows="4" cols="50" placeholder="Write some text"></textarea>
+                                    <textarea class="form-control" id="desc" rows="4" cols="50" placeholder="Write some text" name="description"></textarea>
                                 </div>
 
                                 <div class="col-12 mb-20">
                                     <label class="form-label fw-semibold text-primary-light text-sm mb-8">Status </label>
                                     <div class="d-flex align-items-center flex-wrap gap-28">
                                         <div class="form-check checked-success d-flex align-items-center gap-2">
-                                            <input class="form-check-input" type="radio" name="label" id="Personal">
+                                            <input class="form-check-input" type="radio" name="isActive" id="Personal" value="1">
                                             <label class="form-check-label line-height-1 fw-medium text-secondary-light text-sm d-flex align-items-center gap-1" for="Personal">
                                                 <span class="w-8-px h-8-px bg-success-600 rounded-circle"></span>
                                                 Active
                                             </label>
                                         </div>
                                         <div class="form-check checked-danger d-flex align-items-center gap-2">
-                                            <input class="form-check-input" type="radio" name="label" id="Holiday">
+                                            <input class="form-check-input" type="radio" name="isActive" id="Holiday" value="0">
                                             <label class="form-check-label line-height-1 fw-medium text-secondary-light text-sm d-flex align-items-center gap-1" for="Holiday">
                                                 <span class="w-8-px h-8-px bg-danger-600 rounded-circle"></span>
                                                 Inactive
@@ -435,7 +456,7 @@
                                     <button type="reset" class="border border-danger-600 bg-hover-danger-200 text-danger-600 text-md px-40 py-11 radius-8">
                                         Cancel
                                     </button>
-                                    <button type="submit" class="btn btn-primary border border-primary-600 text-md px-48 py-12 radius-8">
+                                    <button type="submit" class="btn btn-primary border border-primary-600 text-md px-48 py-12 radius-8" name="save">
                                         Save
                                     </button>
                                 </div>

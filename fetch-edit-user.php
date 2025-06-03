@@ -54,12 +54,12 @@ if (isset($_POST['id'])) {
                     <label for="" class="form-label fw-semibold text-primary-light text-sm mb-8">Role <span class="text-danger-600">*</span></label>
                     <?php
                     $roles = [
-                        1 => 'Admin',
-                        2 => 'Sales',
-                        3 => 'Accounts',
-                        4 => 'Developer',
-                        5 => 'Marketing',
-                        6 => 'User'
+                        2 => 'Admin',
+                        3 => 'Sales',
+                        4 => 'Accounts',
+                        5 => 'Developer',
+                        6 => 'Marketing',
+                        7 => 'User'
                     ];
 
                     $currentRoleValue = $user['role'];

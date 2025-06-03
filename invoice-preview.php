@@ -45,7 +45,7 @@
                 <div class="card-header">
                     <div class="d-flex flex-wrap align-items-center justify-content-end gap-2">
                     <?php 
-                    if($row2['role'] == "1") {?>  
+                    if($row2['role'] == "1" || $row2['role'] == "2") {?>  
                     <a href="invoice-preview-edit.php?id=<?php echo $invoice_id; ?>">  
                         <button type="button" class="btn btn-sm btn-success radius-8 d-inline-flex align-items-center gap-1" >
                             <iconify-icon icon="basil:edit-outline" class="text-xl"></iconify-icon>
