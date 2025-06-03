@@ -114,12 +114,12 @@ $row['username'] = explode('@', $row['email'])[0];
                                     <li class="d-flex align-items-center gap-1 mb-12">
                                     <?php
                                         $roles = [
-                                            1 => 'Admin',
-                                            2 => 'Sales',
-                                            3 => 'Accounts',
-                                            4 => 'Developer',
-                                            5 => 'Marketing',
-                                            6 => 'User'
+                                            2 => 'Admin',
+                                            3 => 'Sales',
+                                            4 => 'Accounts',
+                                            5 => 'Developer',
+                                            6 => 'Marketing',
+                                            7 => 'User'
                                         ];
 
                                         $currentRoleValue = $row['role'];

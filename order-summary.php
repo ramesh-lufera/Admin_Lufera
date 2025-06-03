@@ -72,16 +72,16 @@
         </div>
         <div>
         <?php 
-            if($row2['role'] == "1") {?>  
+            if($row2['role'] == "1" || $row2['role'] == "2") {?>  
             <button type="button" class="btn btn-sm btn-primary radius-8 d-inline-flex align-items-center gap-1" data-bs-toggle="modal" data-bs-target="#exampleModal">
                 <iconify-icon icon="lucide:edit" class="text-xl"></iconify-icon>
                 Record Payment
             </button>
-            <button type="button" class="btn btn-sm btn-primary radius-8 d-inline-flex align-items-center gap-1" data-bs-toggle="modal" data-bs-target="#Payment">
+            <?php } ?>
+            <button type="button" class="btn btn-sm btn-success radius-8 d-inline-flex align-items-center gap-1" data-bs-toggle="modal" data-bs-target="#Payment">
                 <iconify-icon icon="lucide:dollar-sign" class="text-xl"></iconify-icon>
                 Payment History
             </button>
-            <?php } ?>
             <!-- <button type="button" class="btn btn-sm btn-success radius-8 d-inline-flex align-items-center gap-1" >
                 <iconify-icon icon="basil:edit-outline" class="text-xl"></iconify-icon>
                 Edit
@@ -173,7 +173,8 @@
                                     <input type="hidden" class="form-control radius-8" name="payment_made" id="payment_made" value="<?php echo $row['payment_made'] ?>">
 
                                     <input type="text" class="form-control radius-8" name="amount" id="numericInput" required <?php echo $row['balance_due'] == "0" ? 'readonly' : ''; ?> >
-                                    
+                                    <small id="amountError" class="text-danger d-none">Amount cannot be greater than Balance Due.</small>
+
                                     <input type="hidden" class="form-control radius-8" name="balance_due" id="balance_due" value="<?php echo $row['balance_due'] ?>">
                                 </div>
                             </div>
@@ -191,7 +192,7 @@
                     </div>
                     <div class="modal-footer d-flex align-items-center justify-content-center gap-3">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                        <button type="submit" class="btn lufera-bg text-white" name="save">Save</button>
+                        <button type="submit" id="submit" class="btn lufera-bg text-white" name="save" <?php echo $row['balance_due'] == "0" ? 'disabled' : ''; ?>>Save</button>
                     </div>
                 </div>
             </form>
@@ -312,4 +313,26 @@
         }
     });
 </script>
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const amountInput = document.getElementById("numericInput");
+    const balanceDue = parseFloat(document.getElementById("balance_due").value);
+    const errorText = document.getElementById("amountError");
+    const submit = document.getElementById("submit");
+    amountInput.addEventListener("input", function () {
+        const enteredAmount = parseFloat(this.value);
+
+        if (enteredAmount > balanceDue) {
+            errorText.classList.remove("d-none");
+            submit.disabled = true;
+            //this.value = ""; 
+        }
+        else {
+            errorText.classList.add("d-none");
+            submit.disabled = false;
+        }
+    });
+});
+</script>
+
 <?php include './partials/layouts/layoutBottom.php' ?>

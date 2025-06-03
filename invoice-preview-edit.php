@@ -25,10 +25,14 @@ input[type=number] {
 -moz-appearance: textfield;
 }
 .percent-icon{
-    top: 6px; 
-    right:7px; 
-    left:auto; 
-    position:absolute;
+    top: 1px;
+    right: 1px;
+    left: auto;
+    position: absolute;
+    display: flex;
+    background: lightgray;
+    border-radius: 0 8px 8px 0;
+    padding: 0 0 0 10px;
 }
 </style>
 <?php
@@ -161,11 +165,25 @@ input[type=number] {
                                                 </thead>
                                                 <tbody>
                                                     <tr>
-                                                        <td><?php echo $row['plan']; ?> </td>
-                                                        <td><?php echo $row['duration']; ?> </td>
-                                                        <td><?php echo $row['payment_method']; ?> </td>
+                                                        <td><input type="text" value="<?php echo $row['plan']; ?>" >  </td>
+                                                        <td>
+                                                            <select class="form-control border-0 p-0" name="">
+                                                                <option value="<?php echo $row['duration']; ?>"><?php echo $row['duration']; ?></option>
+                                                                <option value="1 Year">1 Year</option>
+                                                                <option value="3 Years">3 Years</option>
+                                                            </select>
+                                                        </td>
+                                                        <td>
+                                                            <select class="form-control border-0 p-0" name="payment_method">
+                                                                <option value=""><?php echo $row['payment_method']; ?></option>
+                                                                <option value="Cash">Cash</option>
+                                                                <option value="Card">Card</option>
+                                                                <option value="UPI">UPI</option>
+                                                                <option value="Bank">Bank</option>
+                                                            </select>
+                                                        </td>
                                                         <td><?php echo $row['status']; ?> </td>
-                                                        <td class="text-end text-sm">$ <?php echo $row['price']; ?> </td>
+                                                        <td class="text-end text-sm"><input type="text" value="<?php echo $row['price']; ?>" > </td>
                                                     </tr>
                                                 </tbody>
                                             </table>
@@ -180,9 +198,13 @@ input[type=number] {
                                                                 <td class="border-bottom p-8 text-start">
                                                                 <div class="icon-field has-validation">
                                                                     <span class="percent-icon">
-                                                                        <iconify-icon icon="mdi:percent"></iconify-icon>
+                                                                    <select id="discountType" name="discount_type">
+                                                                        <option value="%">%</option>
+                                                                        <option value="$">$</option>
+                                                                    </select>
+                                                                        <iconify-icon icon="mdi-menu-down" class="align-content-center"></iconify-icon>
                                                                     </span>
-                                                                    <input value="<?php echo $row['discount']; ?>"  type="text" name="discount" maxlength="3" id="numericInput" class="border-1 radius-8 px-10" style="width:80px; float:right">
+                                                                    <input value="<?php echo $row['discount']; ?>" <?php echo $row['balance_due'] == "0" ? 'readonly' : ''; ?> type="text" name="discount" id="numericInput" class="border-1 radius-8 px-10" style="width:120px; float:right">
                                                                 </div>
                                                                 </td>
                                                             </tr>
@@ -257,25 +279,34 @@ input[type=number] {
 <script>
   const discountInput = document.getElementById("numericInput");
   const paymentMadeInput = document.getElementById("numericInputs");
+  const discountTypeSelect = document.getElementById("discountType");
 
   const price = <?php echo $row['price']; ?>;
 
   function calculateAndUpdateInvoice() {
-    let discountPercent = parseFloat(discountInput.value) || 0;
+    let discountValue = parseFloat(discountInput.value) || 0;
     let paymentMade = parseFloat(paymentMadeInput.value) || 0;
+    let discountType = discountTypeSelect.value;
 
-    if (discountPercent > 100) discountPercent = 100;
+    let discountAmount = 0;
 
-    const discountAmount = (price * discountPercent) / 100;
+    if (discountType === "%") {
+      if (discountValue > 100) discountValue = 100;
+      discountAmount = (price * discountValue) / 100;
+    } else if (discountType === "$") {
+      if (discountValue > price) discountValue = price;
+      discountAmount = discountValue;
+    }
+
     const newSubtotal = price - discountAmount;
     const gst = newSubtotal * 0.18;
     const total = newSubtotal + gst;
     const balance_due = total - paymentMade;
 
-    document.getElementById("subtotal").value = " " + newSubtotal;
-    document.getElementById("gst").value = " " + gst;
-    document.getElementById("total").value = " " + total;
-    document.getElementById("balance_due").value = " " + balance_due;
+    document.getElementById("subtotal").value = newSubtotal;
+    document.getElementById("gst").value = gst;
+    document.getElementById("total").value = total;
+    document.getElementById("balance_due").value = balance_due;
   }
 
   discountInput.addEventListener("input", function () {
@@ -287,7 +318,12 @@ input[type=number] {
     this.value = this.value.replace(/\D/g, '');
     calculateAndUpdateInvoice();
   });
+
+  discountTypeSelect.addEventListener("change", function () {
+    calculateAndUpdateInvoice();
+  });
 </script>
+
 
 
 <?php include './partials/layouts/layoutBottom.php' ?>
