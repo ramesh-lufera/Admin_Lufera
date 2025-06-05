@@ -1,6 +1,17 @@
 <?php include './partials/layouts/layoutTop.php' ?>
 
 <?php
+
+    $Id = $_SESSION['user_id'];
+    
+    $sql = "select user_id, username, role, photo from users where id = $Id";
+    $result = $conn ->query($sql);
+    $row = $result ->fetch_assoc();
+    $role = $row['role'];
+    $UserId = $row['user_id'];
+    $username = $row['username'];
+    $photo = !empty($row['photo']) ? $row['photo'] : 'assets/images/user1.png';
+
     if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $plan_name = $_POST['plan_name'];
         $price = $_POST['price'];
@@ -69,6 +80,20 @@
             </script>";
         }
     }
+
+    // USER sends payment request (→ notify all admins)
+    if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save']) && $role != '1') {
+        $msg = "$username has sent a payment request.";
+
+        $adminQuery = $conn->query("SELECT user_id FROM users WHERE role = '1'");
+        while ($adminRow = $adminQuery->fetch_assoc()) {
+            $adminUserId = $adminRow['user_id'];
+
+            $stmt = $conn->prepare("INSERT INTO notifications (user_id, message, n_photo) VALUES (?, ?, ?)");
+            $stmt->bind_param("sss", $adminUserId, $msg, $photo);
+            $stmt->execute();
+        }
+    }
 ?>
 
 <style>
@@ -86,6 +111,8 @@
         border: 1px solid;
         margin: 10px 0 0;
     }
+
+    /* Payment Option Boxes */
     .payment-option-box {
         border: 1px solid black;
         border-radius: 6px;
@@ -93,15 +120,31 @@
         display: flex;
         align-items: center;
         background-color: #fff;
-        min-width: 180px;
+        width: auto;
+        max-width: 200px;
         cursor: pointer;
-        flex-grow: 1;
+        flex-grow: 0;
+        margin-right: 10px;
+        margin-bottom: 10px;
+        user-select: none;
+        transition: background-color 0.2s ease;
     }
-    .payment-option-box input[type="checkbox"] {
+    .payment-option-box:hover {
+        background-color: #fff8dc;
+    }
+    .payment-option-box input[type="radio"] {
         margin: 0;
+        cursor: pointer;
+    }
+    .payment-option-box label {
+        cursor: pointer;
+        margin-left: 8px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-weight: 600;
     }
     .icon-circle {
-        /* background-color: #007bff; */
         background-color: #fec700;
         color: white;
         border-radius: 50%;
@@ -113,6 +156,8 @@
         height: 24px;
         font-size: 12px;
     }
+
+    /* Card shadow and button styles */
     .custom-pay-btn {
         background-color: #fec700;
         color: black;
@@ -128,9 +173,25 @@
     .card-shadow {
         box-shadow: 0px 3px 3px 0px lightgray;
     }
-    @media (max-width: 768px) {
+
+    /* Responsive adjustments */
+    @media (max-width: 992px) {
         .payment-option-box {
-            width: 100%;
+            max-width: 180px;
+            padding: 8px 14px;
+            font-size: 0.95rem;
+        }
+    }
+    @media (max-width: 576px) {
+        .payment-option-box {
+            max-width: 100%;
+            margin-right: 0;
+            padding: 12px 20px;
+            font-size: 1rem;
+        }
+        .payment-option-box label {
+            gap: 8px;
+            font-weight: 700;
         }
     }
 </style>
@@ -147,7 +208,7 @@
 
     <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-24">
         <h6 class="fw-semibold mb-0">Your Cart</h6>
-        <button name="save" id="continuePayBtn" type="submit" class="btn lufera-bg text-white" value="Submit">Continue to Pay</button>
+        <button type="submit" name="save" id="continuePayBtn" class="lufera-bg text-center btn-sm px-12 py-10 float-end" style="width:150px; border: 1px solid #000" value="Submit">Continue to Pay</button>
     </div>
 
     <div class="mb-40">
@@ -175,7 +236,6 @@
                                         <?php
                                             $start_date = new DateTime($created_on);
 
-                                            // Parse duration (assumes format like '1 year', '6 months', '2 weeks', etc.)
                                             $duration_str = $duration;
                                             try {
                                                 $interval = DateInterval::createFromDateString($duration_str);
@@ -243,16 +303,15 @@
                         <p class="mb-0 text-muted">Order Summary includes discounts & taxes</p>
                     </div>
                     <div class="card-body p-16">
-                        <p class="text-muted fw-medium mb-3">How would you like to make the payment ?</p>
+                        <p class="text-muted fw-medium mb-3">How would you like to make the payment? <span class="text-danger-600">*</span></p>
 
                         <div class="d-flex flex-wrap gap-3 justify-content-start">
-                            <!-- Payment Options -->
                             <?php
                             $payments = ['Bank Transfer', 'Direct Pay', 'PayPal', 'Card'];
                             foreach ($payments as $id => $method): ?>
                             <div class="payment-option-box">
                                 <input type="radio" class="form-check-input m-0" name="pay_method" id="pay<?= $id ?>" value="<?= $method ?>">
-                                <label for="pay<?= $id ?>" class="mb-0 d-flex align-items-center gap-2 ms-2">
+                                <label for="pay<?= $id ?>">
                                     <?= $method ?>
                                     <span class="icon-circle">
                                         <i class="fas fa-chevron-down"></i>
@@ -290,25 +349,21 @@
 loadUserData();
 </script>
 
-<!-- <script>
-    document.getElementById('continuePayBtn').addEventListener('click', function () {
-        const checkboxes = document.querySelectorAll('.payment-option-box input[type="checkbox"]');
-        let selected = null;
-
-        checkboxes.forEach((checkbox, index) => {
-            if (checkbox.checked) {
-                const method = checkbox.nextElementSibling.textContent.trim().toLowerCase().replace(/\s+/g, '-');
-                selected = method;
-            }
-        });
-
-        if (selected) {
-            window.location.href = selected + '.php';
-        } else {
-            alert("Please select a payment method.");
+<script>
+    document.querySelector('form').addEventListener('submit', function(e) {
+        const paymentSelected = document.querySelector('input[name="pay_method"]:checked');
+        if (!paymentSelected) {
+            e.preventDefault();
+            // alert('Select a payment method.');
+            Swal.fire({
+                icon: 'warning',
+                title: 'Select Payment Method',
+                // text: 'Please choose a payment method before continuing.',
+                confirmButtonColor: '#fec700'
+            });
         }
     });
-</script> -->
+</script>
 
 <!-- Font Awesome for down icons -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">

@@ -82,7 +82,8 @@
                 window.history.back();
             </script>";
         }
-}
+    }
+
     // USER sends payment request (→ notify all admins)
     if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save']) && $role != '1') {
         $msg = "$username has sent a payment request.";
@@ -97,6 +98,7 @@
         }
     }
 ?>
+
 <div class="dashboard-main-body">
     <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-24">
         <h6 class="fw-semibold mb-0">Payment Page</h6>

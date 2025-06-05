@@ -161,7 +161,7 @@
                         <a href="role-access.php"><i class="ri-circle-fill circle-icon text-primary-600 w-auto"></i> Role</a>
                     </li>
                     <li>
-                        <a href="notification.php"><i class="ri-circle-fill circle-icon text-warning-600 w-auto"></i> API</a>
+                        <a href="credentials.php"><i class="ri-circle-fill circle-icon text-warning-600 w-auto"></i> Credentials</a>
                     </li>
                     <li>
                         <a href="notification-alert.php"><i class="ri-circle-fill circle-icon text-info-600 w-auto"></i> Notification Alert</a>
