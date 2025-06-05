@@ -178,13 +178,17 @@ error_reporting(E_ALL);
                                         </span>
                                         <!-- <input type="text" class="form-control radius-8" name="bname" placeholder="Enter Business Name" required> -->
                                         <select class="form-control" name="role" required>
-                                            <option value="" disabled selected>Select Role</option>
-                                            <option value="2">Admin</option>
-                                            <option value="3">Sales</option>
-                                            <option value="4">Accounts</option>
-                                            <option value="5">Developer</option>
-                                            <option value="6">Marketing</option>
-                                            <option value="6">User</option>
+                                        <option value="" disabled selected>Select Role</option>
+                                        <?php 
+                                            $role = "select * from roles"; 
+                                            $results = $conn->query($role);
+                                            if (mysqli_num_rows($results) > 0) {
+                                                while ($row = mysqli_fetch_assoc($results)) {
+                                        ?>
+                                            
+                                            <option value="<?php echo $row['name']; ?>"><?php echo $row['name']; ?></option>
+                                        <?php } }
+                                        ?>
                                         </select>
                                         <div class="invalid-feedback">
                                             Role is required
