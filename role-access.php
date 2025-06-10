@@ -1,9 +1,3 @@
-<?php $script = '<script>
-                    $(".remove-item-btn").on("click", function() {
-                        $(this).closest("tr").addClass("d-none")
-                    });
-                </script>';?>
-
 <?php include './partials/layouts/layoutTop.php' ?>
 <?php
 if (isset($_POST['save'])) {
@@ -139,12 +133,15 @@ if (isset($_POST['save'])) {
                                             <!-- <button type="button" class="remove-item-btn bg-danger-focus bg-hover-danger-200 text-danger-600 fw-medium w-40-px h-40-px d-flex justify-content-center align-items-center rounded-circle">
                                                 <iconify-icon icon="fluent:delete-24-regular" class="menu-icon"></iconify-icon>
                                             </button> -->
-                                            <button 
+                                            <!-- <button 
                                                 type="button" 
                                                 class="remove-item-btn bg-danger-focus bg-hover-danger-200 text-danger-600 fw-medium w-40-px h-40-px d-flex justify-content-center align-items-center rounded-circle"
                                                 data-id="<?= $row['id'] ?>"
                                             >
                                                 <iconify-icon icon="fluent:delete-24-regular" class="menu-icon"></iconify-icon>
+                                            </button> -->
+                                            <button type="button" class="remove-item-btn bg-danger-focus bg-hover-danger-200 text-danger-600 fw-medium w-40-px h-40-px d-flex justify-content-center align-items-center rounded-circle" data-id="<?= $row['id'] ?>">
+                                                <iconify-icon icon="fluent:delete-24-regular"></iconify-icon>
                                             </button>
 
                                         </div>
@@ -217,7 +214,7 @@ if (isset($_POST['save'])) {
                                     <label class="form-label fw-semibold text-primary-light text-sm mb-8">Status </label>
                                     <div class="d-flex align-items-center flex-wrap gap-28">
                                         <div class="form-check checked-success d-flex align-items-center gap-2">
-                                            <input class="form-check-input" type="radio" name="isActive" id="Personal" value="1">
+                                            <input class="form-check-input" type="radio" name="isActive" id="Personal" value="1" required>
                                             <label class="form-check-label line-height-1 fw-medium text-secondary-light text-sm d-flex align-items-center gap-1" for="Personal">
                                                 <span class="w-8-px h-8-px bg-success-600 rounded-circle"></span>
                                                 Active
@@ -324,22 +321,26 @@ $(document).on("click", ".remove-item-btn", function () {
 
     Swal.fire({
         title: 'Are you sure?',
-        text: "You won't be able to revert this!",
+        text: "This will permanently delete the role.",
         icon: 'warning',
         showCancelButton: true,
-        confirmButtonColor: '#3085d6',
-        cancelButtonColor: '#d33',
-        confirmButtonText: 'Yes, delete it!'
+        confirmButtonText: 'Yes, delete it!',
+        cancelButtonText: 'Cancel',
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#3085d6'
     }).then((result) => {
         if (result.isConfirmed) {
             $.ajax({
-                url: 'role-delete.php',
+                url: 'role-handler.php',
                 type: 'POST',
-                data: { id: roleId },
+                data: {
+                    action: 'delete',
+                    id: roleId
+                },
                 success: function (response) {
                     if (response === 'success') {
                         button.closest("tr").remove();
-                        Swal.fire('Deleted!', 'Role has been deleted.', 'success');
+                        Swal.fire('Deleted!', 'Role deleted successfully.', 'success');
                     } else {
                         Swal.fire('Error!', 'Failed to delete role.', 'error');
                     }

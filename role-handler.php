@@ -2,6 +2,22 @@
 include './partials/connection.php';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    if (isset($_POST['action']) && $_POST['action'] === 'delete') {
+        $id = intval($_POST['id']);
+
+        $stmt = $conn->prepare("DELETE FROM roles WHERE id = ?");
+        $stmt->bind_param("i", $id);
+
+        if ($stmt->execute()) {
+            echo 'success';
+        } else {
+            echo 'error';
+        }
+
+        $stmt->close();
+        $conn->close();
+        exit; // Important: stop further processing
+    }
     $id = $_POST['role_id'];
     $name = $_POST['role_name'];
     $description = $_POST['description'];

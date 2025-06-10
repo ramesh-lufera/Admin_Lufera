@@ -3,13 +3,14 @@
 <?php
   $Id = $_SESSION['user_id'];
 
-  $stmt = $conn->prepare("SELECT user_id, business_name FROM users WHERE id = ?");
+  $stmt = $conn->prepare("SELECT user_id, business_name, role FROM users WHERE id = ?");
   $stmt->bind_param("i", $Id);
   $stmt->execute();
   $result = $stmt->get_result();
   $row = $result->fetch_assoc();
   $UserId = $row['user_id']; 
   $BusinessName = $row['business_name'];
+  $role = $row['role'];
   $stmt->close();
 
   $stmt = $conn->prepare("SELECT plan, duration, status, created_at FROM websites WHERE user_id = ?");
@@ -116,7 +117,17 @@
               </div>
               <div class="d-flex gap-2">
                 <button type="button" class="btn btn-sm btn-upgrade">Upgrade</button>
+                <?php 
+                if($role != '1'){
+                ?>
+                <a href="forms.php"><button type="button" class="btn btn-sm btn-edit-website">Edit Website</button></a>
+                <?php 
+                } else{
+                ?>
                 <button type="button" class="btn btn-sm btn-edit-website">Edit Website</button>
+                <?php 
+                }
+                ?>
               </div>
             </div>
 

@@ -212,6 +212,17 @@
                                         Pending Confirmation
                                     </button>
                                 <?php } ?>
+                                <?php if ($role === '1' && $row['status'] === 'Approved'){ ?>
+                                    
+                                    <input type="hidden" name="approve_id" value="<?= $row['id'] ?>">
+                                    <button class="btn btn-success btn-sm fw-medium text-white me-2">
+                                    Approved
+                                    </button>
+                                <?php } else if($role != '1' && $row['status'] === 'Approved'){ ?>
+                                    <button class="btn btn-success btn-sm fw-medium text-white me-2">
+                                    Approved
+                                    </button>
+                                <?php } ?>
                             </td>
                             <td class="text-center">
                                 <a href="order-summary.php?id=<?php echo $row['invoice_id']; ?>" class="w-32-px h-32-px bg-primary-light text-primary-600 rounded-circle d-inline-flex align-items-center justify-content-center">
