@@ -10,7 +10,7 @@
         opacity: 0.5;  /* Makes the button appear blurred */
     }
 </style>
-<script>
+<!-- <script>
     function searchTable() {
         // Get the value from the search input
         let searchTerm = document.getElementById("searchInput").value.toLowerCase();
@@ -40,7 +40,7 @@
             }
         }
     }
-</script>
+</script> -->
 </head>
 
 <?php 
@@ -50,27 +50,27 @@
     $sql = "SELECT * FROM users ORDER BY created_at ASC";
     $result = mysqli_query($conn, $sql);
 
-    // Set the number of records per page
-    $records_per_page = 5;
+    // // Set the number of records per page
+    // $records_per_page = 5;
 
-    // Get the current page from the URL (if not set, default to 1)
-    $current_page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
+    // // Get the current page from the URL (if not set, default to 1)
+    // $current_page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
 
-    // Calculate the starting record for the SQL query
-    $start_from = ($current_page - 1) * $records_per_page;
+    // // Calculate the starting record for the SQL query
+    // $start_from = ($current_page - 1) * $records_per_page;
 
-    // Fetch users data for the current page
-    $sql = "SELECT * FROM users ORDER BY created_at ASC LIMIT $start_from, $records_per_page";
-    $result = mysqli_query($conn, $sql);
+    // // Fetch users data for the current page
+    // $sql = "SELECT * FROM users ORDER BY created_at ASC LIMIT $start_from, $records_per_page";
+    // $result = mysqli_query($conn, $sql);
 
-    // Get the total number of records
-    $total_sql = "SELECT COUNT(*) FROM users";
-    $total_result = mysqli_query($conn, $total_sql);
-    $total_row = mysqli_fetch_row($total_result);
-    $total_records = $total_row[0];
+    // // Get the total number of records
+    // $total_sql = "SELECT COUNT(*) FROM users";
+    // $total_result = mysqli_query($conn, $total_sql);
+    // $total_row = mysqli_fetch_row($total_result);
+    // $total_records = $total_row[0];
 
-    // Calculate total number of pages
-    $total_pages = ceil($total_records / $records_per_page);
+    // // Calculate total number of pages
+    // $total_pages = ceil($total_records / $records_per_page);
 
     $Id = $_SESSION['user_id'];
     
@@ -136,40 +136,13 @@
         </div>
 
         <div class="card">
-            <div class="card-header d-flex flex-wrap align-items-center justify-content-between gap-3">
-                <div class="d-flex flex-wrap align-items-center gap-3">
-                    <!-- <div class="d-flex align-items-center gap-2">
-                        <span>Show</span>
-                        <select class="form-select form-select-sm w-auto">
-                            <option>10</option>
-                            <option>15</option>
-                            <option>20</option>
-                        </select>
-                    </div> -->
-                    <div class="icon-field">
-                        <input type="text" name="search" class="form-control form-control-sm w-auto" id="searchInput" onkeyup="searchTable()" placeholder="Search">
-                        <span class="icon">
-                            <iconify-icon icon="ion:search-outline"></iconify-icon>
-                        </span>
-                    </div>
-                </div>
-                <!-- <div class="d-flex flex-wrap align-items-center gap-3">
-                    <select class="form-select form-select-sm w-auto">
-                        <option>Satatus</option>
-                        <option>Paid</option>
-                        <option>Pending</option>
-                    </select>
-                    <a href="invoice-add.php" class="btn btn-sm btn-primary-600"><i class="ri-add-line"></i> Create Invoice</a>
-                </div> -->
-            </div>
             <div class="card-body">
             <div class="table-responsive scroll-sm">
                 <table class="table bordered-table mb-0" id="userTable">
                     <thead>
                         <tr>
-                            
-                            <th scope="col">Invoice ID</th>
-                            <th scope="col" class="text-center" style="width:250px">Name</th>
+                            <th scope="col">Name</th>
+                            <th scope="col" class="text-center">Invoice ID</th>
                             <th scope="col" class="text-center">Date</th>
                             <th scope="col" class="text-center">Amount</th>
                             <th scope="col" class="text-center">Status</th>
@@ -184,14 +157,14 @@
                         $status = $row['status'];
                     ?>
                         <tr>
-                            
-                            <td><?php echo $row['invoice_id']; ?></td>
-                            <td>
-                                <div class="d-flex align-items-center">
-                                    <img src="<?= $photo ?>" alt="" class="flex-shrink-0 me-12 radius-8" style="width: 40px; height: 40px;">
-                                    <h6 class="text-md mb-0 fw-medium flex-grow-1"><?php echo $row['first_name']; ?> <?php echo $row['last_name']; ?></h6>
+                            <td >
+                                <div class="fw-medium">
+                                    <img src="<?= $photo ?>" alt="" class="flex-shrink-0 me-12 radius-8" style="width: 30px; height: 30px;">
+                                    <?php echo $row['first_name']; ?> <?php echo $row['last_name']; ?>
                                 </div>
                             </td>
+                            <td class="text-center"><?php echo $row['invoice_id']; ?></td>
+                            
                             <td class="text-center"><?= date('d M Y', strtotime($row['created_on'])) ?></td>
                             <td class="text-center">$ <?= number_format($row['amount'], 2) ?></td>
                             <!-- <td> <span class="bg-success-focus text-success-main px-24 py-4 rounded-pill fw-medium text-sm">Paid</span> </td> -->
@@ -284,7 +257,7 @@
                 </div> -->
 
                 <!-- Pagination -->
-                <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mt-24">
+                <!-- <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mt-24">
                     <span>Showing <?php echo ($start_from + 1); ?> to <?php echo min($start_from + $records_per_page, $total_records); ?> of <?php echo $total_records; ?> entries</span>
                     
                     <ul class="d-flex flex-wrap align-items-center gap-2 justify-content-center">
@@ -312,12 +285,16 @@
                         </li>
                         <?php endif; ?>
                     </ul>
-                </div>
+                </div> -->
             </div>
         </div>
     </div>
 
     <script>
+        $(document).ready(function() {
+            $('#userTable').DataTable();
+        } );
+
         function approveAction() {
             // Blur the Approve button by adding a "disabled" class and prevent it from being clicked
             let approveButton = document.getElementById('approveButton');

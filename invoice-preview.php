@@ -146,7 +146,7 @@
                                                         <tr>
                                                             <td class="pe-64 border-bottom p-8">Discount</td>
                                                             <td class="border-bottom p-8">
-                                                                <span class="text-primary-light fw-semibold"> <?php echo $row['discount']; ?>%</span>
+                                                                <span class="text-primary-light fw-semibold"> <?php echo $row['discount']; ?> <?php echo $row['discount_type'] ?></span>
                                                             </td>
                                                         </tr>
                                                         <?php } ?>
