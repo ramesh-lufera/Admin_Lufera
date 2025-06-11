@@ -194,6 +194,7 @@
             font-weight: 700;
         }
     }
+    .payment-detail { display:none; }
 </style>
 
 <div class="dashboard-main-body">
@@ -306,20 +307,106 @@
                         <p class="text-muted fw-medium mb-3">How would you like to make the payment? <span class="text-danger-600">*</span></p>
 
                         <div class="d-flex flex-wrap gap-3 justify-content-start">
-                            <?php
-                            $payments = ['Bank Transfer', 'Direct Pay', 'PayPal', 'Card'];
-                            foreach ($payments as $id => $method): ?>
-                            <div class="payment-option-box">
-                                <input type="radio" class="form-check-input m-0" name="pay_method" id="pay<?= $id ?>" value="<?= $method ?>">
-                                <label for="pay<?= $id ?>">
-                                    <?= $method ?>
-                                    <span class="icon-circle">
-                                        <i class="fas fa-chevron-down"></i>
-                                    </span>
-                                </label>
-                            </div>
+                        <?php
+                            $payments = [
+                                'Bank Transfer' => 'bank-transfer',
+                                'Direct Pay'    => 'direct-pay',
+                                'PayPal'        => 'paypal',
+                                'Card'          => 'card'
+                            ];
+                            foreach ($payments as $label => $target): ?>
+                                <div class="payment-option-box">
+                                    <input
+                                        type="radio"
+                                        class="form-check-input m-0"
+                                        name="pay_method"
+                                        id="pay<?= $target ?>"
+                                        value="<?= $label ?>"
+                                        data-target="<?= $target ?>"                   
+                                    >
+                                    <label for="pay<?= $target ?>">
+                                        <?= $label ?>
+                                        <span class="icon-circle">
+                                            <i class="fas fa-chevron-down"></i>
+                                        </span>
+                                    </label>
+                                </div>
                             <?php endforeach; ?>
+
                         </div>
+
+                    <div id="bank-transfer" class="payment-detail">
+                        <div class="row mt-3">
+                            <div class="col-12">
+                                <div class="card h-100 radius-12">
+                                <div class="card-header py-10 border-none card-shadow">
+                                    <h6 class="mb-0">Bank Transfer</h6>
+                                    <p class="mb-0 text-muted">Order Summary includes discounts & taxes</p>
+                                </div>
+                                <div class="card-body p-16">
+                                    <div class="fw-semibold my-3">Bank A/C Details:</div>
+                                    <div class="row gy-4 align-items-start">
+                                    <div class="col-lg-5 col-md-6">
+                                        <div class="table-responsive">
+                                        <table class="table table-bordered small mb-0">
+                                            <tbody>
+                                            <tr><td>Bank Name</td><td>Kotak Mahindra Bank</td></tr>
+                                            <tr><td>Account Name</td><td>Avinash Balasubramaniyam</td></tr>
+                                            <tr><td>Account No</td><td>84548518445</td></tr>
+                                            <tr><td>Account Branch</td><td>Thillainagar, Trichy</td></tr>
+                                            <tr><td>IFSC</td><td>FGF545DFSE</td></tr>
+                                            <tr><td>MICR</td><td>4852124</td></tr>
+                                            <tr><td>Swift Code</td><td>FDSEWSWR</td></tr>
+                                            </tbody>
+                                        </table>
+                                        </div>
+                                    </div>
+                                    <div class="col-lg-7 col-md-6 d-flex align-items-start">
+                                        <div class="ms-lg-5 pt-0 w-100">
+                                        <p class="mb-1 fw-medium">Please let us know!</p>
+                                        <p class="mb-1 text-muted small">Once you are done with your payment please let us know.</p>
+                                        <p class="mb-3 text-muted small">Thank You.</p>
+                                        <button type="button" class="lufera-bg text-center btn-sm px-12 py-10" style="width:100px; border: 1px solid #000">Explore</button>
+                                        <!-- <button type="button" class="lufera-bg text-white px-4 py-2">Explore</button> -->
+                                        </div>
+                                    </div>
+                                    </div>
+                                </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                
+                    <div id="direct-pay" class="payment-detail">
+                        <div class="row mt-3">
+                                <div class="col-12">
+                                    <div class="card h-100 radius-12">
+                                    <div class="card-header py-10 border-none card-shadow">
+                                        <h6 class="mb-0">Direct Pay</h6>
+                                        <p class="mb-0 text-muted">Order Summary includes discounts & taxes</p>
+                                    </div>
+                                    <div class="card-body p-16">
+                                        <div class="fw-semibold my-3">Thank You!</div>
+                                        <div class="row gy-4 align-items-start">
+                                        
+                                        <div class="col-lg-7 col-md-6 d-flex align-items-start">
+                                            <div class="ms-lg-5 pt-0 w-100">
+                                            <p class="mb-1 fw-medium">Please confirm your payment with one of our representative.</p>
+                                            <p class="mb-1 text-muted small">Contact your Relationship manager or call us at +91 -86-80808-204 or write to us at info@luferatech.com.</p>
+                                            <p class="mb-3 text-muted small">For futher support.</p>
+                                            <button type="button" class="lufera-bg text-center btn-sm px-12 py-10" style="width:100px; border: 1px solid #000">Explore</button>
+                                            <!-- <button type="button" class="lufera-bg text-white px-4 py-2">Explore</button> -->
+                                            </div>
+                                        </div>
+                                        </div>
+                                    </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+<div id="paypal"        class="payment-detail">…fields for PayPal…</div>
+<div id="card"          class="payment-detail">…fields for cards…</div>
                     </div>
                 </div>
             </div>
@@ -366,6 +453,27 @@ loadUserData();
 </script>
 
 <!-- Font Awesome for down icons -->
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const radios   = document.querySelectorAll('input[name="pay_method"]');
+  const details  = document.querySelectorAll('.payment-detail');
+
+  // convenience function
+  function showDetail(id) {
+    details.forEach(el => { el.style.display = 'none'; });
+    const chosen = document.getElementById(id);
+    if (chosen) { chosen.style.display = 'block'; }
+  }
+
+  // run once so the default-checked radio shows its panel on load
+  const checked = document.querySelector('input[name="pay_method"]:checked');
+  if (checked) { showDetail(checked.dataset.target); }
+
+  // change handler
+  radios.forEach(radio =>
+    radio.addEventListener('change', e => showDetail(e.target.dataset.target))
+  );
+});
+</script>
 
 <?php include './partials/layouts/layoutBottom.php' ?>
