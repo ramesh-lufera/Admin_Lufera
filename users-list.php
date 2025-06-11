@@ -5,49 +5,39 @@
     $sql = "SELECT * FROM users ORDER BY created_at ASC";
     $result = mysqli_query($conn, $sql);
 
-    // Set the number of records per page
-    $records_per_page = 5;
+    // // Set the number of records per page
+    // $records_per_page = 5;
 
-    // Get the current page from the URL (if not set, default to 1)
-    $current_page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
+    // // Get the current page from the URL (if not set, default to 1)
+    // $current_page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
 
-    // Calculate the starting record for the SQL query
-    $start_from = ($current_page - 1) * $records_per_page;
+    // // Calculate the starting record for the SQL query
+    // $start_from = ($current_page - 1) * $records_per_page;
 
-    // Fetch users data for the current page
-    $sql = "SELECT * FROM users ORDER BY created_at ASC LIMIT $start_from, $records_per_page";
-    $result = mysqli_query($conn, $sql);
+    // // Fetch users data for the current page
+    // $sql = "SELECT * FROM users ORDER BY created_at ASC LIMIT $start_from, $records_per_page";
+    // $result = mysqli_query($conn, $sql);
 
-    // Get the total number of records
-    $total_sql = "SELECT COUNT(*) FROM users";
-    $total_result = mysqli_query($conn, $total_sql);
-    $total_row = mysqli_fetch_row($total_result);
-    $total_records = $total_row[0];
+    // // Get the total number of records
+    // $total_sql = "SELECT COUNT(*) FROM users";
+    // $total_result = mysqli_query($conn, $total_sql);
+    // $total_row = mysqli_fetch_row($total_result);
+    // $total_records = $total_row[0];
 
-    // Calculate total number of pages
-    $total_pages = ceil($total_records / $records_per_page);
+    // // Calculate total number of pages
+    // $total_pages = ceil($total_records / $records_per_page);
 ?>
 
 <div class="dashboard-main-body">
     <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-24">
         <h6 class="fw-semibold mb-0">Users List</h6>
-    </div>
-
-    <div class="card h-100 p-0 radius-12">
-        <div class="card-header border-bottom bg-base py-16 px-24 d-flex align-items-center flex-wrap gap-3 justify-content-between">
-            <div class="d-flex align-items-center flex-wrap gap-3">
-                
-                <div class="navbar-search">
-                    <input type="text" class="bg-base h-40-px w-auto" name="search" id="searchInput" onkeyup="searchTable()" placeholder="Search">
-                    <iconify-icon icon="ion:search-outline" class="icon"></iconify-icon>
-                </div>
-                
-            </div>
-            <a href="add-user.php" class="btn lufera-bg text-white text-sm btn-sm px-12 py-12 radius-8 d-flex align-items-center gap-2">
+        <a href="add-user.php" class="btn lufera-bg text-white text-sm btn-sm px-12 py-12 radius-8 d-flex align-items-center gap-2">
                 <iconify-icon icon="ic:baseline-plus" class="icon text-xl line-height-1"></iconify-icon>
                 Add New User
             </a>
-        </div>
+    </div>
+
+    <div class="card h-100 p-0 radius-12">
         <div class="card-body p-24">
             <div class="table-responsive scroll-sm">
                 <table class="table bordered-table sm-table mb-0" id="userTable">
@@ -122,7 +112,7 @@
                 </table>
             </div>
             <!-- Pagination -->
-            <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mt-24">
+            <!-- <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mt-24">
                 <span>Showing <?php echo ($start_from + 1); ?> to <?php echo min($start_from + $records_per_page, $total_records); ?> of <?php echo $total_records; ?> entries</span>
                 
                 <ul class="d-flex flex-wrap align-items-center gap-2 justify-content-center">
@@ -150,7 +140,7 @@
                     </li>
                     <?php endif; ?>
                 </ul>
-            </div>
+            </div> -->
         </div>
     </div>
 </div>
@@ -212,38 +202,41 @@
 </script>
 
 <script>
-    function searchTable() {
-        // Get the value from the search input
-        let searchTerm = document.getElementById("searchInput").value.toLowerCase();
+    // function searchTable() {
+    //     // Get the value from the search input
+    //     let searchTerm = document.getElementById("searchInput").value.toLowerCase();
 
-        // Get the table and rows
-        let table = document.getElementById("userTable");
-        let rows = table.getElementsByTagName("tr");
+    //     // Get the table and rows
+    //     let table = document.getElementById("userTable");
+    //     let rows = table.getElementsByTagName("tr");
 
-        // Loop through the table rows and hide those that don't match the search term
-        for (let i = 1; i < rows.length; i++) {  // Start at 1 to skip the header row
-            let cells = rows[i].getElementsByTagName("td");
-            let matchFound = false;
+    //     // Loop through the table rows and hide those that don't match the search term
+    //     for (let i = 1; i < rows.length; i++) {  // Start at 1 to skip the header row
+    //         let cells = rows[i].getElementsByTagName("td");
+    //         let matchFound = false;
 
-            // Check if any of the cells in the row match the search term
-            for (let j = 0; j < cells.length; j++) {
-                if (cells[j].innerText.toLowerCase().includes(searchTerm)) {
-                    matchFound = true;
-                    break;  // No need to check further if a match is found
-                }
-            }
+    //         // Check if any of the cells in the row match the search term
+    //         for (let j = 0; j < cells.length; j++) {
+    //             if (cells[j].innerText.toLowerCase().includes(searchTerm)) {
+    //                 matchFound = true;
+    //                 break;  // No need to check further if a match is found
+    //             }
+    //         }
 
-            // Show or hide the row based on whether a match was found
-            if (matchFound) {
-                rows[i].style.display = "";
-            } else {
-                rows[i].style.display = "none";
-            }
-        }
-    }
+    //         // Show or hide the row based on whether a match was found
+    //         if (matchFound) {
+    //             rows[i].style.display = "";
+    //         } else {
+    //             rows[i].style.display = "none";
+    //         }
+    //     }
+    // }
 </script>
 
 <script>
+$(document).ready(function() {
+    $('#userTable').DataTable();
+} );
 $(document).ready(function () {
     $('.remove-item-btn').click(function () {
         var userId = $(this).data('id');

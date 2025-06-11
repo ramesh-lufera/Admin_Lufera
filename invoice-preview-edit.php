@@ -50,14 +50,15 @@ input[type=number] {
 
     if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $discount = $_POST['discount'];
+        $discount_type = $_POST['discount_type'];
         $payment_made = $_POST['payment_made'];
         $subtotal = $_POST['subtotal'];
         $total = $_POST['total'];
         $balance_due = $_POST['balance_due'];
         $gst = $_POST['gst'];
 
-        $stmt = $conn->prepare("UPDATE orders SET amount = ?, gst = ?, discount = ?, payment_made = ?, subtotal = ?, balance_due = ?  WHERE invoice_id = ?");
-        $stmt->bind_param("sssssss", $total, $gst, $discount, $payment_made, $subtotal, $balance_due, $invoice_id);
+        $stmt = $conn->prepare("UPDATE orders SET amount = ?, gst = ?, discount = ?, payment_made = ?, subtotal = ?, balance_due = ?, discount_type = ?  WHERE invoice_id = ?");
+        $stmt->bind_param("ssssssss", $total, $gst, $discount, $payment_made, $subtotal, $balance_due, $discount_type, $invoice_id);
         if ($stmt->execute()) {
             echo "
             <script>
@@ -199,9 +200,10 @@ input[type=number] {
                                                                 <div class="icon-field has-validation">
                                                                     <span class="percent-icon">
                                                                     <select id="discountType" name="discount_type">
-                                                                        <option value="%">%</option>
-                                                                        <option value="$">$</option>
+                                                                        <option value="%" <?php if ($row['discount_type'] === '%') echo 'selected'; ?>>%</option>
+                                                                        <option value="$" <?php if ($row['discount_type'] === '$') echo 'selected'; ?>>$</option>
                                                                     </select>
+
                                                                         <iconify-icon icon="mdi-menu-down" class="align-content-center"></iconify-icon>
                                                                     </span>
                                                                     <input value="<?php echo $row['discount']; ?>" <?php echo $row['balance_due'] == "0" ? 'readonly' : ''; ?> type="text" name="discount" id="numericInput" class="border-1 radius-8 px-10" style="width:120px; float:right">
@@ -303,10 +305,10 @@ input[type=number] {
     const total = newSubtotal + gst;
     const balance_due = total - paymentMade;
 
-    document.getElementById("subtotal").value = newSubtotal;
-    document.getElementById("gst").value = gst;
-    document.getElementById("total").value = total;
-    document.getElementById("balance_due").value = balance_due;
+    document.getElementById("subtotal").value = newSubtotal.toFixed(2);;
+    document.getElementById("gst").value = gst.toFixed(2);;
+    document.getElementById("total").value = total.toFixed(2);;
+    document.getElementById("balance_due").value = balance_due.toFixed(2);;
   }
 
   discountInput.addEventListener("input", function () {

@@ -3,15 +3,51 @@
 <?php
   $Id = $_SESSION['user_id'];
 
-  $sql = "select user_id, business_name from users where id = $Id";
-  $res = $conn ->query($sql);
-  $row = $res ->fetch_assoc();
-  $UserId = $row['user_id'];
-  $BusinessName = $row['business_name'];
+  //existing query
 
-  // Get all websites for this user
-  $sql = "SELECT * FROM websites WHERE user_id = '$UserId' ORDER BY created_at DESC";
-  $result = mysqli_query($conn, $sql);
+  // $sql = "select user_id, business_name from users where id = $Id";
+  // $res = $conn ->query($sql);
+  // $row = $res ->fetch_assoc();
+  // $UserId = $row['user_id'];
+  // $BusinessName = $row['business_name'];
+
+  // // Get all websites for this user
+  // $sql = "SELECT * FROM websites WHERE user_id = '$UserId' ORDER BY created_at DESC";
+  // $result = mysqli_query($conn, $sql);
+
+//new query
+
+$user = "select * from users where id = $Id";
+$res = $conn ->query($user);
+$row = $res ->fetch_assoc();
+$UserId = $row['user_id'];
+$role = $row['role'];
+
+if($role == '1'){
+  
+  $sql = "SELECT 
+    users.business_name,
+    websites.plan,
+    websites.domain,
+    websites.status
+FROM 
+    users 
+JOIN 
+    websites ON users.user_id = websites.user_id";
+    $result = mysqli_query($conn, $sql);
+}
+else{
+  $sql = "SELECT 
+    users.business_name,
+    websites.plan,
+    websites.domain,
+    websites.status 
+FROM 
+    users 
+JOIN 
+    websites ON users.user_id = websites.user_id WHERE websites.user_id = '$UserId'";
+    $result = mysqli_query($conn, $sql);
+}
 
   $websites = [];
   while ($row = mysqli_fetch_assoc($result)) {
@@ -359,7 +395,7 @@
               <!-- Domain Title -->
               <div class="site-info-header">
                 <h6>
-                  <?php echo htmlspecialchars($BusinessName); ?>
+                  <?php echo htmlspecialchars($site['business_name']); ?>
                 </h6>
               </div>
               <!-- Website (no link, color applied only to domain text) -->

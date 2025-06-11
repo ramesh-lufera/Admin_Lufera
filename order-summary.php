@@ -306,19 +306,19 @@
 
         if (!isNaN(amount)) {
             const updatedBalance = originalBalance - amount;
-            document.getElementById('balance_due').value = updatedBalance;
+            document.getElementById('balance_due').value = updatedBalance.toFixed(2);;
         } else {
             // Reset if input is not a number
-            document.getElementById('balance_due').value = originalBalance;
+            document.getElementById('balance_due').value = originalBalance.toFixed(2);;
         }
     });
 </script>
 <script>
 document.addEventListener("DOMContentLoaded", function () {
-    const amountInput = document.getElementById("numericInput");
-    const balanceDue = parseFloat(document.getElementById("balance_due").value);
-    const errorText = document.getElementById("amountError");
-    const submit = document.getElementById("submit");
+    const amountInput = document.getElementById("numericInput").toFixed(2);;
+    const balanceDue = parseFloat(document.getElementById("balance_due").value).toFixed(2);;
+    const errorText = document.getElementById("amountError").toFixed(2);;
+    const submit = document.getElementById("submit").toFixed(2);;
     amountInput.addEventListener("input", function () {
         const enteredAmount = parseFloat(this.value);
 

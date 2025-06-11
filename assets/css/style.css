@@ -15143,4 +15143,25 @@ td.fc-header-center {
 .toggle-password{
   inset-inline-start: auto !important;
 }
+.page-item:first-child .page-link, .page-item:last-child .page-link{
+  border-top-left-radius: 0.5rem !important;
+  border-bottom-left-radius: 0.5rem !important;
+  border-top-right-radius: 0.5rem !important;
+  border-bottom-right-radius: 0.5rem !important;
+}
+div.dt-container select.dt-input{
+  border-radius: 10px !important;
+  text-align: center;
+  margin-right: 10px;
+  width:60px;
+}
+div.dt-container .dt-search input{
+  text-align: start;
+}
+.dt-column-order{
+  display: none;
+}
+table.dataTable thead>tr>th.dt-orderable-asc:hover, table.dataTable thead>tr>th.dt-orderable-desc:hover, table.dataTable thead>tr>td.dt-orderable-asc:hover, table.dataTable thead>tr>td.dt-orderable-desc:hover{
+  outline: none;
+}
 /* === footer css end === */

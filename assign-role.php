@@ -22,7 +22,7 @@ $result = mysqli_query($conn, $query);
     <div class="card h-100 p-0 radius-12">
         <div class="card-body p-24">
             <div class="table-responsive scroll-sm">
-                <table class="table bordered-table sm-table mb-0">
+                <table class="table bordered-table sm-table mb-0" id="role-table">
                     <thead>
                         <tr>
                             <th scope="col">User ID</th>
@@ -93,7 +93,7 @@ $result = mysqli_query($conn, $query);
             </div>
         </div>
         <div class="modal-footer">
-            <button type="button" id="submitRoleChange" class="btn btn-primary">Update Role</button>
+            <button type="button" id="submitRoleChange" class="btn lufera-bg">Update Role</button>
         </div>
     </div>
   </div>
@@ -101,6 +101,10 @@ $result = mysqli_query($conn, $query);
 
 </div>
 <script>
+$(document).ready(function() {
+    $('#role-table').DataTable();
+} );
+
 document.addEventListener('DOMContentLoaded', function () {
     var assignRoleModal = document.getElementById('assignRoleModal');
 
