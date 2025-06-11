@@ -9,8 +9,8 @@
 
     // Google Client Configuration
     require './partials/google-config.php';
-    $client->setRedirectUri('https://admin.luferatech.com/sign-in-redirect.php');
-    // $client->setRedirectUri('http://localhost/Admin_Lufera/sign-in-redirect.php');
+    // $client->setRedirectUri('https://admin.luferatech.com/sign-in-redirect.php');
+    $client->setRedirectUri('http://localhost/Admin_Lufera/sign-in-redirect.php');
 
     // Force account selection every time
     $client->setPrompt('select_account');

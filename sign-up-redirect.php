@@ -13,6 +13,13 @@
 
     if (isset($_GET['code'])) {
         $token = $client->fetchAccessTokenWithAuthCode($_GET['code']);
+
+        // Check for token error
+        if (isset($token['error'])) {
+            echo "Authentication error: " . htmlspecialchars($token['error_description']);
+            exit;
+        }
+        
         $client->setAccessToken($token);
 
         $google_service = new Google_Service_Oauth2($client);
@@ -37,14 +44,19 @@
         $stmt->store_result();
 
         if ($stmt->num_rows > 0) {
-            // User exists - log in
-            $_SESSION['user_id'] = $user['id'];
-            $_SESSION['username'] = $user['username'];
+            // User exists
+            $stmt->bind_result($id, $username);
+            $stmt->fetch();
 
-            // User exists: update photo
+            $_SESSION['user_id'] = $id;
+            $_SESSION['username'] = $username;
+            $_SESSION['email'] = $email;
+
+            // Update photo on each login
             $update = $conn->prepare("UPDATE users SET photo = ? WHERE email = ?");
             $update->bind_param("ss", $photo, $email);
             $update->execute();
+            $update->close();
         } else {
             // User doesn't exist - insert new
             function generateUserId() {
@@ -61,8 +73,12 @@
 
             $_SESSION['user_id'] = $insert->insert_id;
             $_SESSION['username'] = $username;
+            $_SESSION['email'] = $email;
+
+            $insert->close();
         }
 
+        $stmt->close();
         header('Location: admin-dashboard.php');
         exit;
     } else {
