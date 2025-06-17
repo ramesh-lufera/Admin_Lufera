@@ -23,7 +23,7 @@ $row = $res ->fetch_assoc();
 $UserId = $row['user_id'];
 $role = $row['role'];
 
-if($role == '1'){
+if($role == '1' || $role == '2'){
   
   $sql = "SELECT 
     users.business_name,

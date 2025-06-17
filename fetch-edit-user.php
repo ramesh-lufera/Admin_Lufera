@@ -66,15 +66,15 @@ if (isset($_POST['id'])) {
                     $currentRoleLabel = isset($roles[$currentRoleValue]) ? $roles[$currentRoleValue] : 'Unknown';
                     ?>
 
-                    <select class="form-control" name="role" required>
+                    <select class="form-control" name="role" required >
                         <option value="<?php echo htmlspecialchars($currentRoleValue); ?>" selected>
                             <?php echo htmlspecialchars($currentRoleLabel); ?>
                         </option>
-                        <?php foreach ($roles as $value => $label): ?>
+                        <!-- <?php foreach ($roles as $value => $label): ?>
                             <?php if ($value != $currentRoleValue): ?>
                                 <option value="<?php echo $value; ?>"><?php echo $label; ?></option>
                             <?php endif; ?>
-                        <?php endforeach; ?>
+                        <?php endforeach; ?> -->
                     </select>
 
                 </div>
