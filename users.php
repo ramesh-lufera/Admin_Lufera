@@ -2,7 +2,7 @@
 
 <?php
     // Fetch users data from the database
-    $sql = "SELECT * FROM users ORDER BY created_at ASC";
+    $sql = "SELECT * FROM users where role != '1'";
     $result = mysqli_query($conn, $sql);
 
     // // Set the number of records per page

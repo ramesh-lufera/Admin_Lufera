@@ -41,19 +41,14 @@
     </div>
     <div class="sidebar-menu-area">
         <ul class="sidebar-menu" id="sidebar-menu">
-            <li>
-                <a href="<?php echo ($row['role'] == "1") ? 'admin-dashboard.php' : 'user-dashboard.php'; ?>">
-                    <iconify-icon icon="solar:home-smile-angle-outline" class="menu-icon"></iconify-icon>
-                    <span>Dashboard</span>
-                </a>
-            </li>
+            <!-- 
 
             <li><a href="websites.php"><iconify-icon icon="hugeicons:ai-web-browsing" class="menu-icon"></iconify-icon><span>Website</span></a></li>
             <li><a href="#"><iconify-icon icon="ion:megaphone-outline" class="menu-icon"></iconify-icon><span>Marketing</span></a></li>
             <li><a href="#"><iconify-icon icon="hugeicons:source-code-circle" class="menu-icon"></iconify-icon><span>Domain</span></a></li>
             <li><a href="#"><iconify-icon icon="mage:database" class="menu-icon"></iconify-icon><span>Hosting</span></a></li>
             <li><a href="#"><iconify-icon icon="mage:email" class="menu-icon"></iconify-icon><span>Email</span></a></li>
-            <li><a href="orders.php"><iconify-icon icon="hugeicons:invoice-03" class="menu-icon"></iconify-icon><span>Orders</span></a></li>
+            <li><a href="orders.php"><iconify-icon icon="hugeicons:invoice-03" class="menu-icon"></iconify-icon><span>Orders</span></a></li> 
 
             <?php if ($row['role'] == "1" || $row['role'] == "2") { ?>
                 <li class="dropdown">
@@ -68,7 +63,13 @@
                 </li>
                 <li><a href="assign-role.php"><iconify-icon icon="hugeicons:ai-web-browsing" class="menu-icon"></iconify-icon><span>Role & Access</span></a></li>
             <?php } ?>
-
+            -->
+            <li>
+                <a href="<?php echo ($row['role'] == "1") ? 'admin-dashboard.php' : 'user-dashboard.php'; ?>">
+                    <iconify-icon icon="solar:home-smile-angle-outline" class="menu-icon"></iconify-icon>
+                    <span>Dashboard</span>
+                </a>
+            </li>
             <?php if ($row['role'] == "1") { ?>
                 <li class="dropdown">
                     <a href="javascript:void(0)">
@@ -87,10 +88,52 @@
                     </ul>
                 </li>
             <?php } ?>
+            <!-- <?php if ($row['role'] == "1" || $row['role'] == "2") { ?>
+                <li class="dropdown">
+                    <a href="javascript:void(0)">
+                        <iconify-icon icon="flowbite:users-group-outline" class="menu-icon"></iconify-icon>
+                        <span>Users</span>
+                    </a>
+                    <ul class="sidebar-submenu">
+                        <li><a href="add-user.php"><i class="ri-circle-fill circle-icon text-warning-main w-auto"></i> Add User</a></li>
+                        <li><a href="users-list.php"><i class="ri-circle-fill circle-icon text-warning-600 w-auto"></i> Users List</a></li>
+                    </ul>
+                </li>
+                <li><a href="assign-role.php"><iconify-icon icon="hugeicons:ai-web-browsing" class="menu-icon"></iconify-icon><span>Role & Access</span></a></li>
+            <?php } ?> -->
+            
 
-            <li><a href="logout.php"><iconify-icon icon="bi:x-circle" class="menu-icon"></iconify-icon><span>Log-Out</span></a></li>
 
-            <?php
+
+<?php
+$query = "
+    SELECT 
+        categories.cat_id, 
+        categories.cat_name, 
+        categories.cat_url 
+    FROM users 
+    INNER JOIN roles ON users.role = roles.id 
+    INNER JOIN permission ON roles.id = permission.role_id 
+    INNER JOIN categories ON permission.category_id = categories.cat_id 
+    WHERE users.id = ?
+    ORDER BY categories.cat_id DESC";
+
+$stmt = $conn->prepare($query);
+$stmt->bind_param("i", $userid);
+$stmt->execute();
+$result = $stmt->get_result();
+
+while ($cat = $result->fetch_assoc()) {
+?>
+    <li>
+        <a href="<?php echo htmlspecialchars($cat['cat_url']); ?>">
+            <iconify-icon icon="mdi:folder-outline" class="menu-icon"></iconify-icon>
+            <span><?php echo htmlspecialchars($cat['cat_name']); ?></span>
+        </a>
+    </li>
+<?php } ?>
+
+            <!-- <?php
                 $cat_query = $conn->query("SELECT * FROM categories ORDER BY cat_id DESC");
                 while ($cat = $cat_query->fetch_assoc()) {
             ?>
@@ -100,7 +143,7 @@
                         <span><?php echo htmlspecialchars($cat['cat_name']); ?></span>
                     </a>
                 </li>
-            <?php } ?>
+            <?php } ?> -->
 
             <?php if ($row['role'] == "1") { ?>
                 <li>
@@ -110,7 +153,7 @@
                     </a>
                 </li>
             <?php } ?>
-            
+            <li><a href="logout.php"><iconify-icon icon="bi:x-circle" class="menu-icon"></iconify-icon><span>Log-Out</span></a></li> 
         </ul>
     </div>
 </aside>
@@ -129,12 +172,12 @@
                 <div class="modal-body">
                     <form method="POST">
                         <div class="mb-20">
-                            <label for="name" class="form-label fw-semibold text-primary-light text-sm mb-8">Name</label>
+                            <label for="name" class="form-label fw-semibold text-primary-light text-sm mb-8">Category</label>
                             <input type="text" class="form-control radius-8" name="name" id="name" placeholder="Enter category name" required>
                         </div>
-                        <div class="mb-20">
-                            <label for="url" class="form-label fw-semibold text-primary-light text-sm mb-8">URL</label>
-                            <input type="text" class="form-control radius-8" name="url" id="url" placeholder="e.g., category.php" required>
+                        <div>
+                            <!-- <label for="url" class="form-label fw-semibold text-primary-light text-sm mb-8">URL</label> -->
+                            <input type="hidden" class="form-control radius-8" name="url" id="url" placeholder="e.g., category.php" required>
                         </div>
                 </div>
                 <div class="modal-footer d-flex align-items-center justify-content-center gap-3">
@@ -156,5 +199,12 @@
                 alert.style.display = 'none';
             }, 3000);
         }
+    });
+</script>
+<script>
+    document.getElementById('name').addEventListener('input', function() {
+        const nameValue = this.value.trim();
+        const sanitized = nameValue.replace(/\s+/g, '-').toLowerCase(); // Optional: replace spaces with dashes
+        document.getElementById('url').value = sanitized ? sanitized + '.php' : '';
     });
 </script>
