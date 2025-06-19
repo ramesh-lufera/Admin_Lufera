@@ -102,7 +102,7 @@ error_reporting(E_ALL);
                     confirmButtonText: 'OK'
                 }).then((result) => {
                     if (result.isConfirmed) {
-                        window.location.href = 'users-list.php';
+                        window.location.href = 'users.php';
                     }
                 });
             </script>";
