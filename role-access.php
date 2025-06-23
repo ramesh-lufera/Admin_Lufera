@@ -105,7 +105,7 @@
 </ul>
                         <div class="tab-content" id="pills-tabContent">
                             <div class="tab-pane fade show active" id="step1" role="tabpanel">
-                                <div class="row">
+                                <div class="row mt-20">
                                 <div class="col-12 mb-20">
                                     <label class="form-label fw-semibold text-primary-light text-sm mb-8">Role Name</label>
                                     <input type="text" class="form-control radius-8" name="role_name" id="role_name" required>
