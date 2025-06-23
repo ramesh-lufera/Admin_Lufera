@@ -8,6 +8,8 @@ if (isset($_POST['id'])) {
     $stmt->execute();
     $result = $stmt->get_result();
 
+
+
     if ($user = $result->fetch_assoc()) {
         echo "<div class='mt-24'>
                 <h6 class='text-xl mb-16'>Personal Info</h6>
@@ -51,10 +53,14 @@ if (isset($_POST['id'])) {
                         <li class='d-flex align-items-center gap-1 mb-12'>
                             <span class='w-30 text-md fw-semibold text-primary-light'>Pin</span>
                             <span class='w-70 text-secondary-light fw-medium'>: " . htmlspecialchars($user['pincode']) . "</span>
-                        </li>
-                        <li class='d-flex align-items-center gap-1 mb-12'>
+                        </li>";
+                        $role_id = $user['role'];
+                        $sqls = "SELECT * FROM `roles` WHERE id = $role_id";
+                        $results = $conn->query($sqls);
+                        $rows = $results->fetch_assoc();
+                        echo "<li class='d-flex align-items-center gap-1 mb-12'>
                             <span class='w-30 text-md fw-semibold text-primary-light'>Role</span>
-                            <span class='w-70 text-secondary-light fw-medium'>: " . htmlspecialchars($user['role']) . "</span>
+                            <span class='w-70 text-secondary-light fw-medium'>: " . htmlspecialchars($rows['name']) . "</span>
                         </li>
                         <li class='d-flex align-items-center gap-1 mb-12'>
                             <span class='w-30 text-md fw-semibold text-primary-light'>User ID</span>

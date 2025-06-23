@@ -113,20 +113,15 @@ $row['username'] = explode('@', $row['email'])[0];
                                     </li>
                                     <li class="d-flex align-items-center gap-1 mb-12">
                                     <?php
-                                        $roles = [
-                                            2 => 'Admin',
-                                            3 => 'Sales',
-                                            4 => 'Accounts',
-                                            5 => 'Developer',
-                                            6 => 'Marketing',
-                                            7 => 'User'
-                                        ];
+                                       $role_id = $row['role'];
+                                       $sqls = "SELECT * FROM `roles` WHERE id = $role_id";
+                                       $results = $conn->query($sqls);
+                                       $rows = $results->fetch_assoc();
 
-                                        $currentRoleValue = $row['role'];
-                                        $currentRoleLabel = isset($roles[$currentRoleValue]) ? $roles[$currentRoleValue] : 'Unknown';
+                                        
                                     ?>
                                         <span class="w-30 text-md fw-semibold text-primary-light"> Role</span>
-                                        <span class="w-70 text-secondary-light fw-medium">: <?php echo htmlspecialchars($currentRoleLabel); ?></span>
+                                        <span class="w-70 text-secondary-light fw-medium">: <?php echo $rows['name']; ?></span>
                                     </li>
                                     <li class="d-flex align-items-center gap-1 mb-12">
                                         <span class="w-30 text-md fw-semibold text-primary-light"> Client ID</span>
