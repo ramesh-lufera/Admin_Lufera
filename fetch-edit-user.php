@@ -53,30 +53,25 @@ if (isset($_POST['id'])) {
                 <div class="mb-20">
                     <label for="" class="form-label fw-semibold text-primary-light text-sm mb-8">Role <span class="text-danger-600">*</span></label>
                     <?php
-                    $roles = [
-                        2 => 'Admin',
-                        3 => 'Sales',
-                        4 => 'Accounts',
-                        5 => 'Developer',
-                        6 => 'Marketing',
-                        7 => 'User'
-                    ];
-
                     $currentRoleValue = $user['role'];
-                    $currentRoleLabel = isset($roles[$currentRoleValue]) ? $roles[$currentRoleValue] : 'Unknown';
+
+                    // Fetch active roles from the roles table
+                    $roleQuery = "SELECT id, name FROM roles WHERE id != '1' && isActive = 1";
+                    $roleResult = mysqli_query($conn, $roleQuery);
+
                     ?>
-
-                    <select class="form-control" name="role" required >
-                        <option value="<?php echo htmlspecialchars($currentRoleValue); ?>" selected>
-                            <?php echo htmlspecialchars($currentRoleLabel); ?>
-                        </option>
-                        <!-- <?php foreach ($roles as $value => $label): ?>
-                            <?php if ($value != $currentRoleValue): ?>
-                                <option value="<?php echo $value; ?>"><?php echo $label; ?></option>
-                            <?php endif; ?>
-                        <?php endforeach; ?> -->
+                    <select class="form-control" name="role" required>
+                        <?php
+                        if ($roleResult && mysqli_num_rows($roleResult) > 0) {
+                            while ($role = mysqli_fetch_assoc($roleResult)) {
+                                $selected = ($role['id'] == $currentRoleValue) ? 'selected' : '';
+                                echo '<option value="' . htmlspecialchars($role['id']) . '" ' . $selected . '>' . htmlspecialchars($role['name']) . '</option>';
+                            }
+                        } else {
+                            echo '<option value="">No roles available</option>';
+                        }
+                        ?>
                     </select>
-
                 </div>
             </div>
             <div class="col-sm-6">
