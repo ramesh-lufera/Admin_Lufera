@@ -9,11 +9,14 @@ $query = "SELECT
     roles.name AS role_name
 FROM 
     users 
-JOIN 
-    roles ON users.role = roles.id where users.role !=' 1'" ;
+LEFT JOIN 
+    roles ON users.role = roles.id
+WHERE 
+    users.role != '1'" ;
 
 $result = mysqli_query($conn, $query); 
 ?>
+
 <div class="dashboard-main-body">
     <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-24">
         <h6 class="fw-semibold mb-0">Role & Access</h6>
@@ -83,7 +86,7 @@ $result = mysqli_query($conn, $query);
                 <select class="form-select" id="modal_role" required>
                     <option value="">Select Role</option>
                     <?php
-                    $rolesQuery = "SELECT id, name FROM roles WHERE isActive = 1";
+                    $rolesQuery = "SELECT id, name FROM roles WHERE isActive = 1 && id != 1";
                     $rolesResult = mysqli_query($conn, $rolesQuery);
                     while($role = mysqli_fetch_assoc($rolesResult)) {
                         echo '<option value="' . $role['id'] . '">' . htmlspecialchars($role['name']) . '</option>';
