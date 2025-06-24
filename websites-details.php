@@ -13,8 +13,12 @@
   $role = $row['role'];
   $stmt->close();
 
-  $stmt = $conn->prepare("SELECT plan, duration, status, created_at FROM websites WHERE user_id = ?");
-  $stmt->bind_param("s", $UserId); 
+  if ($role == '1') {
+    $stmt = $conn->prepare("SELECT plan, duration, status, created_at FROM websites");
+  } else {
+    $stmt = $conn->prepare("SELECT plan, duration, status, created_at FROM websites WHERE user_id = ?");
+    $stmt->bind_param("s", $UserId); 
+  }
   $stmt->execute();
   $result = $stmt->get_result();
   $row = $result->fetch_assoc();
