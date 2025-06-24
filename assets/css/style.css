@@ -14988,7 +14988,7 @@ td.fc-header-center {
   }
 }
 .sidebar-menu li a:hover, .to-top-list li .hover-text-primary:hover {
-  color: #fec700 !important;
+  color: #fec700;
 }
 
 .sidebar-menu li a .menu-icon {

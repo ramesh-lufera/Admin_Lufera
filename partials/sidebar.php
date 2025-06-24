@@ -78,7 +78,7 @@
 
     <div class="sidebar-menu-area">
         <div class="sidebar-menu-wrapper">
-            <ul class="sidebar-menu top-menu" id="sidebar-menu-top">
+            <ul class="sidebar-menu top-menu" id="sidebar-menu">
                 <!-- Dashboard + Dynamic Categories + Add New Category go here -->
                 <li>
             <?php if($row['role']=="1"){ ?>
@@ -141,7 +141,7 @@
             <?php } ?>
             </ul>
 
-            <ul class="sidebar-menu bottom-menu" id="sidebar-menu-bottom">
+            <ul class="sidebar-menu bottom-menu" id="sidebar-menu">
             <li>
                 <a href="orders.php">
                     <iconify-icon icon="hugeicons:invoice-03" class="menu-icon"></iconify-icon>
@@ -171,34 +171,34 @@
                     </a>
                     <ul class="sidebar-submenu">
                         <li>
-                            <a href="company.php"><i class="ri-circle-fill circle-icon text-primary-600 w-auto"></i> Company</a>
+                            <a href="company.php"><i class="ri-circle-fill circle-icon text-warning-600 w-auto"></i> Company</a>
                         </li>
                         <li>
-                            <a href="role-access.php"><i class="ri-circle-fill circle-icon text-primary-600 w-auto"></i> Role</a>
+                            <a href="role-access.php"><i class="ri-circle-fill circle-icon text-warning-600 w-auto"></i> Role</a>
                         </li>
                         <li>
                             <a href="credentials.php"><i class="ri-circle-fill circle-icon text-warning-600 w-auto"></i> Credentials</a>
                         </li>
                         <li>
-                            <a href="notification-alert.php"><i class="ri-circle-fill circle-icon text-info-600 w-auto"></i> Notification Alert</a>
+                            <a href="notification-alert.php"><i class="ri-circle-fill circle-icon text-warning-600 w-auto"></i> Notification Alert</a>
                         </li>
                         <li>
-                            <a href="theme.php"><i class="ri-circle-fill circle-icon text-danger-600 w-auto"></i> Theme</a>
+                            <a href="theme.php"><i class="ri-circle-fill circle-icon text-warning-600 w-auto"></i> Theme</a>
                         </li>
                         <li>
-                            <a href="currencies.php"><i class="ri-circle-fill circle-icon text-danger-600 w-auto"></i> Currencies</a>
+                            <a href="currencies.php"><i class="ri-circle-fill circle-icon text-warning-600 w-auto"></i> Currencies</a>
                         </li>
                         <li>
-                            <a href="language.php"><i class="ri-circle-fill circle-icon text-danger-600 w-auto"></i> Languages</a>
+                            <a href="language.php"><i class="ri-circle-fill circle-icon text-warning-600 w-auto"></i> Languages</a>
                         </li>
                         <li>
-                            <a href="payment-gateway.php"><i class="ri-circle-fill circle-icon text-danger-600 w-auto"></i> Payment Gateway</a>
+                            <a href="payment-gateway.php"><i class="ri-circle-fill circle-icon text-warning-600 w-auto"></i> Payment Gateway</a>
                         </li>
                     </ul>
                 </li>
             <?php } ?>
             <li>
-                <a href="logout.php">
+                <a href="logout.php" class="hover-bg-transparent hover-text-danger">
                     <iconify-icon icon="bi:x-circle" class="menu-icon"></iconify-icon>
                     <span>Log-Out</span>
                 </a>
