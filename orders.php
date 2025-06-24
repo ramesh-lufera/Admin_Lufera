@@ -10,37 +10,6 @@
         opacity: 0.5;  /* Makes the button appear blurred */
     }
 </style>
-<!-- <script>
-    function searchTable() {
-        // Get the value from the search input
-        let searchTerm = document.getElementById("searchInput").value.toLowerCase();
-
-        // Get the table and rows
-        let table = document.getElementById("userTable");
-        let rows = table.getElementsByTagName("tr");
-
-        // Loop through the table rows and hide those that don't match the search term
-        for (let i = 1; i < rows.length; i++) {  // Start at 1 to skip the header row
-            let cells = rows[i].getElementsByTagName("td");
-            let matchFound = false;
-
-            // Check if any of the cells in the row match the search term
-            for (let j = 0; j < cells.length; j++) {
-                if (cells[j].innerText.toLowerCase().includes(searchTerm)) {
-                    matchFound = true;
-                    break;  // No need to check further if a match is found
-                }
-            }
-
-            // Show or hide the row based on whether a match was found
-            if (matchFound) {
-                rows[i].style.display = "";
-            } else {
-                rows[i].style.display = "none";
-            }
-        }
-    }
-</script> -->
 </head>
 
 <?php 
@@ -49,28 +18,6 @@
     // Fetch users data from the database
     $sql = "SELECT * FROM users ORDER BY created_at ASC";
     $result = mysqli_query($conn, $sql);
-
-    // // Set the number of records per page
-    // $records_per_page = 5;
-
-    // // Get the current page from the URL (if not set, default to 1)
-    // $current_page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
-
-    // // Calculate the starting record for the SQL query
-    // $start_from = ($current_page - 1) * $records_per_page;
-
-    // // Fetch users data for the current page
-    // $sql = "SELECT * FROM users ORDER BY created_at ASC LIMIT $start_from, $records_per_page";
-    // $result = mysqli_query($conn, $sql);
-
-    // // Get the total number of records
-    // $total_sql = "SELECT COUNT(*) FROM users";
-    // $total_result = mysqli_query($conn, $total_sql);
-    // $total_row = mysqli_fetch_row($total_result);
-    // $total_records = $total_row[0];
-
-    // // Calculate total number of pages
-    // $total_pages = ceil($total_records / $records_per_page);
 
     $Id = $_SESSION['user_id'];
     
@@ -222,10 +169,7 @@
                             </td>
                         </tr>
                         <?php endwhile; ?>
-                        <?php else: ?>
-                        <tr>
-                            <td colspan="7" class="text-center text-muted">No orders found.</td>
-                        </tr>
+                        
                         <?php endif; ?>
                     </tbody>
                 </table>
