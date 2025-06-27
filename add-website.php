@@ -198,7 +198,7 @@ if ($result->num_rows > 0) {
                     <div class="col-xxl-4 col-sm-6">
                         <div class="pricing-plan position-relative radius-24 overflow-hidden border">
                         
-                        <span class="bg-white bg-opacity-25 lufera-bg radius-24 py-8 px-24 text-sm position-absolute end-0 top-0 z-1 rounded-start-top-0 rounded-end-bottom-0">Popular</span>
+                        <!-- <span class="bg-white bg-opacity-25 lufera-bg radius-24 py-8 px-24 text-sm position-absolute end-0 top-0 z-1 rounded-start-top-0 rounded-end-bottom-0">Popular</span> -->
                             
                             <div class="d-flex align-items-center gap-16">
                                 <div class="">
