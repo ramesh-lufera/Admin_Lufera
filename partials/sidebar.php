@@ -480,7 +480,7 @@
         flex-wrap: wrap;
     }
 
-    .category-link {
+    /* .category-link {
         flex-grow: 1;
         display: flex;
         align-items: center;
@@ -494,7 +494,7 @@
         font-size: 14px;
         font-weight: 500;
         word-break: break-word;
-    }
+    } */
 
     .category-actions {
         display: flex;
