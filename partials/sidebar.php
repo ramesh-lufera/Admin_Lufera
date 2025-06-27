@@ -354,7 +354,7 @@
 
         <!-- Buttons -->
         <div class="modal-actions">
-          <button type="submit" class="btn btn-save">Save</button>
+          <button type="submit" class="btn btn-save" onclick="window.location.href='add-product.php'">Save</button>
           <button type="button" class="btn btn-cancel" onclick="closeProductModal()">Cancel</button>
         </div>
       </form>
