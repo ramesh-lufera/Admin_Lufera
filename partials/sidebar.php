@@ -7,9 +7,11 @@
     $row = $result ->fetch_assoc();
 
     // Handle category creation
-    if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['cat_name'], $_POST['cat_url'])) {
+    if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['cat_name'], $_POST['cat_url'], $_POST['cat_template'])) {
         $cat_name = trim($_POST['cat_name']);
         $cat_url = trim($_POST['cat_url']);
+        $cat_url1 = trim($_POST['cat_url']);
+        $cat_template = trim($_POST['cat_template']);
 
         if (!str_ends_with($cat_url, '.php')) {
             $cat_url .= '.php';
@@ -23,477 +25,958 @@
             // Set the file path one level up
             $file_path = dirname(__DIR__) . '/' . $cat_url;
 
+            // Generate slug for filenames
+            $catSlug = strtolower(preg_replace('/\s+/', '-', $cat_name));
+            // $det_file_name = $catSlug . '-det.php'; // ✅ New file for "Manage"
+            $det_file_name = $cat_url1 . '-det.php'; // ✅ New file for "Manage"
+            $det_file_path = dirname(__DIR__) . '/' . $det_file_name;
+
+            // ✅ Replace "websites-details.php" with dynamic det file
+            $manageLink = $det_file_name;
+
             if (!file_exists($file_path)) {
                 // Capitalize first letter of each word for title
                 $pageTitle = ucwords($cat_name);
 
-                $catSlug = strtolower(preg_replace('/\s+/', '-', $cat_name));
+                // $catSlug = strtolower(preg_replace('/\s+/', '-', $cat_name));
                 
                 // Your full page content stored as a string (HEREDOC syntax)
                 $default_content = <<<PHP
                     <?php include './partials/layouts/layoutTop.php'; ?>
+                        <?php
+                            \$Id = \$_SESSION['user_id'];
 
-                    <?php
-                    \$Id = \$_SESSION['user_id'];
+                            \$user = "select * from users where id = \$Id";
+                            \$res = \$conn ->query(\$user);
+                            \$row = \$res ->fetch_assoc();
+                            \$UserId = \$row['user_id'];
+                            \$role = \$row['role'];
 
-                    \$user = "select * from users where id = \$Id";
-                    \$res = \$conn ->query(\$user);
-                    \$row = \$res ->fetch_assoc();
-                    \$UserId = \$row['user_id'];
-                    \$role = \$row['role'];
+                            if(\$role == '1' || \$role == '2'){
+                            
+                            \$sql = "SELECT 
+                                users.business_name,
+                                websites.plan,
+                                websites.domain,
+                                websites.status
+                            FROM 
+                                users 
+                            JOIN 
+                                websites ON users.user_id = websites.user_id";
+                                \$result = mysqli_query(\$conn, \$sql);
+                            }
+                            else{
+                            \$sql = "SELECT 
+                                users.business_name,
+                                websites.plan,
+                                websites.domain,
+                                websites.status 
+                            FROM 
+                                users 
+                            JOIN 
+                                websites ON users.user_id = websites.user_id WHERE websites.user_id = '\$UserId'";
+                                \$result = mysqli_query(\$conn, \$sql);
+                            }
 
-                    if(\$role == '1' || \$role == '2'){
-                    
-                    \$sql = "SELECT 
-                        users.business_name,
-                        websites.plan,
-                        websites.domain,
-                        websites.status
-                    FROM 
-                        users 
-                    JOIN 
-                        websites ON users.user_id = websites.user_id";
-                        \$result = mysqli_query(\$conn, \$sql);
-                    }
-                    else{
-                    \$sql = "SELECT 
-                        users.business_name,
-                        websites.plan,
-                        websites.domain,
-                        websites.status 
-                    FROM 
-                        users 
-                    JOIN 
-                        websites ON users.user_id = websites.user_id WHERE websites.user_id = '\$UserId'";
-                        \$result = mysqli_query(\$conn, \$sql);
-                    }
+                            \$websites = [];
+                            while (\$row = mysqli_fetch_assoc(\$result)) {
+                                \$websites[] = \$row;
+                            }
 
-                    \$websites = [];
-                    while (\$row = mysqli_fetch_assoc(\$result)) {
-                        \$websites[] = \$row;
-                    }
+                            // Number of websites per page
+                            \$websitesPerPage = 5;
 
-                    // Number of websites per page
-                    \$websitesPerPage = 5;
+                            // Get the current page from URL, default is 1
+                            \$page = isset(\$_GET['page']) ? (int)\$_GET['page'] : 1;
 
-                    // Get the current page from URL, default is 1
-                    \$page = isset(\$_GET['page']) ? (int)\$_GET['page'] : 1;
+                            // Calculate the starting index for the websites to display on this page
+                            \$startIndex = (\$page - 1) * \$websitesPerPage;
 
-                    // Calculate the starting index for the websites to display on this page
-                    \$startIndex = (\$page - 1) * \$websitesPerPage;
+                            // Slice the websites array to get only the websites for the current page
+                            \$websitesOnPage = array_slice(\$websites, \$startIndex, \$websitesPerPage);
 
-                    // Slice the websites array to get only the websites for the current page
-                    \$websitesOnPage = array_slice(\$websites, \$startIndex, \$websitesPerPage);
+                            // Calculate the total number of pages
+                            \$totalPages = ceil(count(\$websites) / \$websitesPerPage);
+                        ?>
+                        <!DOCTYPE html>
+                        <html lang="en">
+                        <head>
+                        <meta charset="UTF-8">
+                        <title>Websites</title>
+                        <style>
+                            :root {
+                            --yellow: #fec700;
+                            --black: #101010;
+                            --mild-blue: #e6f0ff;
+                            }
 
-                    // Calculate the total number of pages
-                    \$totalPages = ceil(count(\$websites) / \$websitesPerPage);
-                    ?>
-
-                    <!DOCTYPE html>
-                    <html lang="en">
-                    <head>
-                    <meta charset="UTF-8">
-                    <title>Websites</title>
-                    <style>
-                        :root {
-                        --yellow: #fec700;
-                        --black: #101010;
-                        --mild-blue: #e6f0ff;
-                        }
-
-                        .content-wrapper {
-                        width: 100%;
-                        /* max-width: 1200px; */
-                        margin: 20px auto;
-                        padding: 10px 15px;
-                        }
-
-                        .header-row {
-                        margin-bottom: 20px;
-                        }
-
-                        .header-row h5 {
-                        font-size: 24px !important;
-                        margin: 0;
-                        }
-
-                        .search-card {
-                        background-color: #fff;
-                        border-radius: 8px;
-                        padding: 15px 20px;
-                        margin-bottom: 20px;
-                        box-shadow: 0 1px 4px rgba(0,0,0,0.08);
-                        display: flex;
-                        flex-wrap: wrap;
-                        justify-content: space-between;
-                        align-items: center;
-                        gap: 10px;
-                        }
-
-                        .search-container {
-                        position: relative;
-                        flex: 1 1 300px;
-                        max-width: 400px;
-                        }
-
-                        .search-icon {
-                        position: absolute;
-                        left: 10px;
-                        top: 50%;
-                        transform: translateY(-50%);
-                        font-size: 16px;
-                        color: #999;
-                        pointer-events: none;
-                        }
-
-                        .search-container input[type="text"] {
-                        width: 100%;
-                        padding: 10px 10px 10px 35px;
-                        font-size: 16px;
-                        border: 2px solid var(--yellow);
-                        border-radius: 5px;
-                        box-sizing: border-box;
-                        }
-
-                        .add-btn {
-                        padding: 10px 16px;
-                        background-color: var(--yellow);
-                        color: var(--black);
-                        border: none;
-                        border-radius: 5px;
-                        font-weight: bold;
-                        text-decoration: none;
-                        cursor: pointer;
-                        white-space: nowrap;
-                        flex-shrink: 0;
-                        }
-
-                        .list-section {
-                        background-color: #fff;
-                        border-radius: 8px;
-                        padding: 20px;
-                        box-shadow: 0 1px 4px rgba(0,0,0,0.08);
-                        }
-
-                        .list-section h5 {
-                        margin-top: 0;
-                        margin-bottom: 15px;
-                        font-size: 20px;
-                        }
-
-                        .list-wrapper {
-                        display: flex;
-                        flex-direction: column;
-                        gap: 15px;
-                        }
-
-                        .list-item {
-                        display: flex;
-                        justify-content: space-between;
-                        align-items: center;
-                        padding: 15px 20px;
-                        border: 1px solid #eee;
-                        border-left: 5px solid var(--yellow);
-                        border-radius: 6px;
-                        background-color: #fff;
-                        transition: box-shadow 0.2s ease;
-                        flex-wrap: wrap;
-                        gap: 10px;
-                        }
-
-                        .list-item:hover {
-                        box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-                        }
-
-                        .site-info {
-                        flex: 1 1 60%;
-                        display: flex;
-                        flex-direction: column;
-                        gap: 5px;
-                        min-width: 0;
-                        }
-
-                        .site-info-header {
-                        display: flex;
-                        justify-content: space-between;
-                        align-items: center;
-                        }
-
-                        .site-info-header h6 {
-                        margin: 0 0 8px 0;
-                        font-weight: bold;
-                        font-size: 20px;
-                        white-space: nowrap;
-                        overflow: hidden;
-                        text-overflow: ellipsis;
-                        max-width: 60%;
-                        }
-
-                        .site-info-header .plan {
-                        font-size: 14px;
-                        color: #555;
-                        white-space: nowrap;
-                        }
-
-                        .site-info-meta {
-                        font-size: 14px;
-                        color: #555;
-                        white-space: nowrap;
-                        overflow: hidden;
-                        text-overflow: ellipsis;
-                        margin-top: 5px;
-                        }
-
-                        .manage-btn-wrapper {
-                        flex-shrink: 0;
-                        display: flex;
-                        flex-direction: column;
-                        align-items: flex-end;
-                        gap: 8px;
-                        }
-
-                        .manage-btn-wrapper .plan {
-                        font-size: 14px;
-                        color: #555;
-                        }
-
-                        .dashboard-btn {
-                        background-color: var(--yellow);
-                        color: var(--black);
-                        padding: 8px 16px;
-                        border-radius: 5px;
-                        font-weight: bold;
-                        text-decoration: none;
-                        white-space: nowrap;
-                        transition: background-color 0.3s ease;
-                        }
-
-                        .dashboard-btn:hover {
-                        background-color: #e5b800;
-                        }
-
-                        .pagination {
-                        display: flex;
-                        justify-content: flex-end;
-                        gap: 10px;
-                        margin-top: 20px;
-                        }
-
-                        .pagination a {
-                        padding: 8px 15px;
-                        background-color: var(--yellow);
-                        color: var(--black);
-                        border-radius: 5px;
-                        text-decoration: none;
-                        }
-
-                        .pagination a:hover {
-                        background-color: #222;
-                        }
-
-                        .status-active {
-                        border-left: 5px solid var(--yellow);
-                        /* border-left: 5px solid #4caf50; Green */
-                        }
-
-                        .status-pending {
-                        border-left: 5px solid #ff9800; /* Orange */
-                        }
-
-                        .status-expired {
-                        border-left: 5px solid #f44336; /* Red */
-                        }
-
-                        /* Increase font sizes */
-                        .site-info-header h6 {
-                        font-size: 20px !important;
-                        }
-
-                        .site-info-meta {
-                        font-size: 16px;
-                        }
-
-                        .manage-btn-wrapper .plan {
-                        font-size: 16px;
-                        }
-
-                        .dashboard-btn {
-                        font-size: 16px;
-                        }
-
-                        /* Status-based colors for domain only */
-                        .domain-text-active {
-                        /* color: #4caf50; */
-                        color: var(--yellow);
-                        }
-
-                        .domain-text-pending {
-                        color: #ff9800;
-                        }
-
-                        .domain-text-expired {
-                        color: #f44336;
-                        }
-
-                        .no-website {
-                        justify-content: center;
-                        font-size: 18px; 
-                        color: #888;
-                        }
-
-                        /* Responsive */
-                        @media (max-width: 700px) {
-                        .list-item {
-                            flex-direction: column;
-                            align-items: flex-start;
-                        }
-
-                        .site-info {
-                            flex: 1 1 100%;
-                        }
-
-                        .site-info-header {
-                            flex-direction: column;
-                            align-items: flex-start;
-                            gap: 3px;
-                        }
-
-                        .site-info-header h6 {
-                            max-width: 100%;
-                        }
-
-                        .site-info-header .plan {
-                            font-size: 14px;
-                        }
-
-                        .manage-btn-wrapper {
+                            .content-wrapper {
                             width: 100%;
-                            margin-top: 10px;
-                            align-items: flex-start;
-                        }
-                        }
-                    </style>
-                    </head>
-                    <body>
+                            /* max-width: 1200px; */
+                            margin: 20px auto;
+                            padding: 10px 15px;
+                            }
 
-                    <div class="content-wrapper">
+                            .header-row {
+                            margin-bottom: 20px;
+                            }
 
-                    <!-- Title -->
-                    <div class="header-row">
-                        <h5>$pageTitle</h5>
-                    </div>
+                            .header-row h5 {
+                            font-size: 24px !important;
+                            margin: 0;
+                            }
 
-                    <!-- Search + Add -->
-                    <div class="search-card bg-base">
-                        <div class="search-container">
-                        <span class="search-icon">&#128269;</span>
-                        <input type="text" id="searchInput" placeholder="Search $pageTitle..." />
-                        </div>
-                        <a href="add-$catSlug.php" class="add-btn">+ Add New $pageTitle</a>
-                    </div>
+                            .search-card {
+                            background-color: #fff;
+                            border-radius: 8px;
+                            padding: 15px 20px;
+                            margin-bottom: 20px;
+                            box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+                            display: flex;
+                            flex-wrap: wrap;
+                            justify-content: space-between;
+                            align-items: center;
+                            gap: 10px;
+                            }
 
-                    <!-- Website List -->
-                    <!-- <div class="list-section" id="websiteList"> -->
-                        <!-- <h5>Business WordPress Hosting</h5> -->
+                            .search-container {
+                            position: relative;
+                            flex: 1 1 300px;
+                            max-width: 400px;
+                            }
 
-                        <div class="list-wrapper" id="websiteList">
-                        <?php if (empty(\$websitesOnPage)): ?>
-                            <div class="list-item bg-base no-website">
-                            No $pageTitle found.
+                            .search-icon {
+                            position: absolute;
+                            left: 10px;
+                            top: 50%;
+                            transform: translateY(-50%);
+                            font-size: 16px;
+                            color: #999;
+                            pointer-events: none;
+                            }
+
+                            .search-container input[type="text"] {
+                            width: 100%;
+                            padding: 10px 10px 10px 35px;
+                            font-size: 16px;
+                            border: 2px solid var(--yellow);
+                            border-radius: 5px;
+                            box-sizing: border-box;
+                            }
+
+                            .add-btn {
+                            padding: 10px 16px;
+                            background-color: var(--yellow);
+                            color: var(--black);
+                            border: none;
+                            border-radius: 5px;
+                            font-weight: bold;
+                            text-decoration: none;
+                            cursor: pointer;
+                            white-space: nowrap;
+                            flex-shrink: 0;
+                            }
+
+                            .list-section {
+                            background-color: #fff;
+                            border-radius: 8px;
+                            padding: 20px;
+                            box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+                            }
+
+                            .list-section h5 {
+                            margin-top: 0;
+                            margin-bottom: 15px;
+                            font-size: 20px;
+                            }
+
+                            .list-wrapper {
+                            display: flex;
+                            flex-direction: column;
+                            gap: 15px;
+                            }
+
+                            .list-item {
+                            display: flex;
+                            justify-content: space-between;
+                            align-items: center;
+                            padding: 15px 20px;
+                            border: 1px solid #eee;
+                            border-left: 5px solid var(--yellow);
+                            border-radius: 6px;
+                            background-color: #fff;
+                            transition: box-shadow 0.2s ease;
+                            flex-wrap: wrap;
+                            gap: 10px;
+                            }
+
+                            .list-item:hover {
+                            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+                            }
+
+                            .site-info {
+                            flex: 1 1 60%;
+                            display: flex;
+                            flex-direction: column;
+                            gap: 5px;
+                            min-width: 0;
+                            }
+
+                            .site-info-header {
+                            display: flex;
+                            justify-content: space-between;
+                            align-items: center;
+                            }
+
+                            .site-info-header h6 {
+                            margin: 0 0 8px 0;
+                            font-weight: bold;
+                            font-size: 20px;
+                            white-space: nowrap;
+                            overflow: hidden;
+                            text-overflow: ellipsis;
+                            max-width: 60%;
+                            }
+
+                            .site-info-header .plan {
+                            font-size: 14px;
+                            color: #555;
+                            white-space: nowrap;
+                            }
+
+                            .site-info-meta {
+                            font-size: 14px;
+                            color: #555;
+                            white-space: nowrap;
+                            overflow: hidden;
+                            text-overflow: ellipsis;
+                            margin-top: 5px;
+                            }
+
+                            .manage-btn-wrapper {
+                            flex-shrink: 0;
+                            display: flex;
+                            flex-direction: column;
+                            align-items: flex-end;
+                            gap: 8px;
+                            }
+
+                            .manage-btn-wrapper .plan {
+                            font-size: 14px;
+                            color: #555;
+                            }
+
+                            .dashboard-btn {
+                            background-color: var(--yellow);
+                            color: var(--black);
+                            padding: 8px 16px;
+                            border-radius: 5px;
+                            font-weight: bold;
+                            text-decoration: none;
+                            white-space: nowrap;
+                            transition: background-color 0.3s ease;
+                            }
+
+                            .dashboard-btn:hover {
+                            background-color: #e5b800;
+                            }
+
+                            .pagination {
+                            display: flex;
+                            justify-content: flex-end;
+                            gap: 10px;
+                            margin-top: 20px;
+                            }
+
+                            .pagination a {
+                            padding: 8px 15px;
+                            background-color: var(--yellow);
+                            color: var(--black);
+                            border-radius: 5px;
+                            text-decoration: none;
+                            }
+
+                            .pagination a:hover {
+                            background-color: #222;
+                            }
+
+                            .status-active {
+                            border-left: 5px solid var(--yellow);
+                            /* border-left: 5px solid #4caf50; Green */
+                            }
+
+                            .status-pending {
+                            border-left: 5px solid #ff9800; /* Orange */
+                            }
+
+                            .status-expired {
+                            border-left: 5px solid #f44336; /* Red */
+                            }
+
+                            /* Increase font sizes */
+                            .site-info-header h6 {
+                            font-size: 20px !important;
+                            }
+
+                            .site-info-meta {
+                            font-size: 16px;
+                            }
+
+                            .manage-btn-wrapper .plan {
+                            font-size: 16px;
+                            }
+
+                            .dashboard-btn {
+                            font-size: 16px;
+                            }
+
+                            /* Status-based colors for domain only */
+                            .domain-text-active {
+                            /* color: #4caf50; */
+                            color: var(--yellow);
+                            }
+
+                            .domain-text-pending {
+                            color: #ff9800;
+                            }
+
+                            .domain-text-expired {
+                            color: #f44336;
+                            }
+
+                            .no-website {
+                            justify-content: center;
+                            font-size: 18px; 
+                            color: #888;
+                            }
+
+                            /* Responsive */
+                            @media (max-width: 700px) {
+                            .list-item {
+                                flex-direction: column;
+                                align-items: flex-start;
+                            }
+
+                            .site-info {
+                                flex: 1 1 100%;
+                            }
+
+                            .site-info-header {
+                                flex-direction: column;
+                                align-items: flex-start;
+                                gap: 3px;
+                            }
+
+                            .site-info-header h6 {
+                                max-width: 100%;
+                            }
+
+                            .site-info-header .plan {
+                                font-size: 14px;
+                            }
+
+                            .manage-btn-wrapper {
+                                width: 100%;
+                                margin-top: 10px;
+                                align-items: flex-start;
+                            }
+                            }
+                        </style>
+                        </head>
+                        <body>
+
+                            <div class="content-wrapper">
+
+                            <!-- Title -->
+                            <div class="header-row">
+                                <h5>$pageTitle</h5>
                             </div>
-                        <?php else: ?>
-                            <?php foreach (\$websitesOnPage as \$site): ?>
-                            <?php
-                                \$status = strtolower(\$site['status']);
-                                \$statusClass = 'status-pending';
-                                if (\$status === 'active') \$statusClass = 'status-active';
-                                elseif (\$status === 'expired') \$statusClass = 'status-expired';
-                            ?>
-                            <div class="list-item bg-base <?php echo \$statusClass; ?>">
-                                <div class="site-info">
-                                <!-- Domain Title -->
-                                <div class="site-info-header">
-                                    <h6>
-                                    <?php echo htmlspecialchars(\$site['business_name']); ?>
-                                    </h6>
+
+                            <!-- Search + Add -->
+                            <div class="search-card bg-base">
+                                <div class="search-container">
+                                <span class="search-icon">&#128269;</span>
+                                <input type="text" id="searchInput" placeholder="Search $pageTitle..." />
                                 </div>
-                                <!-- Website (no link, color applied only to domain text) -->
-                                <div class="site-info-meta">
-                                    Website: 
-                                    <span class="domain-text-<?php echo \$status; ?>">
-                                    <?php echo htmlspecialchars(\$site['domain']); ?>
-                                    </span>
-                                </div>
-                                <!-- Expiry Date (normal text, larger font) -->
-                                <div class="site-info-meta domain-text-<?php echo \$status; ?>">
-                                    <strong>Expires:</strong>
-                                    <?php 
-                                    if (\$status === 'pending') {
-                                        echo 'Approval Pending';
-                                    } elseif (!empty(\$site['created_at']) && \$site['created_at'] != '0000-00-00 00:00:00') {
-                                        echo date('d-m-Y', strtotime(\$site['created_at']));
-                                    } else {
-                                        echo "N/A";
-                                    }
+                                <a href="add-$catSlug.php" class="add-btn">+ Add New $pageTitle</a>
+                            </div>
+
+                            <!-- Website List -->
+                            <!-- <div class="list-section" id="websiteList"> -->
+                                <!-- <h5>Business WordPress Hosting</h5> -->
+
+                                <div class="list-wrapper" id="websiteList">
+                                <?php if (empty(\$websitesOnPage)): ?>
+                                    <div class="list-item bg-base no-website">
+                                    No $pageTitle found.
+                                    </div>
+                                <?php else: ?>
+                                    <?php foreach (\$websitesOnPage as \$site): ?>
+                                    <?php
+                                        \$status = strtolower(\$site['status']);
+                                        \$statusClass = 'status-pending';
+                                        if (\$status === 'active') \$statusClass = 'status-active';
+                                        elseif (\$status === 'expired') \$statusClass = 'status-expired';
                                     ?>
+                                    <div class="list-item bg-base <?php echo \$statusClass; ?>">
+                                        <div class="site-info">
+                                        <!-- Domain Title -->
+                                        <div class="site-info-header">
+                                            <h6>
+                                            <?php echo htmlspecialchars(\$site['business_name']); ?>
+                                            </h6>
+                                        </div>
+                                        <!-- Website (no link, color applied only to domain text) -->
+                                        <div class="site-info-meta">
+                                            $pageTitle: 
+                                            <span class="domain-text-<?php echo \$status; ?>">
+                                            <?php echo htmlspecialchars(\$site['domain']); ?>
+                                            </span>
+                                        </div>
+                                        <!-- Expiry Date (normal text, larger font) -->
+                                        <div class="site-info-meta domain-text-<?php echo \$status; ?>">
+                                            <strong>Expires:</strong>
+                                            <?php 
+                                            if (\$status === 'pending') {
+                                                echo 'Approval Pending';
+                                            } elseif (!empty(\$site['created_at']) && \$site['created_at'] != '0000-00-00 00:00:00') {
+                                                echo date('d-m-Y', strtotime(\$site['created_at']));
+                                            } else {
+                                                echo "N/A";
+                                            }
+                                            ?>
+                                        </div>
+                                        </div>
+                                        <div class="manage-btn-wrapper">
+                                        <div class="plan">Plan: <?php echo htmlspecialchars(\$site['plan']); ?></div>
+                                        <!-- <a href="dashboard.php?site=<?php echo urlencode(\$site['domain']); ?>" class="dashboard-btn">Manage</a> -->
+                                        <a href="$manageLink" class="dashboard-btn">Manage</a>
+                                        </div>
+                                    </div>
+                                    <?php endforeach; ?>
+                                <?php endif; ?>
                                 </div>
+
+                                <!-- Pagination -->
+                                <div class="pagination">
+                                <?php if (\$page > 1): ?>
+                                    <a href="?page=<?php echo \$page - 1; ?>">Previous</a>
+                                <?php endif; ?>
+
+                                <?php for (\$i = 1; \$i <= \$totalPages; \$i++): ?>
+                                    <a href="?page=<?php echo \$i; ?>" class="<?php echo \$i === \$page ? 'active' : ''; ?>">
+                                    <?php echo \$i; ?>
+                                    </a>
+                                <?php endfor; ?>
+
+                                <?php if (\$page < \$totalPages): ?>
+                                    <a href="?page=<?php echo \$page + 1; ?>">Next</a>
+                                <?php endif; ?>
                                 </div>
-                                <div class="manage-btn-wrapper">
-                                <div class="plan">Plan: <?php echo htmlspecialchars(\$site['plan']); ?></div>
-                                <!-- <a href="dashboard.php?site=<?php echo urlencode(\$site['domain']); ?>" class="dashboard-btn">Manage</a> -->
-                                <a href="websites-details.php" class="dashboard-btn">Manage</a>
-                                </div>
+
+                            <!-- </div> -->
                             </div>
-                            <?php endforeach; ?>
-                        <?php endif; ?>
-                        </div>
 
-                        <!-- Pagination -->
-                        <div class="pagination">
-                        <?php if (\$page > 1): ?>
-                            <a href="?page=<?php echo \$page - 1; ?>">Previous</a>
-                        <?php endif; ?>
+                            <script>
+                            const searchInput = document.getElementById('searchInput');
+                            searchInput.addEventListener('keyup', function () {
+                                const filter = searchInput.value.toLowerCase();
+                                const items = document.querySelectorAll("#websiteList .list-item");
+                                items.forEach(item => {
+                                const text = item.innerText.toLowerCase();
+                                item.style.display = text.includes(filter) ? '' : 'none';
+                                });
+                            });
+                            </script>
 
-                        <?php for (\$i = 1; \$i <= \$totalPages; \$i++): ?>
-                            <a href="?page=<?php echo \$i; ?>" class="<?php echo \$i === \$page ? 'active' : ''; ?>">
-                            <?php echo \$i; ?>
-                            </a>
-                        <?php endfor; ?>
-
-                        <?php if (\$page < \$totalPages): ?>
-                            <a href="?page=<?php echo \$page + 1; ?>">Next</a>
-                        <?php endif; ?>
-                        </div>
-
-                    <!-- </div> -->
-                    </div>
-
-                    <script>
-                    const searchInput = document.getElementById('searchInput');
-                    searchInput.addEventListener('keyup', function () {
-                        const filter = searchInput.value.toLowerCase();
-                        const items = document.querySelectorAll("#websiteList .list-item");
-                        items.forEach(item => {
-                        const text = item.innerText.toLowerCase();
-                        item.style.display = text.includes(filter) ? '' : 'none';
-                        });
-                    });
-                    </script>
-
-                    </body>
-                    </html>
-
+                        </body>
+                        </html>
                     <?php include './partials/layouts/layoutBottom.php' ?>
                     PHP;
 
-                            file_put_contents($file_path, $default_content);
-                        }
+                file_put_contents($file_path, $default_content);
+                
+                // ✅ If "website" template selected, also create the -det.php file
+                if ($cat_template === 'website' && !file_exists($det_file_path)) {
+                    $det_content = <<<PHP
+                        <?php include './partials/layouts/layoutTop.php' ?>
+                            <?php
+                                \$Id = \$_SESSION['user_id'];
 
-                        $_SESSION['swal_success'] = "Category and file created";
+                                \$stmt = \$conn->prepare("SELECT user_id, business_name, role FROM users WHERE id = ?");
+                                \$stmt->bind_param("i", \$Id);
+                                \$stmt->execute();
+                                \$result = \$stmt->get_result();
+                                \$row = \$result->fetch_assoc();
+                                \$UserId = \$row['user_id']; 
+                                \$BusinessName = \$row['business_name'];
+                                \$role = \$row['role'];
+                                \$stmt->close();
+
+                                if (\$role == '1') {
+                                    \$stmt = \$conn->prepare("SELECT plan, duration, status, created_at FROM websites");
+                                } else {
+                                    \$stmt = \$conn->prepare("SELECT plan, duration, status, created_at FROM websites WHERE user_id = ?");
+                                    \$stmt->bind_param("s", \$UserId); 
+                                }
+                                \$stmt->execute();
+                                \$result = \$stmt->get_result();
+                                \$row = \$result->fetch_assoc();
+                                \$Plan = \$row['plan'];
+                                \$Duration = \$row['duration'];
+                                \$Status = strtolower(\$row['status'] ?? 'Pending');
+                                \$CreatedAt = \$row['created_at'];
+                                \$stmt->close();
+
+                                // \$startDate = new DateTime(\$CreatedAt);
+                                // \$endDate = (clone \$startDate)->modify("+{\$Duration} days");
+                                // \$Validity = \$startDate->format("d-m-Y") . " to " . \$endDate->format("d-m-Y");
+
+                                switch (\$Status) {
+                                    case 'active':
+                                    \$statusClass = 'text-success'; 
+                                    break;
+                                    case 'expired':
+                                    \$statusClass = 'text-danger'; 
+                                    break;
+                                    case 'pending':
+                                    default:
+                                    \$statusClass = 'text-pending'; 
+                                    break;
+                                }
+                            ?>
+                            <style>
+                                .btn-upgrade {
+                                    background-color: #fff9c4;
+                                    color: #000;
+                                    border: 1px solid #ccc;
+                                }
+                                .btn-edit-website {
+                                    background-color: #fec700;
+                                    color: #000;
+                                    border: none;
+                                }
+                                .btn-upgrade:hover {
+                                    background-color: #f0e68c;
+                                }
+                                .btn-edit-website:hover {
+                                    background-color: #e6be00;
+                                }
+                                .icon-black {
+                                    color: #000;
+                                }
+                                .plan-details-shadow {
+                                    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+                                    border-radius: 8px;
+                                    background-color: #fff;
+                                }
+                                .btn-copy-ip {
+                                    background: none;
+                                    border: none;
+                                    padding: 0;
+                                    color: #555;
+                                    cursor: pointer;
+                                    display: flex;
+                                    align-items: center;
+                                }
+                                .btn-copy-ip:hover {
+                                    color: #000;
+                                }
+                                .text-pending {
+                                    color: #ff9800;
+                                }
+                            </style>
+                            <div class="dashboard-main-body">
+                                <div class="mb-24 d-flex justify-content-between align-items-center">
+                                    <div class="d-flex align-items-center gap-2">
+                                    <h6 class="fw-semibold mb-0"><?php echo htmlspecialchars(\$BusinessName); ?></h6>
+                                    <span>|</span>
+                                    <iconify-icon icon="mdi:home-outline" class="text-lg icon-black"></iconify-icon>
+                                    <span class="text-warning">N/A</span>
+                                    </div>
+                                    <div class="d-flex gap-2">
+                                    <button type="button" class="btn btn-sm btn-upgrade">Upgrade</button>
+                                    <?php if(\$role != '1') { ?>
+                                    <a href="forms.php"><button type="button" class="btn btn-sm btn-edit-website">Edit $pageTitle</button></a>
+                                    <?php } else { ?>
+                                    <button type="button" class="btn btn-sm btn-edit-website">Edit $pageTitle</button>
+                                    <?php } ?>
+                                    </div>
+                                </div>
+
+                                <div class="row gy-4">
+                                    <div class="col-lg-6">
+                                    <div class="card h-100 p-0">
+                                        <div class="card-header border-bottom bg-base py-16 px-24">
+                                        <h6 class="text-lg fw-semibold mb-0">Plan Details:</h6>
+                                        </div>
+                                        <div class="card-body p-24 plan-details-shadow bg-base">
+                                        <div class="d-flex justify-content-between mb-3">
+                                            <span>Plan Name</span>
+                                            <span><?php echo htmlspecialchars(\$Plan); ?></span>
+                                        </div>
+                                        <hr />
+                                        <div class="d-flex justify-content-between my-3">
+                                            <span>Validity</span>
+                                            <!-- <span><?php echo htmlspecialchars(\$Validity); ?></span> -->
+                                            <span><?php echo htmlspecialchars(\$CreatedAt); ?></span>
+                                        </div>
+                                        <hr />
+                                        <div class="d-flex justify-content-between mt-3">
+                                            <span>Status</span>
+                                            <span class="fw-semibold <?php echo \$statusClass; ?>"><?php echo ucfirst(\$Status); ?></span>
+                                        </div>
+                                        </div>
+                                    </div>
+                                    </div>
+
+                                    <div class="col-lg-6">
+                                    <div class="card h-100 p-0">
+                                        <div class="card-header border-bottom bg-base py-16 px-24">
+                                        <h6 class="text-lg fw-semibold mb-0">$pageTitle Details:</h6>
+                                        </div>
+                                        <div class="card-body p-24 plan-details-shadow bg-base">
+                                        <div class="d-flex justify-content-between mb-3">
+                                            <span>Access your $pageTitle at</span>
+                                            <span>N/A</span>
+                                        </div>
+                                        <hr />
+                                        <div class="d-flex justify-content-between my-3">
+                                            <span>Access your $pageTitle with www</span>
+                                            <span>N/A</span>
+                                        </div>
+                                        <hr />
+                                        <div class="d-flex justify-content-between align-items-center mt-3">
+                                            <span>$pageTitle IP address</span>
+                                            <span class="d-flex align-items-center gap-2">
+                                            <span>N/A</span>
+                                            <button type="button" class="btn-copy-ip" onclick="copyIP('N/A')" title="Copy IP Address" aria-label="Copy IP Address">
+                                                <iconify-icon icon="mdi:content-copy" style="cursor:pointer; font-size: 18px;"></iconify-icon>
+                                            </button>
+                                            </span>
+                                        </div>
+                                        </div>
+                                    </div>
+                                    </div>
+
+                                    <div class="col-lg-6">
+                                    <div class="card h-100 p-0">
+                                        <div class="card-header border-bottom bg-base py-16 px-24">
+                                        <h6 class="text-lg fw-semibold mb-0">Nameservers:</h6>
+                                        </div>
+                                        <div class="card-body p-24 plan-details-shadow bg-base">
+                                        <div class="d-flex justify-content-between mb-3">
+                                            <span>Current nameserver 1</span>
+                                            <span class="d-flex align-items-center gap-2">
+                                            <span>N/A</span>
+                                            <button type="button" class="btn-copy-ip" onclick="copyIP('N/A')" title="Copy nameserver 1" aria-label="Copy nameserver 1">
+                                                <iconify-icon icon="mdi:content-copy" style="cursor:pointer; font-size: 18px;"></iconify-icon>
+                                            </button>
+                                            </span>
+                                        </div>
+                                        <hr />
+                                        <div class="d-flex justify-content-between my-3">
+                                            <span>Current nameserver 2</span>
+                                            <span class="d-flex align-items-center gap-2">
+                                            <span>N/A</span>
+                                            <button type="button" class="btn-copy-ip" onclick="copyIP('N/A')" title="Copy nameserver 2" aria-label="Copy nameserver 2">
+                                                <iconify-icon icon="mdi:content-copy" style="cursor:pointer; font-size: 18px;"></iconify-icon>
+                                            </button>
+                                            </span>
+                                        </div>
+                                        </div>
+                                    </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <script>
+                                function copyIP(text) {
+                                    navigator.clipboard.writeText(text).then(() => {
+                                    alert('Copied: ' + text);
+                                    }).catch(() => {
+                                    alert('Failed to copy');
+                                    });
+                                }
+                            </script>
+                        <?php include './partials/layouts/layoutBottom.php' ?> 
+                        PHP;
+
+                    file_put_contents($det_file_path, $det_content);
+
+                    // ✅ Also create the add-$catSlug.php file
+                    $add_file_name = "add-$catSlug.php";
+                    $add_file_path = dirname(__DIR__) . '/' . $add_file_name;
+
+                    if (!file_exists($add_file_path)) {
+                        $add_content = <<<PHP
+                            <style>
+                                .nav-link:focus, .nav-link:hover{
+                                    color: #fdc701 !important;
+                                }
+                            </style>
+                            <?php
+                                include './partials/layouts/layoutTop.php';
+
+                                \$packages = [];
+                                \$durations = [];
+
+                                // Get all packages and group them by duration
+                                \$sql = "SELECT * FROM package ORDER BY duration";
+                                \$result = \$conn->query(\$sql);
+
+                                if (\$result->num_rows > 0) {
+                                    while (\$row = \$result->fetch_assoc()) {
+                                        \$duration = \$row['duration'];
+                                        \$packages[\$duration][] = \$row;
+
+                                        if (!in_array(\$duration, \$durations)) {
+                                            \$durations[] = \$duration;
+                                        }
+                                    }
+                                }
+                            ?>
+                            
+                            <div class="dashboard-main-body">
+                                <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-24">
+                                    <h6 class="fw-semibold mb-0">Add New $pageTitle</h6>
+                                </div>
+
+                                <div class="card h-100 p-0 radius-12 overflow-hidden">
+                                    
+                                    <div class="card-body p-40">
+                                        <div class="row justify-content-center">
+                                            <div class="col-xxl-10">
+
+                                                <ul class="nav nav-pills button-tab mt-32 mb-32 justify-content-center" id="pills-tab" role="tablist">
+                                                    <?php foreach (\$durations as \$index => \$duration): ?>
+                                                        <li class="nav-item" role="presentation">
+                                                            <button class="nav-link px-24 py-10 text-md rounded-pill text-secondary-light fw-medium <?= \$index === 0 ? 'active' : '' ?>" 
+                                                                    id="tab-<?= \$index ?>" 
+                                                                    data-bs-toggle="pill" 
+                                                                    data-bs-target="#tab-pane-<?= \$index ?>" 
+                                                                    type="button" 
+                                                                    role="tab" 
+                                                                    aria-controls="tab-pane-<?= \$index ?>" 
+                                                                    aria-selected="<?= \$index === 0 ? 'true' : 'false' ?>">
+                                                                <?= htmlspecialchars(\$duration) ?>
+                                                            </button>
+                                                        </li>
+                                                    <?php endforeach; ?>
+                                                </ul>
+
+                                                <div class="tab-content" id="pills-tabContent">
+                                                    <?php foreach (\$durations as \$index => \$duration): ?>
+                                                        <div class="tab-pane fade <?= \$index === 0 ? 'show active' : '' ?>" 
+                                                            id="tab-pane-<?= \$index ?>" 
+                                                            role="tabpanel" 
+                                                            aria-labelledby="tab-<?= \$index ?>" 
+                                                            tabindex="0">
+                                                            <div class="row gy-4">
+                                                                <?php foreach (\$packages[\$duration] as \$package): ?>
+                                                                    <div class="col-xxl-4 col-sm-6">
+                                                                        <div class="pricing-plan position-relative radius-24 overflow-hidden border">
+                                                                        
+                                                                        <!-- <span class="bg-white bg-opacity-25 lufera-bg radius-24 py-8 px-24 text-sm position-absolute end-0 top-0 z-1 rounded-start-top-0 rounded-end-bottom-0">Popular</span> -->
+                                                                            
+                                                                            <div class="d-flex align-items-center gap-16">
+                                                                                <div class="">
+                                                                                    <span class="fw-medium text-md text-secondary-light"><?= htmlspecialchars(\$package['plan_type']) ?></span>
+                                                                                    <h6 class="mb-0"><?= htmlspecialchars(\$package['title']) ?></h6>
+                                                                                </div>
+                                                                            </div>
+                                                                            <p class="mt-16 mb-0 text-secondary-light mb-28"><?= htmlspecialchars(\$package['subtitle']) ?></p>
+                                                                            <h3 class="mb-24">$<?= htmlspecialchars(\$package['price']) ?> 
+                                                                                <span class="fw-medium text-md text-secondary-light">/<?= htmlspecialchars(\$package['duration']) ?></span> 
+                                                                            </h3>
+                                                                            <span class="mb-20 fw-medium"><?= htmlspecialchars(\$package['description']) ?></span>
+
+                                                                            <ul>
+                                                                                <?php
+                                                                                \$package_id = \$package['id'];
+                                                                                \$feature_sql = "SELECT feature FROM features WHERE package_id = \$package_id";
+                                                                                \$feature_result = \$conn->query(\$feature_sql);
+                                                                                if (\$feature_result && \$feature_result->num_rows > 0):
+                                                                                    while (\$feat = \$feature_result->fetch_assoc()):
+                                                                                ?>
+                                                                                    <li class="d-flex align-items-center gap-16 mb-16">
+                                                                                        <span class="w-24-px h-24-px p-2 d-flex justify-content-center align-items-center lufera-bg rounded-circle">
+                                                                                            <iconify-icon icon="iconamoon:check-light" class="text-white text-lg "></iconify-icon>
+                                                                                        </span>
+                                                                                        <span class="text-secondary-light text-lg"><?= htmlspecialchars(\$feat['feature']) ?></span>
+                                                                                    </li>
+                                                                                <?php endwhile; endif; ?>
+                                                                            </ul>
+
+                                                                            <form action="cart.php" method="POST">
+                                                                                <input type="hidden" name="plan_name" value="<?= htmlspecialchars(\$package['title']) ?>">
+                                                                                <input type="hidden" name="price" value="<?= htmlspecialchars(\$package['price']) ?>">
+                                                                                <input type="hidden" name="duration" value="<?= htmlspecialchars(\$package['duration']) ?>">
+                                                                                <input type="hidden" name="created_on" value="<?= date("Y-m-d") ?>">
+                                                                                <button type="submit" class="lufera-bg text-center text-white text-sm btn-sm px-12 py-10 w-100 radius-8 mt-28">Get started</button>
+                                                                            </form>
+                                                                        </div>
+                                                                    </div>
+                                                                <?php endforeach; ?>
+                                                            </div>
+                                                        </div>
+                                                    <?php endforeach; ?>
+                                                </div>
+
+                                                </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                            <?php include './partials/layouts/layoutBottom.php' ?>
+                        PHP;
+
+                        file_put_contents($add_file_path, $add_content);
+                    }
+                }
+                // ✅ If "marketing" template selected, also create the -det.php file
+                if ($cat_template === 'marketing' && !file_exists($det_file_path)) {
+                    $det_content = <<<PHP
+                        <?php include './partials/layouts/layoutTop.php' ?>
+                            <!DOCTYPE html>
+                            <html lang="en">
+                            <head>
+                            <meta charset="UTF-8" />
+                            <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+                            <title>Social Media Marketing</title>
+                            <style>
+                                body {
+                                margin: 0;
+                                padding: 0;
+                                background: #000;
+                                color: #eaeaea;
+                                line-height: 1.6;
+                                font-size: 15px !important;
+                                }
+                                header {
+                                background: #FFD700;
+                                color: #000;
+                                padding: 2.5rem 1rem;
+                                text-align: center;
+                                }
+                                header h1 {
+                                font-size: 1.8rem !important;
+                                margin-bottom: 0.5rem !important;
+                                }
+                                header p {
+                                font-size: 1rem;
+                                margin: 0;
+                                }
+                                section {
+                                padding: 2rem 1rem;
+                                max-width: 960px;
+                                margin: auto;
+                                }
+                                h2 {
+                                color: #FFD700;
+                                font-size: 1.3rem !important;
+                                margin-bottom: 1rem !important;
+                                border-bottom: 1px solid #FFD700 !important;
+                                padding-bottom: 0.5rem !important;
+                                }
+                                h3 {
+                                font-size: 1.1rem !important;
+                                margin-bottom: 0.5rem !important;
+                                color: #FFD700 !important;
+                                }
+                                .features, .packages {
+                                display: flex;
+                                flex-wrap: wrap;
+                                gap: 1rem;
+                                margin-top: 1rem;
+                                }
+                                .card {
+                                flex: 1;
+                                min-width: 260px;
+                                background: #111;
+                                padding: 1rem;
+                                border: 1px solid #333;
+                                border-radius: 6px;
+                                box-shadow: 0 2px 5px rgba(0,0,0,0.4);
+                                }
+                                .btn {
+                                display: inline-block;
+                                margin-top: 1.5rem;
+                                padding: 0.6rem 1.2rem;
+                                background: #FFD700;
+                                color: #000;
+                                text-decoration: none;
+                                font-size: 0.9rem;
+                                font-weight: 600;
+                                border-radius: 4px;
+                                transition: background 0.2s ease-in-out;
+                                }
+                                .btn:hover {
+                                background: #e6c200;
+                                }
+                            </style>
+                            </head>
+                            <body>
+
+                            <header>
+                                <h1>Boost Your Business with Social Media Marketing</h1>
+                                <p>Reach your customers on WhatsApp, Instagram, and Facebook</p>
+                            </header>
+
+                            <section>
+                                <h2>What We Offer</h2>
+                                <div class="features">
+                                <div class="card">
+                                    <h3>WhatsApp Marketing</h3>
+                                    <p>Send personalized bulk messages to your customer base and grow engagement.</p>
+                                </div>
+                                <div class="card">
+                                    <h3>Instagram Posts</h3>
+                                    <p>Custom-designed visuals and captions to attract and retain followers consistently.</p>
+                                </div>
+                                <div class="card">
+                                    <h3>Facebook Ads</h3>
+                                    <p>Targeted ad campaigns managed by experts to convert leads into customers.</p>
+                                </div>
+                                </div>
+                            </section>
+
+                            <section>
+                                <h2>Packages</h2>
+                                <div class="packages">
+                                <div class="card">
+                                    <h3>Starter</h3>
+                                    <p>2 posts/week, basic design, WhatsApp messaging (limited)</p>
+                                    <p><strong>$49/month</strong></p>
+                                </div>
+                                <div class="card">
+                                    <h3>Pro</h3>
+                                    <p>5 posts/week, premium design, campaign tracking, bulk messaging</p>
+                                    <p><strong>$99/month</strong></p>
+                                </div>
+                                <div class="card">
+                                    <h3>Enterprise</h3>
+                                    <p>Custom strategy, ad management, analytics reporting, full service</p>
+                                    <p><strong>Custom Quote</strong></p>
+                                </div>
+                                </div>
+                                <a href="#" class="btn">Get Started</a>
+                            </section>
+
+                            <?php include './partials/layouts/layoutBottom.php' ?>
+                            </body>
+                            </html>
+                    PHP;
+
+                    file_put_contents($det_file_path, $det_content);
+                }
+
+                $_SESSION['swal_success'] = "Category created";
+            }
+
+            header("Location: " . ($_SERVER['HTTP_REFERER'] ?? 'index.php'));
+            exit;
         }
-
-        header("Location: " . ($_SERVER['HTTP_REFERER'] ?? 'index.php'));
-        exit;
     }
 
     // Edit category
@@ -534,8 +1017,9 @@
             // 3. Define file paths to delete (one level down from 'partials')
             $baseDir = dirname(__DIR__); // One level down from current script
             $filesToDelete = [
-                "$baseDir/{$catName}.php"
-                // "$baseDir/add-{$catName}.php",
+                "$baseDir/{$catName}.php",
+                "$baseDir/{$catName}-det.php",
+                "$baseDir/add-{$catName}.php"
                 // "$baseDir/edit-{$catName}.php"
             ];
 
@@ -551,7 +1035,7 @@
         $stmt->bind_param("i", $cat_id);
         $stmt->execute();
 
-        $_SESSION['swal_success'] = "Category and related files deleted";
+        $_SESSION['swal_success'] = "Category deleted";
         header("Location: " . ($_SERVER['HTTP_REFERER'] ?? 'index.php'));
         exit;
     }
@@ -781,6 +1265,16 @@
             <div class="custom-form-group">
                 <label for="cat_url">URL</label>
                 <input type="text" name="cat_url" id="cat_url" required placeholder="URL">
+            </div>
+            <!-- New Dropdown Field -->
+            <div class="custom-form-group">
+                <label for="cat_template">Module</label>
+                <select name="cat_template" id="cat_template" required>
+                    <option value="">-- Select Module --</option>
+                    <option value="website">Website</option>
+                    <option value="marketing">Marketing</option>
+                    <option value="visa">Visa</option>
+                </select>
             </div>
             <div class="custom-modal-footer">
                 <button type="submit" class="custom-btn save-btn">Save</button>
