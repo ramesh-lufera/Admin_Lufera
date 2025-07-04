@@ -18,9 +18,17 @@
         }
 
         if (!empty($cat_name)) {
-            $stmt = $conn->prepare("INSERT INTO categories (cat_name, cat_url) VALUES (?, ?)");
-            $stmt->bind_param("ss", $cat_name, $cat_url);
-            $stmt->execute();
+            // $stmt = $conn->prepare("INSERT INTO categories (cat_name, cat_url) VALUES (?, ?)");
+            // $stmt->bind_param("ss", $cat_name, $cat_url);
+
+            $stmt = $conn->prepare("INSERT INTO categories (cat_name, cat_url, cat_module) VALUES (?, ?, ?)");
+            $stmt->bind_param("sss", $cat_name, $cat_url, $cat_template);
+
+            if ($stmt->execute()) {
+                // $_SESSION['cat_id'] = $conn->insert_id;
+            } else {
+                $_SESSION['swal_error'] = "Failed to create category";
+            }
 
             // Set the file path one level up
             $file_path = dirname(__DIR__) . '/' . $cat_url;
@@ -45,6 +53,15 @@
                     <?php include './partials/layouts/layoutTop.php'; ?>
                         <?php
                             \$Id = \$_SESSION['user_id'];
+                            
+                            if (isset(\$_GET['cat_id']) && intval(\$_GET['cat_id']) > 0) {
+                                \$_SESSION['cat_id'] = intval(\$_GET['cat_id']);
+                            } elseif (!isset(\$_GET['cat_id'])) {
+                                // Clear the old cat_id from session when not present in URL
+                                unset(\$_SESSION['cat_id']);
+                            }
+
+                            \$cat_id = \$_SESSION['cat_id'] ?? 0;
 
                             \$user = "select * from users where id = \$Id";
                             \$res = \$conn ->query(\$user);
@@ -52,31 +69,40 @@
                             \$UserId = \$row['user_id'];
                             \$role = \$row['role'];
 
-                            if(\$role == '1' || \$role == '2'){
-                            
-                            \$sql = "SELECT 
-                                users.business_name,
-                                websites.plan,
-                                websites.domain,
-                                websites.status
-                            FROM 
-                                users 
-                            JOIN 
-                                websites ON users.user_id = websites.user_id";
-                                \$result = mysqli_query(\$conn, \$sql);
-                            }
-                            else{
-                            \$sql = "SELECT 
-                                users.business_name,
-                                websites.plan,
-                                websites.domain,
-                                websites.status 
-                            FROM 
-                                users 
-                            JOIN 
-                                websites ON users.user_id = websites.user_id WHERE websites.user_id = '\$UserId'";
-                                \$result = mysqli_query(\$conn, \$sql);
-                            }
+                            if (\$role == '1' || \$role == '2') {
+                            \$stmt = \$conn->prepare("
+                                SELECT 
+                                    users.business_name,
+                                    websites.plan,
+                                    websites.domain,
+                                    websites.status
+                                FROM 
+                                    users 
+                                JOIN 
+                                    websites ON users.user_id = websites.user_id
+                                WHERE 
+                                    websites.cat_id = ?
+                            ");
+                            \$stmt->bind_param("i", \$cat_id);
+                        } else {
+                            \$stmt = \$conn->prepare("
+                                SELECT 
+                                    users.business_name,
+                                    websites.plan,
+                                    websites.domain,
+                                    websites.status 
+                                FROM 
+                                    users 
+                                JOIN 
+                                    websites ON users.user_id = websites.user_id 
+                                WHERE 
+                                    websites.user_id = ? AND websites.cat_id = ?
+                            ");
+                            \$stmt->bind_param("ii", \$UserId, \$cat_id);
+                        }
+
+                        \$stmt->execute();
+                        \$result = \$stmt->get_result();
 
                             \$websites = [];
                             while (\$row = mysqli_fetch_assoc(\$result)) {
@@ -398,7 +424,7 @@
                                 <span class="search-icon">&#128269;</span>
                                 <input type="text" id="searchInput" placeholder="Search $pageTitle..." />
                                 </div>
-                                <a href="add-$catSlug.php" class="add-btn">+ Add New $pageTitle</a>
+                                <a href="view-$catSlug.php" class="add-btn">+ Add New $pageTitle</a>
                             </div>
 
                             <!-- Website List -->
@@ -495,6 +521,152 @@
                     PHP;
 
                 file_put_contents($file_path, $default_content);
+
+                // ✅ Also create view-$catSlug.php file
+                $view_file_name = "view-$catSlug.php";
+                $view_file_path = dirname(__DIR__) . '/' . $view_file_name;
+
+                if (!file_exists($view_file_path)) {
+                    $view_content = <<<PHP
+                        <style>
+                        .nav-link:focus, .nav-link:hover {
+                            color: #fdc701 !important;
+                        }
+                        </style>
+                        <?php
+                        include './partials/layouts/layoutTop.php';
+
+                        \$packages = [];
+                        \$durations = [];
+
+                        // Get category name
+                        \$stmt = \$conn->prepare("SELECT cat_name FROM categories WHERE cat_id = ?");
+                        \$stmt->bind_param("i", \$category_id);
+                        \$stmt->execute();
+                        \$stmt->bind_result(\$category_name);
+                        \$stmt->fetch();
+                        \$stmt->close();
+
+                        \$category_id = \$category_id;
+
+                        // Fetch packages by category and group by duration
+                        \$stmt = \$conn->prepare("SELECT * FROM package WHERE cat_id = ? ORDER BY duration");
+                        \$stmt->bind_param("i", \$category_id);
+                        \$stmt->execute();
+                        \$result = \$stmt->get_result();
+
+                        if (\$result->num_rows > 0) {
+                            while (\$row = \$result->fetch_assoc()) {
+                                \$duration = \$row['duration'];
+                                \$packages[\$duration][] = \$row;
+
+                                if (!in_array(\$duration, \$durations)) {
+                                    \$durations[] = \$duration;
+                                }
+                            }
+                        }
+                        \$stmt->close();
+                        ?>
+
+                        <div class="dashboard-main-body">
+                            <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-24">
+                                <h6 class="fw-semibold mb-0"><?= htmlspecialchars(\$category_name) ?> Packages</h6>
+                            </div>
+
+                            <div class="card h-100 p-0 radius-12 overflow-hidden">
+                                <div class="card-body p-40">
+                                    <div class="row justify-content-center">
+                                        <div class="col-xxl-10">
+
+                                        <?php if (!empty(\$packages)): ?>
+                                            <ul class="nav nav-pills button-tab mt-32 mb-32 justify-content-center" id="pills-tab" role="tablist">
+                                                <?php foreach (\$durations as \$index => \$duration): ?>
+                                                    <li class="nav-item" role="presentation">
+                                                        <button class="nav-link px-24 py-10 text-md rounded-pill text-secondary-light fw-medium <?= \$index === 0 ? 'active' : '' ?>" 
+                                                                id="tab-<?= \$index ?>" 
+                                                                data-bs-toggle="pill" 
+                                                                data-bs-target="#tab-pane-<?= \$index ?>" 
+                                                                type="button" 
+                                                                role="tab" 
+                                                                aria-controls="tab-pane-<?= \$index ?>" 
+                                                                aria-selected="<?= \$index === 0 ? 'true' : 'false' ?>">
+                                                            <?= htmlspecialchars(\$duration) ?>
+                                                        </button>
+                                                    </li>
+                                                <?php endforeach; ?>
+                                            </ul>
+
+                                            <div class="tab-content" id="pills-tabContent">
+                                                <?php foreach (\$durations as \$index => \$duration): ?>
+                                                    <div class="tab-pane fade <?= \$index === 0 ? 'show active' : '' ?>" 
+                                                        id="tab-pane-<?= \$index ?>" 
+                                                        role="tabpanel" 
+                                                        aria-labelledby="tab-<?= \$index ?>" 
+                                                        tabindex="0">
+                                                        <div class="row gy-4">
+                                                            <?php foreach (\$packages[\$duration] as \$package): ?>
+                                                                <div class="col-xxl-4 col-sm-6">
+                                                                    <div class="pricing-plan position-relative radius-24 overflow-hidden border">
+                                                                        <div class="d-flex align-items-center gap-16">
+                                                                            <div>
+                                                                                <span class="fw-medium text-md text-secondary-light"><?= htmlspecialchars(\$package['plan_type']) ?></span>
+                                                                                <h6 class="mb-0"><?= htmlspecialchars(\$package['title']) ?></h6>
+                                                                            </div>
+                                                                        </div>
+                                                                        <p class="mt-16 mb-0 text-secondary-light mb-28"><?= htmlspecialchars(\$package['subtitle']) ?></p>
+                                                                        <h3 class="mb-24">\$<?= htmlspecialchars(\$package['price']) ?> 
+                                                                            <span class="fw-medium text-md text-secondary-light">/<?= htmlspecialchars(\$package['duration']) ?></span> 
+                                                                        </h3>
+                                                                        <span class="mb-20 fw-medium"><?= htmlspecialchars(\$package['description']) ?></span>
+
+                                                                        <ul>
+                                                                            <?php
+                                                                            \$package_id = \$package['id'];
+                                                                            \$feature_sql = "SELECT feature FROM features WHERE package_id = \$package_id";
+                                                                            \$feature_result = \$conn->query(\$feature_sql);
+                                                                            if (\$feature_result && \$feature_result->num_rows > 0):
+                                                                                while (\$feat = \$feature_result->fetch_assoc()):
+                                                                            ?>
+                                                                                <li class="d-flex align-items-center gap-16 mb-16">
+                                                                                    <span class="w-24-px h-24-px p-2 d-flex justify-content-center align-items-center lufera-bg rounded-circle">
+                                                                                        <iconify-icon icon="iconamoon:check-light" class="text-white text-lg "></iconify-icon>
+                                                                                    </span>
+                                                                                    <span class="text-secondary-light text-lg"><?= htmlspecialchars(\$feat['feature']) ?></span>
+                                                                                </li>
+                                                                            <?php endwhile; endif; ?>
+                                                                        </ul>
+
+                                                                        <form action="cart.php" method="POST">
+                                                                            <input type="hidden" name="plan_name" value="<?= htmlspecialchars(\$package['title']) ?>">
+                                                                            <input type="hidden" name="price" value="<?= htmlspecialchars(\$package['price']) ?>">
+                                                                            <input type="hidden" name="duration" value="<?= htmlspecialchars(\$package['duration']) ?>">
+                                                                            <input type="hidden" name="created_on" value="<?= date("Y-m-d") ?>">
+                                                                            <button type="submit" class="lufera-bg text-center text-white text-sm btn-sm px-12 py-10 w-100 radius-8 mt-28">Get started</button>
+                                                                        </form>
+                                                                    </div>
+                                                                </div>
+                                                            <?php endforeach; ?>
+                                                        </div>
+                                                    </div>
+                                                <?php endforeach; ?>
+                                            </div>
+                                        <?php else: ?>
+                                            <div class="alert alert-warning text-center">
+                                                <strong>No packages found</strong>
+                                            </div>
+                                        <?php endif; ?>
+
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <?php include './partials/layouts/layoutBottom.php'; ?>
+                    PHP;
+
+                    file_put_contents($view_file_path, $view_content);
+                }
                 
                 // ✅ If "website" template selected, also create the -det.php file
                 if ($cat_template === 'website' && !file_exists($det_file_path)) {
@@ -702,297 +874,467 @@
                         PHP;
 
                     file_put_contents($det_file_path, $det_content);
-
-                    // ✅ Also create the add-$catSlug.php file
-                    $add_file_name = "add-$catSlug.php";
-                    $add_file_path = dirname(__DIR__) . '/' . $add_file_name;
-
-                    if (!file_exists($add_file_path)) {
-                        $add_content = <<<PHP
-                            <style>
-                                .nav-link:focus, .nav-link:hover{
-                                    color: #fdc701 !important;
-                                }
-                            </style>
-                            <?php
-                                include './partials/layouts/layoutTop.php';
-
-                                \$packages = [];
-                                \$durations = [];
-
-                                // Get all packages and group them by duration
-                                \$sql = "SELECT * FROM package ORDER BY duration";
-                                \$result = \$conn->query(\$sql);
-
-                                if (\$result->num_rows > 0) {
-                                    while (\$row = \$result->fetch_assoc()) {
-                                        \$duration = \$row['duration'];
-                                        \$packages[\$duration][] = \$row;
-
-                                        if (!in_array(\$duration, \$durations)) {
-                                            \$durations[] = \$duration;
-                                        }
-                                    }
-                                }
-                            ?>
-                            
-                            <div class="dashboard-main-body">
-                                <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-24">
-                                    <h6 class="fw-semibold mb-0">Add New $pageTitle</h6>
-                                </div>
-
-                                <div class="card h-100 p-0 radius-12 overflow-hidden">
-                                    
-                                    <div class="card-body p-40">
-                                        <div class="row justify-content-center">
-                                            <div class="col-xxl-10">
-
-                                                <ul class="nav nav-pills button-tab mt-32 mb-32 justify-content-center" id="pills-tab" role="tablist">
-                                                    <?php foreach (\$durations as \$index => \$duration): ?>
-                                                        <li class="nav-item" role="presentation">
-                                                            <button class="nav-link px-24 py-10 text-md rounded-pill text-secondary-light fw-medium <?= \$index === 0 ? 'active' : '' ?>" 
-                                                                    id="tab-<?= \$index ?>" 
-                                                                    data-bs-toggle="pill" 
-                                                                    data-bs-target="#tab-pane-<?= \$index ?>" 
-                                                                    type="button" 
-                                                                    role="tab" 
-                                                                    aria-controls="tab-pane-<?= \$index ?>" 
-                                                                    aria-selected="<?= \$index === 0 ? 'true' : 'false' ?>">
-                                                                <?= htmlspecialchars(\$duration) ?>
-                                                            </button>
-                                                        </li>
-                                                    <?php endforeach; ?>
-                                                </ul>
-
-                                                <div class="tab-content" id="pills-tabContent">
-                                                    <?php foreach (\$durations as \$index => \$duration): ?>
-                                                        <div class="tab-pane fade <?= \$index === 0 ? 'show active' : '' ?>" 
-                                                            id="tab-pane-<?= \$index ?>" 
-                                                            role="tabpanel" 
-                                                            aria-labelledby="tab-<?= \$index ?>" 
-                                                            tabindex="0">
-                                                            <div class="row gy-4">
-                                                                <?php foreach (\$packages[\$duration] as \$package): ?>
-                                                                    <div class="col-xxl-4 col-sm-6">
-                                                                        <div class="pricing-plan position-relative radius-24 overflow-hidden border">
-                                                                        
-                                                                        <!-- <span class="bg-white bg-opacity-25 lufera-bg radius-24 py-8 px-24 text-sm position-absolute end-0 top-0 z-1 rounded-start-top-0 rounded-end-bottom-0">Popular</span> -->
-                                                                            
-                                                                            <div class="d-flex align-items-center gap-16">
-                                                                                <div class="">
-                                                                                    <span class="fw-medium text-md text-secondary-light"><?= htmlspecialchars(\$package['plan_type']) ?></span>
-                                                                                    <h6 class="mb-0"><?= htmlspecialchars(\$package['title']) ?></h6>
-                                                                                </div>
-                                                                            </div>
-                                                                            <p class="mt-16 mb-0 text-secondary-light mb-28"><?= htmlspecialchars(\$package['subtitle']) ?></p>
-                                                                            <h3 class="mb-24">$<?= htmlspecialchars(\$package['price']) ?> 
-                                                                                <span class="fw-medium text-md text-secondary-light">/<?= htmlspecialchars(\$package['duration']) ?></span> 
-                                                                            </h3>
-                                                                            <span class="mb-20 fw-medium"><?= htmlspecialchars(\$package['description']) ?></span>
-
-                                                                            <ul>
-                                                                                <?php
-                                                                                \$package_id = \$package['id'];
-                                                                                \$feature_sql = "SELECT feature FROM features WHERE package_id = \$package_id";
-                                                                                \$feature_result = \$conn->query(\$feature_sql);
-                                                                                if (\$feature_result && \$feature_result->num_rows > 0):
-                                                                                    while (\$feat = \$feature_result->fetch_assoc()):
-                                                                                ?>
-                                                                                    <li class="d-flex align-items-center gap-16 mb-16">
-                                                                                        <span class="w-24-px h-24-px p-2 d-flex justify-content-center align-items-center lufera-bg rounded-circle">
-                                                                                            <iconify-icon icon="iconamoon:check-light" class="text-white text-lg "></iconify-icon>
-                                                                                        </span>
-                                                                                        <span class="text-secondary-light text-lg"><?= htmlspecialchars(\$feat['feature']) ?></span>
-                                                                                    </li>
-                                                                                <?php endwhile; endif; ?>
-                                                                            </ul>
-
-                                                                            <form action="cart.php" method="POST">
-                                                                                <input type="hidden" name="plan_name" value="<?= htmlspecialchars(\$package['title']) ?>">
-                                                                                <input type="hidden" name="price" value="<?= htmlspecialchars(\$package['price']) ?>">
-                                                                                <input type="hidden" name="duration" value="<?= htmlspecialchars(\$package['duration']) ?>">
-                                                                                <input type="hidden" name="created_on" value="<?= date("Y-m-d") ?>">
-                                                                                <button type="submit" class="lufera-bg text-center text-white text-sm btn-sm px-12 py-10 w-100 radius-8 mt-28">Get started</button>
-                                                                            </form>
-                                                                        </div>
-                                                                    </div>
-                                                                <?php endforeach; ?>
-                                                            </div>
-                                                        </div>
-                                                    <?php endforeach; ?>
-                                                </div>
-
-                                                </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                            <?php include './partials/layouts/layoutBottom.php' ?>
-                        PHP;
-
-                        file_put_contents($add_file_path, $add_content);
-                    }
                 }
                 // ✅ If "marketing" template selected, also create the -det.php file
                 if ($cat_template === 'marketing' && !file_exists($det_file_path)) {
                     $det_content = <<<PHP
                         <?php include './partials/layouts/layoutTop.php' ?>
-                            <!DOCTYPE html>
-                            <html lang="en">
-                            <head>
-                            <meta charset="UTF-8" />
-                            <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-                            <title>Social Media Marketing</title>
+                            <?php
+                                \$Id = \$_SESSION['user_id'];
+
+                                \$stmt = \$conn->prepare("SELECT user_id, business_name, role FROM users WHERE id = ?");
+                                \$stmt->bind_param("i", \$Id);
+                                \$stmt->execute();
+                                \$result = \$stmt->get_result();
+                                \$row = \$result->fetch_assoc();
+                                \$UserId = \$row['user_id']; 
+                                \$BusinessName = \$row['business_name'];
+                                \$role = \$row['role'];
+                                \$stmt->close();
+
+                                if (\$role == '1') {
+                                    \$stmt = \$conn->prepare("SELECT plan, duration, status, created_at FROM websites");
+                                } else {
+                                    \$stmt = \$conn->prepare("SELECT plan, duration, status, created_at FROM websites WHERE user_id = ?");
+                                    \$stmt->bind_param("s", \$UserId); 
+                                }
+                                \$stmt->execute();
+                                \$result = \$stmt->get_result();
+                                \$row = \$result->fetch_assoc();
+                                \$Plan = \$row['plan'];
+                                \$Duration = \$row['duration'];
+                                \$Status = strtolower(\$row['status'] ?? 'Pending');
+                                \$CreatedAt = \$row['created_at'];
+                                \$stmt->close();
+
+                                // \$startDate = new DateTime(\$CreatedAt);
+                                // \$endDate = (clone \$startDate)->modify("+{\$Duration} days");
+                                // \$Validity = \$startDate->format("d-m-Y") . " to " . \$endDate->format("d-m-Y");
+
+                                switch (\$Status) {
+                                    case 'active':
+                                    \$statusClass = 'text-success'; 
+                                    break;
+                                    case 'expired':
+                                    \$statusClass = 'text-danger'; 
+                                    break;
+                                    case 'pending':
+                                    default:
+                                    \$statusClass = 'text-pending'; 
+                                    break;
+                                }
+                            ?>
                             <style>
-                                body {
-                                margin: 0;
-                                padding: 0;
-                                background: #000;
-                                color: #eaeaea;
-                                line-height: 1.6;
-                                font-size: 15px !important;
+                                .btn-upgrade {
+                                    background-color: #fff9c4;
+                                    color: #000;
+                                    border: 1px solid #ccc;
                                 }
-                                header {
-                                background: #FFD700;
-                                color: #000;
-                                padding: 2.5rem 1rem;
-                                text-align: center;
+                                .btn-edit-website {
+                                    background-color: #fec700;
+                                    color: #000;
+                                    border: none;
                                 }
-                                header h1 {
-                                font-size: 1.8rem !important;
-                                margin-bottom: 0.5rem !important;
+                                .btn-upgrade:hover {
+                                    background-color: #f0e68c;
                                 }
-                                header p {
-                                font-size: 1rem;
-                                margin: 0;
+                                .btn-edit-website:hover {
+                                    background-color: #e6be00;
                                 }
-                                section {
-                                padding: 2rem 1rem;
-                                max-width: 960px;
-                                margin: auto;
+                                .icon-black {
+                                    color: #000;
                                 }
-                                h2 {
-                                color: #FFD700;
-                                font-size: 1.3rem !important;
-                                margin-bottom: 1rem !important;
-                                border-bottom: 1px solid #FFD700 !important;
-                                padding-bottom: 0.5rem !important;
+                                .plan-details-shadow {
+                                    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+                                    border-radius: 8px;
+                                    background-color: #fff;
                                 }
-                                h3 {
-                                font-size: 1.1rem !important;
-                                margin-bottom: 0.5rem !important;
-                                color: #FFD700 !important;
+                                .btn-copy-ip {
+                                    background: none;
+                                    border: none;
+                                    padding: 0;
+                                    color: #555;
+                                    cursor: pointer;
+                                    display: flex;
+                                    align-items: center;
                                 }
-                                .features, .packages {
-                                display: flex;
-                                flex-wrap: wrap;
-                                gap: 1rem;
-                                margin-top: 1rem;
+                                .btn-copy-ip:hover {
+                                    color: #000;
                                 }
-                                .card {
-                                flex: 1;
-                                min-width: 260px;
-                                background: #111;
-                                padding: 1rem;
-                                border: 1px solid #333;
-                                border-radius: 6px;
-                                box-shadow: 0 2px 5px rgba(0,0,0,0.4);
-                                }
-                                .btn {
-                                display: inline-block;
-                                margin-top: 1.5rem;
-                                padding: 0.6rem 1.2rem;
-                                background: #FFD700;
-                                color: #000;
-                                text-decoration: none;
-                                font-size: 0.9rem;
-                                font-weight: 600;
-                                border-radius: 4px;
-                                transition: background 0.2s ease-in-out;
-                                }
-                                .btn:hover {
-                                background: #e6c200;
+                                .text-pending {
+                                    color: #ff9800;
                                 }
                             </style>
-                            </head>
-                            <body>
+                            <div class="dashboard-main-body">
+                                <div class="mb-24 d-flex justify-content-between align-items-center">
+                                    <div class="d-flex align-items-center gap-2">
+                                    <h6 class="fw-semibold mb-0"><?php echo htmlspecialchars(\$BusinessName); ?></h6>
+                                    <span>|</span>
+                                    <iconify-icon icon="mdi:home-outline" class="text-lg icon-black"></iconify-icon>
+                                    <span class="text-warning">N/A</span>
+                                    </div>
+                                    <div class="d-flex gap-2">
+                                    <button type="button" class="btn btn-sm btn-upgrade">Upgrade</button>
+                                    <?php if(\$role != '1') { ?>
+                                    <a href="marketing-wizard.php"><button type="button" class="btn btn-sm btn-edit-website">Edit $pageTitle</button></a>
+                                    <?php } else { ?>
+                                    <button type="button" class="btn btn-sm btn-edit-website">Edit $pageTitle</button>
+                                    <?php } ?>
+                                    </div>
+                                </div>
 
-                            <header>
-                                <h1>Boost Your Business with Social Media Marketing</h1>
-                                <p>Reach your customers on WhatsApp, Instagram, and Facebook</p>
-                            </header>
+                                <div class="row gy-4">
+                                    <div class="col-lg-6">
+                                    <div class="card h-100 p-0">
+                                        <div class="card-header border-bottom bg-base py-16 px-24">
+                                        <h6 class="text-lg fw-semibold mb-0">Plan Details:</h6>
+                                        </div>
+                                        <div class="card-body p-24 plan-details-shadow bg-base">
+                                        <div class="d-flex justify-content-between mb-3">
+                                            <span>Plan Name</span>
+                                            <span><?php echo htmlspecialchars(\$Plan); ?></span>
+                                        </div>
+                                        <hr />
+                                        <div class="d-flex justify-content-between my-3">
+                                            <span>Validity</span>
+                                            <!-- <span><?php echo htmlspecialchars(\$Validity); ?></span> -->
+                                            <span><?php echo htmlspecialchars(\$CreatedAt); ?></span>
+                                        </div>
+                                        <hr />
+                                        <div class="d-flex justify-content-between mt-3">
+                                            <span>Status</span>
+                                            <span class="fw-semibold <?php echo \$statusClass; ?>"><?php echo ucfirst(\$Status); ?></span>
+                                        </div>
+                                        </div>
+                                    </div>
+                                    </div>
 
-                            <section>
-                                <h2>What We Offer</h2>
-                                <div class="features">
-                                <div class="card">
-                                    <h3>WhatsApp Marketing</h3>
-                                    <p>Send personalized bulk messages to your customer base and grow engagement.</p>
-                                </div>
-                                <div class="card">
-                                    <h3>Instagram Posts</h3>
-                                    <p>Custom-designed visuals and captions to attract and retain followers consistently.</p>
-                                </div>
-                                <div class="card">
-                                    <h3>Facebook Ads</h3>
-                                    <p>Targeted ad campaigns managed by experts to convert leads into customers.</p>
-                                </div>
-                                </div>
-                            </section>
+                                    <div class="col-lg-6">
+                                    <div class="card h-100 p-0">
+                                        <div class="card-header border-bottom bg-base py-16 px-24">
+                                        <h6 class="text-lg fw-semibold mb-0">$pageTitle Details:</h6>
+                                        </div>
+                                        <div class="card-body p-24 plan-details-shadow bg-base">
+                                        <div class="d-flex justify-content-between mb-3">
+                                            <span>Access your $pageTitle at</span>
+                                            <span>N/A</span>
+                                        </div>
+                                        <hr />
+                                        <div class="d-flex justify-content-between my-3">
+                                            <span>Access your $pageTitle with www</span>
+                                            <span>N/A</span>
+                                        </div>
+                                        <hr />
+                                        <div class="d-flex justify-content-between align-items-center mt-3">
+                                            <span>$pageTitle IP address</span>
+                                            <span class="d-flex align-items-center gap-2">
+                                            <span>N/A</span>
+                                            <button type="button" class="btn-copy-ip" onclick="copyIP('N/A')" title="Copy IP Address" aria-label="Copy IP Address">
+                                                <iconify-icon icon="mdi:content-copy" style="cursor:pointer; font-size: 18px;"></iconify-icon>
+                                            </button>
+                                            </span>
+                                        </div>
+                                        </div>
+                                    </div>
+                                    </div>
 
-                            <section>
-                                <h2>Packages</h2>
-                                <div class="packages">
-                                <div class="card">
-                                    <h3>Starter</h3>
-                                    <p>2 posts/week, basic design, WhatsApp messaging (limited)</p>
-                                    <p><strong>$49/month</strong></p>
+                                    <div class="col-lg-6">
+                                    <div class="card h-100 p-0">
+                                        <div class="card-header border-bottom bg-base py-16 px-24">
+                                        <h6 class="text-lg fw-semibold mb-0">Nameservers:</h6>
+                                        </div>
+                                        <div class="card-body p-24 plan-details-shadow bg-base">
+                                        <div class="d-flex justify-content-between mb-3">
+                                            <span>Current nameserver 1</span>
+                                            <span class="d-flex align-items-center gap-2">
+                                            <span>N/A</span>
+                                            <button type="button" class="btn-copy-ip" onclick="copyIP('N/A')" title="Copy nameserver 1" aria-label="Copy nameserver 1">
+                                                <iconify-icon icon="mdi:content-copy" style="cursor:pointer; font-size: 18px;"></iconify-icon>
+                                            </button>
+                                            </span>
+                                        </div>
+                                        <hr />
+                                        <div class="d-flex justify-content-between my-3">
+                                            <span>Current nameserver 2</span>
+                                            <span class="d-flex align-items-center gap-2">
+                                            <span>N/A</span>
+                                            <button type="button" class="btn-copy-ip" onclick="copyIP('N/A')" title="Copy nameserver 2" aria-label="Copy nameserver 2">
+                                                <iconify-icon icon="mdi:content-copy" style="cursor:pointer; font-size: 18px;"></iconify-icon>
+                                            </button>
+                                            </span>
+                                        </div>
+                                        </div>
+                                    </div>
+                                    </div>
                                 </div>
-                                <div class="card">
-                                    <h3>Pro</h3>
-                                    <p>5 posts/week, premium design, campaign tracking, bulk messaging</p>
-                                    <p><strong>$99/month</strong></p>
-                                </div>
-                                <div class="card">
-                                    <h3>Enterprise</h3>
-                                    <p>Custom strategy, ad management, analytics reporting, full service</p>
-                                    <p><strong>Custom Quote</strong></p>
-                                </div>
-                                </div>
-                                <a href="#" class="btn">Get Started</a>
-                            </section>
-
-                            <?php include './partials/layouts/layoutBottom.php' ?>
+                            </div>
+                            <script>
+                                function copyIP(text) {
+                                    navigator.clipboard.writeText(text).then(() => {
+                                    alert('Copied: ' + text);
+                                    }).catch(() => {
+                                    alert('Failed to copy');
+                                    });
+                                }
+                            </script>
+                        <?php include './partials/layouts/layoutBottom.php' ?> 
                             </body>
                             </html>
                     PHP;
 
                     file_put_contents($det_file_path, $det_content);
                 }
+                if ($cat_template === 'visa' && !file_exists($det_file_path)) {
+                    $det_content = <<<PHP
+                        <?php include './partials/layouts/layoutTop.php' ?>
+                            <?php
+                                \$Id = \$_SESSION['user_id'];
+
+                                \$stmt = \$conn->prepare("SELECT user_id, business_name, role FROM users WHERE id = ?");
+                                \$stmt->bind_param("i", \$Id);
+                                \$stmt->execute();
+                                \$result = \$stmt->get_result();
+                                \$row = \$result->fetch_assoc();
+                                \$UserId = \$row['user_id']; 
+                                \$BusinessName = \$row['business_name'];
+                                \$role = \$row['role'];
+                                \$stmt->close();
+
+                                if (\$role == '1') {
+                                    \$stmt = \$conn->prepare("SELECT plan, duration, status, created_at FROM websites");
+                                } else {
+                                    \$stmt = \$conn->prepare("SELECT plan, duration, status, created_at FROM websites WHERE user_id = ?");
+                                    \$stmt->bind_param("s", \$UserId); 
+                                }
+                                \$stmt->execute();
+                                \$result = \$stmt->get_result();
+                                \$row = \$result->fetch_assoc();
+                                \$Plan = \$row['plan'];
+                                \$Duration = \$row['duration'];
+                                \$Status = strtolower(\$row['status'] ?? 'Pending');
+                                \$CreatedAt = \$row['created_at'];
+                                \$stmt->close();
+
+                                // \$startDate = new DateTime(\$CreatedAt);
+                                // \$endDate = (clone \$startDate)->modify("+{\$Duration} days");
+                                // \$Validity = \$startDate->format("d-m-Y") . " to " . \$endDate->format("d-m-Y");
+
+                                switch (\$Status) {
+                                    case 'active':
+                                    \$statusClass = 'text-success'; 
+                                    break;
+                                    case 'expired':
+                                    \$statusClass = 'text-danger'; 
+                                    break;
+                                    case 'pending':
+                                    default:
+                                    \$statusClass = 'text-pending'; 
+                                    break;
+                                }
+                            ?>
+                            <style>
+                                .btn-upgrade {
+                                    background-color: #fff9c4;
+                                    color: #000;
+                                    border: 1px solid #ccc;
+                                }
+                                .btn-edit-website {
+                                    background-color: #fec700;
+                                    color: #000;
+                                    border: none;
+                                }
+                                .btn-upgrade:hover {
+                                    background-color: #f0e68c;
+                                }
+                                .btn-edit-website:hover {
+                                    background-color: #e6be00;
+                                }
+                                .icon-black {
+                                    color: #000;
+                                }
+                                .plan-details-shadow {
+                                    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+                                    border-radius: 8px;
+                                    background-color: #fff;
+                                }
+                                .btn-copy-ip {
+                                    background: none;
+                                    border: none;
+                                    padding: 0;
+                                    color: #555;
+                                    cursor: pointer;
+                                    display: flex;
+                                    align-items: center;
+                                }
+                                .btn-copy-ip:hover {
+                                    color: #000;
+                                }
+                                .text-pending {
+                                    color: #ff9800;
+                                }
+                            </style>
+                            <div class="dashboard-main-body">
+                                <div class="mb-24 d-flex justify-content-between align-items-center">
+                                    <div class="d-flex align-items-center gap-2">
+                                    <h6 class="fw-semibold mb-0"><?php echo htmlspecialchars(\$BusinessName); ?></h6>
+                                    <span>|</span>
+                                    <iconify-icon icon="mdi:home-outline" class="text-lg icon-black"></iconify-icon>
+                                    <span class="text-warning">N/A</span>
+                                    </div>
+                                    <div class="d-flex gap-2">
+                                    <button type="button" class="btn btn-sm btn-upgrade">Upgrade</button>
+                                    <?php if(\$role != '1') { ?>
+                                    <a href="visa-wizard.php"><button type="button" class="btn btn-sm btn-edit-website">Edit $pageTitle</button></a>
+                                    <?php } else { ?>
+                                    <button type="button" class="btn btn-sm btn-edit-website">Edit $pageTitle</button>
+                                    <?php } ?>
+                                    </div>
+                                </div>
+
+                                <div class="row gy-4">
+                                    <div class="col-lg-6">
+                                    <div class="card h-100 p-0">
+                                        <div class="card-header border-bottom bg-base py-16 px-24">
+                                        <h6 class="text-lg fw-semibold mb-0">Plan Details:</h6>
+                                        </div>
+                                        <div class="card-body p-24 plan-details-shadow bg-base">
+                                        <div class="d-flex justify-content-between mb-3">
+                                            <span>Plan Name</span>
+                                            <span><?php echo htmlspecialchars(\$Plan); ?></span>
+                                        </div>
+                                        <hr />
+                                        <div class="d-flex justify-content-between my-3">
+                                            <span>Validity</span>
+                                            <!-- <span><?php echo htmlspecialchars(\$Validity); ?></span> -->
+                                            <span><?php echo htmlspecialchars(\$CreatedAt); ?></span>
+                                        </div>
+                                        <hr />
+                                        <div class="d-flex justify-content-between mt-3">
+                                            <span>Status</span>
+                                            <span class="fw-semibold <?php echo \$statusClass; ?>"><?php echo ucfirst(\$Status); ?></span>
+                                        </div>
+                                        </div>
+                                    </div>
+                                    </div>
+
+                                    <div class="col-lg-6">
+                                    <div class="card h-100 p-0">
+                                        <div class="card-header border-bottom bg-base py-16 px-24">
+                                        <h6 class="text-lg fw-semibold mb-0">$pageTitle Details:</h6>
+                                        </div>
+                                        <div class="card-body p-24 plan-details-shadow bg-base">
+                                        <div class="d-flex justify-content-between mb-3">
+                                            <span>Access your $pageTitle at</span>
+                                            <span>N/A</span>
+                                        </div>
+                                        <hr />
+                                        <div class="d-flex justify-content-between my-3">
+                                            <span>Access your $pageTitle with www</span>
+                                            <span>N/A</span>
+                                        </div>
+                                        <hr />
+                                        <div class="d-flex justify-content-between align-items-center mt-3">
+                                            <span>$pageTitle IP address</span>
+                                            <span class="d-flex align-items-center gap-2">
+                                            <span>N/A</span>
+                                            <button type="button" class="btn-copy-ip" onclick="copyIP('N/A')" title="Copy IP Address" aria-label="Copy IP Address">
+                                                <iconify-icon icon="mdi:content-copy" style="cursor:pointer; font-size: 18px;"></iconify-icon>
+                                            </button>
+                                            </span>
+                                        </div>
+                                        </div>
+                                    </div>
+                                    </div>
+
+                                    <div class="col-lg-6">
+                                    <div class="card h-100 p-0">
+                                        <div class="card-header border-bottom bg-base py-16 px-24">
+                                        <h6 class="text-lg fw-semibold mb-0">Nameservers:</h6>
+                                        </div>
+                                        <div class="card-body p-24 plan-details-shadow bg-base">
+                                        <div class="d-flex justify-content-between mb-3">
+                                            <span>Current nameserver 1</span>
+                                            <span class="d-flex align-items-center gap-2">
+                                            <span>N/A</span>
+                                            <button type="button" class="btn-copy-ip" onclick="copyIP('N/A')" title="Copy nameserver 1" aria-label="Copy nameserver 1">
+                                                <iconify-icon icon="mdi:content-copy" style="cursor:pointer; font-size: 18px;"></iconify-icon>
+                                            </button>
+                                            </span>
+                                        </div>
+                                        <hr />
+                                        <div class="d-flex justify-content-between my-3">
+                                            <span>Current nameserver 2</span>
+                                            <span class="d-flex align-items-center gap-2">
+                                            <span>N/A</span>
+                                            <button type="button" class="btn-copy-ip" onclick="copyIP('N/A')" title="Copy nameserver 2" aria-label="Copy nameserver 2">
+                                                <iconify-icon icon="mdi:content-copy" style="cursor:pointer; font-size: 18px;"></iconify-icon>
+                                            </button>
+                                            </span>
+                                        </div>
+                                        </div>
+                                    </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <script>
+                                function copyIP(text) {
+                                    navigator.clipboard.writeText(text).then(() => {
+                                    alert('Copied: ' + text);
+                                    }).catch(() => {
+                                    alert('Failed to copy');
+                                    });
+                                }
+                            </script>
+                        <?php include './partials/layouts/layoutBottom.php' ?> 
+                            </body>
+                            </html>
+                    PHP;
+
+                    file_put_contents($det_file_path, $det_content);
+                    }
+                }
 
                 $_SESSION['swal_success'] = "Category created";
             }
 
-            header("Location: " . ($_SERVER['HTTP_REFERER'] ?? 'index.php'));
-            exit;
-        }
+        header("Location: " . ($_SERVER['HTTP_REFERER'] ?? 'index.php'));
+        exit;
     }
 
     // Edit category
-    if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['edit_cat_id'], $_POST['edit_cat_name'], $_POST['edit_cat_url'])) {
+    // if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['edit_cat_id'], $_POST['edit_cat_name'], $_POST['edit_cat_url'])) {
+    //     $cat_id = intval($_POST['edit_cat_id']);
+    //     $cat_name = trim($_POST['edit_cat_name']);
+    //     $cat_url = trim($_POST['edit_cat_url']);
+
+    //     if (!str_ends_with($cat_url, '.php')) {
+    //         $cat_url .= '.php';
+    //     }
+
+    //     $stmt = $conn->prepare("UPDATE categories SET cat_name = ?, cat_url = ? WHERE cat_id = ?");
+    //     $stmt->bind_param("ssi", $cat_name, $cat_url, $cat_id);
+    //     $stmt->execute();
+
+    //     $_SESSION['swal_success'] = "Category updated";
+    //     header("Location: " . ($_SERVER['HTTP_REFERER'] ?? 'index.php'));
+    //     exit;
+    // }
+
+    // Edit category
+    if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['edit_cat_id'], $_POST['edit_cat_name'], $_POST['edit_cat_url'], $_POST['edit_cat_module'])) {
         $cat_id = intval($_POST['edit_cat_id']);
         $cat_name = trim($_POST['edit_cat_name']);
         $cat_url = trim($_POST['edit_cat_url']);
-
+        $cat_module = trim($_POST['edit_cat_module']);
+    
         if (!str_ends_with($cat_url, '.php')) {
             $cat_url .= '.php';
         }
-
-        $stmt = $conn->prepare("UPDATE categories SET cat_name = ?, cat_url = ? WHERE cat_id = ?");
-        $stmt->bind_param("ssi", $cat_name, $cat_url, $cat_id);
+    
+        $stmt = $conn->prepare("UPDATE categories SET cat_name = ?, cat_url = ?, cat_module = ? WHERE cat_id = ?");
+        $stmt->bind_param("sssi", $cat_name, $cat_url, $cat_module, $cat_id);
         $stmt->execute();
-
+    
         $_SESSION['swal_success'] = "Category updated";
         header("Location: " . ($_SERVER['HTTP_REFERER'] ?? 'index.php'));
         exit;
@@ -1019,8 +1361,8 @@
             $filesToDelete = [
                 "$baseDir/{$catName}.php",
                 "$baseDir/{$catName}-det.php",
-                "$baseDir/add-{$catName}.php"
-                // "$baseDir/edit-{$catName}.php"
+                "$baseDir/add-{$catName}.php",
+                "$baseDir/view-{$catName}.php"
             ];
 
             foreach ($filesToDelete as $file) {
@@ -1038,6 +1380,364 @@
         $_SESSION['swal_success'] = "Category deleted";
         header("Location: " . ($_SERVER['HTTP_REFERER'] ?? 'index.php'));
         exit;
+    }
+
+    if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['product_category'], $_POST['product_type'])) {
+        $category_id = intval($_POST['product_category']);
+        $product_type = $_POST['product_type'];
+
+        // Optional: Store or use these values as needed
+        $_SESSION['selected_category'] = $category_id;
+
+        if ($product_type === 'Package') {
+            // Get category name
+            $stmt = $conn->prepare("SELECT cat_name FROM categories WHERE cat_id = ?");
+            $stmt->bind_param("i", $category_id);
+            $stmt->execute();
+            $stmt->bind_result($cat_name);
+            $stmt->fetch();
+            $stmt->close();
+
+            $catSlug = strtolower(preg_replace('/\s+/', '-', $cat_name));
+
+            header("Location: add-$catSlug.php");
+
+            // ✅ Also create the add-$catSlug.php file
+            $add_file_name = "add-$catSlug.php";
+            $add_file_path = dirname(__DIR__) . '/' . $add_file_name;
+
+            if (!file_exists($add_file_path)) {
+                $add_content = <<<PHP
+                <?php
+                \$script = '<script>
+                    (() => {
+                        "use strict"
+                        const forms = document.querySelectorAll(".needs-validation");
+                        Array.from(forms).forEach(form => {
+                            form.addEventListener("submit", event => {
+                                if (!form.checkValidity()) {
+                                    event.preventDefault();
+                                    event.stopPropagation();
+                                }
+                                form.classList.add("was-validated");
+                            }, false);
+                        });
+                    })();
+                </script>';
+                ?>
+                <style>
+                .toggle-icon-pass {
+                    position: absolute;
+                    top: 22px;
+                    right: 28px;
+                    transform: translateY(-50%);
+                    cursor: pointer;
+                    user-select: none;
+                    font-size: 20px;
+                }
+                input::-webkit-outer-spin-button,
+                input::-webkit-inner-spin-button {
+                    -webkit-appearance: none;
+                    margin: 0;
+                }
+                input[type=number] {
+                    -moz-appearance: textfield;
+                }
+                </style>
+
+                <?php include './partials/layouts/layoutTop.php'; ?>
+
+                <?php
+                ini_set('display_errors', 1);
+                ini_set('display_startup_errors', 1);
+                error_reporting(E_ALL);
+
+                if (\$_SERVER['REQUEST_METHOD'] == 'POST') {
+                    \$plan_type = \$_POST['plan_type'];
+                    \$title = \$_POST['title'];
+                    \$subtitle = \$_POST['subtitle'];
+                    \$price = \$_POST['price'];
+                    \$description = \$_POST['description'];
+                    \$duration = \$_POST['duration'];
+                    \$features = \$_POST['features'];
+                    \$created_at = date("Y-m-d H:i:s");
+
+                    \$cat_id = $category_id;
+
+                    \$stmt = \$conn->prepare("INSERT INTO package (plan_type, title, subtitle, price, description, duration, cat_id, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+                    \$stmt->bind_param("ssssssis", \$plan_type, \$title, \$subtitle, \$price, \$description, \$duration, \$cat_id, \$created_at);
+
+                    if (\$stmt->execute()) {
+                        \$package_id = \$conn->insert_id;
+                        \$stmt->close();
+
+                        if (!empty(\$features) && is_array(\$features)) {
+                            \$featureStmt = \$conn->prepare("INSERT INTO features (package_id, feature) VALUES (?, ?)");
+                            foreach (\$features as \$feature) {
+                                \$cleaned_feature = trim(\$feature);
+                                if (\$cleaned_feature !== "") {
+                                    \$featureStmt->bind_param("is", \$package_id, \$cleaned_feature);
+                                    \$featureStmt->execute();
+                                }
+                            }
+                            \$featureStmt->close();
+                        }
+
+                        echo "<script>
+                            Swal.fire({
+                                title: 'Success!',
+                                text: 'Package and features saved successfully.',
+                                confirmButtonText: 'OK'
+                            }).then((result) => {
+                                if (result.isConfirmed) {
+                                    window.location.href = 'view-$catSlug.php';
+                                }
+                            });
+                        </script>";
+                    } else {
+                        echo "<script>alert('Error: " . \$stmt->error . "'); window.history.back();</script>";
+                    }
+                }
+                ?>
+
+                <div class="dashboard-main-body">
+                    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-24">
+                        <h6 class="fw-semibold mb-0">Add Package</h6>
+                    </div>
+
+                    <div class="card h-100 p-0 radius-12">
+                        <div class="card-body p-24">
+                            <div class="row justify-content-center">
+                                <div class="col-xxl-12 col-xl-8 col-lg-10">
+                                    <form method="POST" class="row gy-3 needs-validation" novalidate>
+                                        <!-- Plan Type -->
+                                        <div class="mb-2">
+                                            <label class="form-label">Plan Type</label>
+                                            <input type="text" name="plan_type" class="form-control radius-8" required>
+                                        </div>
+                                        <!-- Title -->
+                                        <div class="mb-2">
+                                            <label class="form-label">Title</label>
+                                            <input type="text" name="title" class="form-control radius-8" required>
+                                        </div>
+                                        <!-- Subtitle -->
+                                        <div class="mb-2">
+                                            <label class="form-label">Subtitle</label>
+                                            <input type="text" name="subtitle" class="form-control radius-8" required>
+                                        </div>
+                                        <!-- Price -->
+                                        <div class="mb-2">
+                                            <label class="form-label">Price</label>
+                                            <input type="text" name="price" class="form-control radius-8" required>
+                                        </div>
+                                        <!-- Description -->
+                                        <div class="mb-2">
+                                            <label class="form-label">Description</label>
+                                            <textarea name="description" class="form-control radius-8" required></textarea>
+                                        </div>
+                                        <!-- Duration -->
+                                        <div class="mb-2">
+                                            <label class="form-label">Duration</label>
+                                            <input type="text" name="duration" class="form-control radius-8" required>
+                                        </div>
+                                        <!-- Features -->
+                                        <div class="mb-2">
+                                            <label class="form-label">Features</label>
+                                            <div id="feature-wrapper">
+                                                <div class="feature-group mb-2 d-flex gap-2">
+                                                    <input type="text" name="features[]" class="form-control radius-8" required placeholder="Enter a feature" />
+                                                    <button type="button" class="btn btn-sm btn-success add-feature">+</button>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="d-flex gap-3 justify-content-end">
+                                            <button type="submit" class="btn btn-primary">Save</button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <script>
+                document.addEventListener("DOMContentLoaded", function () {
+                    const wrapper = document.getElementById("feature-wrapper");
+                    wrapper.addEventListener("click", function (e) {
+                        if (e.target.classList.contains("add-feature")) {
+                            const group = document.createElement("div");
+                            group.className = "feature-group mb-2 d-flex gap-2";
+                            group.innerHTML = '<input type="text" name="features[]" class="form-control radius-8" required placeholder="Enter a feature" /><button type="button" class="btn btn-sm btn-danger remove-feature">−</button>';
+                            wrapper.appendChild(group);
+                        } else if (e.target.classList.contains("remove-feature")) {
+                            e.target.parentElement.remove();
+                        }
+                    });
+                });
+                </script>
+
+                <?php include './partials/layouts/layoutBottom.php'; ?>
+                PHP;
+
+                file_put_contents($add_file_path, $add_content);
+            }
+
+            // ✅ Also create view-$catSlug.php file
+            $view_file_name = "view-$catSlug.php";
+            $view_file_path = dirname(__DIR__) . '/' . $view_file_name;
+
+            // if (!file_exists($view_file_path)) {
+                $view_content = <<<PHP
+                    <style>
+                    .nav-link:focus, .nav-link:hover {
+                        color: #fdc701 !important;
+                    }
+                    </style>
+                    <?php
+                    include './partials/layouts/layoutTop.php';
+
+                    \$packages = [];
+                    \$durations = [];
+
+                    // Get category name
+                    \$stmt = \$conn->prepare("SELECT cat_name FROM categories WHERE cat_id = ?");
+                    \$stmt->bind_param("i", \$category_id);
+                    \$stmt->execute();
+                    \$stmt->bind_result(\$category_name);
+                    \$stmt->fetch();
+                    \$stmt->close();
+
+                    \$category_id = $category_id;
+
+                    // Fetch packages by category and group by duration
+                    \$stmt = \$conn->prepare("SELECT * FROM package WHERE cat_id = ? ORDER BY duration");
+                    \$stmt->bind_param("i", \$category_id);
+                    \$stmt->execute();
+                    \$result = \$stmt->get_result();
+
+                    if (\$result->num_rows > 0) {
+                        while (\$row = \$result->fetch_assoc()) {
+                            \$duration = \$row['duration'];
+                            \$packages[\$duration][] = \$row;
+
+                            if (!in_array(\$duration, \$durations)) {
+                                \$durations[] = \$duration;
+                            }
+                        }
+                    }
+                    \$stmt->close();
+                    ?>
+
+                    <div class="dashboard-main-body">
+                        <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-24">
+                            <h6 class="fw-semibold mb-0"><?= htmlspecialchars(\$category_name) ?> Packages</h6>
+                        </div>
+
+                        <div class="card h-100 p-0 radius-12 overflow-hidden">
+                            <div class="card-body p-40">
+                                <div class="row justify-content-center">
+                                    <div class="col-xxl-10">
+
+                                    <?php if (!empty(\$packages)): ?>
+                                        <ul class="nav nav-pills button-tab mt-32 mb-32 justify-content-center" id="pills-tab" role="tablist">
+                                            <?php foreach (\$durations as \$index => \$duration): ?>
+                                                <li class="nav-item" role="presentation">
+                                                    <button class="nav-link px-24 py-10 text-md rounded-pill text-secondary-light fw-medium <?= \$index === 0 ? 'active' : '' ?>" 
+                                                            id="tab-<?= \$index ?>" 
+                                                            data-bs-toggle="pill" 
+                                                            data-bs-target="#tab-pane-<?= \$index ?>" 
+                                                            type="button" 
+                                                            role="tab" 
+                                                            aria-controls="tab-pane-<?= \$index ?>" 
+                                                            aria-selected="<?= \$index === 0 ? 'true' : 'false' ?>">
+                                                        <?= htmlspecialchars(\$duration) ?>
+                                                    </button>
+                                                </li>
+                                            <?php endforeach; ?>
+                                        </ul>
+
+                                        <div class="tab-content" id="pills-tabContent">
+                                            <?php foreach (\$durations as \$index => \$duration): ?>
+                                                <div class="tab-pane fade <?= \$index === 0 ? 'show active' : '' ?>" 
+                                                    id="tab-pane-<?= \$index ?>" 
+                                                    role="tabpanel" 
+                                                    aria-labelledby="tab-<?= \$index ?>" 
+                                                    tabindex="0">
+                                                    <div class="row gy-4">
+                                                        <?php foreach (\$packages[\$duration] as \$package): ?>
+                                                            <div class="col-xxl-4 col-sm-6">
+                                                                <div class="pricing-plan position-relative radius-24 overflow-hidden border">
+                                                                    <div class="d-flex align-items-center gap-16">
+                                                                        <div>
+                                                                            <span class="fw-medium text-md text-secondary-light"><?= htmlspecialchars(\$package['plan_type']) ?></span>
+                                                                            <h6 class="mb-0"><?= htmlspecialchars(\$package['title']) ?></h6>
+                                                                        </div>
+                                                                    </div>
+                                                                    <p class="mt-16 mb-0 text-secondary-light mb-28"><?= htmlspecialchars(\$package['subtitle']) ?></p>
+                                                                    <h3 class="mb-24">\$<?= htmlspecialchars(\$package['price']) ?> 
+                                                                        <span class="fw-medium text-md text-secondary-light">/<?= htmlspecialchars(\$package['duration']) ?></span> 
+                                                                    </h3>
+                                                                    <span class="mb-20 fw-medium"><?= htmlspecialchars(\$package['description']) ?></span>
+
+                                                                    <ul>
+                                                                        <?php
+                                                                        \$package_id = \$package['id'];
+                                                                        \$feature_sql = "SELECT feature FROM features WHERE package_id = \$package_id";
+                                                                        \$feature_result = \$conn->query(\$feature_sql);
+                                                                        if (\$feature_result && \$feature_result->num_rows > 0):
+                                                                            while (\$feat = \$feature_result->fetch_assoc()):
+                                                                        ?>
+                                                                            <li class="d-flex align-items-center gap-16 mb-16">
+                                                                                <span class="w-24-px h-24-px p-2 d-flex justify-content-center align-items-center lufera-bg rounded-circle">
+                                                                                    <iconify-icon icon="iconamoon:check-light" class="text-white text-lg "></iconify-icon>
+                                                                                </span>
+                                                                                <span class="text-secondary-light text-lg"><?= htmlspecialchars(\$feat['feature']) ?></span>
+                                                                            </li>
+                                                                        <?php endwhile; endif; ?>
+                                                                    </ul>
+
+                                                                    <form action="cart.php" method="POST">
+                                                                        <input type="hidden" name="plan_name" value="<?= htmlspecialchars(\$package['title']) ?>">
+                                                                        <input type="hidden" name="price" value="<?= htmlspecialchars(\$package['price']) ?>">
+                                                                        <input type="hidden" name="duration" value="<?= htmlspecialchars(\$package['duration']) ?>">
+                                                                        <input type="hidden" name="created_on" value="<?= date("Y-m-d") ?>">
+                                                                        <button type="submit" class="lufera-bg text-center text-white text-sm btn-sm px-12 py-10 w-100 radius-8 mt-28">Get started</button>
+                                                                    </form>
+                                                                </div>
+                                                            </div>
+                                                        <?php endforeach; ?>
+                                                    </div>
+                                                </div>
+                                            <?php endforeach; ?>
+                                        </div>
+                                    <?php else: ?>
+                                        <div class="alert alert-warning text-center">
+                                            <strong>No packages found</strong>
+                                        </div>
+                                    <?php endif; ?>
+
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <?php include './partials/layouts/layoutBottom.php'; ?>
+                PHP;
+
+                file_put_contents($view_file_path, $view_content);
+            // }
+
+        exit;
+        } elseif ($product_type === 'Product') {
+            header("Location: add-package.php");
+            exit;
+        } else {
+            $_SESSION['swal_error'] = "Invalid product type selected.";
+            header("Location: " . $_SERVER['PHP_SELF']);
+            exit;
+        }
     }
 ?>
 
@@ -1124,7 +1824,7 @@
 
                 while ($cat = $cat_results->fetch_assoc()) { ?>
                 <li>
-                    <a href="<?= htmlspecialchars($cat['cat_url']) ?>">
+                    <a href="<?= htmlspecialchars($cat['cat_url']) ?>?cat_id=<?= urlencode($cat['cat_id']) ?>">
                         <iconify-icon icon="mdi:tag-outline" class="menu-icon"></iconify-icon>
                         <span><?= htmlspecialchars($cat['cat_name']) ?></span>
                     </a>
@@ -1133,17 +1833,19 @@
 
             <?php if ($row['role'] == "1") {
                 // Fetch categories
-                $cat_result = $conn->query("SELECT cat_id, cat_name, cat_url FROM categories ORDER BY cat_id DESC");
+                // $cat_result = $conn->query("SELECT cat_id, cat_name, cat_url FROM categories ORDER BY cat_id DESC");
+$cat_result = $conn->query("SELECT cat_id, cat_name, cat_url,cat_module FROM categories ORDER BY cat_id DESC");
 
                 while ($cat = $cat_result->fetch_assoc()) { ?>
                     <li>
                         <div class="category-item-wrapper">
-                            <a href="<?= htmlspecialchars($cat['cat_url']) ?>" class="category-link">
+                            <a href="<?= htmlspecialchars($cat['cat_url']) ?>?cat_id=<?= urlencode($cat['cat_id']) ?>" class="category-link">
                                 <iconify-icon icon="mdi:tag-outline" class="menu-icon"></iconify-icon>
                                 <span><?= htmlspecialchars($cat['cat_name']) ?></span>
                             </a>
                             <div class="category-actions">
-                                <button type="button" onclick="openEditModal('<?= $cat['cat_id'] ?>', '<?= htmlspecialchars($cat['cat_name']) ?>', '<?= htmlspecialchars($cat['cat_url']) ?>')" class="icon-btn">
+                                <!-- <button type="button" onclick="openEditModal('<?= $cat['cat_id'] ?>', '<?= htmlspecialchars($cat['cat_name']) ?>', '<?= htmlspecialchars($cat['cat_url']) ?>')" class="icon-btn"> -->
+                                <button type="button" onclick="openEditModal('<?= $cat['cat_id'] ?>', '<?= htmlspecialchars($cat['cat_name']) ?>', '<?= htmlspecialchars($cat['cat_url']) ?>', '<?= htmlspecialchars($cat['cat_module']) ?>')" class="icon-btn">    
                                     <iconify-icon icon="mdi:pencil-outline"></iconify-icon>
                                 </button>
                                 <form method="post" class="delete-form">
@@ -1285,7 +1987,7 @@
 </div>
 
 <!-- Edit Category Modal -->
-<div id="editCategoryModal" class="custom-modal">
+<!-- <div id="editCategoryModal" class="custom-modal">
     <div class="custom-modal-overlay" onclick="closeEditModal();"></div>
     <div class="custom-modal-box">
         <div class="custom-modal-header">
@@ -1308,6 +2010,40 @@
             </div>
         </form>
     </div>
+</div> -->
+
+<!-- Edit Category Modal -->
+<div id="editCategoryModal" class="custom-modal">
+    <div class="custom-modal-overlay" onclick="closeEditModal();"></div>
+    <div class="custom-modal-box">
+        <div class="custom-modal-header">
+            <h2>Edit Category</h2>
+            <button class="custom-modal-close" onclick="closeEditModal()">×</button>
+        </div>
+        <form method="post" class="custom-modal-body">
+            <input type="hidden" name="edit_cat_id" id="edit_cat_id">
+            <div class="custom-form-group">
+                <label for="edit_cat_name">Name</label>
+                <input type="text" name="edit_cat_name" id="edit_cat_name" required>
+            </div>
+            <div class="custom-form-group">
+                <label for="edit_cat_url">URL</label>
+                <input type="text" name="edit_cat_url" id="edit_cat_url" required>
+            </div>
+            <div class="custom-form-group">
+                <label for="edit_cat_module">Module</label>
+                <select name="edit_cat_module" id="edit_cat_module" required>
+                    <option value="website">Website</option>
+                    <option value="marketing">Marketing</option>
+                    <option value="visa">Visa</option>
+                </select>
+            </div>
+            <div class="custom-modal-footer">
+                <button type="submit" class="custom-btn save-btn">Update</button>
+                <button type="button" class="custom-btn cancel-btn" onclick="closeEditModal()">Cancel</button>
+            </div>
+        </form>
+    </div>
 </div>
 
 <!-- Modal Structure -->
@@ -1319,7 +2055,7 @@
     </div>
 
     <div class="custom-modal-body">
-      <form method="post" action="add-product.php">
+      <form method="post" action="">
         <!-- Category Dropdown -->
         <div class="form-group">
           <label for="product_category">Select Category</label>
@@ -1348,7 +2084,7 @@
 
         <!-- Buttons -->
         <div class="modal-actions">
-          <button type="submit" class="btn btn-save" onclick="window.location.href='add-product.php'">Save</button>
+          <button type="submit" class="btn btn-save">Save</button>
           <button type="button" class="btn btn-cancel" onclick="closeProductModal()">Cancel</button>
         </div>
       </form>
@@ -1663,7 +2399,7 @@
     }
 </script>
 
-<script>
+<!-- <script>
     function openEditModal(id, name, url) {
         document.getElementById("edit_cat_id").value = id;
         document.getElementById("edit_cat_name").value = name;
@@ -1671,6 +2407,21 @@
         document.getElementById("editCategoryModal").classList.add("show");
     }
 
+    function closeEditModal() {
+        document.getElementById("editCategoryModal").classList.remove("show");
+    }
+</script> -->
+
+<script>
+    function openEditModal(id, name, url, module) {
+    document.getElementById("edit_cat_id").value = id;
+    document.getElementById("edit_cat_name").value = name;
+    document.getElementById("edit_cat_url").value = url.replace(".php", "");
+    document.getElementById("edit_cat_module").value = module;
+    document.getElementById("editCategoryModal").classList.add("show");
+}
+ 
+ 
     function closeEditModal() {
         document.getElementById("editCategoryModal").classList.remove("show");
     }

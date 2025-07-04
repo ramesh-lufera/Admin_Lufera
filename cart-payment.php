@@ -2,6 +2,7 @@
 
 <?php
     $Id = $_SESSION['user_id'];
+    $cat_id = $_SESSION['cat_id'] ?? null;
     
     $sql = "select user_id, username, role, photo from users where id = $Id";
     $result = $conn ->query($sql);
@@ -53,8 +54,8 @@
             $domain = "N/A";
 
             // Insert new website record
-            $siteInsert = "INSERT INTO websites (user_id, domain, plan, duration, status) 
-                        VALUES ('$client_id', '$domain', '$plan_name', '$duration', 'Pending')";
+            $siteInsert = "INSERT INTO websites (user_id, domain, plan, duration, status, cat_id) 
+                        VALUES ('$client_id', '$domain', '$plan_name', '$duration', 'Pending', '$cat_id')";
             mysqli_query($conn, $siteInsert);
 
 
