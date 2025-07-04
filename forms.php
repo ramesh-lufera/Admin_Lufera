@@ -292,7 +292,14 @@ $stmt = $conn->prepare($sql);
 $stmt->bind_param("s", $data);
 
 if ($stmt->execute()) {
-echo "Data saved successfully!";
+    echo '
+    <script>
+        Swal.fire({
+            icon: "success",
+            title: "Success!",
+            text: "Data saved successfully!"
+        });
+    </script>';
 } else {
 echo "Error: " . $stmt->error;
 }
@@ -340,6 +347,7 @@ $stmt->close();
                                                     <li><span>8</span></li>
                                                 </ul>
                                             </div>
+                                            <input type="submit" name="save" class="form-wizard-submit" value="Submit" style="float:right">
                                             <fieldset class="wizard-fieldset show">
                                                 <h5>Personal Information</h5>
                                                 <div class="form-group">
@@ -651,7 +659,7 @@ $stmt->close();
                                                 <div class="form-group clearfix">
                                                     <a href="javascript:;" class="form-wizard-previous-btn float-left">Previous</a>
                                                     <!-- <a href="javascript:;" class="form-wizard-submit float-right">Submit</a> -->
-                                                     <input type="submit" name="save" class="form-wizard-submit float-right" value="Submit">
+
                                                 </div>
                                             </fieldset> 
                                         </form>
