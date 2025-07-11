@@ -45,7 +45,6 @@
         $sql = "INSERT INTO orders (user_id, invoice_id, plan, duration, amount, gst, price, status, payment_method, discount, payment_made, created_on, subtotal, balance_due) VALUES 
                 ('$client_id', '$rec_id', '$plan_name', '$duration' ,'$total_price', '$gst', '$price', 'Pending', '$pay_method', '$discount', '$payment_made', '$created_at', '$total_price', '$total_price')";
 
-
         if (mysqli_query($conn, $sql)) {
 
             // Generate a domain from the username
@@ -54,10 +53,9 @@
             $domain = "N/A";
 
             // Insert new website record
-            $siteInsert = "INSERT INTO websites (user_id, domain, plan, duration, status, cat_id) 
-                        VALUES ('$client_id', '$domain', '$plan_name', '$duration', 'Pending', '$cat_id')";
+            $siteInsert = "INSERT INTO websites (user_id, domain, plan, duration, status, cat_id, invoice_id) 
+                        VALUES ('$client_id', '$domain', '$plan_name', '$duration', 'Pending', '$cat_id', '$rec_id')";
             mysqli_query($conn, $siteInsert);
-
 
             echo "
             <script>
@@ -82,15 +80,16 @@
     }
 
     // USER sends payment request (→ notify all admins)
-    if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save']) && $role != '1') {
+    if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save']) && ($role != '1' || $role != '2')) {
+        date_default_timezone_set('Asia/Kolkata');
         $msg = "$username has sent a payment request.";
 
-        $adminQuery = $conn->query("SELECT user_id FROM users WHERE role = '1'");
+        $adminQuery = $conn->query("SELECT user_id FROM users WHERE role IN ('1', '2')");
         while ($adminRow = $adminQuery->fetch_assoc()) {
             $adminUserId = $adminRow['user_id'];
-
-            $stmt = $conn->prepare("INSERT INTO notifications (user_id, message, n_photo) VALUES (?, ?, ?)");
-            $stmt->bind_param("sss", $adminUserId, $msg, $photo);
+            $createdAt = date('Y-m-d H:i:s');
+            $stmt = $conn->prepare("INSERT INTO notifications (user_id, message, n_photo, created_at) VALUES (?, ?, ?, ?)");
+            $stmt->bind_param("ssss", $adminUserId, $msg, $photo, $createdAt);
             $stmt->execute();
         }
     }
@@ -208,12 +207,11 @@
         <input type="hidden" value="<?php echo $price; ?>" name="price">
         <input type="hidden" value="<?php echo $gst; ?>" name="gst">
         <input type="hidden" value="<?php echo $total_price; ?>" name="total_price">
-
         <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-24">
             <h6 class="fw-semibold mb-0">Your Cart</h6>
             <button type="submit" name="save" id="continuePayBtn" class="lufera-bg text-center btn-sm px-12 py-10 float-end" style="width:150px; border: 1px solid #000" value="Submit">Continue to Pay</button>
         </div>
-
+        
         <div class="mb-40">
             <div class="row gy-4">
                 <!-- First Card -->

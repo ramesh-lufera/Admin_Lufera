@@ -72,10 +72,14 @@
                             if (\$role == '1' || \$role == '2') {
                             \$stmt = \$conn->prepare("
                                 SELECT 
+                                    websites.id,
+                                    users.user_id,
                                     users.business_name,
                                     websites.plan,
                                     websites.domain,
-                                    websites.status
+                                    websites.status,
+                                    websites.created_at,
+                                    websites.duration
                                 FROM 
                                     users 
                                 JOIN 
@@ -87,10 +91,14 @@
                         } else {
                             \$stmt = \$conn->prepare("
                                 SELECT 
+                                    websites.id,
+                                    users.user_id,
                                     users.business_name,
                                     websites.plan,
                                     websites.domain,
-                                    websites.status 
+                                    websites.status,
+                                    websites.created_at,
+                                    websites.duration 
                                 FROM 
                                     users 
                                 JOIN 
@@ -98,7 +106,7 @@
                                 WHERE 
                                     websites.user_id = ? AND websites.cat_id = ?
                             ");
-                            \$stmt->bind_param("ii", \$UserId, \$cat_id);
+                            \$stmt->bind_param("si", \$UserId, \$cat_id);
                         }
 
                         \$stmt->execute();
@@ -339,6 +347,13 @@
                             border-left: 5px solid #f44336; /* Red */
                             }
 
+                            .domain-text-approved {
+                                color: #fec700;
+                            }
+                            .domain-text-pending {
+                                color: orange;
+                            }
+
                             /* Increase font sizes */
                             .site-info-header h6 {
                             font-size: 20px !important;
@@ -410,7 +425,6 @@
                         </style>
                         </head>
                         <body>
-
                             <div class="content-wrapper">
 
                             <!-- Title -->
@@ -439,10 +453,34 @@
                                 <?php else: ?>
                                     <?php foreach (\$websitesOnPage as \$site): ?>
                                     <?php
-                                        \$status = strtolower(\$site['status']);
-                                        \$statusClass = 'status-pending';
-                                        if (\$status === 'active') \$statusClass = 'status-active';
-                                        elseif (\$status === 'expired') \$statusClass = 'status-expired';
+                                         \$status = strtolower(\$site['status']);
+                                        \$CreatedAt = \$site['created_at'];
+                                        \$Duration = \$site['duration'];
+
+                                        
+                                            \$statusClass = 'status-pending';
+                                            if (\$status === 'active') \$statusClass = 'status-active';
+                                            elseif (\$status === 'expired') \$statusClass = 'status-expired';
+
+                                        
+                                            \$domainColorClass = 'domain-text-pending'; // default
+                                            if (\$status === 'approved') {
+                                                \$domainColorClass = 'domain-text-approved';
+                                            }
+
+                                            
+
+                                \$startDate = new DateTime(\$CreatedAt);
+                                \$endDate = (clone \$startDate)->modify("+{\$Duration}");
+                                \$Validity = \$startDate->format("d-m-Y") . " to " . \$endDate->format("d-m-Y");
+
+                                if (\$status === 'approved') {
+                                    \$expiresText = htmlspecialchars(\$Validity);
+                                    \$color = '#89836f'; // yellow
+                                } else {
+                                    \$expiresText = 'N/A';
+                                    \$color = 'orange'; // fallback
+                                }
                                     ?>
                                     <div class="list-item bg-base <?php echo \$statusClass; ?>">
                                         <div class="site-info">
@@ -450,33 +488,25 @@
                                         <div class="site-info-header">
                                             <h6>
                                             <?php echo htmlspecialchars(\$site['business_name']); ?>
+                                            <span style="visibility:hidden"><?php echo htmlspecialchars(\$site['user_id']); ?></span>
                                             </h6>
                                         </div>
                                         <!-- Website (no link, color applied only to domain text) -->
                                         <div class="site-info-meta">
                                             $pageTitle: 
-                                            <span class="domain-text-<?php echo \$status; ?>">
-                                            <?php echo htmlspecialchars(\$site['domain']); ?>
+                                            <span class="<?php echo \$domainColorClass; ?>">
+                                                <?php echo htmlspecialchars(\$site['domain']); ?>
                                             </span>
                                         </div>
-                                        <!-- Expiry Date (normal text, larger font) -->
-                                        <div class="site-info-meta domain-text-<?php echo \$status; ?>">
+                                        <div class="site-info-meta" style="color: <?php echo \$color; ?>;">
                                             <strong>Expires:</strong>
-                                            <?php 
-                                            if (\$status === 'pending') {
-                                                echo 'Approval Pending';
-                                            } elseif (!empty(\$site['created_at']) && \$site['created_at'] != '0000-00-00 00:00:00') {
-                                                echo date('d-m-Y', strtotime(\$site['created_at']));
-                                            } else {
-                                                echo "N/A";
-                                            }
-                                            ?>
+                                            <?php echo \$expiresText; ?>
                                         </div>
                                         </div>
                                         <div class="manage-btn-wrapper">
                                         <div class="plan">Plan: <?php echo htmlspecialchars(\$site['plan']); ?></div>
                                         <!-- <a href="dashboard.php?site=<?php echo urlencode(\$site['domain']); ?>" class="dashboard-btn">Manage</a> -->
-                                        <a href="$manageLink" class="dashboard-btn">Manage</a>
+                                        <a href="$manageLink?website_id=<?php echo (int)\$site['id']; ?>" class="dashboard-btn">Manage</a>
                                         </div>
                                     </div>
                                     <?php endforeach; ?>
@@ -674,6 +704,7 @@
                         <?php include './partials/layouts/layoutTop.php' ?>
                             <?php
                                 \$Id = \$_SESSION['user_id'];
+                                \$websiteId = isset(\$_GET['website_id']) ? (int)\$_GET['website_id'] : 0;
 
                                 \$stmt = \$conn->prepare("SELECT user_id, business_name, role FROM users WHERE id = ?");
                                 \$stmt->bind_param("i", \$Id);
@@ -686,35 +717,59 @@
                                 \$stmt->close();
 
                                 if (\$role == '1') {
-                                    \$stmt = \$conn->prepare("SELECT plan, duration, status, created_at FROM websites");
+                                    \$stmt = \$conn->prepare("SELECT invoice_id, plan, duration, status, created_at FROM websites WHERE id = ?");
+                                    \$stmt->bind_param("i", \$websiteId);
                                 } else {
-                                    \$stmt = \$conn->prepare("SELECT plan, duration, status, created_at FROM websites WHERE user_id = ?");
-                                    \$stmt->bind_param("s", \$UserId); 
+                                    \$stmt = \$conn->prepare("SELECT invoice_id, plan, duration, status, created_at FROM websites WHERE id = ? AND user_id = ?");
+                                    \$stmt->bind_param("is", \$websiteId, \$UserId); 
                                 }
                                 \$stmt->execute();
                                 \$result = \$stmt->get_result();
                                 \$row = \$result->fetch_assoc();
                                 \$Plan = \$row['plan'];
                                 \$Duration = \$row['duration'];
+                                \$InvoiceId = \$row['invoice_id'];
                                 \$Status = strtolower(\$row['status'] ?? 'Pending');
                                 \$CreatedAt = \$row['created_at'];
                                 \$stmt->close();
 
-                                // \$startDate = new DateTime(\$CreatedAt);
-                                // \$endDate = (clone \$startDate)->modify("+{\$Duration} days");
-                                // \$Validity = \$startDate->format("d-m-Y") . " to " . \$endDate->format("d-m-Y");
+                                if (!empty(\$InvoiceId)) {
+                                    \$orderStmt = \$conn->prepare("SELECT status FROM orders WHERE invoice_id = ? AND user_id = ?");
+                                    \$orderStmt->bind_param("ii", \$InvoiceId, \$UserId);
+                                    \$orderStmt->execute();
+                                    \$orderResult = \$orderStmt->get_result();
+                                    \$orderRow = \$orderResult->fetch_assoc();
+                                    \$orderStmt->close();
 
-                                switch (\$Status) {
-                                    case 'active':
-                                    \$statusClass = 'text-success'; 
-                                    break;
-                                    case 'expired':
-                                    \$statusClass = 'text-danger'; 
-                                    break;
-                                    case 'pending':
+                                    if (\$orderRow && \$orderRow['status'] === 'Approved') {
+                                        if (\$Status !== 'Approved') {
+                                            \$updateStmt = \$conn->prepare("UPDATE websites SET status = 'Approved' WHERE id = ?");
+                                            \$updateStmt->bind_param("i", \$websiteId);
+                                            \$updateStmt->execute();
+                                            \$updateStmt->close();
+                                            \$Status = 'Approved';
+                                        }
+                                    }
+                                }
+
+                                \$startDate = new DateTime(\$CreatedAt);
+                                \$endDate = (clone \$startDate)->modify("+{\$Duration}");
+                                \$Validity = \$startDate->format("d-m-Y") . " to " . \$endDate->format("d-m-Y");
+
+                                switch (ucfirst(strtolower(\$Status))) {
+                                    case 'Active':
+                                        \$statusClass = 'text-success';
+                                        break;
+                                    case 'Expired':
+                                        \$statusClass = 'text-danger';
+                                        break;
+                                    case 'Approved':
+                                        \$statusClass = 'text-warning';
+                                        break;
+                                    case 'Pending':
                                     default:
-                                    \$statusClass = 'text-pending'; 
-                                    break;
+                                        \$statusClass = 'text-pending';
+                                        break;
                                 }
                             ?>
                             <style>
@@ -754,6 +809,15 @@
                                 .btn-copy-ip:hover {
                                     color: #000;
                                 }
+                                .text-success {
+                                    color: green;
+                                }
+                                .text-danger {
+                                    color: red;
+                                }
+                                .text-warning {
+                                    color: #fec700;
+                                }
                                 .text-pending {
                                     color: #ff9800;
                                 }
@@ -769,9 +833,9 @@
                                     <div class="d-flex gap-2">
                                     <button type="button" class="btn btn-sm btn-upgrade">Upgrade</button>
                                     <?php if(\$role != '1') { ?>
-                                    <a href="forms.php"><button type="button" class="btn btn-sm btn-edit-website">Edit $pageTitle</button></a>
+                                    <a href="forms.php"><button type="button" class="btn btn-sm btn-edit-website">Wizard</button></a>
                                     <?php } else { ?>
-                                    <button type="button" class="btn btn-sm btn-edit-website">Edit $pageTitle</button>
+                                    <button type="button" class="btn btn-sm btn-edit-website">Wizard</button>
                                     <?php } ?>
                                     </div>
                                 </div>
@@ -790,13 +854,12 @@
                                         <hr />
                                         <div class="d-flex justify-content-between my-3">
                                             <span>Validity</span>
-                                            <!-- <span><?php echo htmlspecialchars(\$Validity); ?></span> -->
-                                            <span><?php echo htmlspecialchars(\$CreatedAt); ?></span>
+                                            <span><?php echo htmlspecialchars(\$Validity); ?></span>
                                         </div>
                                         <hr />
                                         <div class="d-flex justify-content-between mt-3">
                                             <span>Status</span>
-                                            <span class="fw-semibold <?php echo \$statusClass; ?>"><?php echo ucfirst(\$Status); ?></span>
+                                            <span class="fw-semibold <?php echo \$statusClass; ?>"><?php echo ucfirst(strtolower(\$Status)); ?></span>
                                         </div>
                                         </div>
                                     </div>
@@ -881,6 +944,7 @@
                         <?php include './partials/layouts/layoutTop.php' ?>
                             <?php
                                 \$Id = \$_SESSION['user_id'];
+                                \$websiteId = isset(\$_GET['website_id']) ? (int)\$_GET['website_id'] : 0;
 
                                 \$stmt = \$conn->prepare("SELECT user_id, business_name, role FROM users WHERE id = ?");
                                 \$stmt->bind_param("i", \$Id);
@@ -893,35 +957,59 @@
                                 \$stmt->close();
 
                                 if (\$role == '1') {
-                                    \$stmt = \$conn->prepare("SELECT plan, duration, status, created_at FROM websites");
+                                    \$stmt = \$conn->prepare("SELECT invoice_id, plan, duration, status, created_at FROM websites WHERE id = ?");
+                                    \$stmt->bind_param("i", \$websiteId);
                                 } else {
-                                    \$stmt = \$conn->prepare("SELECT plan, duration, status, created_at FROM websites WHERE user_id = ?");
-                                    \$stmt->bind_param("s", \$UserId); 
+                                    \$stmt = \$conn->prepare("SELECT invoice_id, plan, duration, status, created_at FROM websites WHERE id = ? AND user_id = ?");
+                                    \$stmt->bind_param("is", \$websiteId, \$UserId); 
                                 }
                                 \$stmt->execute();
                                 \$result = \$stmt->get_result();
                                 \$row = \$result->fetch_assoc();
                                 \$Plan = \$row['plan'];
                                 \$Duration = \$row['duration'];
+                                \$InvoiceId = \$row['invoice_id'];
                                 \$Status = strtolower(\$row['status'] ?? 'Pending');
                                 \$CreatedAt = \$row['created_at'];
                                 \$stmt->close();
 
-                                // \$startDate = new DateTime(\$CreatedAt);
-                                // \$endDate = (clone \$startDate)->modify("+{\$Duration} days");
-                                // \$Validity = \$startDate->format("d-m-Y") . " to " . \$endDate->format("d-m-Y");
+                                if (!empty(\$InvoiceId)) {
+                                    \$orderStmt = \$conn->prepare("SELECT status FROM orders WHERE invoice_id = ? AND user_id = ?");
+                                    \$orderStmt->bind_param("ii", \$InvoiceId, \$UserId);
+                                    \$orderStmt->execute();
+                                    \$orderResult = \$orderStmt->get_result();
+                                    \$orderRow = \$orderResult->fetch_assoc();
+                                    \$orderStmt->close();
 
-                                switch (\$Status) {
-                                    case 'active':
-                                    \$statusClass = 'text-success'; 
-                                    break;
-                                    case 'expired':
-                                    \$statusClass = 'text-danger'; 
-                                    break;
-                                    case 'pending':
+                                    if (\$orderRow && \$orderRow['status'] === 'Approved') {
+                                        if (\$Status !== 'Approved') {
+                                            \$updateStmt = \$conn->prepare("UPDATE websites SET status = 'Approved' WHERE id = ?");
+                                            \$updateStmt->bind_param("i", \$websiteId);
+                                            \$updateStmt->execute();
+                                            \$updateStmt->close();
+                                            \$Status = 'Approved';
+                                        }
+                                    }
+                                }
+
+                                \$startDate = new DateTime(\$CreatedAt);
+                                \$endDate = (clone \$startDate)->modify("+{\$Duration}");
+                                \$Validity = \$startDate->format("d-m-Y") . " to " . \$endDate->format("d-m-Y");
+
+                                switch (ucfirst(strtolower(\$Status))) {
+                                    case 'Active':
+                                        \$statusClass = 'text-success';
+                                        break;
+                                    case 'Expired':
+                                        \$statusClass = 'text-danger';
+                                        break;
+                                    case 'Approved':
+                                        \$statusClass = 'text-warning';
+                                        break;
+                                    case 'Pending':
                                     default:
-                                    \$statusClass = 'text-pending'; 
-                                    break;
+                                        \$statusClass = 'text-pending';
+                                        break;
                                 }
                             ?>
                             <style>
@@ -961,6 +1049,15 @@
                                 .btn-copy-ip:hover {
                                     color: #000;
                                 }
+                                .text-success {
+                                    color: green;
+                                }
+                                .text-danger {
+                                    color: red;
+                                }
+                                .text-warning {
+                                    color: #fec700;
+                                }
                                 .text-pending {
                                     color: #ff9800;
                                 }
@@ -976,9 +1073,9 @@
                                     <div class="d-flex gap-2">
                                     <button type="button" class="btn btn-sm btn-upgrade">Upgrade</button>
                                     <?php if(\$role != '1') { ?>
-                                    <a href="marketing-wizard.php"><button type="button" class="btn btn-sm btn-edit-website">Edit $pageTitle</button></a>
+                                    <a href="forms.php"><button type="button" class="btn btn-sm btn-edit-website">Wizard</button></a>
                                     <?php } else { ?>
-                                    <button type="button" class="btn btn-sm btn-edit-website">Edit $pageTitle</button>
+                                    <button type="button" class="btn btn-sm btn-edit-website">Wizard</button>
                                     <?php } ?>
                                     </div>
                                 </div>
@@ -997,13 +1094,12 @@
                                         <hr />
                                         <div class="d-flex justify-content-between my-3">
                                             <span>Validity</span>
-                                            <!-- <span><?php echo htmlspecialchars(\$Validity); ?></span> -->
-                                            <span><?php echo htmlspecialchars(\$CreatedAt); ?></span>
+                                            <span><?php echo htmlspecialchars(\$Validity); ?></span>
                                         </div>
                                         <hr />
                                         <div class="d-flex justify-content-between mt-3">
                                             <span>Status</span>
-                                            <span class="fw-semibold <?php echo \$statusClass; ?>"><?php echo ucfirst(\$Status); ?></span>
+                                            <span class="fw-semibold <?php echo \$statusClass; ?>"><?php echo ucfirst(strtolower(\$Status)); ?></span>
                                         </div>
                                         </div>
                                     </div>
@@ -1078,17 +1174,17 @@
                                 }
                             </script>
                         <?php include './partials/layouts/layoutBottom.php' ?> 
-                            </body>
-                            </html>
                     PHP;
 
                     file_put_contents($det_file_path, $det_content);
                 }
+                // ✅ If "visa" template selected, also create the -det.php file
                 if ($cat_template === 'visa' && !file_exists($det_file_path)) {
                     $det_content = <<<PHP
                         <?php include './partials/layouts/layoutTop.php' ?>
                             <?php
                                 \$Id = \$_SESSION['user_id'];
+                                \$websiteId = isset(\$_GET['website_id']) ? (int)\$_GET['website_id'] : 0;
 
                                 \$stmt = \$conn->prepare("SELECT user_id, business_name, role FROM users WHERE id = ?");
                                 \$stmt->bind_param("i", \$Id);
@@ -1101,35 +1197,59 @@
                                 \$stmt->close();
 
                                 if (\$role == '1') {
-                                    \$stmt = \$conn->prepare("SELECT plan, duration, status, created_at FROM websites");
+                                    \$stmt = \$conn->prepare("SELECT invoice_id, plan, duration, status, created_at FROM websites WHERE id = ?");
+                                    \$stmt->bind_param("i", \$websiteId);
                                 } else {
-                                    \$stmt = \$conn->prepare("SELECT plan, duration, status, created_at FROM websites WHERE user_id = ?");
-                                    \$stmt->bind_param("s", \$UserId); 
+                                    \$stmt = \$conn->prepare("SELECT invoice_id, plan, duration, status, created_at FROM websites WHERE id = ? AND user_id = ?");
+                                    \$stmt->bind_param("is", \$websiteId, \$UserId); 
                                 }
                                 \$stmt->execute();
                                 \$result = \$stmt->get_result();
                                 \$row = \$result->fetch_assoc();
                                 \$Plan = \$row['plan'];
                                 \$Duration = \$row['duration'];
+                                \$InvoiceId = \$row['invoice_id'];
                                 \$Status = strtolower(\$row['status'] ?? 'Pending');
                                 \$CreatedAt = \$row['created_at'];
                                 \$stmt->close();
 
-                                // \$startDate = new DateTime(\$CreatedAt);
-                                // \$endDate = (clone \$startDate)->modify("+{\$Duration} days");
-                                // \$Validity = \$startDate->format("d-m-Y") . " to " . \$endDate->format("d-m-Y");
+                                if (!empty(\$InvoiceId)) {
+                                    \$orderStmt = \$conn->prepare("SELECT status FROM orders WHERE invoice_id = ? AND user_id = ?");
+                                    \$orderStmt->bind_param("ii", \$InvoiceId, \$UserId);
+                                    \$orderStmt->execute();
+                                    \$orderResult = \$orderStmt->get_result();
+                                    \$orderRow = \$orderResult->fetch_assoc();
+                                    \$orderStmt->close();
 
-                                switch (\$Status) {
-                                    case 'active':
-                                    \$statusClass = 'text-success'; 
-                                    break;
-                                    case 'expired':
-                                    \$statusClass = 'text-danger'; 
-                                    break;
-                                    case 'pending':
+                                    if (\$orderRow && \$orderRow['status'] === 'Approved') {
+                                        if (\$Status !== 'Approved') {
+                                            \$updateStmt = \$conn->prepare("UPDATE websites SET status = 'Approved' WHERE id = ?");
+                                            \$updateStmt->bind_param("i", \$websiteId);
+                                            \$updateStmt->execute();
+                                            \$updateStmt->close();
+                                            \$Status = 'Approved';
+                                        }
+                                    }
+                                }
+
+                                \$startDate = new DateTime(\$CreatedAt);
+                                \$endDate = (clone \$startDate)->modify("+{\$Duration}");
+                                \$Validity = \$startDate->format("d-m-Y") . " to " . \$endDate->format("d-m-Y");
+
+                                switch (ucfirst(strtolower(\$Status))) {
+                                    case 'Active':
+                                        \$statusClass = 'text-success';
+                                        break;
+                                    case 'Expired':
+                                        \$statusClass = 'text-danger';
+                                        break;
+                                    case 'Approved':
+                                        \$statusClass = 'text-warning';
+                                        break;
+                                    case 'Pending':
                                     default:
-                                    \$statusClass = 'text-pending'; 
-                                    break;
+                                        \$statusClass = 'text-pending';
+                                        break;
                                 }
                             ?>
                             <style>
@@ -1169,6 +1289,15 @@
                                 .btn-copy-ip:hover {
                                     color: #000;
                                 }
+                                .text-success {
+                                    color: green;
+                                }
+                                .text-danger {
+                                    color: red;
+                                }
+                                .text-warning {
+                                    color: #fec700;
+                                }
                                 .text-pending {
                                     color: #ff9800;
                                 }
@@ -1184,9 +1313,9 @@
                                     <div class="d-flex gap-2">
                                     <button type="button" class="btn btn-sm btn-upgrade">Upgrade</button>
                                     <?php if(\$role != '1') { ?>
-                                    <a href="visa-wizard.php"><button type="button" class="btn btn-sm btn-edit-website">Edit $pageTitle</button></a>
+                                    <a href="forms.php"><button type="button" class="btn btn-sm btn-edit-website">Wizard</button></a>
                                     <?php } else { ?>
-                                    <button type="button" class="btn btn-sm btn-edit-website">Edit $pageTitle</button>
+                                    <button type="button" class="btn btn-sm btn-edit-website">Wizard</button>
                                     <?php } ?>
                                     </div>
                                 </div>
@@ -1205,13 +1334,12 @@
                                         <hr />
                                         <div class="d-flex justify-content-between my-3">
                                             <span>Validity</span>
-                                            <!-- <span><?php echo htmlspecialchars(\$Validity); ?></span> -->
-                                            <span><?php echo htmlspecialchars(\$CreatedAt); ?></span>
+                                            <span><?php echo htmlspecialchars(\$Validity); ?></span>
                                         </div>
                                         <hr />
                                         <div class="d-flex justify-content-between mt-3">
                                             <span>Status</span>
-                                            <span class="fw-semibold <?php echo \$statusClass; ?>"><?php echo ucfirst(\$Status); ?></span>
+                                            <span class="fw-semibold <?php echo \$statusClass; ?>"><?php echo ucfirst(strtolower(\$Status)); ?></span>
                                         </div>
                                         </div>
                                     </div>
@@ -1285,9 +1413,7 @@
                                     });
                                 }
                             </script>
-                        <?php include './partials/layouts/layoutBottom.php' ?> 
-                            </body>
-                            </html>
+                        <?php include './partials/layouts/layoutBottom.php' ?>   
                     PHP;
 
                     file_put_contents($det_file_path, $det_content);
@@ -1834,7 +1960,7 @@
             <?php if ($row['role'] == "1") {
                 // Fetch categories
                 // $cat_result = $conn->query("SELECT cat_id, cat_name, cat_url FROM categories ORDER BY cat_id DESC");
-$cat_result = $conn->query("SELECT cat_id, cat_name, cat_url,cat_module FROM categories ORDER BY cat_id DESC");
+                $cat_result = $conn->query("SELECT cat_id, cat_name, cat_url,cat_module FROM categories ORDER BY cat_id DESC");
 
                 while ($cat = $cat_result->fetch_assoc()) { ?>
                     <li>
