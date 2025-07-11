@@ -15,11 +15,11 @@
 <?php 
     include './partials/layouts/layoutTop.php';
 
+    $Id = $_SESSION['user_id'];
+
     // Fetch users data from the database
     $sql = "SELECT * FROM users ORDER BY created_at ASC";
     $result = mysqli_query($conn, $sql);
-
-    $Id = $_SESSION['user_id'];
     
     $sql = "select * from users where id = $Id";
     $result = $conn ->query($sql);
@@ -29,11 +29,13 @@
     $photo = !empty($row['photo']) ? $row['photo'] : 'assets/images/user1.png';
 
     // ADMIN approves → Notify USER
-    if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['approve_id']) && $role === '1') {
+    if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['approve_id']) && ($role === '1' || $role === '2')) {
         $orderId = intval($_POST['approve_id']);
 
         // Approve order
         $conn->query("UPDATE orders SET status = 'Approved' WHERE id = $orderId");
+
+        date_default_timezone_set('Asia/Kolkata');
 
         // Get user_id for notification
         $res = $conn->query("SELECT user_id FROM orders WHERE id = $orderId");
@@ -42,8 +44,9 @@
 
         // Add notification
         $msg = "Your payment has been approved.";
-        $stmt = $conn->prepare("INSERT INTO notifications (user_id, message, n_photo) VALUES (?, ?, ?)");
-        $stmt->bind_param("sss", $userId, $msg, $photo);
+        $createdAt = date('Y-m-d H:i:s');
+        $stmt = $conn->prepare("INSERT INTO notifications (user_id, message, n_photo, created_at) VALUES (?, ?, ?, ?)");
+        $stmt->bind_param("ssss", $userId, $msg, $photo, $createdAt);
         $stmt->execute();
     }
     
@@ -64,7 +67,7 @@
     INNER JOIN users ON orders.user_id = users.user_id
     ";
 
-    if ($role !== '1') {
+    if ($role !== '1' && $role !== '2') {
         if (!empty($UserId)) {
             $query .= " WHERE orders.user_id = '$UserId'";
         } else {
@@ -77,11 +80,9 @@
 
 <body>
     <div class="dashboard-main-body">
-
         <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-24">
             <h6 class="fw-semibold mb-0">Orders</h6>
         </div>
-
         <div class="card">
             <div class="card-body">
             <div class="table-responsive scroll-sm">
@@ -104,14 +105,13 @@
                         $status = $row['status'];
                     ?>
                         <tr>
-                            <td >
+                            <td>
                                 <div class="fw-medium">
                                     <img src="<?= $photo ?>" alt="" class="flex-shrink-0 me-12 radius-8" style="width: 30px; height: 30px;">
                                     <?php echo $row['first_name']; ?> <?php echo $row['last_name']; ?>
                                 </div>
                             </td>
                             <td class="text-center"><?php echo $row['invoice_id']; ?></td>
-                            
                             <td class="text-center"><?= date('d M Y', strtotime($row['created_on'])) ?></td>
                             <td class="text-center">$ <?= number_format($row['amount'], 2) ?></td>
                             <!-- <td> <span class="bg-success-focus text-success-main px-24 py-4 rounded-pill fw-medium text-sm">Paid</span> </td> -->
@@ -120,25 +120,24 @@
                                     Approve
                                 </a>
                             </td> -->
+
                             <td class="text-center">
-                                <?php if ($role === '1' && $row['status'] === 'Pending'){ ?>
-                                    
+                                <?php if (($role === '1' || $role === '2') && $row['status'] === 'Pending'){ ?>
                                     <input type="hidden" name="approve_id" value="<?= $row['id'] ?>">
                                     <button class="btn btn-danger btn-sm fw-medium text-white me-2">
                                             New Order
                                     </button>
-                                <?php } else if($role != '1' && $row['status'] === 'Pending'){ ?>
+                                <?php } else if(($role != '1' || $role != '2') && $row['status'] === 'Pending'){ ?>
                                     <button class="btn btn-danger btn-sm fw-medium text-white me-2">
                                         Pending Confirmation
                                     </button>
                                 <?php } ?>
-                                <?php if ($role === '1' && $row['status'] === 'Approved'){ ?>
-                                    
+                                <?php if (($role === '1' || $role === '2') && $row['status'] === 'Approved'){ ?>
                                     <input type="hidden" name="approve_id" value="<?= $row['id'] ?>">
                                     <button class="btn btn-success btn-sm fw-medium text-white me-2">
                                     Approved
                                     </button>
-                                <?php } else if($role != '1' && $row['status'] === 'Approved'){ ?>
+                                <?php } else if(($role != '1' || $role != '2') && $row['status'] === 'Approved'){ ?>
                                     <button class="btn btn-success btn-sm fw-medium text-white me-2">
                                     Approved
                                     </button>
@@ -151,8 +150,7 @@
                                 <a href="invoice-preview.php?id=<?php echo $row['invoice_id']; ?>" class="w-32-px h-32-px bg-warning-focus text-warning-main rounded-circle d-inline-flex align-items-center justify-content-center">
                                     <iconify-icon icon="iconamoon:invoice"></iconify-icon>
                                 </a>
-
-                                <?php if ($role === '1' && $row['status'] === 'Pending'){ ?>
+                                <?php if (($role === '1' || $role === '2') && $row['status'] === 'Pending'){ ?>
                                     <form method="POST" style="display:inline;">
                                         <input type="hidden" name="approve_id" value="<?= $row['id'] ?>">
                                         <button type="submit" class="w-32-px h-32-px bg-success-focus text-success-main rounded-circle d-inline-flex align-items-center justify-content-center mb-8">
@@ -169,12 +167,10 @@
                             </td>
                         </tr>
                         <?php endwhile; ?>
-                        
                         <?php endif; ?>
                     </tbody>
                 </table>
             </div>
-
                 <!-- <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mt-24">
                     <span>Showing 1 to 10 of 12 entries</span>
                     <ul class="pagination d-flex flex-wrap align-items-center gap-2 justify-content-center">
