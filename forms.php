@@ -1,314 +1,453 @@
 <?php include './partials/layouts/layoutTop.php' ?>
 
 <style>
-    
-.wizard-content-left {
-  background-blend-mode: darken;
-  background-color: rgba(0, 0, 0, 0.45);
-  background-image: url("https://i.ibb.co/X292hJF/form-wizard-bg-2.jpg");
-  background-position: center center;
-  background-size: cover;
-  height: 100vh;
-  padding: 30px;
-}
-.wizard-content-left h1 {
-  color: #ffffff;
-  font-size: 38px;
-  font-weight: 600;
-  padding: 12px 20px;
-  text-align: center;
-}
+    .wizard-content-left {
+    background-blend-mode: darken;
+    background-color: rgba(0, 0, 0, 0.45);
+    background-image: url("https://i.ibb.co/X292hJF/form-wizard-bg-2.jpg");
+    background-position: center center;
+    background-size: cover;
+    height: 100vh;
+    padding: 30px;
+    }
+    .wizard-content-left h1 {
+    color: #ffffff;
+    font-size: 38px;
+    font-weight: 600;
+    padding: 12px 20px;
+    text-align: center;
+    }
 
-.form-wizard {
-  color: #888888;
-  padding: 30px;
-}
-.form-wizard .wizard-form-radio {
-  display: inline-block;
-  margin-left: 5px;
-  position: relative;
-}
-.form-wizard .wizard-form-radio input[type="radio"] {
-  -webkit-appearance: none;
-  -moz-appearance: none;
-  -ms-appearance: none;
-  -o-appearance: none;
-  appearance: none;
-  background-color: #dddddd;
-  height: 25px;
-  width: 25px;
-  display: inline-block;
-  vertical-align: middle;
-  border-radius: 50%;
-  position: relative;
-  cursor: pointer;
-}
-.form-wizard .wizard-form-radio input[type="radio"]:focus {
-  outline: 0;
-}
-.form-wizard .wizard-form-radio input[type="radio"]:checked {
-  background-color: #fec700;
-}
-.form-wizard .wizard-form-radio input[type="radio"]:checked::before {
-  content: "";
-  position: absolute;
-  width: 10px;
-  height: 10px;
-  display: inline-block;
-  background-color: #ffffff;
-  border-radius: 50%;
-  left: 1px;
-  right: 0;
-  margin: 0 auto;
-  top: 8px;
-}
-.form-wizard .wizard-form-radio input[type="radio"]:checked::after {
-  content: "";
-  display: inline-block;
-  webkit-animation: click-radio-wave 0.65s;
-  -moz-animation: click-radio-wave 0.65s;
-  animation: click-radio-wave 0.65s;
-  background: #000000;
-  content: '';
-  display: block;
-  position: relative;
-  z-index: 100;
-  border-radius: 50%;
-}
-.form-wizard .wizard-form-radio input[type="radio"] ~ label {
-  padding-left: 10px;
-  cursor: pointer;
-}
-.form-wizard .form-wizard-header {
-  text-align: center;
-}
-.form-wizard .form-wizard-next-btn, .form-wizard .form-wizard-previous-btn, .form-wizard .form-wizard-submit {
-  background-color: #fec700;
-  color: #ffffff;
-  display: inline-block;
-  min-width: 100px;
-  min-width: 120px;
-  padding: 10px;
-  text-align: center;
-}
-.form-wizard .form-wizard-next-btn:hover, .form-wizard .form-wizard-next-btn:focus, .form-wizard .form-wizard-previous-btn:hover, .form-wizard .form-wizard-previous-btn:focus, .form-wizard .form-wizard-submit:hover, .form-wizard .form-wizard-submit:focus {
-  color: #ffffff;
-  opacity: 0.6;
-  text-decoration: none;
-}
-.form-wizard .wizard-fieldset {
-  display: none;
-}
-.form-wizard .wizard-fieldset.show {
-  display: block;
-}
-.form-wizard .wizard-form-error {
-  display: none;
-  /* background-color: #fec700; */
-  background-color: transparent;
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  height: 2px;
-  width: 100%;
-  /* border : 1px solid #fec700; */
-  border:none;
-  inset-block-start:auto !important;
-}
-.form-wizard .form-wizard-previous-btn {
-  background-color: #fec700;
-}
-.form-wizard .form-group {
-  position: relative;
-  margin: 25px 0;
-}
-.form-wizard .wizard-form-text-label {
-  position: absolute;
-  left: 10px;
-  top: 16px;
-  transition: 0.2s linear all;
-}
-.form-wizard .focus-input .wizard-form-text-label {
-  color: #fec700;
-  top: -18px;
-  transition: 0.2s linear all;
-  font-size: 12px;
-}
-.form-wizard .form-wizard-steps {
-  margin: 30px 0;
-}
-.form-wizard .form-wizard-steps li {
-  width: 12%;
-  float: left;
-  position: relative;
-}
-.form-wizard .form-wizard-steps li::after {
-  background-color: #f3f3f3;
-  content: "";
-  height: 5px;
-  left: 0;
-  position: absolute;
-  right: 0;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 100%;
-  border-bottom: 1px solid #dddddd;
-  border-top: 1px solid #dddddd;
-}
-.form-wizard .form-wizard-steps li span {
-  background-color: #dddddd;
-  border-radius: 50%;
-  display: inline-block;
-  height: 40px;
-  line-height: 40px;
-  position: relative;
-  text-align: center;
-  width: 40px;
-  z-index: 1;
-}
-.form-wizard .form-wizard-steps li:last-child::after {
-  width: 50%;
-}
-.form-wizard .form-wizard-steps li.active span, .form-wizard .form-wizard-steps li.activated span {
-  background-color: #fec700;
-  color: #ffffff;
-}
-.form-wizard .form-wizard-steps li.active::after, .form-wizard .form-wizard-steps li.activated::after {
-  background-color: #fec700;
-  left: 50%;
-  width: 50%;
-  border-color: #fec700;
-}
-.form-wizard .form-wizard-steps li.activated::after {
-  width: 100%;
-  border-color: #fec700;
-}
-.form-wizard .form-wizard-steps li:last-child::after {
-  left: 0;
-}
-.form-wizard .wizard-password-eye {
-  position: absolute;
-  right: 32px;
-  top: 50%;
-  transform: translateY(-50%);
-  cursor: pointer;
-}
-@keyframes click-radio-wave {
-  0% {
-    width: 25px;
-    height: 25px;
-    opacity: 0.35;
+    .form-wizard {
+    color: #888888;
+    padding: 30px;
+    }
+    .form-wizard .wizard-form-radio {
+    display: inline-block;
+    margin-left: 5px;
     position: relative;
-  }
-  100% {
-    width: 60px;
-    height: 60px;
-    margin-left: -15px;
-    margin-top: -15px;
-    opacity: 0.0;
-  }
-}
-@media screen and (max-width: 767px) {
-  .wizard-content-left {
-    height: auto;
-  }
-}
-
+    }
+    .form-wizard .wizard-form-radio input[type="radio"] {
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    -ms-appearance: none;
+    -o-appearance: none;
+    appearance: none;
+    background-color: #dddddd;
+    height: 25px;
+    width: 25px;
+    display: inline-block;
+    vertical-align: middle;
+    border-radius: 50%;
+    position: relative;
+    cursor: pointer;
+    }
+    .form-wizard .wizard-form-radio input[type="radio"]:focus {
+    outline: 0;
+    }
+    .form-wizard .wizard-form-radio input[type="radio"]:checked {
+    background-color: #fec700;
+    }
+    .form-wizard .wizard-form-radio input[type="radio"]:checked::before {
+    content: "";
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    display: inline-block;
+    background-color: #ffffff;
+    border-radius: 50%;
+    left: 1px;
+    right: 0;
+    margin: 0 auto;
+    top: 8px;
+    }
+    .form-wizard .wizard-form-radio input[type="radio"]:checked::after {
+    content: "";
+    display: inline-block;
+    webkit-animation: click-radio-wave 0.65s;
+    -moz-animation: click-radio-wave 0.65s;
+    animation: click-radio-wave 0.65s;
+    background: #000000;
+    content: '';
+    display: block;
+    position: relative;
+    z-index: 100;
+    border-radius: 50%;
+    }
+    .form-wizard .wizard-form-radio input[type="radio"] ~ label {
+    padding-left: 10px;
+    cursor: pointer;
+    }
+    .form-wizard .form-wizard-header {
+    text-align: center;
+    }
+    .form-wizard .form-wizard-next-btn, .form-wizard .form-wizard-previous-btn, .form-wizard .form-wizard-submit {
+    background-color: #fec700;
+    color: #ffffff;
+    display: inline-block;
+    min-width: 100px;
+    min-width: 120px;
+    padding: 10px;
+    text-align: center;
+    }
+    .form-wizard .form-wizard-next-btn:hover, .form-wizard .form-wizard-next-btn:focus, .form-wizard .form-wizard-previous-btn:hover, .form-wizard .form-wizard-previous-btn:focus, .form-wizard .form-wizard-submit:hover, .form-wizard .form-wizard-submit:focus {
+    color: #ffffff;
+    opacity: 0.6;
+    text-decoration: none;
+    }
+    .form-wizard .wizard-fieldset {
+    display: none;
+    }
+    .form-wizard .wizard-fieldset.show {
+    display: block;
+    }
+    .form-wizard .wizard-form-error {
+    display: none;
+    /* background-color: #fec700; */
+    background-color: transparent;
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 2px;
+    width: 100%;
+    /* border : 1px solid #fec700; */
+    border:none;
+    inset-block-start:auto !important;
+    }
+    .form-wizard .form-wizard-previous-btn {
+    background-color: #fec700;
+    }
+    .form-wizard .form-group {
+    position: relative;
+    margin: 25px 0;
+    }
+    .form-wizard .wizard-form-text-label {
+    position: absolute;
+    left: 10px;
+    top: 16px;
+    transition: 0.2s linear all;
+    }
+    .form-wizard .focus-input .wizard-form-text-label {
+    color: #fec700;
+    top: -18px;
+    transition: 0.2s linear all;
+    font-size: 12px;
+    }
+    .form-wizard .form-wizard-steps {
+    margin: 30px 0;
+    }
+    .form-wizard .form-wizard-steps li {
+    width: 12%;
+    float: left;
+    position: relative;
+    }
+    .form-wizard .form-wizard-steps li::after {
+    background-color: #f3f3f3;
+    content: "";
+    height: 5px;
+    left: 0;
+    position: absolute;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 100%;
+    border-bottom: 1px solid #dddddd;
+    border-top: 1px solid #dddddd;
+    }
+    .form-wizard .form-wizard-steps li span {
+    background-color: #dddddd;
+    border-radius: 50%;
+    display: inline-block;
+    height: 40px;
+    line-height: 40px;
+    position: relative;
+    text-align: center;
+    width: 40px;
+    z-index: 1;
+    }
+    .form-wizard .form-wizard-steps li:last-child::after {
+    width: 50%;
+    }
+    .form-wizard .form-wizard-steps li.active span, .form-wizard .form-wizard-steps li.activated span {
+    background-color: #fec700;
+    color: #ffffff;
+    }
+    .form-wizard .form-wizard-steps li.active::after, .form-wizard .form-wizard-steps li.activated::after {
+    background-color: #fec700;
+    left: 50%;
+    width: 50%;
+    border-color: #fec700;
+    }
+    .form-wizard .form-wizard-steps li.activated::after {
+    width: 100%;
+    border-color: #fec700;
+    }
+    .form-wizard .form-wizard-steps li:last-child::after {
+    left: 0;
+    }
+    .form-wizard .wizard-password-eye {
+    position: absolute;
+    right: 32px;
+    top: 50%;
+    transform: translateY(-50%);
+    cursor: pointer;
+    }
+    @keyframes click-radio-wave {
+    0% {
+        width: 25px;
+        height: 25px;
+        opacity: 0.35;
+        position: relative;
+    }
+    100% {
+        width: 60px;
+        height: 60px;
+        margin-left: -15px;
+        margin-top: -15px;
+        opacity: 0.0;
+    }
+    }
+    @media screen and (max-width: 767px) {
+    .wizard-content-left {
+        height: auto;
+    }
+    }
 </style>
 
 <?php
-if (isset($_POST['save'])) {
-$comp_name = $_POST['comp_name'];
-$cont_person = $_POST['cont_person'];
-$email = $_POST['email'];
-$phone = $_POST['phone'];
-$website = $_POST['website'];
-$address = $_POST['address'];
+    $id = $_SESSION['user_id']; // this is the numeric ID
 
-$purpose = $_POST['purpose'];
-$business = $_POST['business'];
-$goals = $_POST['goals'];
-$vision = $_POST['vision'];
+    // Now fetch the actual VARCHAR user_id
+    $stmt = $conn->prepare("SELECT user_id, role FROM users WHERE id = ?");
+    $stmt->bind_param("i", $id);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $row = $result->fetch_assoc();
 
-$target = $_POST['target'];
-$expectations = $_POST['expectations'];
-$personas = $_POST['personas'];
+    $user_id = $row['user_id']; // ✅ Now you have the correct VARCHAR user_id
+    $role = (int)$row['role']; // Make sure it's integer
+    // $target_user_id = ($role == 1 || $role == 7) ? ($_GET['user_id'] ?? die("No target user")) : $user_id;
+    $is_admin = ($role === 1 || $role === 7);
+    $is_user = ($role === 8);
 
-$design = $_POST['design'];
-$like = $_POST['like'];
-$brand = $_POST['brand'];
-$features = $_POST['features'];
-$functionality = $_POST['functionality'];
-$responsive = $_POST['responsive'];
-$technical = $_POST['technical'];
+    $websiteId = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 
-$timeline = $_POST['timeline'];
-$budget = $_POST['budget'];
-$deadline = $_POST['deadline'];
+    $prefill = [];
+    $field_statuses = [];
 
-$maintenance = $_POST['maintenance'];
-$support = $_POST['support'];
+    $stmt = $conn->prepare("SELECT name FROM json WHERE website_id = ? ORDER BY id DESC LIMIT 1");
+    $stmt->bind_param("i", $websiteId);
+    $stmt->execute();
+    $result = $stmt->get_result();
 
-// Create JSON object
-$data = json_encode([
-'comp_name' => $comp_name,
-'cont_person' => $cont_person,
-'email' => $email,
-'phone' => $phone,
-'website' => $website,
-'address' => $address,
+    if ($result && $result->num_rows > 0) {
+        $json_data = $result->fetch_assoc();
+        $raw_json = json_decode($json_data['name'], true);
 
-'purpose' => $purpose,
-'business' => $business,
-'goals' => $goals,
-'vision' => $vision,
+        foreach ($raw_json as $key => $info) {
+            if (is_array($info) && isset($info['value'])) {
+                $prefill[$key] = $info['value'];
+                $field_statuses[$key] = $info['status'] ?? 'pending';
+            } else {
+                $prefill[$key] = $info;
+                $field_statuses[$key] = 'pending';
+            }
+        }
+    }
 
-'target' => $target,
-'expectations' => $expectations,
-'personas' => $personas,
+    if (isset($_POST['save'])) {
+        $comp_name = $_POST['comp_name'];
+        $cont_person = $_POST['cont_person'];
+        $email = $_POST['email'];
+        $phone = $_POST['phone'];
+        $website = $_POST['website'];
+        $address = $_POST['address'];
 
-'design' => $design,
-'like' => $like,
-'brand' => $brand,
-'features' => $features,
-'functionality' => $functionality,
-'responsive' => $responsive,
-'technical' => $technical,
+        $purpose = $_POST['purpose'];
+        $business = $_POST['business'];
+        $goals = $_POST['goals'];
+        $vision = $_POST['vision'];
 
-'timeline' => $timeline,
-'budget' => $budget,
-'deadline' => $deadline,
+        $target = $_POST['target'];
+        $expectations = $_POST['expectations'];
+        $personas = $_POST['personas'];
 
-'maintenance' => $maintenance,
-'support' => $support,
+        $design = $_POST['design'];
+        $like = $_POST['like'];
+        $brand = $_POST['brand'];
+        $features = $_POST['features'];
+        $functionality = $_POST['functionality'];
+        $responsive = $_POST['responsive'];
+        $technical = $_POST['technical'];
 
-]);
+        $timeline = $_POST['timeline'];
+        $budget = $_POST['budget'];
+        $deadline = $_POST['deadline'];
 
-// Insert JSON into database
-$sql = "INSERT INTO json (name) VALUES (?)";
+        $maintenance = $_POST['maintenance'];
+        $support = $_POST['support'];
 
-$stmt = $conn->prepare($sql);
-$stmt->bind_param("s", $data);
+        // Create JSON object
+        // $data = json_encode([
+        // 'comp_name' => $comp_name,
+        // 'cont_person' => $cont_person,
+        // 'email' => $email,
+        // 'phone' => $phone,
+        // 'website' => $website,
+        // 'address' => $address,
 
-if ($stmt->execute()) {
-    echo '
-    <script>
-        Swal.fire({
-            icon: "success",
-            title: "Success!",
-            text: "Data saved successfully!"
-        });
-    </script>';
-} else {
-echo "Error: " . $stmt->error;
-}
+        // 'purpose' => $purpose,
+        // 'business' => $business,
+        // 'goals' => $goals,
+        // 'vision' => $vision,
 
-$stmt->close();
-}
+        // 'target' => $target,
+        // 'expectations' => $expectations,
+        // 'personas' => $personas,
+
+        // 'design' => $design,
+        // 'like' => $like,
+        // 'brand' => $brand,
+        // 'features' => $features,
+        // 'functionality' => $functionality,
+        // 'responsive' => $responsive,
+        // 'technical' => $technical,
+
+        // 'timeline' => $timeline,
+        // 'budget' => $budget,
+        // 'deadline' => $deadline,
+
+        // 'maintenance' => $maintenance,
+        // 'support' => $support
+        // ]);
+
+        // Insert JSON into database
+        // $sql = "INSERT INTO json (name) VALUES (?)";
+
+        // $stmt = $conn->prepare($sql);
+        // $stmt->bind_param("s", $data);
+
+        // $fields = [
+        //     'comp_name', 'cont_person', 'email', 'phone', 'website', 'address',
+        //     'purpose', 'business', 'goals', 'vision',
+        //     'target', 'expectations', 'personas',
+        //     'design', 'like', 'brand', 'features', 'functionality', 'responsive', 'technical',
+        //     'timeline', 'budget', 'deadline',
+        //     'maintenance', 'support'
+        // ];
+
+        // $data = [];
+
+        // foreach ($fields as $field) {
+        //     $value = $_POST[$field] ?? '';
+        //     $existing_status = $field_statuses[$field] ?? 'pending';
+
+        //     if ($existing_status === 'rejected' && isset($prefill[$field]) && $prefill[$field] !== $value) {
+        //         $existing_status = 'pending';
+        //     }
+
+        //     $data[$field] = [
+        //         'value' => $value,
+        //         'status' => $existing_status
+        //     ];
+        // }
+
+        // $json_string = json_encode($data);
+
+        // $sql = "INSERT INTO json (user_id, name) VALUES (?, ?)
+        // ON DUPLICATE KEY UPDATE name = VALUES(name)";
+        // $stmt = $conn->prepare($sql);
+        // $stmt->bind_param("ss", $user_id, $json_string);
+
+        // if ($stmt->execute()) {
+        //     echo '
+        //     <script>
+        //         Swal.fire({
+        //             icon: "success",
+        //             title: "Success!",
+        //             text: "Data saved successfully!"
+        //         });
+        //     </script>';
+        // } else {
+        // echo "Error: " . $stmt->error;
+        // }
+
+        $fields = [
+            'comp_name', 'cont_person', 'email', 'phone', 'website', 'address',
+            'purpose', 'business', 'goals', 'vision',
+            'target', 'expectations', 'personas',
+            'design', 'like', 'brand', 'features', 'functionality', 'responsive', 'technical',
+            'timeline', 'budget', 'deadline',
+            'maintenance', 'support'
+        ];
+
+        $data = [];
+        foreach ($fields as $field) {
+            $value = $_POST[$field] ?? '';
+            $existing_status = $field_statuses[$field] ?? 'pending';
+
+            if ($existing_status === 'rejected' && isset($prefill[$field]) && $prefill[$field] !== $value) {
+                $existing_status = 'pending';
+            }
+
+            $data[$field] = [
+                'value' => $value,
+                'status' => $existing_status
+            ];
+        }
+
+        $json_string = json_encode($data);
+        $website_id = $_GET['id'];
+
+        $sql = "INSERT INTO json (user_id, name, website_id) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE name = VALUES(name)";
+        $stmt = $conn->prepare($sql);
+        $stmt->bind_param("ssi", $user_id, $json_string, $website_id);
+
+        if ($stmt->execute()) {
+            echo '<script>Swal.fire({icon: "success", title: "Success!", text: "Data saved successfully!"});</script>';
+        } else {
+            echo "Error: " . $stmt->error;
+        }
+        $stmt->close();
+    }
+
+    function render_field($name, $label, $prefill, $field_statuses, $is_admin, $is_user) {
+        $value = htmlspecialchars($prefill[$name] ?? '');
+        $status = $field_statuses[$name] ?? 'pending';
+        $readonly = '';
+        $badge = '';
+        $actions = '';
+
+        if ($is_user) {
+            if ($status === 'approved') {
+                $readonly = 'readonly';
+                $badge = "<span class='badge bg-success ms-2'>✅ Approved</span>";
+            } elseif ($status === 'rejected') {
+                $badge = "<span class='badge bg-danger ms-2'>❌ Rejected — Please edit</span>";
+            }
+        }
+
+        if ($is_admin) {
+            $actions = <<<HTML
+                <button type="button" class="btn btn-success btn-sm approve-btn" data-field="$name">✅</button>
+                <button type="button" class="btn btn-danger btn-sm reject-btn" data-field="$name">❌</button>
+            HTML;
+        }
+
+        echo <<<HTML
+        <div class="form-group mb-3">
+            <label for="$name">$label</label>
+            <input type="text" class="form-control" id="$name" name="$name" value="$value" $readonly>
+            $badge
+            $actions
+        </div>
+        HTML;
+    }
 ?>
 
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+
 <div class="dashboard-main-body">
     <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-24">
         <h6 class="fw-semibold mb-0">Website Registration Form</h6>
@@ -347,44 +486,57 @@ $stmt->close();
                                                     <li><span>8</span></li>
                                                 </ul>
                                             </div>
-                                            <input type="submit" name="save" class="form-wizard-submit" value="Submit" style="float:right">
+                                            <!-- <?php if ($is_user): ?> -->
+                    <input type="submit" class="form-wizard-submit" name="save" value="Submit" style="float:right">
+                <!-- <?php endif; ?> -->
+                                            <!-- <input type="submit" name="save" class="form-wizard-submit" value="Submit" style="float:right"> -->
                                             <fieldset class="wizard-fieldset show">
                                                 <h5>Personal Information</h5>
-                                                <div class="form-group">
-                                                <label for="fname" class="">Company Name*</label>    
-                                                    <input type="text" class="form-control wizard-required" id="fname" name="comp_name" autocomplete="off">
-                                                    <div class="wizard-form-error text-danger">Fill out company name</div>
+                                                <?php
+                    render_field('comp_name', 'Company Name*', $prefill, $field_statuses, $is_admin, $is_user);
+                    render_field('cont_person', 'Contact Person*', $prefill, $field_statuses, $is_admin, $is_user);
+                    render_field('email', 'Email*', $prefill, $field_statuses, $is_admin, $is_user);
+                    render_field('phone', 'Phone*', $prefill, $field_statuses, $is_admin, $is_user);
+                    render_field('website', 'Website*', $prefill, $field_statuses, $is_admin, $is_user);
+                    render_field('address', 'Address*', $prefill, $field_statuses, $is_admin, $is_user);
+                    render_field('maintenance', 'Maintenance?', $prefill, $field_statuses, $is_admin, $is_user);
+                    render_field('support', 'Support?', $prefill, $field_statuses, $is_admin, $is_user);
+                ?>
+                                                
+                                                <!-- <div class="form-group">
+                                                    <label for="fname" class="">Company Name*</label>    
+                                                        <input type="text" class="form-control wizard-required" id="fname" name="comp_name" value="<?= htmlspecialchars($prefill['comp_name'] ?? '') ?>" autocomplete="off">
+                                                        <div class="wizard-form-error text-danger">Fill out company name</div>
                                                 </div>
                                                 <div class="form-group">
-                                                <label for="lname" class="">Contact Person*</label>
-                                                    <input type="text" class="form-control " id="lname" name="cont_person" autocomplete="off">
-                                                    
+                                                    <label for="lname" class="">Contact Person*</label>
+                                                        <input type="text" class="form-control" id="lname" name="cont_person" value="<?= htmlspecialchars($prefill['cont_person'] ?? '') ?>" autocomplete="off">
                                                     <div class="wizard-form-error"></div>
                                                 </div>
                                                 <div class="form-group">
                                                 <label for="lname" class="">Email*</label>
-                                                    <input type="email" class="form-control " id="lname" name="email" autocomplete="off">
+                                                    <input type="email" class="form-control " id="lname" name="email" value="<?= htmlspecialchars($prefill['email'] ?? '') ?>" autocomplete="off">
                                                     
                                                     <div class="wizard-form-error"></div>
                                                 </div>
                                                 <div class="form-group">
                                                 <label for="lname" class="">Phone*</label>
-                                                    <input type="text" class="form-control " id="lname" name="phone" autocomplete="off">
+                                                    <input type="text" class="form-control " id="lname" name="phone" value="<?= htmlspecialchars($prefill['phone'] ?? '') ?>" autocomplete="off">
                                                     
                                                     <div class="wizard-form-error"></div>
                                                 </div>
                                                 <div class="form-group">
                                                 <label for="lname" class="">Website*</label>
-                                                    <input type="text" class="form-control " id="lname" name="website" autocomplete="off">
+                                                    <input type="text" class="form-control " id="lname" name="website" value="<?= htmlspecialchars($prefill['website'] ?? '') ?>" autocomplete="off">
                                                     
                                                     <div class="wizard-form-error"></div>
                                                 </div>
                                                 <div class="form-group">
                                                 <label for="lname" class="">Address*</label>
-                                                    <input type="text" class="form-control " id="lname" name="address" autocomplete="off">
+                                                    <input type="text" class="form-control " id="lname" name="address" value="<?= htmlspecialchars($prefill['address'] ?? '') ?>" autocomplete="off">
                                                     
                                                     <div class="wizard-form-error"></div>
-                                                </div>
+                                                </div> -->
                                                 <!-- <div class="form-group"> 
                                                     Gender
                                                     <div class="wizard-form-radio">
@@ -672,6 +824,7 @@ $stmt->close();
                 </div>
             </div>
 </div>
+
 <script>
     jQuery(document).ready(function() {
     // click on next button
@@ -759,71 +912,84 @@ $stmt->close();
         else if(tmpThis !='' ){
             jQuery(this).parent().addClass("focus-input");
         }
-    }).on('blur', function(){
-        var tmpThis = jQuery(this).val();
-        if(tmpThis == '' ) {
-            jQuery(this).parent().removeClass("focus-input");
-            jQuery(this).siblings('.wizard-form-error').slideDown("3000");
-        }
-        else if(tmpThis !='' ){
-            jQuery(this).parent().addClass("focus-input");
-            jQuery(this).siblings('.wizard-form-error').slideUp("3000");
+        }).on('blur', function(){
+            var tmpThis = jQuery(this).val();
+            if(tmpThis == '' ) {
+                jQuery(this).parent().removeClass("focus-input");
+                jQuery(this).siblings('.wizard-form-error').slideDown("3000");
+            }
+            else if(tmpThis !='' ){
+                jQuery(this).parent().addClass("focus-input");
+                jQuery(this).siblings('.wizard-form-error').slideUp("3000");
+            }
+        });
+    });
+
+    // Get the elements
+    const domainYes = document.getElementById('domain_yes');
+    const domainNo = document.getElementById('domain_no');
+    const hostingYes = document.getElementById('hosting_yes');
+    const hostingNo = document.getElementById('hosting_no');
+    const ecommerceYes = document.getElementById('e_commerce_yes');
+    const ecommerceNo = document.getElementById('e_commerce_no');
+    const domainInputWrapper = document.getElementById('domain-input-wrapper');
+    const domainInputWrapper2 = document.getElementById('domain-input-wrapper2');
+    const domainInputWrapper3 = document.getElementById('domain-input-wrapper3');
+
+    // Add event listeners
+    domainYes.addEventListener('change', function() {
+        if (this.checked) {
+            domainInputWrapper.style.display = 'block';
         }
     });
+
+    domainNo.addEventListener('change', function() {
+        if (this.checked) {
+            domainInputWrapper.style.display = 'none';
+        }
+    });
+
+    hostingYes.addEventListener('change', function() {
+        if (this.checked) {
+            domainInputWrapper2.style.display = 'block';
+        }
+    });
+
+    hostingNo.addEventListener('change', function() {
+        if (this.checked) {
+            domainInputWrapper2.style.display = 'none';
+        }
+    });
+
+    ecommerceYes.addEventListener('change', function() {
+        if (this.checked) {
+            domainInputWrapper3.style.display = 'block';
+        }
+    });
+
+    ecommerceNo.addEventListener('change', function() {
+        if (this.checked) {
+            domainInputWrapper3.style.display = 'none';
+        }
+    });
+</script>
+
+<script>
+$(document).ready(function(){
+    $(".approve-btn, .reject-btn").click(function(){
+        const field = $(this).data('field');
+        const status = $(this).hasClass('approve-btn') ? 'approved' : 'rejected';
+
+        $.post("json_status_update.php", {
+            website_id: <?= json_encode($_GET['id']) ?>,
+            field: field,
+            status: status
+        }, function(res){
+            location.reload();
+        });
+    });
 });
+</script>
 
-
-// Get the elements
-const domainYes = document.getElementById('domain_yes');
-const domainNo = document.getElementById('domain_no');
-const hostingYes = document.getElementById('hosting_yes');
-const hostingNo = document.getElementById('hosting_no');
-const ecommerceYes = document.getElementById('e_commerce_yes');
-const ecommerceNo = document.getElementById('e_commerce_no');
-const domainInputWrapper = document.getElementById('domain-input-wrapper');
-const domainInputWrapper2 = document.getElementById('domain-input-wrapper2');
-const domainInputWrapper3 = document.getElementById('domain-input-wrapper3');
-
-// Add event listeners
-domainYes.addEventListener('change', function() {
-    if (this.checked) {
-        domainInputWrapper.style.display = 'block';
-    }
-});
-
-domainNo.addEventListener('change', function() {
-    if (this.checked) {
-        domainInputWrapper.style.display = 'none';
-    }
-});
-
-hostingYes.addEventListener('change', function() {
-    if (this.checked) {
-        domainInputWrapper2.style.display = 'block';
-    }
-});
-
-hostingNo.addEventListener('change', function() {
-    if (this.checked) {
-        domainInputWrapper2.style.display = 'none';
-    }
-});
-
-ecommerceYes.addEventListener('change', function() {
-    if (this.checked) {
-        domainInputWrapper3.style.display = 'block';
-    }
-});
-
-ecommerceNo.addEventListener('change', function() {
-    if (this.checked) {
-        domainInputWrapper3.style.display = 'none';
-    }
-});
-
-    </script>
 <?php include './partials/layouts/layoutBottom.php' ?>
-
-
-
 
