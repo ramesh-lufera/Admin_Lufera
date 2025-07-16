@@ -39,6 +39,9 @@
             $det_file_name = $cat_url1 . '-det.php'; // ✅ New file for "Manage"
             $det_file_path = dirname(__DIR__) . '/' . $det_file_name;
 
+            $det_file_name1 = $cat_url1 . '-wizard.php'; // ✅ New file for "Manage"
+            $det_file_path1 = dirname(__DIR__) . '/' . $det_file_name1;
+
             // ✅ Replace "websites-details.php" with dynamic det file
             $manageLink = $det_file_name;
 
@@ -699,7 +702,7 @@
                 }
                 
                 // ✅ If "website" template selected, also create the -det.php file
-                if ($cat_template === 'website' && !file_exists($det_file_path)) {
+                if ($cat_template === 'website' && !file_exists($det_file_path) && !file_exists($det_file_path1)) {
                     $det_content = <<<PHP
                         <?php include './partials/layouts/layoutTop.php' ?>
                             <?php
@@ -832,11 +835,7 @@
                                     </div>
                                     <div class="d-flex gap-2">
                                     <button type="button" class="btn btn-sm btn-upgrade">Upgrade</button>
-                                    <?php if(\$role != '1') { ?>
-                                    <a href="forms.php"><button type="button" class="btn btn-sm btn-edit-website">Wizard</button></a>
-                                    <?php } else { ?>
-                                    <button type="button" class="btn btn-sm btn-edit-website">Wizard</button>
-                                    <?php } ?>
+                                        <a href="$catSlug-Wizard.php?id=<?= \$websiteId ?>"><button type="button" class="btn btn-sm btn-edit-website">Wizard</button></a>
                                     </div>
                                 </div>
 
@@ -937,6 +936,12 @@
                         PHP;
 
                     file_put_contents($det_file_path, $det_content);
+
+                    $det_content1 = <<<PHP
+                        <?php include './forms.php' ?>
+                    PHP;
+
+                    file_put_contents($det_file_path1, $det_content1);
                 }
                 // ✅ If "marketing" template selected, also create the -det.php file
                 if ($cat_template === 'marketing' && !file_exists($det_file_path)) {
@@ -1072,11 +1077,7 @@
                                     </div>
                                     <div class="d-flex gap-2">
                                     <button type="button" class="btn btn-sm btn-upgrade">Upgrade</button>
-                                    <?php if(\$role != '1') { ?>
-                                    <a href="forms.php"><button type="button" class="btn btn-sm btn-edit-website">Wizard</button></a>
-                                    <?php } else { ?>
-                                    <button type="button" class="btn btn-sm btn-edit-website">Wizard</button>
-                                    <?php } ?>
+                                        <a href="$catSlug-Wizard.php"><button type="button" class="btn btn-sm btn-edit-website">Wizard</button></a>
                                     </div>
                                 </div>
 
@@ -1174,9 +1175,15 @@
                                 }
                             </script>
                         <?php include './partials/layouts/layoutBottom.php' ?> 
-                    PHP;
+                        PHP;
 
                     file_put_contents($det_file_path, $det_content);
+
+                    $det_content1 = <<<PHP
+                        <?php include './forms.php' ?>
+                    PHP;
+
+                    file_put_contents($det_file_path1, $det_content1);
                 }
                 // ✅ If "visa" template selected, also create the -det.php file
                 if ($cat_template === 'visa' && !file_exists($det_file_path)) {
@@ -1312,11 +1319,7 @@
                                     </div>
                                     <div class="d-flex gap-2">
                                     <button type="button" class="btn btn-sm btn-upgrade">Upgrade</button>
-                                    <?php if(\$role != '1') { ?>
-                                    <a href="forms.php"><button type="button" class="btn btn-sm btn-edit-website">Wizard</button></a>
-                                    <?php } else { ?>
-                                    <button type="button" class="btn btn-sm btn-edit-website">Wizard</button>
-                                    <?php } ?>
+                                        <a href="$catSlug-Wizard.php"><button type="button" class="btn btn-sm btn-edit-website">Wizard</button></a>
                                     </div>
                                 </div>
 
@@ -1413,12 +1416,18 @@
                                     });
                                 }
                             </script>
-                        <?php include './partials/layouts/layoutBottom.php' ?>   
-                    PHP;
+                        <?php include './partials/layouts/layoutBottom.php' ?> 
+                        PHP;
 
                     file_put_contents($det_file_path, $det_content);
-                    }
+
+                    $det_content1 = <<<PHP
+                        <?php include './forms.php' ?>
+                    PHP;
+
+                    file_put_contents($det_file_path1, $det_content1);
                 }
+            }
 
                 $_SESSION['swal_success'] = "Category created";
             }
