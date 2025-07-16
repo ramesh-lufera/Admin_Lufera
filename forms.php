@@ -213,21 +213,36 @@
         height: auto;
     }
     }
+
+    .progress {
+    height: 30px;
+    background-color: #f3f3f3;
+    border-radius: 8px;
+    overflow: hidden;
+}
+.progress-bar {
+    background-color: #fec700 !important; /* Match your form's primary color */
+    color: #ffffff;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: width 0.6s ease;
+}
 </style>
 
 <?php
-    $id = $_SESSION['user_id']; // this is the numeric ID
+    $id = $_SESSION['user_id'];
 
-    // Now fetch the actual VARCHAR user_id
+    // Fetch user data
     $stmt = $conn->prepare("SELECT user_id, role FROM users WHERE id = ?");
     $stmt->bind_param("i", $id);
     $stmt->execute();
     $result = $stmt->get_result();
     $row = $result->fetch_assoc();
 
-    $user_id = $row['user_id']; // ✅ Now you have the correct VARCHAR user_id
-    $role = (int)$row['role']; // Make sure it's integer
-    // $target_user_id = ($role == 1 || $role == 7) ? ($_GET['user_id'] ?? die("No target user")) : $user_id;
+    $user_id = $row['user_id'];
+    $role = (int)$row['role'];
     $is_admin = ($role === 1 || $role === 7);
     $is_user = ($role === 8);
 
@@ -235,7 +250,10 @@
 
     $prefill = [];
     $field_statuses = [];
+    $filled_fields = 0;
+    $total_fields = 0;
 
+    // Fetch JSON data
     $stmt = $conn->prepare("SELECT name FROM json WHERE website_id = ? ORDER BY id DESC LIMIT 1");
     $stmt->bind_param("i", $websiteId);
     $stmt->execute();
@@ -246,15 +264,27 @@
         $raw_json = json_decode($json_data['name'], true);
 
         foreach ($raw_json as $key => $info) {
+            $total_fields++;
             if (is_array($info) && isset($info['value'])) {
                 $prefill[$key] = $info['value'];
                 $field_statuses[$key] = $info['status'] ?? 'pending';
+                if (!empty($info['value'])) {
+                    $filled_fields++;
+                }
             } else {
                 $prefill[$key] = $info;
                 $field_statuses[$key] = 'pending';
+                if (!empty($info)) {
+                    $filled_fields++;
+                }
             }
         }
     }
+
+    // Calculate progress percentage
+    $progress_percentage = $total_fields > 0 ? round(($filled_fields / $total_fields) * 100) : 0;
+
+
 
     if (isset($_POST['save'])) {
         $comp_name = $_POST['comp_name'];
@@ -263,6 +293,8 @@
         $phone = $_POST['phone'];
         $website = $_POST['website'];
         $address = $_POST['address'];
+        $maintenance1 = $_POST['maintenance1'];
+        $support1 = $_POST['support1'];
 
         $purpose = $_POST['purpose'];
         $business = $_POST['business'];
@@ -379,7 +411,7 @@
             'target', 'expectations', 'personas',
             'design', 'like', 'brand', 'features', 'functionality', 'responsive', 'technical',
             'timeline', 'budget', 'deadline',
-            'maintenance', 'support'
+            'maintenance1', 'support1'
         ];
 
         $data = [];
@@ -466,6 +498,12 @@
     <div class="card h-100 p-0 radius-12 overflow-hidden">
                 
                 <div class="card-body p-40">
+                    <!-- Progress Bar -->
+    <div class="progress mb-4">
+        <div class="progress-bar bg-success" role="progressbar" style="width: <?= $progress_percentage ?>%;" aria-valuenow="<?= $progress_percentage ?>" aria-valuemin="0" aria-valuemax="100">
+            <?= $progress_percentage ?>% Complete
+        </div>
+    </div>
                     <div class="row justify-content-center">
                         <div class="col-xxl-10">
                         <section class="wizard-section">
@@ -499,8 +537,8 @@
                     render_field('phone', 'Phone*', $prefill, $field_statuses, $is_admin, $is_user);
                     render_field('website', 'Website*', $prefill, $field_statuses, $is_admin, $is_user);
                     render_field('address', 'Address*', $prefill, $field_statuses, $is_admin, $is_user);
-                    render_field('maintenance', 'Maintenance?', $prefill, $field_statuses, $is_admin, $is_user);
-                    render_field('support', 'Support?', $prefill, $field_statuses, $is_admin, $is_user);
+                    render_field('maintenance1', 'Maintenance?', $prefill, $field_statuses, $is_admin, $is_user);
+                    render_field('support1', 'Support?', $prefill, $field_statuses, $is_admin, $is_user);
                 ?>
                                                 
                                                 <!-- <div class="form-group">
@@ -990,6 +1028,24 @@ $(document).ready(function(){
     });
 });
 </script>
+<script>
+$(document).ready(function() {
+    function updateProgressBar() {
+        const totalFields = $('input[type="text"], textarea, select, input[type="radio"]:checked').length;
+        const filledFields = $('input[type="text"], textarea, select, input[type="radio"]:checked').filter(function() {
+            return $(this).val().trim() !== '';
+        }).length;
+        const percentage = totalFields > 0 ? Math.round((filledFields / totalFields) * 100) : 0;
 
+        $('.progress-bar').css('width', percentage + '%').attr('aria-valuenow', percentage).text(percentage + '% Complete');
+    }
+
+    // Update progress bar on input change
+    $('input, textarea, select').on('input change', updateProgressBar);
+
+    // Initial calculation
+    updateProgressBar();
+});
+</script>
 <?php include './partials/layouts/layoutBottom.php' ?>
 
