@@ -2,64 +2,61 @@
 
 include './partials/layouts/layoutTop.php';
 
-    $admin_id = $_SESSION['user_id'];
-
-// Get the admin's role
-$stmt = $conn->prepare("SELECT role FROM users WHERE id = ?");
-$stmt->bind_param("i", $admin_id);
-$stmt->execute();
-$result = $stmt->get_result();
-$row = $result->fetch_assoc();
-$role = (int) $row['role'];
-
-if (!in_array($role, [1, 7])) {
-    http_response_code(403);
-    echo 'Permission denied';
-    exit;
-}
-
-// Get POST data
-$website_id = $_POST['website_id'] ?? '';
+$session_user_id = $_SESSION['user_id'] ?? 0;
 $field = $_POST['field'] ?? '';
 $status = $_POST['status'] ?? '';
+$website_id = $_GET['id'] ?? 0;
 
-if (!$website_id || !$field || !in_array($status, ['approved', 'rejected'])) {
+if (!$session_user_id || !$field || !in_array($status, ['approved', 'rejected']) || !$website_id) {
     http_response_code(400);
-    echo 'Invalid request';
-    exit;
+    exit('Invalid request');
 }
 
-// Fetch latest JSON for website
-$stmt = $conn->prepare("SELECT id, name FROM json WHERE website_id = ? ORDER BY id DESC LIMIT 1");
-$stmt->bind_param("i", $website_id);
-$stmt->execute();
-$result = $stmt->get_result();
+// Fetch current user's role
+$roleQuery = $conn->prepare("SELECT role FROM users WHERE id = ?");
+$roleQuery->bind_param("i", $session_user_id);
+$roleQuery->execute();
+$roleQuery->bind_result($user_role);
+$roleQuery->fetch();
+$roleQuery->close();
 
-if ($result->num_rows === 0) {
+// Only admin or developer allowed
+if (!in_array($user_role, [1, 7])) {
+    http_response_code(403);
+    exit('Unauthorized');
+}
+
+// Fetch JSON data using website_id
+$website_id = intval($website_id);
+$query = $conn->prepare("SELECT id, name FROM json WHERE website_id = ?");
+$query->bind_param("i", $website_id);
+$query->execute();
+$query->bind_result($json_id, $jsonData);
+
+if (!$query->fetch()) {
     http_response_code(404);
-    echo 'Form data not found';
-    exit;
+    exit('Data not found');
 }
+$query->close();
 
-$row = $result->fetch_assoc();
-$data = json_decode($row['name'], true);
+// Decode, update field status, and re-save
+$data = json_decode($jsonData, true);
 
-// Update the specific field's status
 if (!isset($data[$field])) {
-    http_response_code(400);
-    echo 'Field not found';
-    exit;
+    http_response_code(404);
+    exit('Field not found');
 }
 
 $data[$field]['status'] = $status;
+$updatedJson = json_encode($data);
 
-// Update JSON back to DB
-$updated_json = json_encode($data);
-$update_stmt = $conn->prepare("UPDATE json SET name = ? WHERE id = ?");
-$update_stmt->bind_param("si", $updated_json, $row['id']);
-$update_stmt->execute();
+// Update JSON in DB
+$update = $conn->prepare("UPDATE json SET name = ? WHERE id = ?");
+$update->bind_param("si", $updatedJson, $json_id);
+$update->execute();
+$update->close();
 
-echo 'Status updated';
+echo 'OK';
 
 include './partials/layouts/layoutBottom.php';
 

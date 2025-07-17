@@ -72,7 +72,7 @@
                             \$UserId = \$row['user_id'];
                             \$role = \$row['role'];
 
-                            if (\$role == '1' || \$role == '2') {
+                            if (\$role == '1' || \$role == '2' || \$role == '7') {
                             \$stmt = \$conn->prepare("
                                 SELECT 
                                     websites.id,
@@ -719,7 +719,7 @@
                                 \$role = \$row['role'];
                                 \$stmt->close();
 
-                                if (\$role == '1') {
+                                if (\$role == '1' || \$role == '2' || \$role == '7') {
                                     \$stmt = \$conn->prepare("SELECT invoice_id, plan, duration, status, created_at FROM websites WHERE id = ?");
                                     \$stmt->bind_param("i", \$websiteId);
                                 } else {
@@ -835,7 +835,7 @@
                                     </div>
                                     <div class="d-flex gap-2">
                                     <button type="button" class="btn btn-sm btn-upgrade">Upgrade</button>
-                                        <a href="$catSlug-Wizard.php?id=<?= \$websiteId ?>"><button type="button" class="btn btn-sm btn-edit-website">Wizard</button></a>
+                                        <a href="$catSlug-wizard.php?id=<?= \$websiteId ?>"><button type="button" class="btn btn-sm btn-edit-website">Wizard</button></a>
                                     </div>
                                 </div>
 
@@ -944,7 +944,7 @@
                     file_put_contents($det_file_path1, $det_content1);
                 }
                 // ✅ If "marketing" template selected, also create the -det.php file
-                if ($cat_template === 'marketing' && !file_exists($det_file_path)) {
+                if ($cat_template === 'marketing' && !file_exists($det_file_path) && !file_exists($det_file_path1)) {
                     $det_content = <<<PHP
                         <?php include './partials/layouts/layoutTop.php' ?>
                             <?php
@@ -961,7 +961,7 @@
                                 \$role = \$row['role'];
                                 \$stmt->close();
 
-                                if (\$role == '1') {
+                                if (\$role == '1' || \$role == '2' || \$role == '7') {
                                     \$stmt = \$conn->prepare("SELECT invoice_id, plan, duration, status, created_at FROM websites WHERE id = ?");
                                     \$stmt->bind_param("i", \$websiteId);
                                 } else {
@@ -1077,7 +1077,7 @@
                                     </div>
                                     <div class="d-flex gap-2">
                                     <button type="button" class="btn btn-sm btn-upgrade">Upgrade</button>
-                                        <a href="$catSlug-Wizard.php"><button type="button" class="btn btn-sm btn-edit-website">Wizard</button></a>
+                                        <a href="$catSlug-wizard.php?id=<?= \$websiteId ?>"><button type="button" class="btn btn-sm btn-edit-website">Wizard</button></a>
                                     </div>
                                 </div>
 
@@ -1186,7 +1186,7 @@
                     file_put_contents($det_file_path1, $det_content1);
                 }
                 // ✅ If "visa" template selected, also create the -det.php file
-                if ($cat_template === 'visa' && !file_exists($det_file_path)) {
+                if ($cat_template === 'visa' && !file_exists($det_file_path) && !file_exists($det_file_path1)) {
                     $det_content = <<<PHP
                         <?php include './partials/layouts/layoutTop.php' ?>
                             <?php
@@ -1203,7 +1203,7 @@
                                 \$role = \$row['role'];
                                 \$stmt->close();
 
-                                if (\$role == '1') {
+                                if (\$role == '1' || \$role == '2' || \$role == '7') {
                                     \$stmt = \$conn->prepare("SELECT invoice_id, plan, duration, status, created_at FROM websites WHERE id = ?");
                                     \$stmt->bind_param("i", \$websiteId);
                                 } else {
@@ -1319,7 +1319,7 @@
                                     </div>
                                     <div class="d-flex gap-2">
                                     <button type="button" class="btn btn-sm btn-upgrade">Upgrade</button>
-                                        <a href="$catSlug-Wizard.php"><button type="button" class="btn btn-sm btn-edit-website">Wizard</button></a>
+                                        <a href="$catSlug-wizard.php?id=<?= \$websiteId ?>"><button type="button" class="btn btn-sm btn-edit-website">Wizard</button></a>
                                     </div>
                                 </div>
 
@@ -1497,7 +1497,8 @@
                 "$baseDir/{$catName}.php",
                 "$baseDir/{$catName}-det.php",
                 "$baseDir/add-{$catName}.php",
-                "$baseDir/view-{$catName}.php"
+                "$baseDir/view-{$catName}.php",
+                "$baseDir/{$catName}-wizard.php"
             ];
 
             foreach ($filesToDelete as $file) {
@@ -2549,14 +2550,13 @@
 
 <script>
     function openEditModal(id, name, url, module) {
-    document.getElementById("edit_cat_id").value = id;
-    document.getElementById("edit_cat_name").value = name;
-    document.getElementById("edit_cat_url").value = url.replace(".php", "");
-    document.getElementById("edit_cat_module").value = module;
-    document.getElementById("editCategoryModal").classList.add("show");
-}
- 
- 
+        document.getElementById("edit_cat_id").value = id;
+        document.getElementById("edit_cat_name").value = name;
+        document.getElementById("edit_cat_url").value = url.replace(".php", "");
+        document.getElementById("edit_cat_module").value = module;
+        document.getElementById("editCategoryModal").classList.add("show");
+    }
+
     function closeEditModal() {
         document.getElementById("editCategoryModal").classList.remove("show");
     }
