@@ -287,8 +287,8 @@
         $phone = $_POST['phone'];
         $website = $_POST['website'];
         $address = $_POST['address'];
-        $maintenance1 = $_POST['maintenance1'];
-        $support1 = $_POST['support1'];
+        // $maintenance1 = $_POST['maintenance1'];
+        // $support1 = $_POST['support1'];
 
         $purpose = $_POST['purpose'];
         $business = $_POST['business'];
@@ -335,6 +335,10 @@
             'website' => createField($website),
             // 'address' => $address,
             'address' => createField($address),
+
+            // 'maintenance1' => createField($maintenance1),
+ 
+            // 'support1' => createField($support1),
 
             // 'purpose' => $purpose,
             'purpose' => createField($purpose),
@@ -500,10 +504,7 @@
                                                     <li><span>8</span></li>
                                                 </ul>
                                             </div>
-                                            <!-- <?php if ($is_user): ?> -->
-                    <input type="submit" class="form-wizard-submit" name="save" value="Submit" style="float:right">
-                <!-- <?php endif; ?> -->
-                                            <!-- <input type="submit" name="save" class="form-wizard-submit" value="Submit" style="float:right"> -->
+                                            <input type="submit" name="save" class="form-wizard-submit" value="Submit" style="float:right">
                                             <fieldset class="wizard-fieldset show">
                                                 <h5>Personal Information</h5>
                                                     <?php
@@ -513,6 +514,8 @@
                                                         renderField('phone', $savedData, $user_role, 'Phone*', 'Enter phone');
                                                         renderField('website', $savedData, $user_role, 'Website*', 'Enter website');
                                                         renderField('address', $savedData, $user_role, 'Address*', 'Enter address');
+                                                        // render_field('maintenance1', $savedData, $user_role, 'Maintenance?', 'Enter Maintenance' );
+                                                        // render_field('support1', $savedData, $user_role, 'Support?', 'Enter Support');
                                                     ?>
                                                 <div class="form-group clearfix">
                                                     <a href="javascript:;" class="form-wizard-next-btn float-right">Next</a>
