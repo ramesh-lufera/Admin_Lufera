@@ -219,72 +219,66 @@
     background-color: #f3f3f3;
     border-radius: 8px;
     overflow: hidden;
-}
-.progress-bar {
-    background-color: #fec700 !important; /* Match your form's primary color */
-    color: #ffffff;
-    font-weight: 600;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: width 0.6s ease;
-}
+    }
+    .progress-bar {
+        background-color: #fec700 !important; /* Match your form's primary color */
+        color: #ffffff;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: width 0.6s ease;
+    }
 </style>
 
 <?php
     $id = $_SESSION['user_id'];
 
-    // Fetch user data
-    $stmt = $conn->prepare("SELECT user_id, role FROM users WHERE id = ?");
-    $stmt->bind_param("i", $id);
-    $stmt->execute();
-    $result = $stmt->get_result();
-    $row = $result->fetch_assoc();
+    $session_user_id = $_SESSION['user_id'];
 
-    $user_id = $row['user_id'];
-    $role = (int)$row['role'];
-    $is_admin = ($role === 1 || $role === 7);
-    $is_user = ($role === 8);
+    // Determine if admin/dev is viewing another user's data
+    $target_user_id = $session_user_id;
 
-    $websiteId = isset($_GET['id']) ? (int)$_GET['id'] : 0;
-
-    $prefill = [];
-    $field_statuses = [];
-    $filled_fields = 0;
-    $total_fields = 0;
-
-    // Fetch JSON data
-    $stmt = $conn->prepare("SELECT name FROM json WHERE website_id = ? ORDER BY id DESC LIMIT 1");
-    $stmt->bind_param("i", $websiteId);
-    $stmt->execute();
-    $result = $stmt->get_result();
-
-    if ($result && $result->num_rows > 0) {
-        $json_data = $result->fetch_assoc();
-        $raw_json = json_decode($json_data['name'], true);
-
-        foreach ($raw_json as $key => $info) {
-            $total_fields++;
-            if (is_array($info) && isset($info['value'])) {
-                $prefill[$key] = $info['value'];
-                $field_statuses[$key] = $info['status'] ?? 'pending';
-                if (!empty($info['value'])) {
-                    $filled_fields++;
-                }
-            } else {
-                $prefill[$key] = $info;
-                $field_statuses[$key] = 'pending';
-                if (!empty($info)) {
-                    $filled_fields++;
-                }
-            }
+    if (isset($_GET['id']) && in_array($session_user_id, [1, 2, 7])) {
+        $website_id = intval($_GET['id']);
+        
+        // Find the user_id from website table
+        $stmt = $conn->prepare("SELECT user_id FROM websites WHERE id = ?");
+        $stmt->bind_param("i", $website_id);
+        $stmt->execute();
+        $stmt->bind_result($fetched_user_id);
+        if ($stmt->fetch()) {
+            $target_user_id = $fetched_user_id;
         }
+        $stmt->close();
     }
 
-    // Calculate progress percentage
-    $progress_percentage = $total_fields > 0 ? round(($filled_fields / $total_fields) * 100) : 0;
+    $user_id = $target_user_id;
 
+    $roleQuery = $conn->prepare("SELECT role FROM users WHERE id = ?");
+    $roleQuery->bind_param("i", $user_id);
+    $roleQuery->execute();
+    $roleQuery->bind_result($user_role);
+    $roleQuery->fetch();
+    $roleQuery->close();
 
+    $savedData = [];
+
+    // Load previously saved data for this user (if any)
+    $website_id = $_GET['id'] ?? 0;
+    $website_id = intval($website_id);
+
+    $query = $conn->prepare("SELECT name FROM json WHERE website_id = ?");
+    $query->bind_param("i", $website_id);
+    $query->execute();
+    $query->store_result();
+
+    if ($query->num_rows > 0) {
+        $query->bind_result($jsonData);
+        $query->fetch();
+        $savedData = json_decode($jsonData, true);
+    }
+    $query->close();
 
     if (isset($_POST['save'])) {
         $comp_name = $_POST['comp_name'];
@@ -320,161 +314,143 @@
         $maintenance = $_POST['maintenance'];
         $support = $_POST['support'];
 
-        // Create JSON object
-        // $data = json_encode([
-        // 'comp_name' => $comp_name,
-        // 'cont_person' => $cont_person,
-        // 'email' => $email,
-        // 'phone' => $phone,
-        // 'website' => $website,
-        // 'address' => $address,
-
-        // 'purpose' => $purpose,
-        // 'business' => $business,
-        // 'goals' => $goals,
-        // 'vision' => $vision,
-
-        // 'target' => $target,
-        // 'expectations' => $expectations,
-        // 'personas' => $personas,
-
-        // 'design' => $design,
-        // 'like' => $like,
-        // 'brand' => $brand,
-        // 'features' => $features,
-        // 'functionality' => $functionality,
-        // 'responsive' => $responsive,
-        // 'technical' => $technical,
-
-        // 'timeline' => $timeline,
-        // 'budget' => $budget,
-        // 'deadline' => $deadline,
-
-        // 'maintenance' => $maintenance,
-        // 'support' => $support
-        // ]);
-
-        // Insert JSON into database
-        // $sql = "INSERT INTO json (name) VALUES (?)";
-
-        // $stmt = $conn->prepare($sql);
-        // $stmt->bind_param("s", $data);
-
-        // $fields = [
-        //     'comp_name', 'cont_person', 'email', 'phone', 'website', 'address',
-        //     'purpose', 'business', 'goals', 'vision',
-        //     'target', 'expectations', 'personas',
-        //     'design', 'like', 'brand', 'features', 'functionality', 'responsive', 'technical',
-        //     'timeline', 'budget', 'deadline',
-        //     'maintenance', 'support'
-        // ];
-
-        // $data = [];
-
-        // foreach ($fields as $field) {
-        //     $value = $_POST[$field] ?? '';
-        //     $existing_status = $field_statuses[$field] ?? 'pending';
-
-        //     if ($existing_status === 'rejected' && isset($prefill[$field]) && $prefill[$field] !== $value) {
-        //         $existing_status = 'pending';
-        //     }
-
-        //     $data[$field] = [
-        //         'value' => $value,
-        //         'status' => $existing_status
-        //     ];
-        // }
-
-        // $json_string = json_encode($data);
-
-        // $sql = "INSERT INTO json (user_id, name) VALUES (?, ?)
-        // ON DUPLICATE KEY UPDATE name = VALUES(name)";
-        // $stmt = $conn->prepare($sql);
-        // $stmt->bind_param("ss", $user_id, $json_string);
-
-        // if ($stmt->execute()) {
-        //     echo '
-        //     <script>
-        //         Swal.fire({
-        //             icon: "success",
-        //             title: "Success!",
-        //             text: "Data saved successfully!"
-        //         });
-        //     </script>';
-        // } else {
-        // echo "Error: " . $stmt->error;
-        // }
-
-        $fields = [
-            'comp_name', 'cont_person', 'email', 'phone', 'website', 'address',
-            'purpose', 'business', 'goals', 'vision',
-            'target', 'expectations', 'personas',
-            'design', 'like', 'brand', 'features', 'functionality', 'responsive', 'technical',
-            'timeline', 'budget', 'deadline',
-            'maintenance1', 'support1'
-        ];
-
-        $data = [];
-        foreach ($fields as $field) {
-            $value = $_POST[$field] ?? '';
-            $existing_status = $field_statuses[$field] ?? 'pending';
-
-            if ($existing_status === 'rejected' && isset($prefill[$field]) && $prefill[$field] !== $value) {
-                $existing_status = 'pending';
-            }
-
-            $data[$field] = [
+        function createField($value) {
+            return [
                 'value' => $value,
-                'status' => $existing_status
+                'status' => 'pending'
             ];
         }
 
-        $json_string = json_encode($data);
-        $website_id = $_GET['id'];
+        // Create JSON object
+        $data = json_encode([
+            // 'comp_name' => $comp_name,
+            'comp_name' => createField($comp_name),
+            // 'cont_person' => $cont_person,
+            'cont_person' => createField($cont_person),
+            // 'email' => $email,
+            'email' => createField($email),
+            // 'phone' => $phone,
+            'phone' => createField($phone),
+            // 'website' => $website,
+            'website' => createField($website),
+            // 'address' => $address,
+            'address' => createField($address),
 
-        $sql = "INSERT INTO json (user_id, name, website_id) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE name = VALUES(name)";
-        $stmt = $conn->prepare($sql);
-        $stmt->bind_param("ssi", $user_id, $json_string, $website_id);
+            // 'purpose' => $purpose,
+            'purpose' => createField($purpose),
+            // 'business' => $business,
+            'business' => createField($business),
+            // 'goals' => $goals,
+            'goals' => createField($goals),
+            // 'vision' => $vision,
+            'vision' => createField($vision),
+
+            // 'target' => $target,
+            'target' => createField($target),
+            // 'expectations' => $expectations,
+            'expectations' => createField($expectations),
+            // 'personas' => $personas,
+            'personas' => createField($personas),
+
+            // 'design' => $design,
+            'design' => createField($design),
+            // 'like' => $like,
+            'like' => createField($like),
+            // 'brand' => $brand,
+            'brand' => createField($brand),
+            // 'features' => $features,
+            'features' => createField($features),
+            // 'functionality' => $functionality,
+            'functionality' => createField($functionality),
+            // 'responsive' => $responsive,
+            'responsive' => createField($responsive),
+            // 'technical' => $technical,
+            'technical' => createField($technical),
+
+            // 'timeline' => $timeline,
+            'timeline' => createField($timeline),
+            // 'budget' => $budget,
+            'budget' => createField($budget),
+            // 'deadline' => $deadline,
+            'deadline' => createField($deadline),
+
+            // 'maintenance' => $maintenance,
+            'maintenance' => createField($maintenance),
+            // 'support' => $support,
+            'support' => createField($support)
+        ]);
+
+        $website_id = isset($_GET['id']) ? intval($_GET['id']) : 0;
+
+        // Check if there's already a json entry for this user AND this website
+        $check = $conn->prepare("SELECT id FROM json WHERE user_id = ? AND website_id = ?");
+        $check->bind_param("ii", $user_id, $website_id);
+        $check->execute();
+        $check->store_result();
+
+        if ($check->num_rows > 0) {
+            // Update existing record (same user + website)
+            $update = $conn->prepare("UPDATE json SET name = ? WHERE user_id = ? AND website_id = ?");
+            $update->bind_param("sii", $data, $user_id, $website_id);
+            $success = $update->execute();
+            $update->close();
+        } else {
+            // Insert new record (same user, new website)
+            $insert = $conn->prepare("INSERT INTO json (name, user_id, website_id) VALUES (?, ?, ?)");
+            $insert->bind_param("sii", $data, $user_id, $website_id);
+            $success = $insert->execute();
+            $insert->close();
+        }
+
+        $check->close();
 
         if ($stmt->execute()) {
-            echo '<script>Swal.fire({icon: "success", title: "Success!", text: "Data saved successfully!"});</script>';
+            echo '
+            <script>
+                Swal.fire({
+                    icon: "success",
+                    title: "Success!",
+                    text: "Data saved successfully!"
+                });
+            </script>';
         } else {
-            echo "Error: " . $stmt->error;
+        echo "Error: " . $stmt->error;
         }
+
         $stmt->close();
     }
 
-    function render_field($name, $label, $prefill, $field_statuses, $is_admin, $is_user) {
-        $value = htmlspecialchars($prefill[$name] ?? '');
-        $status = $field_statuses[$name] ?? 'pending';
-        $readonly = '';
-        $badge = '';
-        $actions = '';
+    function renderField($fieldName, $savedData, $user_role, $label = '', $placeholder = '') {
+        $val = $savedData[$fieldName]['value'] ?? '';
+        $status = $savedData[$fieldName]['status'] ?? 'pending';
+        $isReadonly = in_array($user_role, [1, 2, 7]) ? 'readonly' : '';
 
-        if ($is_user) {
-            if ($status === 'approved') {
-                $readonly = 'readonly';
-                $badge = "<span class='badge bg-success ms-2'>✅ Approved</span>";
-            } elseif ($status === 'rejected') {
-                $badge = "<span class='badge bg-danger ms-2'>❌ Rejected — Please edit</span>";
-            }
+        // Generate unique ID
+        $inputId = 'field_' . htmlspecialchars($fieldName);
+
+        echo '<div class="form-group mb-3">';
+        if ($label) {
+            echo '<label for="' . $inputId . '">' . htmlspecialchars($label) . '</label>';
         }
 
-        if ($is_admin) {
-            $actions = <<<HTML
-                <button type="button" class="btn btn-success btn-sm approve-btn" data-field="$name">✅</button>
-                <button type="button" class="btn btn-danger btn-sm reject-btn" data-field="$name">❌</button>
-            HTML;
+        echo '<div class="input-group">';
+        echo '<input type="text" class="form-control wizard-required" id="' . $inputId . '" name="' . htmlspecialchars($fieldName) . '" autocomplete="off" placeholder="' . htmlspecialchars($placeholder) . '" value="' . htmlspecialchars($val) . '" ' . $isReadonly . '>';
+
+        // Admin/developer buttons
+        if (in_array($user_role, [1, 2, 7])) {
+            echo '<button type="button" class="btn btn-success btn-sm approve-btn" data-field="' . htmlspecialchars($fieldName) . '">&#10004;</button>';
+            echo '<button type="button" class="btn btn-danger btn-sm reject-btn" data-field="' . htmlspecialchars($fieldName) . '">&#10006;</button>';
+        }
+        // User view with status icons
+        elseif ($status === 'approved') {
+            echo '<span class="input-group-text text-success">&#10004;</span>';
+        } elseif ($status === 'rejected') {
+            echo '<span class="input-group-text text-danger">&#10006;</span>';
+            echo '<span class="input-group-text text-warning">&#9998;</span>';
         }
 
-        echo <<<HTML
-        <div class="form-group mb-3">
-            <label for="$name">$label</label>
-            <input type="text" class="form-control" id="$name" name="$name" value="$value" $readonly>
-            $badge
-            $actions
-        </div>
-        HTML;
+        echo '</div>'; // .input-group
+        echo '</div>'; // .form-group
     }
 ?>
 
@@ -530,108 +506,47 @@
                                             <!-- <input type="submit" name="save" class="form-wizard-submit" value="Submit" style="float:right"> -->
                                             <fieldset class="wizard-fieldset show">
                                                 <h5>Personal Information</h5>
-                                                <?php
-                    render_field('comp_name', 'Company Name*', $prefill, $field_statuses, $is_admin, $is_user);
-                    render_field('cont_person', 'Contact Person*', $prefill, $field_statuses, $is_admin, $is_user);
-                    render_field('email', 'Email*', $prefill, $field_statuses, $is_admin, $is_user);
-                    render_field('phone', 'Phone*', $prefill, $field_statuses, $is_admin, $is_user);
-                    render_field('website', 'Website*', $prefill, $field_statuses, $is_admin, $is_user);
-                    render_field('address', 'Address*', $prefill, $field_statuses, $is_admin, $is_user);
-                    render_field('maintenance1', 'Maintenance?', $prefill, $field_statuses, $is_admin, $is_user);
-                    render_field('support1', 'Support?', $prefill, $field_statuses, $is_admin, $is_user);
-                ?>
-                                                
-                                                <!-- <div class="form-group">
-                                                    <label for="fname" class="">Company Name*</label>    
-                                                        <input type="text" class="form-control wizard-required" id="fname" name="comp_name" value="<?= htmlspecialchars($prefill['comp_name'] ?? '') ?>" autocomplete="off">
-                                                        <div class="wizard-form-error text-danger">Fill out company name</div>
-                                                </div>
-                                                <div class="form-group">
-                                                    <label for="lname" class="">Contact Person*</label>
-                                                        <input type="text" class="form-control" id="lname" name="cont_person" value="<?= htmlspecialchars($prefill['cont_person'] ?? '') ?>" autocomplete="off">
-                                                    <div class="wizard-form-error"></div>
-                                                </div>
-                                                <div class="form-group">
-                                                <label for="lname" class="">Email*</label>
-                                                    <input type="email" class="form-control " id="lname" name="email" value="<?= htmlspecialchars($prefill['email'] ?? '') ?>" autocomplete="off">
-                                                    
-                                                    <div class="wizard-form-error"></div>
-                                                </div>
-                                                <div class="form-group">
-                                                <label for="lname" class="">Phone*</label>
-                                                    <input type="text" class="form-control " id="lname" name="phone" value="<?= htmlspecialchars($prefill['phone'] ?? '') ?>" autocomplete="off">
-                                                    
-                                                    <div class="wizard-form-error"></div>
-                                                </div>
-                                                <div class="form-group">
-                                                <label for="lname" class="">Website*</label>
-                                                    <input type="text" class="form-control " id="lname" name="website" value="<?= htmlspecialchars($prefill['website'] ?? '') ?>" autocomplete="off">
-                                                    
-                                                    <div class="wizard-form-error"></div>
-                                                </div>
-                                                <div class="form-group">
-                                                <label for="lname" class="">Address*</label>
-                                                    <input type="text" class="form-control " id="lname" name="address" value="<?= htmlspecialchars($prefill['address'] ?? '') ?>" autocomplete="off">
-                                                    
-                                                    <div class="wizard-form-error"></div>
-                                                </div> -->
-                                                <!-- <div class="form-group"> 
-                                                    Gender
-                                                    <div class="wizard-form-radio">
-                                                        <input name="radio-name" id="radio1" type="radio">
-                                                        <label for="radio1">Male</label>
-                                                    </div>
-                                                    <div class="wizard-form-radio">
-                                                        <input name="radio-name" id="radio2" type="radio">
-                                                        <label for="radio2">Female</label>
-                                                    </div>
-                                                </div> -->
-                                                
+                                                    <?php
+                                                        renderField('comp_name', $savedData, $user_role, 'Company Name*', 'Enter company name');
+                                                        renderField('cont_person', $savedData, $user_role, 'Contact Person*', 'Enter contact name');
+                                                        renderField('email', $savedData, $user_role, 'Email*', 'Enter email');
+                                                        renderField('phone', $savedData, $user_role, 'Phone*', 'Enter phone');
+                                                        renderField('website', $savedData, $user_role, 'Website*', 'Enter website');
+                                                        renderField('address', $savedData, $user_role, 'Address*', 'Enter address');
+                                                    ?>
                                                 <div class="form-group clearfix">
                                                     <a href="javascript:;" class="form-wizard-next-btn float-right">Next</a>
                                                 </div>
                                             </fieldset> 
                                             <fieldset class="wizard-fieldset">
-                                                <h5>Project Description</h5>
-                                                <div class="form-group"> 
-                                                    <label>What is the primary purpose of this website? </label>
-                                                    <div class="wizard-form-radio">
-                                                        <input name="purpose" id="radio1" type="radio" value="E-commerce">
-                                                        <label for="radio1">E-commerce</label>
-                                                    </div>
-                                                    <div class="wizard-form-radio">
-                                                        <input name="purpose" id="radio2" type="radio" value="Portfolio">
-                                                        <label for="radio2">Portfolio</label>
-                                                    </div>
-                                                    <div class="wizard-form-radio">
-                                                        <input name="purpose" id="radio3" type="radio" value="Blog">
-                                                        <label for="radio3">Blog</label>
-                                                    </div>
-                                                    <div class="wizard-form-radio">
-                                                        <input name="purpose" id="radio4" type="radio" value="Business website">
-                                                        <label for="radio4">Business website</label>
-                                                    </div>
-                                                </div>
-                                                <div class="form-group">
-                                                <label for="lname" class="">Describe your business, products, or services</label>
-                                                    <input type="text" class="form-control " id="lname" name="business">
-                                                    
-                                                    <div class="wizard-form-error"></div>
-                                                </div>
-                                                <div class="form-group">
-                                                    <label for="username" class="">What are your goals for this website?</label>
-                                                    <select class="form-control" name="goals">
-                                                        <option value="Increase sales">Increase sales</option>
-                                                        <option value="Generate leads">Generate leads</option>
-                                                        <option value="Improve brand awareness">Improve brand awareness</option>
-                                                    </select>
-                                                    <div class="wizard-form-error"></div>
-                                                </div>
-                                                <div class="form-group">
-                                                    <label class="">Do you have a specific vision or style in mind for the website?</label>
-                                                    <textarea  class="form-control" id="lname" name="vision"></textarea>
-                                                    <div class="wizard-form-error"></div>
-                                                </div>
+                                                    <h5>Project Description</h5>
+                                                        <div class="form-group">
+                                                            <label>What is the primary purpose of this website? </label>
+                                                            <?php
+                                                            $purposes = ['E-commerce', 'Portfolio', 'Blog', 'Business website'];
+                                                            foreach ($purposes as $i => $purpose) {
+                                                                $id = 'purpose_' . $i;
+                                                                echo '<div class="wizard-form-radio">';
+                                                                echo "<input name=\"purpose\" id=\"$id\" type=\"radio\" value=\"$purpose\">";
+                                                                echo "<label for=\"$id\">$purpose</label>";
+                                                                echo '</div>';
+                                                            }
+                                                            ?>
+                                                        </div>
+                                                        <?php
+                                                            renderField('business', $savedData, $user_role, 'Describe your business, products, or services');
+                                                        ?>
+                                                        <div class="form-group">
+                                                            <label>What are your goals for this website?</label>
+                                                            <select class="form-control" name="goals">
+                                                                <option value="Increase sales">Increase sales</option>
+                                                                <option value="Generate leads">Generate leads</option>
+                                                                <option value="Improve brand awareness">Improve brand awareness</option>
+                                                            </select>
+                                                        </div>
+                                                        <?php
+                                                            renderField('vision', $savedData, $user_role, 'Do you have a specific vision or style in mind for the website?');
+                                                        ?>
                                                 <div class="form-group clearfix">
                                                     <a href="javascript:;" class="form-wizard-previous-btn float-left">Previous</a>
                                                     <a href="javascript:;" class="form-wizard-next-btn float-right">Next</a>
@@ -1013,39 +928,44 @@
 </script>
 
 <script>
-$(document).ready(function(){
-    $(".approve-btn, .reject-btn").click(function(){
-        const field = $(this).data('field');
-        const status = $(this).hasClass('approve-btn') ? 'approved' : 'rejected';
+    jQuery('.approve-btn, .reject-btn').click(function () {
+        const field = jQuery(this).data('field');
+        const status = jQuery(this).hasClass('approve-btn') ? 'approved' : 'rejected';
+        const websiteId = new URLSearchParams(window.location.search).get('id');
 
-        $.post("json_status_update.php", {
-            website_id: <?= json_encode($_GET['id']) ?>,
-            field: field,
-            status: status
-        }, function(res){
-            location.reload();
+        jQuery.ajax({
+            url: 'json_status_update.php?id=' + websiteId,
+            method: 'POST',
+            data: { field, status },
+            success: function () {
+                Swal.fire('Status updated!', '', 'success').then(() => location.reload());
+            },
+            error: function () {
+                Swal.fire('Error updating status', '', 'error');
+            }
         });
     });
-});
 </script>
+
 <script>
-$(document).ready(function() {
-    function updateProgressBar() {
-        const totalFields = $('input[type="text"], textarea, select, input[type="radio"]:checked').length;
-        const filledFields = $('input[type="text"], textarea, select, input[type="radio"]:checked').filter(function() {
-            return $(this).val().trim() !== '';
-        }).length;
-        const percentage = totalFields > 0 ? Math.round((filledFields / totalFields) * 100) : 0;
+    $(document).ready(function() {
+        function updateProgressBar() {
+            const totalFields = $('input[type="text"], textarea, select, input[type="radio"]:checked').length;
+            const filledFields = $('input[type="text"], textarea, select, input[type="radio"]:checked').filter(function() {
+                return $(this).val().trim() !== '';
+            }).length;
+            const percentage = totalFields > 0 ? Math.round((filledFields / totalFields) * 100) : 0;
 
-        $('.progress-bar').css('width', percentage + '%').attr('aria-valuenow', percentage).text(percentage + '% Complete');
-    }
+            $('.progress-bar').css('width', percentage + '%').attr('aria-valuenow', percentage).text(percentage + '% Complete');
+        }
 
-    // Update progress bar on input change
-    $('input, textarea, select').on('input change', updateProgressBar);
+        // Update progress bar on input change
+        $('input, textarea, select').on('input change', updateProgressBar);
 
-    // Initial calculation
-    updateProgressBar();
-});
+        // Initial calculation
+        updateProgressBar();
+    });
 </script>
+
 <?php include './partials/layouts/layoutBottom.php' ?>
 
