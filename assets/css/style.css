@@ -12106,9 +12106,9 @@ div.dt-container .dt-paging .dt-paging-button:hover:hover, div.dt-container .dt-
   height: 2.75rem;
 }
 
-.form-control[type=file] {
+/* .form-control[type=file] {
   line-height: 2;
-}
+} */
 
 .form-control[readonly] {
   background-color: var(--neutral-50);
