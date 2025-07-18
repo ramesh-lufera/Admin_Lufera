@@ -1,127 +1,226 @@
 <?php include './partials/layouts/layoutTop.php' ?>
-
-
 <style>
-    body {
-        background-color: #f3f4f9 !important;
-        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif !important;
-        margin: 0 !important;
-        padding: 0 !important;
+    
+    .card-form {
+      background: #fff;
+      width: 100%;
+      padding: 20px;
+      /* border-radius: 16px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); */
+      text-align: center;
+      margin:auto;
+
     }
 
-    .full-width-page {
-        width: 100% !important;
-        padding: 0 20px !important;
-        box-sizing: border-box !important;
+    .card-form h2 {
+      margin-bottom: 20px;
+      font-size: 1.5rem;
+      color: #333;
     }
 
-    .product-form-container {
-        width: 100% !important;
-        max-width: 100% !important;
-        margin: 0 auto !important;
-        /* background: #fff !important; */
-        padding: 40px 30px !important;
-        border-radius: 0 !important;
-        box-shadow: none !important;
+    .image-upload {
+      position: relative;
+      max-width:100%;
+      width: 100%;
+      height: 200px;
+      border: 2px dashed #ccc;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 15px;
+      overflow: hidden;
+      cursor: pointer;
+      transition: 0.3s;
     }
 
-    .product-form-container h2 {
-        text-align: left !important;
-        color: #222 !important;
-        font-size: 28px !important;
-        margin-bottom: 30px !important;
+    .image-upload:hover {
+      border-color: #777;
     }
 
-    .product-form-container label {
-        display: block !important;
-        margin-bottom: 6px !important;
-        color: #333 !important;
-        font-weight: 600 !important;
+    .image-upload img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: none;
     }
 
-    .product-form-container input,
-    .product-form-container select,
-    .product-form-container textarea {
-        width: 100% !important;
-        padding: 12px 16px !important;
-        margin-bottom: 20px !important;
-        border: 1px solid #ccc !important;
-        border-radius: 6px !important;
-        background: #f9fafc !important;
-        font-size: 16px !important;
+    .image-upload span {
+      font-size: 1rem;
+      color: #888;
     }
 
-    .product-form-container textarea {
-        resize: vertical !important;
-        min-height: 100px !important;
+    input[type="file"] {
+      display: none;
     }
 
-    .product-form-container button {
-        background-color: #ffcc00 !important;
-        border: none !important;
-        color: #000 !important;
-        padding: 14px 24px !important;
-        font-size: 16px !important;
-        font-weight: 700 !important;
-        border-radius: 6px !important;
-        cursor: pointer !important;
-        width: 100% !important;
-        transition: background 0.3s ease !important;
-        text-align: center;
+    .form-group {
+      text-align: left;
+      margin-bottom: 15px;
     }
 
-    .product-form-container button:hover {
-        background-color: #e6b800 !important;
+    .form-group label {
+      display: block;
+      font-weight: bold;
+      margin-bottom: 5px;
+      color: #555;
     }
-</style>
 
-<div class="full-width-page">
-    <div class="product-form-container">
-        <h2>Add Product</h2>
-        <form action="save-product.php" method="post" enctype="multipart/form-data">
-            <label for="product_image">Product Image</label>
-            <input type="file" id="product_image" name="product_image" accept="image/*" required>
+    .form-group input[type="text"],
+    .form-group input[type="email"] {
+      width: 100%;
+      padding: 10px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      outline: none;
+      transition: 0.3s;
+    }
 
-            <label for="product_name">Product Name</label>
-            <input type="text" id="product_name" name="product_name" required>
+    .form-group input:focus {
+      border-color: #5b9bd5;
+    }
 
-            <label for="sku">SKU</label>
-            <input type="text" id="sku" name="sku" placeholder="e.g., PRO-12345" required>
+    .submit-btn{
+        width:200px;
+        margin:auto;
+    }
+  </style>
+<?php
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
 
-            <label for="category">Category</label>
-            <select id="category" name="category" required>
-                <option value="">-- Select Category --</option>
-                <option value="electronics">Electronics</option>
-                <option value="fashion">Fashion</option>
-                <option value="home">Home & Kitchen</option>
-                <option value="books">Books</option>
-            </select>
+if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+    $name = $_POST['name'];
+    $subtitle = $_POST['subtitle'];
+    $price = $_POST['price'];
+    $description = $_POST['description'];
+    $category = $_POST['category'];
+    $tags = $_POST['tags'];
+    $created_at = date("Y-m-d H:i:s");
 
-            <label for="description">Description</label>
-            <textarea id="description" name="description" required></textarea>
+    // Image upload
+    $product_image = '';
+    if (isset($_FILES['product_image']) && $_FILES['product_image']['error'] == 0) {
+        $target_dir = "uploads/products/";
+        if (!is_dir($target_dir)) {
+            mkdir($target_dir, 0777, true);  // create directory if it doesn't exist
+        }
 
-            <label for="price">Price ($)</label>
-            <input type="number" id="price" name="price" step="0.01" required>
+        $file_name = time() . '_' . basename($_FILES["product_image"]["name"]);
+        $target_file = $target_dir . $file_name;
+        $imageFileType = strtolower(pathinfo($target_file, PATHINFO_EXTENSION));
 
-            <label for="sale_price">Sale Price ($)</label>
-            <input type="number" id="sale_price" name="sale_price" step="0.01">
+        // Validate file type (only images)
+        $allowed_types = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+        if (in_array($imageFileType, $allowed_types)) {
+            if (move_uploaded_file($_FILES["product_image"]["tmp_name"], $target_file)) {
+                $product_image = $file_name;  // Save file name in DB
+            } else {
+                echo "<script>alert('Failed to upload image.'); window.history.back();</script>";
+                exit;
+            }
+        } else {
+            echo "<script>alert('Invalid file type. Allowed: JPG, PNG, GIF, WEBP.'); window.history.back();</script>";
+            exit;
+        }
+    } else {
+        echo "<script>alert('Please upload a product image.'); window.history.back();</script>";
+        exit;
+    }
 
-            <label for="stock">Stock Quantity</label>
-            <input type="number" id="stock" name="stock" required>
+    // Insert into database
+    $stmt = $conn->prepare("INSERT INTO products (name, subtitle, price, description, category, tags, product_image, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+    $stmt->bind_param("ssssssss", $name, $subtitle, $price, $description, $category, $tags, $product_image, $created_at);
 
-            <label for="tags">Tags (comma-separated)</label>
-            <input type="text" id="tags" name="tags" placeholder="e.g., new, featured, summer">
+    if ($stmt->execute()) {
+        echo "<script>
+            Swal.fire({
+                title: 'Success!',
+                text: 'Product saved successfully.',
+                confirmButtonText: 'OK'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    window.location.href = 'view-about.php';
+                }
+            });
+        </script>";
+    } else {
+        echo "<script>alert('Error: " . $stmt->error . "'); window.history.back();</script>";
+    }
+}
+?>
 
-            <label for="status">Status</label>
-            <select id="status" name="status" required>
-                <option value="published">Published</option>
-                <option value="draft">Draft</option>
-            </select>
+<div class="dashboard-main-body">
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-24">
+        <h6 class="fw-semibold mb-0">Add Product</h6>
+    </div>
 
-            <button type="submit">Buy Now</button>
-        </form>
+    <div class="card h-100 p-0 radius-12">
+        <div class="card-body p-24">
+            <div class="row justify-content-center">
+                <div class="col-xxl-12 col-xl-8 col-lg-10">
+                    <form method="POST" enctype="multipart/form-data" class="row gy-3 needs-validation card-form" novalidate>
+                        <input type="file" id="file-input" accept="image/*" name="product_image">
+                        <label class="image-upload" for="file-input">
+                        <span>Click or Drag Image Here</span>
+                        <img id="preview" alt="Preview Image">
+                        </label>
+                        <input type="file" id="file-input" accept="image/*">
+                        <!-- Text Fields -->
+                        <div class="form-group mb-2">
+                            <label for="name">Product Name</label>
+                            <input type="text" id="name" name="name" class="form-control radius-8" required>
+                        </div>
+                        <div class="form-group mb-2">
+                            <label class="form-label">Product Subtitle</label>
+                            <input type="text" name="subtitle" class="form-control radius-8" required>
+                        </div>
+                        <div class="form-group mb-2">
+                            <label class="form-label">Product Description</label>
+                            <input type="text" name="description" class="form-control radius-8" required>
+                        </div>
+                       
+                        <div class="form-group mb-2">
+                            <label class="form-label">Price</label>
+                            <input type="text" name="price" class="form-control radius-8" required>
+                        </div>
+
+                        <div class="form-group mb-2">
+                            <label class="form-label">Category</label>
+                            <input type="text" name="category" class="form-control radius-8" required>
+                        </div>
+                        <div class="form-group mb-2">
+                            <label class="form-label">Tags</label>
+                            <input type="text" name="tags" class="form-control radius-8" required>
+                        </div>
+                        <!-- Submit Button -->
+                        <button type="submit" class="lufera-bg text-center text-white text-sm btn-sm px-12 py-10 radius-8 mt-28 submit-btn">Submit</button>
+                    </form>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
+<script>
+    const fileInput = document.getElementById('file-input');
+    const preview = document.getElementById('preview');
+    const uploadLabel = document.querySelector('.image-upload span');
 
-
+    fileInput.addEventListener('change', function() {
+      const file = this.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          preview.style.display = 'block';
+          preview.setAttribute('src', e.target.result);
+          uploadLabel.style.display = 'none';
+        }
+        reader.readAsDataURL(file);
+      } else {
+        preview.style.display = 'none';
+        uploadLabel.style.display = 'block';
+      }
+    });
+  </script>
 <?php include './partials/layouts/layoutBottom.php' ?>
