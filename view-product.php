@@ -5,10 +5,10 @@
     </style>
     <?php
     include './partials/layouts/layoutTop.php';
-    $query = "SELECT id, name, price, product_image FROM products";
+    $category_id = isset($_GET['product_category']) ? intval($_GET['product_category']) : 0;
+    $query = "SELECT id, name, price, product_image FROM products where cat_id = $category_id";
     $result = $conn ->query($query);
     ?>
-
     <div class="dashboard-main-body">
         <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-24">
             <h6 class="fw-semibold mb-0">Products</h6>
