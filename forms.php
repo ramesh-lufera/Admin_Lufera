@@ -438,7 +438,7 @@
         }
 
         echo '<div class="input-group">';
-        echo '<input type="text" class="form-control wizard-required" id="' . $inputId . '" name="' . htmlspecialchars($fieldName) . '" autocomplete="off" placeholder="' . htmlspecialchars($placeholder) . '" value="' . htmlspecialchars($val) . '" ' . $isReadonly . '>';
+        echo '<input type="text" class="form-control" id="' . $inputId . '" name="' . htmlspecialchars($fieldName) . '" autocomplete="off" placeholder="' . htmlspecialchars($placeholder) . '" value="' . htmlspecialchars($val) . '" ' . $isReadonly . '>';
 
         // Admin/developer buttons
         if (in_array($user_role, [1, 2, 7])) {
@@ -450,15 +450,42 @@
             echo '<span class="input-group-text text-success">&#10004;</span>';
         } elseif ($status === 'rejected') {
             echo '<span class="input-group-text text-danger">&#10006;</span>';
-            echo '<span class="input-group-text text-warning">&#9998;</span>';
+            // echo '<span class="input-group-text text-warning">&#9998;</span>';
+            echo '<button type="button" class="input-group-text text-warning edit-btn" title="Edit" data-field="' . htmlspecialchars($fieldName) . '" data-value="' . htmlspecialchars($val) . '">&#9998;</button>';
         }
 
         echo '</div>'; // .input-group
         echo '</div>'; // .form-group
     }
+
+    if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['edit_field'], $_POST['edit_value'])) {
+        $field = $_POST['edit_field'];
+        $value = $_POST['edit_value'];
+        $user_id = $_SESSION['user_id'];
+        $website_id = $_GET['id'] ?? 0;
+
+        $check = $conn->prepare("SELECT id, name FROM json WHERE user_id = ? AND website_id = ?");
+        $check->bind_param("ii", $user_id, $website_id);
+        $check->execute();
+        $result = $check->get_result();
+        $row = $result->fetch_assoc();
+        $jsonData = json_decode($row['name'], true) ?? [];
+
+        $jsonData[$field]['value'] = $value;
+        $jsonData[$field]['status'] = 'pending';
+
+        $newJson = json_encode($jsonData);
+
+        $update = $conn->prepare("UPDATE json SET name = ? WHERE id = ?");
+        $update->bind_param("si", $newJson, $row['id']);
+        $update->execute();
+
+        exit;
+    }
 ?>
 
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <div class="dashboard-main-body">
     <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-24">
@@ -475,15 +502,15 @@
         </ul> -->
     </div>
 
-    <div class="card h-100 p-0 radius-12 overflow-hidden">
-                
+    <div class="card h-100 p-0 radius-12 overflow-hidden">               
                 <div class="card-body p-40">
                     <!-- Progress Bar -->
-    <div class="progress mb-4">
-        <div class="progress-bar bg-success" role="progressbar" style="width: <?= $progress_percentage ?>%;" aria-valuenow="<?= $progress_percentage ?>" aria-valuemin="0" aria-valuemax="100">
-            <?= $progress_percentage ?>% Complete
-        </div>
-    </div>
+                    <div class="progress mb-4">
+                        <div class="progress-bar bg-success" role="progressbar" style="width: <?= $progress_percentage ?>%;" aria-valuenow="<?= $progress_percentage ?>" aria-valuemin="0" aria-valuemax="100">
+                            <?= $progress_percentage ?>% Complete
+                        </div>
+                    </div>
+                    
                     <div class="row justify-content-center">
                         <div class="col-xxl-10">
                         <section class="wizard-section">
@@ -504,7 +531,9 @@
                                                     <li><span>8</span></li>
                                                 </ul>
                                             </div>
+                                            
                                             <input type="submit" name="save" class="form-wizard-submit" value="Submit" style="float:right">
+                                            
                                             <fieldset class="wizard-fieldset show">
                                                 <h5>Personal Information</h5>
                                                     <?php
@@ -521,255 +550,234 @@
                                                     <a href="javascript:;" class="form-wizard-next-btn float-right">Next</a>
                                                 </div>
                                             </fieldset> 
+
                                             <fieldset class="wizard-fieldset">
-                                                    <h5>Project Description</h5>
-                                                        <div class="form-group">
-                                                            <label>What is the primary purpose of this website? </label>
-                                                            <?php
-                                                            $purposes = ['E-commerce', 'Portfolio', 'Blog', 'Business website'];
-                                                            foreach ($purposes as $i => $purpose) {
-                                                                $id = 'purpose_' . $i;
-                                                                echo '<div class="wizard-form-radio">';
-                                                                echo "<input name=\"purpose\" id=\"$id\" type=\"radio\" value=\"$purpose\">";
-                                                                echo "<label for=\"$id\">$purpose</label>";
-                                                                echo '</div>';
-                                                            }
-                                                            ?>
-                                                        </div>
-                                                        <?php
-                                                            renderField('business', $savedData, $user_role, 'Describe your business, products, or services');
-                                                        ?>
-                                                        <div class="form-group">
-                                                            <label>What are your goals for this website?</label>
-                                                            <select class="form-control" name="goals">
-                                                                <option value="Increase sales">Increase sales</option>
-                                                                <option value="Generate leads">Generate leads</option>
-                                                                <option value="Improve brand awareness">Improve brand awareness</option>
-                                                            </select>
-                                                        </div>
-                                                        <?php
-                                                            renderField('vision', $savedData, $user_role, 'Do you have a specific vision or style in mind for the website?');
-                                                        ?>
+                                                <h5>Project Description</h5>
+
+                                                <!-- Purpose Radio Field -->
+                                                <div class="form-group">
+                                                    <label>What is the primary purpose of this website?</label>
+                                                    <?php
+                                                    $purposes = ['E-commerce', 'Portfolio', 'Blog', 'Business website'];
+                                                    $selectedPurpose = $savedData['purpose']['value'] ?? '';
+                                                    $purposeStatus = $savedData['purpose']['status'] ?? 'pending';
+                                                    $readonly = in_array($user_role, [1, 2, 7]);
+
+                                                    foreach ($purposes as $i => $purpose) {
+                                                        $id = 'purpose_' . $i;
+                                                        $checked = ($selectedPurpose === $purpose) ? 'checked' : '';
+                                                        $disabled = $readonly ? 'disabled' : '';
+
+                                                        echo '<div class="wizard-form-radio">';
+                                                        echo "<input type=\"radio\" name=\"purpose\" id=\"$id\" value=\"$purpose\" $checked $disabled>";
+                                                        echo "<label for=\"$id\">$purpose</label>";
+                                                        echo '</div>';
+                                                    }
+
+                                                    // Admin/developer approve/reject
+                                                    if ($readonly) {
+                                                        echo '<div class="mt-2">';
+                                                        echo '<button type="button" class="btn btn-success btn-sm approve-btn" data-field="purpose">&#10004;</button>';
+                                                        echo '<button type="button" class="btn btn-danger btn-sm reject-btn" data-field="purpose">&#10006;</button>';
+                                                        echo '</div>';
+                                                    } elseif ($purposeStatus === 'approved') {
+                                                        echo '<span class="input-group-text text-success">&#10004;</span>';
+                                                    } elseif ($purposeStatus === 'rejected') {
+                                                        echo '<span class="input-group-text text-danger">&#10006;</span>';
+                                                        echo '<button type="button" class="btn btn-warning btn-sm edit-btn ms-1" data-field="purpose" data-value="' . htmlspecialchars($selectedPurpose) . '">&#9998;</button>';
+                                                    }
+                                                    ?>
+                                                </div>
+
+                                                <!-- Business Description -->
+                                                <?php
+                                                    renderField('business', $savedData, $user_role, 'Describe your business, products, or services');
+                                                ?>
+
+                                                <!-- Goals Dropdown -->
+                                                <div class="form-group">
+                                                    <label>What are your goals for this website?</label>
+                                                    <?php
+                                                    $goals = ['Increase sales', 'Generate leads', 'Improve brand awareness'];
+                                                    $selectedGoal = $savedData['goals']['value'] ?? '';
+                                                    $goalStatus = $savedData['goals']['status'] ?? 'pending';
+
+                                                    echo '<select class="form-control" name="goals" ' . ($readonly ? 'disabled' : '') . '>';
+                                                    foreach ($goals as $goal) {
+                                                        $selected = ($selectedGoal === $goal) ? 'selected' : '';
+                                                        echo "<option value=\"$goal\" $selected>$goal</option>";
+                                                    }
+                                                    echo '</select>';
+
+                                                    if ($readonly) {
+                                                        echo '<div class="mt-2">';
+                                                        echo '<button type="button" class="btn btn-success btn-sm approve-btn" data-field="goals">&#10004;</button>';
+                                                        echo '<button type="button" class="btn btn-danger btn-sm reject-btn" data-field="goals">&#10006;</button>';
+                                                        echo '</div>';
+                                                    } elseif ($goalStatus === 'approved') {
+                                                        echo '<span class="input-group-text text-success">&#10004;</span>';
+                                                    } elseif ($goalStatus === 'rejected') {
+                                                        echo '<span class="input-group-text text-danger">&#10006;</span>';
+                                                        echo '<button type="button" class="btn btn-warning btn-sm edit-btn ms-1" data-field="goals" data-value="' . htmlspecialchars($selectedGoal) . '">&#9998;</button>';
+                                                    }
+                                                    ?>
+                                                </div>
+
+                                                <!-- Vision Field -->
+                                                <?php
+                                                    renderField('vision', $savedData, $user_role, 'Do you have a specific vision or style in mind for the website?');
+                                                ?>
+
+                                                <!-- Wizard Navigation Buttons -->
                                                 <div class="form-group clearfix">
                                                     <a href="javascript:;" class="form-wizard-previous-btn float-left">Previous</a>
                                                     <a href="javascript:;" class="form-wizard-next-btn float-right">Next</a>
                                                 </div>
-                                            </fieldset> 
+                                            </fieldset>
+
                                             <fieldset class="wizard-fieldset">
                                                 <h5>Target Audience</h5>
-                                                <div class="form-group">
-                                                <label for="bname" class="">Who is your target audience? (e.g., age, demographics, interests)</label>
-                                                    <input type="text" class="form-control " id="bname" name="target">
-                                                    
-                                                    <div class="wizard-form-error"></div>
-                                                </div>
-                                                <div class="form-group">
-                                                    <label class="">What are their needs and expectations from your website? </label>
-                                                    <textarea  class="form-control" id="lname" name="expectations"></textarea>
-                                                    <div class="wizard-form-error"></div>
-                                                </div>
-                                                <div class="form-group">
-                                                    <label class="">Do you have any user personas or customer journey maps?</label>
-                                                    <textarea  class="form-control" id="lname" name="personas"></textarea>
-                                                    <div class="wizard-form-error"></div>
-                                                </div>
+
+                                                <?php
+                                                    renderField('target', $savedData, $user_role, 'Who is your target audience? (e.g., age, demographics, interests)');
+                                                    renderField('expectations', $savedData, $user_role, 'What are their needs and expectations from your website?');
+                                                    renderField('personas', $savedData, $user_role, 'Do you have any user personas or customer journey maps?');
+                                                ?>
+
                                                 <div class="form-group clearfix">
                                                     <a href="javascript:;" class="form-wizard-previous-btn float-left">Previous</a>
                                                     <a href="javascript:;" class="form-wizard-next-btn float-right">Next</a>
                                                 </div>
-                                            </fieldset> 
+                                            </fieldset>
+
                                             <fieldset class="wizard-fieldset">
                                                 <h5>Content</h5>
-                                                <div class="form-group">
-                                                <label for="fname" class="">Do you have existing content for the website?</label>    
-                                                    <input type="text" class="form-control " id="fname" name="ex_content">
-                                                    <div class="wizard-form-error"></div>
-                                                </div>
-                                                <div class="form-group">
-                                                <label for="fname" class="">Will you be providing all the content, or will you need assistance with copywriting or content creation?</label>    
-                                                    <input type="text" class="form-control " id="fname" name="copywriting">
-                                                    <div class="wizard-form-error"></div>
-                                                </div>
-                                                <div class="form-group">
-                                                <label for="fname" class="">Do you have a site map or page structure in mind?</label>    
-                                                    <input type="text" class="form-control " id="fname" name="sitemap">
-                                                    <div class="wizard-form-error"></div>
-                                                </div>
-                                                <div class="form-group">
-                                                <label for="fname" class="">Are there any specific content requirements?</label>    
-                                                    <input type="text" class="form-control " id="fname" name="sp_content">
-                                                    <div class="wizard-form-error"></div>
-                                                </div>
+
+                                                <?php
+                                                    renderField('ex_content', $savedData, $user_role, 'Do you have existing content for the website?');
+                                                    renderField('copywriting', $savedData, $user_role, 'Will you be providing all the content, or will you need assistance with copywriting or content creation?');
+                                                    renderField('sitemap', $savedData, $user_role, 'Do you have a site map or page structure in mind?');
+                                                    renderField('sp_content', $savedData, $user_role, 'Are there any specific content requirements?');
+                                                ?>
+
                                                 <div class="form-group clearfix">
                                                     <a href="javascript:;" class="form-wizard-previous-btn float-left">Previous</a>
                                                     <a href="javascript:;" class="form-wizard-next-btn float-right">Next</a>
                                                 </div>
-                                            </fieldset> 
+                                            </fieldset>
+
                                             <fieldset class="wizard-fieldset">
                                                 <h5>Design and Functionality</h5>
-                                                <div class="form-group">
-                                                <label for="fname" class="">Do you have any design preferences?(e.g., minimalist, modern, classic)</label>    
-                                                    <input type="text" class="form-control " id="fname" name="design">
-                                                    <div class="wizard-form-error"></div>
-                                                </div>
-                                                <div class="form-group">
-                                                <label for="fname" class="">Are there any websites you like or dislike? Please provide examples:</label>    
-                                                    <input type="text" class="form-control " id="fname" name="like">
-                                                    <div class="wizard-form-error"></div>
-                                                </div>
-                                                <div class="form-group">
-                                                <label for="fname" class="">Do you have a logo and branding guidelines?</label>    
-                                                    <input type="text" class="form-control " id="fname" name="brand">
-                                                    <div class="wizard-form-error"></div>
-                                                </div>
-                                                <div class="form-group">
-                                                <label for="fname" class="">What key features and functionalities do you need? (e.g., e-commerce, contact form, social media integration, CMS)</label>    
-                                                    <input type="text" class="form-control " id="fname" name="features">
-                                                    <div class="wizard-form-error"></div>
-                                                </div>
-                                                <div class="form-group">
-                                                <label for="fname" class="">Is there any specific functionality you want? </label>    
-                                                    <input type="text" class="form-control " id="fname" name="functionality">
-                                                    <div class="wizard-form-error"></div>
-                                                </div>
-                                                <div class="form-group">
-                                                <label for="fname" class="">Do you require the website to be responsive (mobile-friendly)?</label>    
-                                                    <input type="text" class="form-control " id="fname" name="responsive">
-                                                    <div class="wizard-form-error"></div>
-                                                </div>
-                                                <div class="form-group">
-                                                <label for="fname" class="">Do you have any specific technical requirements? (e.g., CMS, hosting, domain)</label>    
-                                                    <input type="text" class="form-control " id="fname" name="technical">
-                                                    <div class="wizard-form-error"></div>
-                                                </div>
+
+                                                <?php
+                                                    renderField('design', $savedData, $user_role, 'Do you have any design preferences? (e.g., minimalist, modern, classic)');
+                                                    renderField('like', $savedData, $user_role, 'Are there any websites you like or dislike? Please provide examples:');
+                                                    renderField('brand', $savedData, $user_role, 'Do you have a logo and branding guidelines?');
+                                                    renderField('features', $savedData, $user_role, 'What key features and functionalities do you need? (e.g., e-commerce, contact form, social media integration, CMS)');
+                                                    renderField('functionality', $savedData, $user_role, 'Is there any specific functionality you want?');
+                                                    renderField('responsive', $savedData, $user_role, 'Do you require the website to be responsive (mobile-friendly)?');
+                                                    renderField('technical', $savedData, $user_role, 'Do you have any specific technical requirements? (e.g., CMS, hosting, domain)');
+                                                ?>
+
                                                 <div class="form-group clearfix">
                                                     <a href="javascript:;" class="form-wizard-previous-btn float-left">Previous</a>
                                                     <a href="javascript:;" class="form-wizard-next-btn float-right">Next</a>
-                                                    
                                                 </div>
-                                            </fieldset> 
+                                            </fieldset>
+
                                             <fieldset class="wizard-fieldset">
                                                 <h5>Technical Requirements</h5>
+
                                                 <div class="form-group">
                                                     <label>Do you have a domain name?</label>
-
                                                     <div class="wizard-form-radio">
-                                                        <input name="domain" id="domain_yes" type="radio" value="yes">
+                                                        <input name="domain" id="domain_yes" type="radio" value="yes" <?= ($savedData['domain']['value'] ?? '') === 'yes' ? 'checked' : '' ?>>
                                                         <label for="domain_yes">Yes</label>
-                                                    </div> 
+                                                    </div>
                                                     <div class="wizard-form-radio">
-                                                        <input name="domain" id="domain_no" type="radio" value="no">
+                                                        <input name="domain" id="domain_no" type="radio" value="no" <?= ($savedData['domain']['value'] ?? '') === 'no' ? 'checked' : '' ?>>
                                                         <label for="domain_no">No</label>
-                                                    </div>    
+                                                    </div>
 
-                                                    <div id="domain-input-wrapper" class="form-group" style="display: none;">
-                                                        <label>If yes, please provide</label>
-                                                        <input type="text" class="form-control" id="fname" name="domain_yes">
-                                                        <div class="wizard-form-error"></div>
+                                                    <div id="domain-input-wrapper" class="form-group" style="<?= ($savedData['domain']['value'] ?? '') === 'yes' ? '' : 'display:none;' ?>">
+                                                        <?php renderField('domain_yes', $savedData, $user_role, 'If yes, please provide'); ?>
                                                     </div>
                                                 </div>
 
                                                 <div class="form-group">
-                                                    <label >Do you have hosting?</label>
-
+                                                    <label>Do you have hosting?</label>
                                                     <div class="wizard-form-radio">
-                                                        <input name="hosting" id="hosting_yes" type="radio" value="yes">
+                                                        <input name="hosting" id="hosting_yes" type="radio" value="yes" <?= ($savedData['hosting']['value'] ?? '') === 'yes' ? 'checked' : '' ?>>
                                                         <label for="hosting_yes">Yes</label>
-                                                    </div> 
+                                                    </div>
                                                     <div class="wizard-form-radio">
-                                                        <input name="hosting" id="hosting_no" type="radio" value="no">
+                                                        <input name="hosting" id="hosting_no" type="radio" value="no" <?= ($savedData['hosting']['value'] ?? '') === 'no' ? 'checked' : '' ?>>
                                                         <label for="hosting_no">No</label>
-                                                    </div>    
+                                                    </div>
 
-                                                    <div id="domain-input-wrapper2" class="form-group" style="display: none;">
-                                                        <label>If yes, please provide</label>
-                                                        <input type="text" class="form-control" id="hosting" name="hosting_yes">
-                                                        <div class="wizard-form-error"></div>
+                                                    <div id="domain-input-wrapper2" class="form-group" style="<?= ($savedData['hosting']['value'] ?? '') === 'yes' ? '' : 'display:none;' ?>">
+                                                        <?php renderField('hosting_yes', $savedData, $user_role, 'If yes, please provide'); ?>
                                                     </div>
                                                 </div>
 
-                                                <div class="form-group">
-                                                <label for="fname" class="">Do you have any preferences for a CMS? (e.g., WordPress, Shopify, Webflow, etc.)</label>    
-                                                    <input type="text" class="form-control " id="fname">
-                                                    <div class="wizard-form-error"></div>
-                                                </div>
+                                                <?php renderField('cms', $savedData, $user_role, 'Do you have any preferences for a CMS? (e.g., WordPress, Shopify, Webflow, etc.)'); ?>
 
                                                 <div class="form-group">
-                                                    <label >Will the website require e-commerce functionality?</label>
-
+                                                    <label>Will the website require e-commerce functionality?</label>
                                                     <div class="wizard-form-radio">
-                                                        <input name="e_commerce" type="radio" id="e_commerce_yes" value="yes">
-                                                        <label>Yes</label>
-                                                    </div> 
+                                                        <input name="e_commerce" id="e_commerce_yes" type="radio" value="yes" <?= ($savedData['e_commerce']['value'] ?? '') === 'yes' ? 'checked' : '' ?>>
+                                                        <label for="e_commerce_yes">Yes</label>
+                                                    </div>
                                                     <div class="wizard-form-radio">
-                                                        <input name="e_commerce" type="radio" id="e_commerce_no" value="no">
-                                                        <label>No</label>
-                                                    </div>    
+                                                        <input name="e_commerce" id="e_commerce_no" type="radio" value="no" <?= ($savedData['e_commerce']['value'] ?? '') === 'no' ? 'checked' : '' ?>>
+                                                        <label for="e_commerce_no">No</label>
+                                                    </div>
 
-                                                    <div id="domain-input-wrapper3" class="form-group" style="display: none;">
-                                                        <label>If yes, which payment gateway would you prefer? (e.g., Stripe, PayPal)</label>
-                                                        <input type="text" class="form-control" id="e_commerce" name="e_commerce_yes">
-                                                        <div class="wizard-form-error"></div>
+                                                    <div id="domain-input-wrapper3" class="form-group" style="<?= ($savedData['e_commerce']['value'] ?? '') === 'yes' ? '' : 'display:none;' ?>">
+                                                        <?php renderField('e_commerce_yes', $savedData, $user_role, 'If yes, which payment gateway would you prefer? (e.g., Stripe, PayPal)'); ?>
                                                     </div>
                                                 </div>
-                                                
-                                                <div class="form-group">
-                                                <label for="fname" class="">Do you have any specific security requirements? </label>    
-                                                    <input type="text" class="form-control " id="fname">
-                                                    <div class="wizard-form-error"></div>
-                                                </div>
-                                                <div class="form-group">
-                                                <label for="fname" class="">Do you need any integrations with third-party tools?</label>    
-                                                    <input type="text" class="form-control " id="fname">
-                                                    <div class="wizard-form-error"></div>
-                                                </div>
+
+                                                <?php
+                                                    renderField('security', $savedData, $user_role, 'Do you have any specific security requirements?');
+                                                    renderField('integrations', $savedData, $user_role, 'Do you need any integrations with third-party tools?');
+                                                ?>
+
                                                 <div class="form-group clearfix">
                                                     <a href="javascript:;" class="form-wizard-previous-btn float-left">Previous</a>
                                                     <a href="javascript:;" class="form-wizard-next-btn float-right">Next</a>
-                                                    
                                                 </div>
-                                            </fieldset> 
+                                            </fieldset>
+
                                             <fieldset class="wizard-fieldset">
                                                 <h5>Timeline and Budget</h5>
-                                                <div class="form-group">
-                                                <label class="">What is your timeline for the project? When would you like the website to be launched?</label>    
-                                                    <input type="text" class="form-control " name="timeline">
-                                                    <div class="wizard-form-error"></div>
-                                                </div>
-                                                <div class="form-group">
-                                                <label class="">What is your budget for the project?</label>    
-                                                    <input type="text" class="form-control " name="budget">
-                                                    <div class="wizard-form-error"></div>
-                                                </div>
-                                                <div class="form-group">
-                                                <label class="">Are there any milestones or deadlines we should be aware of?</label>    
-                                                    <input type="text" class="form-control " name="deadline">
-                                                    <div class="wizard-form-error"></div>
-                                                </div>
+
+                                                <?php
+                                                    renderField('timeline', $savedData, $user_role, 'What is your timeline for the project? When would you like the website to be launched?');
+                                                    renderField('budget', $savedData, $user_role, 'What is your budget for the project?');
+                                                    renderField('deadline', $savedData, $user_role, 'Are there any milestones or deadlines we should be aware of?');
+                                                ?>
+
                                                 <div class="form-group clearfix">
                                                     <a href="javascript:;" class="form-wizard-previous-btn float-left">Previous</a>
                                                     <a href="javascript:;" class="form-wizard-next-btn float-right">Next</a>
-                                                    
                                                 </div>
-                                            </fieldset> 
+                                            </fieldset>
+
                                             <fieldset class="wizard-fieldset">
                                                 <h5>Maintenance and Support</h5>
-                                                <div class="form-group">
-                                                <label class="">Will you require ongoing maintenance and support for the website?</label>    
-                                                    <input type="text" class="form-control " name="maintenance">
-                                                    <div class="wizard-form-error"></div>
-                                                </div>
-                                                <div class="form-group">
-                                                <label class="">Are there any specific support requirements or service-level agreements (SLAs)?</label>    
-                                                    <input type="text" class="form-control " name="support">
-                                                    <div class="wizard-form-error"></div>
-                                                </div>
+
+                                                <?php
+                                                    renderField('maintenance', $savedData, $user_role, 'Will you require ongoing maintenance and support for the website?');
+                                                    renderField('support', $savedData, $user_role, 'Are there any specific support requirements or service-level agreements (SLAs)?');
+                                                ?>
+
                                                 <div class="form-group clearfix">
                                                     <a href="javascript:;" class="form-wizard-previous-btn float-left">Previous</a>
+                                                    <!-- Final step: You can enable submit below if needed -->
                                                     <!-- <a href="javascript:;" class="form-wizard-submit float-right">Submit</a> -->
-
                                                 </div>
-                                            </fieldset> 
+                                            </fieldset>
                                         </form>
                                     </div>
                                 </div>
@@ -779,6 +787,99 @@
                     </div>
                 </div>
             </div>
+</div>
+
+<style>
+    .modal {
+        position: fixed;
+        z-index: 1050;
+        top: 0; left: 0;
+        width: 100%; height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        display: none;
+        align-items: center;
+        justify-content: center;
+    }
+    .modal-content {
+        background: #fff;
+        padding: 25px 20px;
+        border-radius: 8px;
+        width: 100%;
+        max-width: 400px;
+        box-shadow: 0 5px 25px rgba(0, 0, 0, 0.2);
+        position: relative;
+    }
+    .close-btn {
+        position: absolute;
+        right: 15px;
+        top: 12px;
+        font-size: 20px;
+        cursor: pointer;
+        color: #aaa;
+    }
+    .close-btn:hover {
+        color: #000;
+    }
+    h5 {
+       font-size: 1.25rem !important;
+    }
+</style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        let currentField = '';
+        const modal = document.getElementById('editModal');
+        const editInput = document.getElementById('editInput');
+        const saveBtn = document.getElementById('saveEditBtn');
+        const closeBtn = document.querySelector('.close-btn');
+
+        // Open modal
+        document.querySelectorAll('.edit-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                currentField = btn.dataset.field;
+                editInput.value = btn.dataset.value;
+                modal.style.display = 'flex';
+            });
+        });
+
+        // Save edit
+        saveBtn.addEventListener('click', () => {
+            const newValue = editInput.value;
+
+            fetch('', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                body: `edit_field=${encodeURIComponent(currentField)}&edit_value=${encodeURIComponent(newValue)}`
+            })
+            .then(res => res.text())
+            .then(() => {
+                modal.style.display = 'none';
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Updated!',
+                    text: 'Your changes have been updated.',
+                    confirmButtonColor: '#ffc107'
+                }).then(() => {
+                    location.reload(); // Reload after confirmation
+                });
+            });
+        });
+
+        // Close modal
+        closeBtn.addEventListener('click', () => modal.style.display = 'none');
+        window.addEventListener('click', (e) => {
+            if (e.target === modal) modal.style.display = 'none';
+        });
+    });
+</script>
+
+<div id="editModal" class="modal" style="display:none;">
+    <div class="modal-content">
+        <span class="close-btn" title="Close">&times;</span>
+        <h5 class="mb-3">Edit Field</h5>
+        <input type="text" id="editInput" class="form-control mb-3" />
+        <button type="button" class="btn lufera-bg btn-warning w-100" id="saveEditBtn">Save</button>
+    </div>
 </div>
 
 <script>
