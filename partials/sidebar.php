@@ -690,7 +690,7 @@
                                     </div>
                                     <div class="d-flex gap-2">
                                     <button type="button" class="btn btn-sm btn-upgrade">Upgrade</button>
-                                        <a href="$catSlug-wizard.php?id=<?= \$websiteId ?>"><button type="button" class="btn btn-sm btn-edit-website">Wizard</button></a>
+                                        <a href="$catSlug1-wizard.php?id=<?= \$websiteId ?>"><button type="button" class="btn btn-sm btn-edit-website">Wizard</button></a>
                                     </div>
                                 </div>
 
@@ -932,7 +932,7 @@
                                     </div>
                                     <div class="d-flex gap-2">
                                     <button type="button" class="btn btn-sm btn-upgrade">Upgrade</button>
-                                        <a href="$catSlug-wizard.php?id=<?= \$websiteId ?>"><button type="button" class="btn btn-sm btn-edit-website">Wizard</button></a>
+                                        <a href="$catSlug1-wizard.php?id=<?= \$websiteId ?>"><button type="button" class="btn btn-sm btn-edit-website">Wizard</button></a>
                                     </div>
                                 </div>
 
@@ -1174,7 +1174,7 @@
                                     </div>
                                     <div class="d-flex gap-2">
                                     <button type="button" class="btn btn-sm btn-upgrade">Upgrade</button>
-                                        <a href="$catSlug-wizard.php?id=<?= \$websiteId ?>"><button type="button" class="btn btn-sm btn-edit-website">Wizard</button></a>
+                                        <a href="$catSlug1-wizard.php?id=<?= \$websiteId ?>"><button type="button" class="btn btn-sm btn-edit-website">Wizard</button></a>
                                     </div>
                                 </div>
 
@@ -1644,6 +1644,7 @@
             $view_file_path1 = dirname(__DIR__) . '/' . $view_file_name1;
 
             $view_content1 = <<<PHP
+                <?php \$_GET['product_category'] = $category_id; ?>
                 <?php include './view-product.php'; ?>
             PHP;
 

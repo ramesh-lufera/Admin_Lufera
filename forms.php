@@ -299,6 +299,11 @@
         $expectations = $_POST['expectations'];
         $personas = $_POST['personas'];
 
+        $excontent = $_POST['ex_content'];
+        $copywriting = $_POST['copywriting'];
+        $sitemap = $_POST['sitemap'];
+        $spcontent = $_POST['sp_content'];
+
         $design = $_POST['design'];
         $like = $_POST['like'];
         $brand = $_POST['brand'];
@@ -355,6 +360,11 @@
             'expectations' => createField($expectations),
             // 'personas' => $personas,
             'personas' => createField($personas),
+
+            'ex_content' => createField($excontent),
+            'copywriting' => createField($copywriting),
+            'sitemap' => createField($sitemap),
+            'sp_content' => createField($spcontent),
 
             // 'design' => $design,
             'design' => createField($design),
@@ -489,7 +499,7 @@
 
 <div class="dashboard-main-body">
     <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-24">
-        <h6 class="fw-semibold mb-0">Website Registration Form</h6>
+        <h6 class="fw-semibold mb-0">Registration Form</h6>
         <!-- <ul class="d-flex align-items-center gap-2">
             <li class="fw-medium">
                 <a href="index.php" class="d-flex align-items-center gap-1 hover-text-primary">
@@ -506,7 +516,7 @@
                 <div class="card-body p-40">
                     <!-- Progress Bar -->
                     <div class="progress mb-4">
-                        <div class="progress-bar bg-success" role="progressbar" style="width: <?= $progress_percentage ?>%;" aria-valuenow="<?= $progress_percentage ?>" aria-valuemin="0" aria-valuemax="100">
+                        <div class="progress-bar bg-success" role="progressbar" style="min-width: 10%; width: <?= $progress_percentage ?>%;" aria-valuenow="<?= $progress_percentage ?>" aria-valuemin="0" aria-valuemax="100">
                             <?= $progress_percentage ?>% Complete
                         </div>
                     </div>
@@ -537,12 +547,12 @@
                                             <fieldset class="wizard-fieldset show">
                                                 <h5>Personal Information</h5>
                                                     <?php
-                                                        renderField('comp_name', $savedData, $user_role, 'Company Name*', 'Enter company name');
-                                                        renderField('cont_person', $savedData, $user_role, 'Contact Person*', 'Enter contact name');
-                                                        renderField('email', $savedData, $user_role, 'Email*', 'Enter email');
-                                                        renderField('phone', $savedData, $user_role, 'Phone*', 'Enter phone');
-                                                        renderField('website', $savedData, $user_role, 'Website*', 'Enter website');
-                                                        renderField('address', $savedData, $user_role, 'Address*', 'Enter address');
+                                                        renderField('comp_name', $savedData, $user_role, 'Company Name*', '');
+                                                        renderField('cont_person', $savedData, $user_role, 'Contact Person*', '');
+                                                        renderField('email', $savedData, $user_role, 'Email*', '');
+                                                        renderField('phone', $savedData, $user_role, 'Phone*', '');
+                                                        renderField('website', $savedData, $user_role, 'Website*', '');
+                                                        renderField('address', $savedData, $user_role, 'Address*', '');
                                                         // render_field('maintenance1', $savedData, $user_role, 'Maintenance?', 'Enter Maintenance' );
                                                         // render_field('support1', $savedData, $user_role, 'Support?', 'Enter Support');
                                                     ?>
