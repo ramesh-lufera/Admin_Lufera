@@ -1628,14 +1628,13 @@
 
                                     <div class="dashboard-main-body">
                                         <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-24">
-                                            <h6 class="fw-semibold mb-0">Add User</h6>
+                                            <h6 class="fw-semibold mb-0">Add Package</h6>
                                         </div>
 
                                         <div class="card h-100 p-0 radius-12">
                                             <div class="card-body p-24">
                                                 <div class="row justify-content-center">
                                                     <div class="col-xxl-12 col-xl-8 col-lg-10">
-                                                        <h6 class="text-md text-primary-light mb-16" style="font-size: 20px !important">Profile</h6>
                                                         <form method="POST" class="row gy-3 needs-validation" novalidate>
                                                             <div class="mb-2">
                                                                 <label for="name" class="form-label fw-semibold text-primary-light text-sm mb-8">Plan Type <span class="text-danger-600">*</span></label>
@@ -1897,17 +1896,17 @@
 
             exit;
         } elseif ($product_type === 'Product') {
-            $stmt = $conn->prepare("SELECT cat_url FROM categories WHERE cat_id = ?");
+            $stmt = $conn->prepare("SELECT cat_id, cat_url FROM categories WHERE cat_id = ?");
             $stmt->bind_param("i", $category_id);
             $stmt->execute();
-            $stmt->bind_result($cat_url1);
+            $stmt->bind_result($cat_id1, $cat_url1);
             $stmt->fetch();
             $stmt->close();
 
             $cat_url1 = pathinfo($cat_url1, PATHINFO_FILENAME);
             $catSlug1 = strtolower(preg_replace('/\s+/', '-', $cat_url1));
 
-            header("Location: add-$catSlug1.php");
+            header("Location: add-$catSlug1.php?id=$cat_id1");
 
             $add_file_name1 = "add-$catSlug1.php";
             $add_file_path1 = dirname(__DIR__) . '/' . $add_file_name1;

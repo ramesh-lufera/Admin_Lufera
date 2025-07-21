@@ -98,7 +98,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $category = $_POST['category'];
     $tags = $_POST['tags'];
     $created_at = date("Y-m-d H:i:s");
-
+    $cat_id = $_GET['id'];
     // Image upload
     $product_image = '';
     if (isset($_FILES['product_image']) && $_FILES['product_image']['error'] == 0) {
@@ -130,8 +130,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     }
 
     // Insert into database
-    $stmt = $conn->prepare("INSERT INTO products (name, subtitle, price, description, category, tags, product_image, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
-    $stmt->bind_param("ssssssss", $name, $subtitle, $price, $description, $category, $tags, $product_image, $created_at);
+    $stmt = $conn->prepare("INSERT INTO products (name, subtitle, price, description, category, tags, product_image, cat_id, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
+    $stmt->bind_param("sssssssis", $name, $subtitle, $price, $description, $category, $tags, $product_image,$cat_id, $created_at);
 
     if ($stmt->execute()) {
         echo "<script>
@@ -141,7 +141,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 confirmButtonText: 'OK'
             }).then((result) => {
                 if (result.isConfirmed) {
-                    window.location.href = 'view-about.php';
+                    window.location.href = 'view-product.php';
                 }
             });
         </script>";
