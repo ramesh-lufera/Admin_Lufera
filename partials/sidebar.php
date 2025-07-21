@@ -9,7 +9,6 @@
     if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['cat_name'], $_POST['cat_url'], $_POST['cat_template'])) {
         $cat_name = trim($_POST['cat_name']);
         $cat_url = trim($_POST['cat_url']);
-        $cat_url1 = trim($_POST['cat_url']);
         $cat_template = trim($_POST['cat_template']);
 
         if (!str_ends_with($cat_url, '.php')) {
@@ -17,40 +16,32 @@
         }
 
         if (!empty($cat_name)) {
-            // $stmt = $conn->prepare("INSERT INTO categories (cat_name, cat_url) VALUES (?, ?)");
-            // $stmt->bind_param("ss", $cat_name, $cat_url);
-
             $stmt = $conn->prepare("INSERT INTO categories (cat_name, cat_url, cat_module) VALUES (?, ?, ?)");
             $stmt->bind_param("sss", $cat_name, $cat_url, $cat_template);
 
             if ($stmt->execute()) {
                 // $_SESSION['cat_id'] = $conn->insert_id;
             } else {
-                $_SESSION['swal_error'] = "Failed to create category";
+                // $_SESSION['swal_error'] = "Failed to create category";
             }
 
-            // Set the file path one level up
+            $catSlug = strtolower(preg_replace('/\s+/', '-', $cat_url));
             $file_path = dirname(__DIR__) . '/' . $cat_url;
 
-            // Generate slug for filenames
-            $catSlug = strtolower(preg_replace('/\s+/', '-', $cat_name));
-            // $det_file_name = $catSlug . '-det.php'; // ✅ New file for "Manage"
-            $det_file_name = $cat_url1 . '-det.php'; // ✅ New file for "Manage"
+            $cat_url = pathinfo($cat_url, PATHINFO_FILENAME);
+            $catSlug1 = strtolower(preg_replace('/\s+/', '-', $cat_url));
+
+            $det_file_name = $catSlug1 . '-details.php'; 
             $det_file_path = dirname(__DIR__) . '/' . $det_file_name;
 
-            $det_file_name1 = $cat_url1 . '-wizard.php'; // ✅ New file for "Manage"
+            $det_file_name1 = $catSlug1 . '-wizard.php'; 
             $det_file_path1 = dirname(__DIR__) . '/' . $det_file_name1;
 
-            // ✅ Replace "websites-details.php" with dynamic det file
             $manageLink = $det_file_name;
 
             if (!file_exists($file_path)) {
-                // Capitalize first letter of each word for title
                 $pageTitle = ucwords($cat_name);
-
-                // $catSlug = strtolower(preg_replace('/\s+/', '-', $cat_name));
                 
-                // Your full page content stored as a string (HEREDOC syntax)
                 $default_content = <<<PHP
                     <?php include './partials/layouts/layoutTop.php'; ?>
                         <?php
@@ -440,7 +431,7 @@
                                 <span class="search-icon">&#128269;</span>
                                 <input type="text" id="searchInput" placeholder="Search $pageTitle..." />
                                 </div>
-                                <a href="view-$catSlug.php" class="add-btn">+ Add New $pageTitle</a>
+                                <a href="view-$catSlug1.php" class="add-btn">+ Add New $pageTitle</a>
                             </div>
 
                             <!-- Website List -->
@@ -554,147 +545,12 @@
 
                 file_put_contents($file_path, $default_content);
 
-                // ✅ Also create view-$catSlug.php file
-                $view_file_name = "view-$catSlug.php";
+                $view_file_name = "view-$catSlug1.php";
                 $view_file_path = dirname(__DIR__) . '/' . $view_file_name;
 
                 if (!file_exists($view_file_path)) {
                     $view_content = <<<PHP
-                        <style>
-                        .nav-link:focus, .nav-link:hover {
-                            color: #fdc701 !important;
-                        }
-                        </style>
-                        <?php
-                        include './partials/layouts/layoutTop.php';
-
-                        \$packages = [];
-                        \$durations = [];
-
-                        // Get category name
-                        \$stmt = \$conn->prepare("SELECT cat_name FROM categories WHERE cat_id = ?");
-                        \$stmt->bind_param("i", \$category_id);
-                        \$stmt->execute();
-                        \$stmt->bind_result(\$category_name);
-                        \$stmt->fetch();
-                        \$stmt->close();
-
-                        \$category_id = \$category_id;
-
-                        // Fetch packages by category and group by duration
-                        \$stmt = \$conn->prepare("SELECT * FROM package WHERE cat_id = ? ORDER BY duration");
-                        \$stmt->bind_param("i", \$category_id);
-                        \$stmt->execute();
-                        \$result = \$stmt->get_result();
-
-                        if (\$result->num_rows > 0) {
-                            while (\$row = \$result->fetch_assoc()) {
-                                \$duration = \$row['duration'];
-                                \$packages[\$duration][] = \$row;
-
-                                if (!in_array(\$duration, \$durations)) {
-                                    \$durations[] = \$duration;
-                                }
-                            }
-                        }
-                        \$stmt->close();
-                        ?>
-
-                        <div class="dashboard-main-body">
-                            <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-24">
-                                <h6 class="fw-semibold mb-0"><?= htmlspecialchars(\$category_name) ?> Packages</h6>
-                            </div>
-
-                            <div class="card h-100 p-0 radius-12 overflow-hidden">
-                                <div class="card-body p-40">
-                                    <div class="row justify-content-center">
-                                        <div class="col-xxl-10">
-
-                                        <?php if (!empty(\$packages)): ?>
-                                            <ul class="nav nav-pills button-tab mt-32 mb-32 justify-content-center" id="pills-tab" role="tablist">
-                                                <?php foreach (\$durations as \$index => \$duration): ?>
-                                                    <li class="nav-item" role="presentation">
-                                                        <button class="nav-link px-24 py-10 text-md rounded-pill text-secondary-light fw-medium <?= \$index === 0 ? 'active' : '' ?>" 
-                                                                id="tab-<?= \$index ?>" 
-                                                                data-bs-toggle="pill" 
-                                                                data-bs-target="#tab-pane-<?= \$index ?>" 
-                                                                type="button" 
-                                                                role="tab" 
-                                                                aria-controls="tab-pane-<?= \$index ?>" 
-                                                                aria-selected="<?= \$index === 0 ? 'true' : 'false' ?>">
-                                                            <?= htmlspecialchars(\$duration) ?>
-                                                        </button>
-                                                    </li>
-                                                <?php endforeach; ?>
-                                            </ul>
-
-                                            <div class="tab-content" id="pills-tabContent">
-                                                <?php foreach (\$durations as \$index => \$duration): ?>
-                                                    <div class="tab-pane fade <?= \$index === 0 ? 'show active' : '' ?>" 
-                                                        id="tab-pane-<?= \$index ?>" 
-                                                        role="tabpanel" 
-                                                        aria-labelledby="tab-<?= \$index ?>" 
-                                                        tabindex="0">
-                                                        <div class="row gy-4">
-                                                            <?php foreach (\$packages[\$duration] as \$package): ?>
-                                                                <div class="col-xxl-4 col-sm-6">
-                                                                    <div class="pricing-plan position-relative radius-24 overflow-hidden border">
-                                                                        <div class="d-flex align-items-center gap-16">
-                                                                            <div>
-                                                                                <span class="fw-medium text-md text-secondary-light"><?= htmlspecialchars(\$package['plan_type']) ?></span>
-                                                                                <h6 class="mb-0"><?= htmlspecialchars(\$package['title']) ?></h6>
-                                                                            </div>
-                                                                        </div>
-                                                                        <p class="mt-16 mb-0 text-secondary-light mb-28"><?= htmlspecialchars(\$package['subtitle']) ?></p>
-                                                                        <h3 class="mb-24">\$<?= htmlspecialchars(\$package['price']) ?> 
-                                                                            <span class="fw-medium text-md text-secondary-light">/<?= htmlspecialchars(\$package['duration']) ?></span> 
-                                                                        </h3>
-                                                                        <span class="mb-20 fw-medium"><?= htmlspecialchars(\$package['description']) ?></span>
-
-                                                                        <ul>
-                                                                            <?php
-                                                                            \$package_id = \$package['id'];
-                                                                            \$feature_sql = "SELECT feature FROM features WHERE package_id = \$package_id";
-                                                                            \$feature_result = \$conn->query(\$feature_sql);
-                                                                            if (\$feature_result && \$feature_result->num_rows > 0):
-                                                                                while (\$feat = \$feature_result->fetch_assoc()):
-                                                                            ?>
-                                                                                <li class="d-flex align-items-center gap-16 mb-16">
-                                                                                    <span class="w-24-px h-24-px p-2 d-flex justify-content-center align-items-center lufera-bg rounded-circle">
-                                                                                        <iconify-icon icon="iconamoon:check-light" class="text-white text-lg "></iconify-icon>
-                                                                                    </span>
-                                                                                    <span class="text-secondary-light text-lg"><?= htmlspecialchars(\$feat['feature']) ?></span>
-                                                                                </li>
-                                                                            <?php endwhile; endif; ?>
-                                                                        </ul>
-
-                                                                        <form action="cart.php" method="POST">
-                                                                            <input type="hidden" name="plan_name" value="<?= htmlspecialchars(\$package['title']) ?>">
-                                                                            <input type="hidden" name="price" value="<?= htmlspecialchars(\$package['price']) ?>">
-                                                                            <input type="hidden" name="duration" value="<?= htmlspecialchars(\$package['duration']) ?>">
-                                                                            <input type="hidden" name="created_on" value="<?= date("Y-m-d") ?>">
-                                                                            <button type="submit" class="lufera-bg text-center text-white text-sm btn-sm px-12 py-10 w-100 radius-8 mt-28">Get started</button>
-                                                                        </form>
-                                                                    </div>
-                                                                </div>
-                                                            <?php endforeach; ?>
-                                                        </div>
-                                                    </div>
-                                                <?php endforeach; ?>
-                                            </div>
-                                        <?php else: ?>
-                                            <div class="alert alert-warning text-center">
-                                                <strong>No packages found</strong>
-                                            </div>
-                                        <?php endif; ?>
-
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <?php include './partials/layouts/layoutBottom.php'; ?>
+                        <?php include './view-package.php'; ?>
                     PHP;
 
                     file_put_contents($view_file_path, $view_content);
@@ -1428,8 +1284,8 @@
                 }
             }
 
-                $_SESSION['swal_success'] = "Category created";
-            }
+            $_SESSION['swal_success'] = "Category created";
+        }
 
         header("Location: " . ($_SERVER['HTTP_REFERER'] ?? 'index.php'));
         exit;
@@ -1459,26 +1315,24 @@
     if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_cat_id'])) {
         $cat_id = intval($_POST['delete_cat_id']);
 
-        // 1. Get the category name before deletion
-        $stmt = $conn->prepare("SELECT cat_name FROM categories WHERE cat_id = ?");
+        $stmt = $conn->prepare("SELECT cat_url FROM categories WHERE cat_id = ?");
         $stmt->bind_param("i", $cat_id);
         $stmt->execute();
         $result = $stmt->get_result();
         $cat = $result->fetch_assoc();
-        $catNameRaw = $cat['cat_name'] ?? null;
+        $catUrlRaw = $cat['cat_url'] ?? null;
 
-        if ($catNameRaw) {
-            // 2. Sanitize the category name to match filename
-            $catName = strtolower(preg_replace('/[^a-zA-Z0-9_-]/', '', $catNameRaw));
+        if ($catUrlRaw) {
+            $catUrlRaw = pathinfo($catUrlRaw, PATHINFO_FILENAME);
+            $catUrl = strtolower(preg_replace('/\s+/', '-', $catUrlRaw));
 
-            // 3. Define file paths to delete (one level down from 'partials')
-            $baseDir = dirname(__DIR__); // One level down from current script
+            $baseDir = dirname(__DIR__);
             $filesToDelete = [
-                "$baseDir/{$catName}.php",
-                "$baseDir/{$catName}-det.php",
-                "$baseDir/add-{$catName}.php",
-                "$baseDir/view-{$catName}.php",
-                "$baseDir/{$catName}-wizard.php"
+                "$baseDir/{$catUrl}.php",
+                "$baseDir/{$catUrl}-details.php",
+                "$baseDir/add-{$catUrl}.php",
+                "$baseDir/view-{$catUrl}.php",
+                "$baseDir/{$catUrl}-wizard.php"
             ];
 
             foreach ($filesToDelete as $file) {
@@ -1488,7 +1342,6 @@
             }
         }
 
-        // 4. Delete from database
         $stmt = $conn->prepare("DELETE FROM categories WHERE cat_id = ?");
         $stmt->bind_param("i", $cat_id);
         $stmt->execute();
@@ -1502,7 +1355,7 @@
         $category_id = intval($_POST['product_category']);
         $product_type = $_POST['product_type'];
 
-        $_SESSION['selected_category'] = $category_id;
+        // $_SESSION['selected_category'] = $category_id;
 
         if ($product_type === 'Package') {
             $stmt = $conn->prepare("SELECT cat_url FROM categories WHERE cat_id = ?");
@@ -1756,142 +1609,10 @@
             $view_file_path = dirname(__DIR__) . '/' . $view_file_name;
 
             $view_content = <<<PHP
-                <style>
-                .nav-link:focus, .nav-link:hover {
-                    color: #fdc701 !important;
-                }
-                </style>
-                <?php
-                include './partials/layouts/layoutTop.php';
-
-                \$packages = [];
-                \$durations = [];
-
-                // Get category name
-                \$stmt = \$conn->prepare("SELECT cat_name FROM categories WHERE cat_id = ?");
-                \$stmt->bind_param("i", \$category_id);
-                \$stmt->execute();
-                \$stmt->bind_result(\$category_name);
-                \$stmt->fetch();
-                \$stmt->close();
-
-                \$category_id = $category_id;
-
-                // Fetch packages by category and group by duration
-                \$stmt = \$conn->prepare("SELECT * FROM package WHERE cat_id = ? ORDER BY duration");
-                \$stmt->bind_param("i", \$category_id);
-                \$stmt->execute();
-                \$result = \$stmt->get_result();
-
-                if (\$result->num_rows > 0) {
-                    while (\$row = \$result->fetch_assoc()) {
-                        \$duration = \$row['duration'];
-                        \$packages[\$duration][] = \$row;
-
-                        if (!in_array(\$duration, \$durations)) {
-                            \$durations[] = \$duration;
-                        }
-                    }
-                }
-                \$stmt->close();
-                ?>
-
-                <div class="dashboard-main-body">
-                    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-24">
-                        <h6 class="fw-semibold mb-0"><?= htmlspecialchars(\$category_name) ?> Packages</h6>
-                    </div>
-
-                    <div class="card h-100 p-0 radius-12 overflow-hidden">
-                        <div class="card-body p-40">
-                            <div class="row justify-content-center">
-                                <div class="col-xxl-10">
-
-                                <?php if (!empty(\$packages)): ?>
-                                    <ul class="nav nav-pills button-tab mt-32 mb-32 justify-content-center" id="pills-tab" role="tablist">
-                                        <?php foreach (\$durations as \$index => \$duration): ?>
-                                            <li class="nav-item" role="presentation">
-                                                <button class="nav-link px-24 py-10 text-md rounded-pill text-secondary-light fw-medium <?= \$index === 0 ? 'active' : '' ?>" 
-                                                        id="tab-<?= \$index ?>" 
-                                                        data-bs-toggle="pill" 
-                                                        data-bs-target="#tab-pane-<?= \$index ?>" 
-                                                        type="button" 
-                                                        role="tab" 
-                                                        aria-controls="tab-pane-<?= \$index ?>" 
-                                                        aria-selected="<?= \$index === 0 ? 'true' : 'false' ?>">
-                                                    <?= htmlspecialchars(\$duration) ?>
-                                                </button>
-                                            </li>
-                                        <?php endforeach; ?>
-                                    </ul>
-
-                                    <div class="tab-content" id="pills-tabContent">
-                                        <?php foreach (\$durations as \$index => \$duration): ?>
-                                            <div class="tab-pane fade <?= \$index === 0 ? 'show active' : '' ?>" 
-                                                id="tab-pane-<?= \$index ?>" 
-                                                role="tabpanel" 
-                                                aria-labelledby="tab-<?= \$index ?>" 
-                                                tabindex="0">
-                                                <div class="row gy-4">
-                                                    <?php foreach (\$packages[\$duration] as \$package): ?>
-                                                        <div class="col-xxl-4 col-sm-6">
-                                                            <div class="pricing-plan position-relative radius-24 overflow-hidden border">
-                                                                <div class="d-flex align-items-center gap-16">
-                                                                    <div>
-                                                                        <span class="fw-medium text-md text-secondary-light"><?= htmlspecialchars(\$package['plan_type']) ?></span>
-                                                                        <h6 class="mb-0"><?= htmlspecialchars(\$package['title']) ?></h6>
-                                                                    </div>
-                                                                </div>
-                                                                <p class="mt-16 mb-0 text-secondary-light mb-28"><?= htmlspecialchars(\$package['subtitle']) ?></p>
-                                                                <h3 class="mb-24">\$<?= htmlspecialchars(\$package['price']) ?> 
-                                                                    <span class="fw-medium text-md text-secondary-light">/<?= htmlspecialchars(\$package['duration']) ?></span> 
-                                                                </h3>
-                                                                <span class="mb-20 fw-medium"><?= htmlspecialchars(\$package['description']) ?></span>
-
-                                                                <ul>
-                                                                    <?php
-                                                                    \$package_id = \$package['id'];
-                                                                    \$feature_sql = "SELECT feature FROM features WHERE package_id = \$package_id";
-                                                                    \$feature_result = \$conn->query(\$feature_sql);
-                                                                    if (\$feature_result && \$feature_result->num_rows > 0):
-                                                                        while (\$feat = \$feature_result->fetch_assoc()):
-                                                                    ?>
-                                                                        <li class="d-flex align-items-center gap-16 mb-16">
-                                                                            <span class="w-24-px h-24-px p-2 d-flex justify-content-center align-items-center lufera-bg rounded-circle">
-                                                                                <iconify-icon icon="iconamoon:check-light" class="text-white text-lg "></iconify-icon>
-                                                                            </span>
-                                                                            <span class="text-secondary-light text-lg"><?= htmlspecialchars(\$feat['feature']) ?></span>
-                                                                        </li>
-                                                                    <?php endwhile; endif; ?>
-                                                                </ul>
-
-                                                                <form action="cart.php" method="POST">
-                                                                    <input type="hidden" name="plan_name" value="<?= htmlspecialchars(\$package['title']) ?>">
-                                                                    <input type="hidden" name="price" value="<?= htmlspecialchars(\$package['price']) ?>">
-                                                                    <input type="hidden" name="duration" value="<?= htmlspecialchars(\$package['duration']) ?>">
-                                                                    <input type="hidden" name="created_on" value="<?= date("Y-m-d") ?>">
-                                                                    <button type="submit" class="lufera-bg text-center text-white text-sm btn-sm px-12 py-10 w-100 radius-8 mt-28">Get started</button>
-                                                                </form>
-                                                            </div>
-                                                        </div>
-                                                    <?php endforeach; ?>
-                                                </div>
-                                            </div>
-                                        <?php endforeach; ?>
-                                    </div>
-                                <?php else: ?>
-                                    <div class="alert alert-warning text-center">
-                                        <strong>No packages found</strong>
-                                    </div>
-                                <?php endif; ?>
-
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <?php include './partials/layouts/layoutBottom.php'; ?>
+                <?php \$_GET['product_category'] = $category_id; ?>
+                <?php include './view-package.php'; ?>
             PHP;
+
             file_put_contents($view_file_path, $view_content);
 
             exit;
@@ -1918,6 +1639,15 @@
                 
                 file_put_contents($add_file_path1, $add_content1);
             // }
+
+            $view_file_name1 = "view-$catSlug1.php";
+            $view_file_path1 = dirname(__DIR__) . '/' . $view_file_name1;
+
+            $view_content1 = <<<PHP
+                <?php include './view-product.php'; ?>
+            PHP;
+
+            file_put_contents($view_file_path1, $view_content1);
 
             exit;
         } else {
