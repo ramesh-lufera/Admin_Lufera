@@ -84,6 +84,9 @@
         width:200px;
         margin:auto;
     }
+    input[type=number] {
+      -moz-appearance: textfield;
+    }
   </style>
 <?php
 ini_set('display_errors', 1);
@@ -99,6 +102,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $tags = $_POST['tags'];
     $created_at = date("Y-m-d H:i:s");
     $cat_id = $_GET['id'];
+    $slug = isset($_GET['slug']) ? $_GET['slug'] : '';
     // Image upload
     $product_image = '';
     if (isset($_FILES['product_image']) && $_FILES['product_image']['error'] == 0) {
@@ -141,7 +145,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 confirmButtonText: 'OK'
             }).then((result) => {
                 if (result.isConfirmed) {
-                    window.location.href = 'view-product.php';
+                    window.location.href = 'view-$slug.php';
                 }
             });
         </script>";
@@ -178,12 +182,12 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         </div>
                         <div class="form-group mb-2">
                             <label class="form-label">Product Description</label>
-                            <input type="text" name="description" class="form-control radius-8" required>
+                            <textarea name="description" class="form-control radius-8" required></textarea>
                         </div>
                        
                         <div class="form-group mb-2">
                             <label class="form-label">Price</label>
-                            <input type="text" name="price" class="form-control radius-8" required>
+                            <input type="number" name="price" class="form-control radius-8" required onkeydown="return event.key !== 'e'" maxlength="10">
                         </div>
 
                         <div class="form-group mb-2">

@@ -7,8 +7,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
     <title>eCommerce Product Detail</title>
-    <link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css?family=Open+Sans:400,700" rel="stylesheet">
     <style>
         
 /*****************globals*************/
@@ -166,6 +164,7 @@ img {
 	<div class="container">
 		<div class="card">
 			<div class="card-body p-40">
+        <div class="container">
 				<div class="wrapper row">
 					<div class="preview col-md-6">
 						
@@ -178,28 +177,19 @@ img {
 					<div class="details col-md-6">
 						<h3 class="product-title"><?php echo $row['name'] ?></h3>
                         <h6 class="product-title"><?php echo $row['subtitle'] ?></h6>
-						<div class="rating">
-							<div class="stars">
-								<span class="fa fa-star checked"></span>
-								<span class="fa fa-star checked"></span>
-								<span class="fa fa-star checked"></span>
-								<span class="fa fa-star"></span>
-								<span class="fa fa-star"></span>
-							</div>
-							<span class="review-no">41 reviews</span>
-						</div>
+						
 						<p class="product-description"><?php echo $row['description'] ?>.</p>
 						<h4 class="price">Price: <span>$<?php echo $row['price'] ?></span></h4>
-						<p class="vote"><strong>91%</strong> of buyers enjoyed this product! <strong>(87 votes)</strong></p>
 						
 						<h6 class="colors">Category: <?php echo $row['category'] ?></h6>
                         <h6 class="colors">Tags: <?php echo $row['tags'] ?></h6>
 						<div class="action">
-							<button class="add-to-cart btn btn-default" type="button">add to cart</button>
+							<button class="add-to-cart btn btn-default" type="button">Get Started</button>
 							<!-- <button class="like btn btn-default" type="button"><span class="fa fa-heart"></span></button> -->
 						</div>
 					</div>
 				</div>
+        </div>
 			</div>
 		</div>
 	</div>

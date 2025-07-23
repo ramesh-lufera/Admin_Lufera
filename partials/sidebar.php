@@ -685,7 +685,7 @@
                                     <div class="d-flex align-items-center gap-2">
                                     <h6 class="fw-semibold mb-0"><?php echo htmlspecialchars(\$BusinessName); ?></h6>
                                     <span>|</span>
-                                    <iconify-icon icon="mdi:home-outline" class="text-lg icon-black"></iconify-icon>
+                                    <iconify-icon icon="mdi:home-outline" class="text-lg icon-black" onclick="history.back()"></iconify-icon>
                                     <span class="text-warning">N/A</span>
                                     </div>
                                     <div class="d-flex gap-2">
@@ -927,7 +927,7 @@
                                     <div class="d-flex align-items-center gap-2">
                                     <h6 class="fw-semibold mb-0"><?php echo htmlspecialchars(\$BusinessName); ?></h6>
                                     <span>|</span>
-                                    <iconify-icon icon="mdi:home-outline" class="text-lg icon-black"></iconify-icon>
+                                    <iconify-icon icon="mdi:home-outline" class="text-lg icon-black" onclick="history.back()"></iconify-icon>
                                     <span class="text-warning">N/A</span>
                                     </div>
                                     <div class="d-flex gap-2">
@@ -1169,7 +1169,7 @@
                                     <div class="d-flex align-items-center gap-2">
                                     <h6 class="fw-semibold mb-0"><?php echo htmlspecialchars(\$BusinessName); ?></h6>
                                     <span>|</span>
-                                    <iconify-icon icon="mdi:home-outline" class="text-lg icon-black"></iconify-icon>
+                                    <iconify-icon icon="mdi:home-outline" class="text-lg icon-black" onclick="history.back()"></iconify-icon>
                                     <span class="text-warning">N/A</span>
                                     </div>
                                     <div class="d-flex gap-2">
@@ -1522,7 +1522,7 @@
                                                                 <label for="name" class="form-label fw-semibold text-primary-light text-sm mb-8">Price <span class="text-danger-600">*</span></label>
                                                                 <div class="icon-field has-validation">
                                                                     
-                                                                    <input type="text" class="form-control radius-8" name="price" required maxlength="5">
+                                                                    <input type="number" class="form-control radius-8" name="price" required maxlength="10" onkeydown="return event.key !== 'e'">
                                                                     <div class="invalid-feedback">
                                                                         Price is required
                                                                     </div>
@@ -1627,7 +1627,7 @@
             $cat_url1 = pathinfo($cat_url1, PATHINFO_FILENAME);
             $catSlug1 = strtolower(preg_replace('/\s+/', '-', $cat_url1));
 
-            header("Location: add-$catSlug1.php?id=$cat_id1");
+            header("Location: add-$catSlug1.php?id=$cat_id1&slug=$catSlug1");
 
             $add_file_name1 = "add-$catSlug1.php";
             $add_file_path1 = dirname(__DIR__) . '/' . $add_file_name1;
@@ -1976,8 +1976,8 @@
 
         <!-- Buttons -->
         <div class="modal-actions">
-          <button type="submit" class="btn btn-save">Save</button>
-          <button type="button" class="btn btn-cancel" onclick="closeProductModal()">Cancel</button>
+          <button type="submit" class="btn lufera-bg">Save</button>
+          <button type="button" class="btn btn-secondary" onclick="closeProductModal()">Cancel</button>
         </div>
       </form>
     </div>
