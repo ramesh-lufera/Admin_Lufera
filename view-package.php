@@ -11,7 +11,7 @@
     $durations = [];
 
     $category_id = isset($_GET['product_category']) ? intval($_GET['product_category']) : 0;
-
+    
     // Get category name
     $stmt = $conn->prepare("SELECT cat_name FROM categories WHERE cat_id = ?");
     $stmt->bind_param("i", $category_id);
@@ -41,7 +41,7 @@
 
 <div class="dashboard-main-body">
     <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-24">
-        <h6 class="fw-semibold mb-0"><?= htmlspecialchars($category_name) ?> Packages</h6>
+        <h6 class="fw-semibold mb-0 text-capitalize"><?php echo $_GET['product_category']; ?></h6>
     </div>
 
     <div class="card h-100 p-0 radius-12 overflow-hidden">

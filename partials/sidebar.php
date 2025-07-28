@@ -550,6 +550,7 @@
 
                 if (!file_exists($view_file_path)) {
                     $view_content = <<<PHP
+                    <?php \$_GET['product_category'] = $catSlug1; ?>
                         <?php include './view-package.php'; ?>
                     PHP;
 
