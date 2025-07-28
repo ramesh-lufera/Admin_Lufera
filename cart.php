@@ -24,6 +24,7 @@
 <?php
     if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $plan_name = $_POST['plan_name'];
+        $subtitle = $_POST['subtitle'];
         $price = $_POST['price'];
         $duration = $_POST['duration'];
         $created_on = $_POST['created_on'];
@@ -38,7 +39,7 @@
                 <div class="card h-100 radius-12">
                 <div class="card-header py-10 border-none" style="box-shadow: 0px 3px 3px 0px lightgray">
                     <h6 class="mb-0"><?php echo $plan_name; ?></h6>
-                    <p class="mb-0">Perfect plan to get started for your own Website</p>
+                    <p class="mb-0"><?php echo $subtitle; ?></p>
                 </div>
                     <div class="card-body p-16">
                         <table class="plan-details-table mb-0 w-100">

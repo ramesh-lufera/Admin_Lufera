@@ -109,6 +109,7 @@
 
                                                 <form action="cart.php" method="POST">
                                                     <input type="hidden" name="plan_name" value="<?= htmlspecialchars($package['title']) ?>">
+                                                    <input type="hidden" name="subtitle" value="<?= htmlspecialchars($package['subtitle']) ?>">
                                                     <input type="hidden" name="price" value="<?= htmlspecialchars($package['price']) ?>">
                                                     <input type="hidden" name="duration" value="<?= htmlspecialchars($package['duration']) ?>">
                                                     <input type="hidden" name="created_on" value="<?= date("Y-m-d") ?>">
