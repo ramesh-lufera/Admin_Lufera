@@ -36,21 +36,6 @@ img {
       -ms-flex-positive: 1;
           flex-grow: 1; }
 
-.preview-thumbnail.nav-tabs {
-  border: none;
-  margin-top: 15px; }
-  .preview-thumbnail.nav-tabs li {
-    width: 18%;
-    margin-right: 2.5%; }
-    .preview-thumbnail.nav-tabs li img {
-      max-width: 100%;
-      display: block; }
-    .preview-thumbnail.nav-tabs li a {
-      padding: 0;
-      margin: 0; }
-    .preview-thumbnail.nav-tabs li:last-of-type {
-      margin-right: 0; }
-
 .tab-content {
   overflow: hidden; }
   .tab-content img {
@@ -80,18 +65,13 @@ img {
 }
 
 .checked, .price span {
-  color: #ff9f1a; }
+  color: #fec700; }
 
 .product-title, .rating, .product-description, .price, .vote, .sizes {
   margin-bottom: 15px; }
 
 .product-title {
   margin-top: 0; }
-
-.size {
-  margin-right: 10px; }
-  .size:first-of-type {
-    margin-left: 40px; }
 
 .color {
   display: inline-block;
@@ -102,30 +82,6 @@ img {
   border-radius: 2px; }
   .color:first-of-type {
     margin-left: 20px; }
-
-.add-to-cart, .like {
-  background: #ff9f1a;
-  padding: 1.2em 1.5em;
-  border: none;
-  text-transform: UPPERCASE;
-  font-weight: bold;
-  color: #fff;
-  -webkit-transition: background .3s ease;
-          transition: background .3s ease; }
-  .add-to-cart:hover, .like:hover {
-    background: #b36800;
-    color: #fff; }
-
-.not-available {
-  text-align: center;
-  line-height: 2em; }
-  .not-available:before {
-    font-family: fontawesome;
-    content: "\f00d";
-    color: #fff; }
-
-.tooltip-inner {
-  padding: 1.3em; }
 
 @-webkit-keyframes opacity {
   0% {
@@ -182,9 +138,17 @@ img {
 						<h4 class="price">Price: <span>$<?php echo $row['price'] ?></span></h4>
 						
 						<h6 class="colors">Category: <?php echo $row['category'] ?></h6>
-                        <h6 class="colors">Tags: <?php echo $row['tags'] ?></h6>
+            <h6 class="colors">Tags: <?php echo $row['tags'] ?></h6>
 						<div class="action">
-							<button class="add-to-cart btn btn-default" type="button">Get Started</button>
+							<!-- <button class="add-to-cart btn btn-default" type="button">Get Started</button> -->
+              <form action="cart.php" method="POST">
+                  <input type="hidden" name="plan_name" value="<?= htmlspecialchars($row['name']) ?>">
+                  <input type="hidden" name="subtitle" value="<?= htmlspecialchars($row['subtitle']) ?>">
+                  <input type="hidden" name="price" value="<?= htmlspecialchars($row['price']) ?>">
+                  <input type="hidden" name="duration" value="1 Year">
+                  <input type="hidden" name="created_on" value="<?= date("Y-m-d") ?>">
+                  <button type="submit" class="lufera-bg text-center text-white text-sm btn-sm px-12 py-10 w-100 radius-8 mt-28">Get started</button>
+              </form>
 							<!-- <button class="like btn btn-default" type="button"><span class="fa fa-heart"></span></button> -->
 						</div>
 					</div>
