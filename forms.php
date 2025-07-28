@@ -194,31 +194,31 @@
     cursor: pointer;
     }
     @keyframes click-radio-wave {
-    0% {
-        width: 25px;
-        height: 25px;
-        opacity: 0.35;
-        position: relative;
-    }
-    100% {
-        width: 60px;
-        height: 60px;
-        margin-left: -15px;
-        margin-top: -15px;
-        opacity: 0.0;
-    }
-    }
-    @media screen and (max-width: 767px) {
-    .wizard-content-left {
-        height: auto;
-    }
+        0% {
+            width: 25px;
+            height: 25px;
+            opacity: 0.35;
+            position: relative;
+        }
+        100% {
+            width: 60px;
+            height: 60px;
+            margin-left: -15px;
+            margin-top: -15px;
+            opacity: 0.0;
+        }
+        }
+        @media screen and (max-width: 767px) {
+        .wizard-content-left {
+            height: auto;
+        }
     }
 
     .progress {
-    height: 30px;
-    background-color: #f3f3f3;
-    border-radius: 8px;
-    overflow: hidden;
+        height: 30px;
+        background-color: #f3f3f3;
+        border-radius: 8px;
+        overflow: hidden;
     }
     .progress-bar {
         background-color: #fec700 !important; /* Match your form's primary color */
@@ -229,6 +229,67 @@
         justify-content: center;
         transition: width 0.6s ease;
     }
+
+    /* Remove browser defaults for consistency */
+    .custom-checkbox-yellow {
+        appearance: none;
+        -webkit-appearance: none;
+        -moz-appearance: none;
+        width: 22px;
+        height: 22px;
+        border: 2px solid #ccc;
+        border-radius: 4px;
+        cursor: pointer;
+        position: relative;
+        margin-top: 6px; /* vertical centering */
+        background-color: #fff;
+        transition: all 0.2s ease-in-out;
+    }
+
+    .custom-checkbox-yellow:checked {
+        background-color: #fece1e;
+        border-color: #020202;
+    }
+
+    /* .custom-checkbox-yellow:checked::after {
+        content: '✔';
+        color: #000;
+        font-size: 14px;
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -56%);
+        font-weight: bold;
+    } */
+
+    /* Subtle background colors */
+    .bg-approved {
+        background-color: #f6fffa; /* soft green tint */
+    }
+
+    .bg-rejected {
+        background-color: #fff6f6; /* soft red tint */
+    }
+
+    /* Subtle border styles */
+    .border-approved {
+        border: 1px solid #b3e6c1; /* soft green */
+    }
+
+    .border-rejected {
+        border: 1px solid #f5b5b5; /* soft red */
+    }
+
+    /* Neutral default */
+    .border-default {
+        border: 1px solid #dee2e6;
+    }
+
+    /* Smooth transitions */
+    .form-group {
+        transition: background-color 0.3s ease, border-color 0.3s ease;
+    }
+
 </style>
 
 <?php
@@ -434,37 +495,88 @@
         $stmt->close();
     }
 
+    // function renderField($fieldName, $savedData, $user_role, $label = '', $placeholder = '') {
+    //     $val = $savedData[$fieldName]['value'] ?? '';
+    //     $status = $savedData[$fieldName]['status'] ?? 'pending';
+    //     $isReadonly = in_array($user_role, [1, 2, 7]) ? 'readonly' : '';
+
+    //     // Generate unique ID
+    //     $inputId = 'field_' . htmlspecialchars($fieldName);
+
+    //     echo '<div class="form-group mb-3">';
+    //     if ($label) {
+    //         echo '<label for="' . $inputId . '">' . htmlspecialchars($label) . '</label>';
+    //     }
+
+    //     // echo '<div class="input-group">';
+    //     if (in_array($user_role, [1, 2, 7])) {
+    //         echo '<div class="input-group-text">';
+    //         echo '<input type="checkbox" class="form-check-input me-2 bulk-approve-checkbox" value="' . htmlspecialchars($fieldName) . '">';
+    //         echo '</div>';
+    //     }
+
+    //     echo '<input type="text" class="form-control" id="' . $inputId . '" name="' . htmlspecialchars($fieldName) . '" autocomplete="off" placeholder="' . htmlspecialchars($placeholder) . '" value="' . htmlspecialchars($val) . '" ' . $isReadonly . '>';
+
+    //     // Admin/developer buttons
+    //     if (in_array($user_role, [1, 2, 7])) {
+    //         echo '<button type="button" class="btn btn-success btn-sm approve-btn" data-field="' . htmlspecialchars($fieldName) . '">&#10004;</button>';
+    //         echo '<button type="button" class="btn btn-danger btn-sm reject-btn" data-field="' . htmlspecialchars($fieldName) . '">&#10006;</button>';
+    //     }
+    //     // User view with status icons
+    //     elseif ($status === 'approved') {
+    //         echo '<span class="input-group-text text-success">&#10004;</span>';
+    //     } elseif ($status === 'rejected') {
+    //         echo '<span class="input-group-text text-danger">&#10006;</span>';
+    //         // echo '<span class="input-group-text text-warning">&#9998;</span>';
+    //         echo '<button type="button" class="input-group-text text-warning edit-btn" title="Edit" data-field="' . htmlspecialchars($fieldName) . '" data-value="' . htmlspecialchars($val) . '">&#9998;</button>';
+    //     }
+
+    //     echo '</div>'; // .input-group
+    //     echo '</div>'; // .form-group
+    // }
+
     function renderField($fieldName, $savedData, $user_role, $label = '', $placeholder = '') {
         $val = $savedData[$fieldName]['value'] ?? '';
         $status = $savedData[$fieldName]['status'] ?? 'pending';
         $isReadonly = in_array($user_role, [1, 2, 7]) ? 'readonly' : '';
-
-        // Generate unique ID
         $inputId = 'field_' . htmlspecialchars($fieldName);
+        $isAdmin = in_array($user_role, [1, 2, 7]);
 
-        echo '<div class="form-group mb-3">';
+        echo '<div class="form-group mb-4">';
+        echo '<div class="d-flex align-items-center">';
+
+        // ✅ Custom checkbox container
+        if ($isAdmin) {
+            echo '<div class="me-3 d-flex align-items-center">';
+            echo '<input class="form-check-input bulk-approve-checkbox custom-checkbox custom-checkbox-yellow" type="checkbox" value="' . htmlspecialchars($fieldName) . '" id="chk_' . htmlspecialchars($fieldName) . '">';
+            echo '</div>';
+        }
+
+        // ✅ Right side: label + input + actions
+        echo '<div class="flex-grow-1">';
         if ($label) {
-            echo '<label for="' . $inputId . '">' . htmlspecialchars($label) . '</label>';
+            echo '<label for="' . $inputId . '" class="form-label">' . htmlspecialchars($label) . '</label>';
         }
 
         echo '<div class="input-group">';
         echo '<input type="text" class="form-control" id="' . $inputId . '" name="' . htmlspecialchars($fieldName) . '" autocomplete="off" placeholder="' . htmlspecialchars($placeholder) . '" value="' . htmlspecialchars($val) . '" ' . $isReadonly . '>';
 
-        // Admin/developer buttons
-        if (in_array($user_role, [1, 2, 7])) {
+        if ($isAdmin) {
+            echo '<button type="button" class="btn btn-warning btn-sm update-btn" data-field="' . htmlspecialchars($fieldName) . '" title="Update">&#9998;</button>';
             echo '<button type="button" class="btn btn-success btn-sm approve-btn" data-field="' . htmlspecialchars($fieldName) . '">&#10004;</button>';
             echo '<button type="button" class="btn btn-danger btn-sm reject-btn" data-field="' . htmlspecialchars($fieldName) . '">&#10006;</button>';
-        }
-        // User view with status icons
+        } 
         elseif ($status === 'approved') {
             echo '<span class="input-group-text text-success">&#10004;</span>';
         } elseif ($status === 'rejected') {
             echo '<span class="input-group-text text-danger">&#10006;</span>';
-            // echo '<span class="input-group-text text-warning">&#9998;</span>';
             echo '<button type="button" class="input-group-text text-warning edit-btn" title="Edit" data-field="' . htmlspecialchars($fieldName) . '" data-value="' . htmlspecialchars($val) . '">&#9998;</button>';
         }
 
         echo '</div>'; // .input-group
+        echo '</div>'; // .flex-grow-1
+
+        echo '</div>'; // .d-flex
         echo '</div>'; // .form-group
     }
 
@@ -542,8 +654,15 @@
                                                 </ul>
                                             </div>
                                             
-                                            <input type="submit" name="save" class="form-wizard-submit" value="Submit" style="float:right">
+                                            <input type="submit" name="save" class="form-wizard-submit" value="Save" style="float:right">
                                             
+                                            <?php if (in_array($user_role, [1, 2, 7])): ?>
+                                                <div class="mb-5">
+                                                    <button type="button" id="bulkApproveBtn" class="btn btn-success btn-sm">Bulk Approve</button>
+                                                    <button type="button" id="bulkRejectBtn" class="btn btn-danger btn-sm">Bulk Reject</button>
+                                                </div>
+                                            <?php endif; ?>
+
                                             <fieldset class="wizard-fieldset show">
                                                 <h5>Personal Information</h5>
                                                     <?php
@@ -1078,6 +1197,56 @@
 
         // Initial calculation
         updateProgressBar();
+    });
+</script>
+
+<script>
+    $(document).ready(function () {
+        const websiteId = new URLSearchParams(window.location.search).get('id');
+
+        // Single field approve/reject
+        $('.approve-btn, .reject-btn').click(function () {
+            const field = $(this).data('field');
+            const status = $(this).hasClass('approve-btn') ? 'approved' : 'rejected';
+
+            $.post('json_status_update.php?id=' + websiteId, {
+                fields: [field],
+                status: status
+            }, function () {
+                Swal.fire('Success', 'Field updated.', 'success').then(() => location.reload());
+            }).fail(function () {
+                Swal.fire('Error', 'Could not update field.', 'error');
+            });
+        });
+
+        // Bulk approve/reject
+        function bulkUpdate(status) {
+            const fields = $('.bulk-approve-checkbox:checked').map(function () {
+                return $(this).val();
+            }).get();
+
+            if (fields.length === 0) {
+                Swal.fire('No fields selected', '', 'info');
+                return;
+            }
+
+            $.post('json_status_update.php?id=' + websiteId, {
+                fields: fields,
+                status: status
+            }, function () {
+                Swal.fire('Success', 'Fields updated.', 'success').then(() => location.reload());
+            }).fail(function () {
+                Swal.fire('Error', 'Bulk update failed.', 'error');
+            });
+        }
+
+        $('#bulkApproveBtn').click(function () {
+            bulkUpdate('approved');
+        });
+
+        $('#bulkRejectBtn').click(function () {
+            bulkUpdate('rejected');
+        });
     });
 </script>
 
