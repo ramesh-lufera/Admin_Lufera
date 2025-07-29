@@ -12261,7 +12261,7 @@ div.dt-container .dt-paging .dt-paging-button:hover:hover, div.dt-container .dt-
   content: "";
   width: calc(100% - 4px);
   height: calc(100% - 4px);
-  background-color: var(--primary-600);
+  background-color: #fec700;
   border-radius: inherit;
   left: 50%;
   top: 50%;
