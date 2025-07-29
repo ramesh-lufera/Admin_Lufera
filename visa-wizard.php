@@ -33,10 +33,10 @@ $query->close();
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <style>
-    body {
+    /* body {
         background: #f5f6fa !important;
         font-family: 'Segoe UI', sans-serif !important;
-    }
+    } */
 
     .form-wrapper {
         width: 75% !important;
@@ -54,15 +54,17 @@ $query->close();
         text-transform: uppercase !important;
         letter-spacing: 1.5px !important;
         color: #fec700 !important;
-        position: relative !important;
         margin-bottom: 40px !important;
+        display: flex !important;
+        justify-content: center !important;
+        align-items: center !important;
+        gap: 12px !important;
     }
 
-    .form-title::after {
-        content: '🛂' !important;
-        font-size: 26px !important;
-        display: block !important;
-        margin: 10px auto 0 !important;
+    .form-icon {
+        color: #fec700 !important;
+        font-size: 32px !important;
+        line-height: 1 !important;
     }
 
     .card-group {
@@ -122,7 +124,7 @@ $query->close();
 
     .form-check-inline {
         display: flex !important;
-        align-items: center !important;
+        /* align-items: center !important; */
         gap: 8px !important;
         font-size: 15px !important;
     }
@@ -141,7 +143,7 @@ $query->close();
         cursor: pointer !important;
     }
 
-    .submit-btn {
+    /* .submit-btn {
         background-color: #fec700 !important;
         color: #fff !important;
         border: none !important;
@@ -154,7 +156,7 @@ $query->close();
 
     .submit-btn:hover {
         background-color: #e6b800 !important;
-    }
+    } */
 
     .uploaded-preview img {
         max-height: 120px !important;
@@ -180,7 +182,10 @@ $query->close();
 
 <div class="dashboard-main-body">
     <div class="form-wrapper">
-        <h2 class="form-title">Visa Application</h2>
+        <h2 class="form-title">
+            <span>Visa Application</span>
+            <span class="form-icon">🛂</span>
+        </h2>
 
         <?php
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -307,7 +312,7 @@ $query->close();
                 </div>
             </div>
 
-            <button type="submit" class="submit-btn">Submit Application</button>
+            <button type="submit" class="lufera-bg bg-hover-warning-400 text-white text-md px-56 py-11 radius-8 m-auto d-block">Submit</button>
         </form>
     </div>
 </div>
