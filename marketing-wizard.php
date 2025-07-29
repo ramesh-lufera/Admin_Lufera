@@ -1,6 +1,31 @@
 <?php 
-session_start(); 
 include './partials/layouts/layoutTop.php'; 
+
+$user_id = $_SESSION['user_id'] ?? 0;
+$website_id = isset($_GET['id']) ? intval($_GET['id']) : 0;
+
+// Initialize variables to hold form values
+$name = $facebook_id = $password = $address = '';
+$websiteType = [];
+$logoPath = '';
+
+// Fetch existing data if website_id is present
+if ($website_id > 0) {
+    $stmt = $conn->prepare("SELECT name FROM json WHERE user_id = ? AND website_id = ?");
+    $stmt->bind_param("ii", $user_id, $website_id);
+    $stmt->execute();
+    $stmt->bind_result($json_data);
+    if ($stmt->fetch()) {
+        $decoded = json_decode($json_data, true);
+        $name = $decoded['name'] ?? '';
+        $facebook_id = $decoded['facebook_id'] ?? '';
+        $password = $decoded['password'] ?? '';
+        $websiteType = isset($decoded['website_type']) ? explode(", ", $decoded['website_type']) : [];
+        $address = $decoded['address'] ?? '';
+        $logoPath = $decoded['logo'] ?? '';
+    }
+    $stmt->close();
+}
 ?>
 
 <style>
@@ -30,7 +55,6 @@ include './partials/layouts/layoutTop.php';
     .form-wrapper h4::after {
         content: "";
         display: block;
-        width: 50px;
         height: 3px;
         background: #f6c90e;
         margin: 8px auto 0;
@@ -123,27 +147,26 @@ include './partials/layouts/layoutTop.php';
 </style>
 
 <div class="form-wrapper">
-    <h4>Marketing Wizard</h4>
+    <h4 class="m-auto" style="width:max-content">Marketing Wizard</h4>
 
     <?php
     if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-        $user_id = $_SESSION['user_id'] ?? 0;
-        $website_id = isset($_GET['id']) ? intval($_GET['id']) : 0;
-
         $name = $_POST['name'] ?? '';
         $facebook_id = $_POST['facebook_id'] ?? '';
         $password = $_POST['password'] ?? '';
         $websiteType = isset($_POST['website_type']) ? implode(", ", $_POST['website_type']) : '';
         $address = $_POST['address'] ?? '';
-        $logo = $_FILES['logo']['name'] ?? '';
 
+        // Handle logo upload
         $uploadDir = 'uploads/';
         if (!is_dir($uploadDir)) {
             mkdir($uploadDir, 0777, true);
         }
-        $uniqueFileName = uniqid() . '-' . basename($_FILES['logo']['name']);
-        $logoPath = $uploadDir . $uniqueFileName;
-        move_uploaded_file($_FILES['logo']['tmp_name'], $logoPath);
+        if (!empty($_FILES['logo']['name'])) {
+            $uniqueFileName = uniqid() . '-' . basename($_FILES['logo']['name']);
+            $logoPath = $uploadDir . $uniqueFileName;
+            move_uploaded_file($_FILES['logo']['tmp_name'], $logoPath);
+        }
 
         $data = json_encode([
             'name' => $name,
@@ -154,81 +177,84 @@ include './partials/layouts/layoutTop.php';
             'logo' => $logoPath
         ]);
 
-       // Check if there's already a json entry for this user AND this website
         $check = $conn->prepare("SELECT id FROM json WHERE user_id = ? AND website_id = ?");
         $check->bind_param("ii", $user_id, $website_id);
         $check->execute();
         $check->store_result();
 
         $action = '';
+        if ($check->num_rows > 0) {
+            $update = $conn->prepare("UPDATE json SET name = ? WHERE user_id = ? AND website_id = ?");
+            $update->bind_param("sii", $data, $user_id, $website_id);
+            $success = $update->execute();
+            $update->close();
+            $action = 'update';
+        } else {
+            $insert = $conn->prepare("INSERT INTO json (name, user_id, website_id) VALUES (?, ?, ?)");
+            $insert->bind_param("sii", $data, $user_id, $website_id);
+            $success = $insert->execute();
+            $insert->close();
+            $action = 'insert';
+        }
 
-if ($check->num_rows > 0) {
-    $update = $conn->prepare("UPDATE json SET name = ? WHERE user_id = ? AND website_id = ?");
-    $update->bind_param("sii", $data, $user_id, $website_id);
-    $success = $update->execute();
-    $update->close();
-    $action = 'update';
-} else {
-    $insert = $conn->prepare("INSERT INTO json (name, user_id, website_id) VALUES (?, ?, ?)");
-    $insert->bind_param("sii", $data, $user_id, $website_id);
-    $success = $insert->execute();
-    $insert->close();
-    $action = 'insert';
-}
-
-if ($success) {
-    $msg = ($action == 'insert') ? 'Data inserted successfully!' : 'Data updated successfully!';
-    echo "<script>
-        Swal.fire({
-            icon: 'success',
-            title: 'Success!',
-            text: '$msg',
-            showConfirmButton: false,
-            timer: 2000
-        }).then(() => {
-            window.location.href = window.location.pathname?id=$website_id;
-        });
-    </script>";
-}
-}
+        if ($success) {
+            $msg = ($action == 'insert') ? 'Data inserted successfully!' : 'Data updated successfully!';
+            echo "<script>
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Success!',
+                    text: '$msg',
+                    showConfirmButton: false,
+                    timer: 2000
+                }).then(() => {
+                    window.location.href = window.location.pathname + '?id=$website_id';
+                });
+            </script>";
+        }
+    }
     ?>
 
     <form method="POST" enctype="multipart/form-data" novalidate>
         <div class="form-group">
-            <input type="text" name="name" placeholder=" " required>
+            <input type="text" name="name" value="<?php echo htmlspecialchars($name); ?>" placeholder=" " required>
             <label for="name">Name</label>
         </div>
 
         <div class="form-group">
-            <input type="text" name="facebook_id" placeholder=" " required>
+            <input type="text" name="facebook_id" value="<?php echo htmlspecialchars($facebook_id); ?>" placeholder=" " required>
             <label for="facebook_id">Facebook ID</label>
         </div>
 
         <div class="form-group">
-            <input type="password" name="password" placeholder=" " required>
+            <input type="password" name="password" value="<?php echo htmlspecialchars($password); ?>" placeholder=" " required>
             <label for="password">Password</label>
         </div>
 
         <div class="form-group">
             <p>Website Name</p>
             <div class="form-check form-check-inline">
-                <input class="form-check-input p-2 mt-2" type="checkbox" name="website_type[]" value="Static">
+                <input class="form-check-input p-2 mt-2" type="checkbox" name="website_type[]" value="Static" <?php echo in_array('Static', $websiteType) ? 'checked' : ''; ?>>
                 <p class="form-check-label d-inline">Static</p>
             </div>
             <div class="form-check form-check-inline">
-                <input class="form-check-input p-2 mt-2" type="checkbox" name="website_type[]" value="Dynamic">
+                <input class="form-check-input p-2 mt-2" type="checkbox" name="website_type[]" value="Dynamic" <?php echo in_array('Dynamic', $websiteType) ? 'checked' : ''; ?>>
                 <p class="form-check-label d-inline">Dynamic</p>
             </div>
         </div>
 
         <div class="form-group">
-            <textarea name="address" rows="3" placeholder=" " required></textarea>
+            <textarea name="address" rows="3" placeholder=" " required><?php echo htmlspecialchars($address); ?></textarea>
             <label for="address">Address</label>
         </div>
+
         <label for="logo">Logo</label>
+        <?php if (!empty($logoPath)) { ?>
+            <div>
+                <img src="<?php echo $logoPath; ?>" alt="Logo" width="100" style="margin-bottom: 10px;">
+            </div>
+        <?php } ?>
         <div class="form-group">
-            <input type="file" name="logo" required>
-            
+            <input type="file" name="logo" <?php echo empty($logoPath) ? 'required' : ''; ?>>
         </div>
 
         <button type="submit" class="lufera-bg bg-hover-warning-400 text-white text-md px-56 py-11 radius-8 m-auto d-block">Submit</button>
