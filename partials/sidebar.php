@@ -1831,7 +1831,7 @@
                 "$baseDir/{$catUrl}-details.php",
                 "$baseDir/add-{$catUrl}.php",
                 "$baseDir/view-{$catUrl}.php",
-                "$baseDir/{$catUrl}-wizard.php"
+                // "$baseDir/{$catUrl}-wizard.php"
             ];
 
             foreach ($filesToDelete as $file) {

@@ -86,7 +86,7 @@
 
     .form-check-inline {
         display: flex !important;
-        align-items: center !important;
+        /* align-items: center !important; */
         gap: 8px !important;
     }
 
@@ -94,7 +94,7 @@
         width: 18px !important;
         height: 18px !important;
         accent-color: #fec700 !important;
-        margin: 0 !important;
+        /* margin: 0 !important; */
         appearance: auto !important;
     }
 
@@ -103,20 +103,6 @@
         color: #101010 !important;
         font-weight: 500 !important;
         cursor: pointer !important;
-    }
-
-    .submit-btn {
-        background-color: #fec700 !important;
-        color: #101010 !important;
-        border: none !important;
-        padding: 14px 32px !important;
-        font-weight: 600 !important;
-        border-radius: 10px !important;
-        transition: all 0.3s ease !important;
-    }
-
-    .submit-btn:hover {
-        background-color: #e6b800 !important;
     }
 
     @media (max-width: 768px) {
@@ -256,7 +242,7 @@
                 </div>
             <?php endif; ?>
 
-            <button type="submit" class="submit-btn">Submit</button>
+            <button type="submit" class="lufera-bg bg-hover-warning-400 text-white text-md px-56 py-11 radius-8 m-auto d-block">Submit</button>
         </form>
     </div>
 </div>
