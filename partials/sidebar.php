@@ -35,8 +35,8 @@
             $det_file_name = $catSlug1 . '-details.php'; 
             $det_file_path = dirname(__DIR__) . '/' . $det_file_name;
 
-            $det_file_name1 = $catSlug1 . '-wizard.php'; 
-            $det_file_path1 = dirname(__DIR__) . '/' . $det_file_name1;
+            // $det_file_name1 = $catSlug1 . '-wizard.php'; 
+            // $det_file_path1 = dirname(__DIR__) . '/' . $det_file_name1;
 
             $manageLink = $det_file_name;
 
@@ -551,7 +551,7 @@
 
                 if (!file_exists($view_file_path)) {
                     $view_content = <<<PHP
-                    <?php \$_GET['product_category'] = $catSlug1; ?>
+                    <?php \$_GET['product_category'] = "$catSlug1"; ?>
                         <?php include './view-package.php'; ?>
                     PHP;
 
@@ -559,7 +559,7 @@
                 }
                 
                 // ✅ If "website" template selected, also create the -det.php file
-                if ($cat_template === 'website' && !file_exists($det_file_path) && !file_exists($det_file_path1)) {
+                if ($cat_template === 'website' && !file_exists($det_file_path)) {
                     $det_content = <<<PHP
                         <?php include './partials/layouts/layoutTop.php' ?>
                             <?php
@@ -692,7 +692,7 @@
                                     </div>
                                     <div class="d-flex gap-2">
                                     <button type="button" class="btn btn-sm btn-upgrade">Upgrade</button>
-                                        <a href="$catSlug1-wizard.php?id=<?= \$websiteId ?>"><button type="button" class="btn btn-sm btn-edit-website">Wizard</button></a>
+                                        <a href="website-wizard.php?id=<?= \$websiteId ?>"><button type="button" class="btn btn-sm btn-edit-website">Wizard</button></a>
                                     </div>
                                 </div>
 
@@ -793,15 +793,9 @@
                         PHP;
 
                     file_put_contents($det_file_path, $det_content);
-
-                    $det_content1 = <<<PHP
-                        <?php include './wizard.php' ?>
-                    PHP;
-
-                    file_put_contents($det_file_path1, $det_content1);
                 }
                 // ✅ If "marketing" template selected, also create the -det.php file
-                if ($cat_template === 'marketing' && !file_exists($det_file_path) && !file_exists($det_file_path1)) {
+                if ($cat_template === 'marketing' && !file_exists($det_file_path)) {
                     $det_content = <<<PHP
                         <?php include './partials/layouts/layoutTop.php' ?>
                             <?php
@@ -934,7 +928,7 @@
                                     </div>
                                     <div class="d-flex gap-2">
                                     <button type="button" class="btn btn-sm btn-upgrade">Upgrade</button>
-                                        <a href="$catSlug1-wizard.php?id=<?= \$websiteId ?>"><button type="button" class="btn btn-sm btn-edit-website">Wizard</button></a>
+                                        <a href="marketing-wizard.php?id=<?= \$websiteId ?>"><button type="button" class="btn btn-sm btn-edit-website">Wizard</button></a>
                                     </div>
                                 </div>
 
@@ -1032,18 +1026,12 @@
                                 }
                             </script>
                         <?php include './partials/layouts/layoutBottom.php' ?> 
-                        PHP;
-
-                    file_put_contents($det_file_path, $det_content);
-
-                    $det_content1 = <<<PHP
-                        <?php include './wizard.php' ?>
                     PHP;
 
-                    file_put_contents($det_file_path1, $det_content1);
+                    file_put_contents($det_file_path, $det_content);
                 }
                 // ✅ If "visa" template selected, also create the -det.php file
-                if ($cat_template === 'visa' && !file_exists($det_file_path) && !file_exists($det_file_path1)) {
+                if ($cat_template === 'visa' && !file_exists($det_file_path)) {
                     $det_content = <<<PHP
                         <?php include './partials/layouts/layoutTop.php' ?>
                             <?php
@@ -1176,7 +1164,7 @@
                                     </div>
                                     <div class="d-flex gap-2">
                                     <button type="button" class="btn btn-sm btn-upgrade">Upgrade</button>
-                                        <a href="$catSlug1-wizard.php?id=<?= \$websiteId ?>"><button type="button" class="btn btn-sm btn-edit-website">Wizard</button></a>
+                                        <a href="visa-wizard.php?id=<?= \$websiteId ?>"><button type="button" class="btn btn-sm btn-edit-website">Wizard</button></a>
                                     </div>
                                 </div>
 
@@ -1274,15 +1262,9 @@
                                 }
                             </script>
                         <?php include './partials/layouts/layoutBottom.php' ?> 
-                        PHP;
-
-                    file_put_contents($det_file_path, $det_content);
-
-                    $det_content1 = <<<PHP
-                        <?php include './wizard.php' ?>
                     PHP;
 
-                    file_put_contents($det_file_path1, $det_content1);
+                    file_put_contents($det_file_path, $det_content);
                 }
             }
 
@@ -2207,6 +2189,12 @@
         padding-top: 10px;
         border-bottom: 1px solid #eee; /* Optional separator */
     }
+    
+    .add-category-menu{
+        position: sticky;
+        bottom: 0;
+        background: #fff;
+    }
 </style>
 
 <aside class="sidebar">
@@ -2222,7 +2210,7 @@
     </div>
     <div class="sidebar-menu-area">
         <div class="sidebar-menu-wrapper">
-            <ul class="sidebar-menu top-menu" id="sidebar-menu">
+            <ul class="sidebar-menu top-menu overflow-y-auto" id="sidebar-menu">
                 <!-- Dashboard + Dynamic Categories + Add New Category go here -->
                 <li>
             <?php if ($row['role'] == "1") { ?>
