@@ -2651,7 +2651,6 @@
     /* 📱 Responsive behavior */
     @media (max-width: 576px) {
         .category-item-wrapper {
-            flex-direction: column;
             align-items: flex-start;
         }
 
