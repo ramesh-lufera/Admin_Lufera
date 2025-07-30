@@ -116,6 +116,21 @@
             align-items: flex-start !important;
         }
     }
+    .progress {
+        height: 30px;
+        background-color: #f3f3f3;
+        border-radius: 8px;
+        overflow: hidden;
+    }
+    .progress-bar {
+        background-color: #fec700 !important; /* Match your form's primary color */
+        color: #ffffff;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: width 0.6s ease;
+    }
 </style>
 
 <div class="dashboard-main-body">
@@ -185,8 +200,12 @@
                 ];
             }
         ?>
-
-        <form method="POST" enctype="multipart/form-data" class="needs-validation" novalidate>
+        <div class="progress mb-4">
+            <div class="progress-bar bg-success" role="progressbar" style="min-width: 10%; width: <?= $progress_percentage ?>%;" aria-valuenow="<?= $progress_percentage ?>" aria-valuemin="0" aria-valuemax="100">
+                <?= $progress_percentage ?>% Complete
+            </div>
+        </div>
+        <form method="POST" enctype="multipart/form-data" class="needs-validation" novalidate id="myForm">
             <div class="form-group">
                 <label for="name">Name</label>
                 <input type="text" name="name" class="form-control" required value="<?= $prefill['name'] ?>">
@@ -246,5 +265,56 @@
         </form>
     </div>
 </div>
+<script>
+    $(document).ready(function() {
+        function updateProgressBar() {
+        const form = $('#myForm');
 
+        // Collect all unique required input types
+        const textInputs = form.find('input[type="text"]');
+        const emailInputs = form.find('input[type="email"]');
+        const textareas = form.find('textarea');
+        const radios = form.find('input[type="radio"][name="has_phone"]');
+        const checkboxes = form.find('input[type="checkbox"][name="website_name[]"]');
+        const fileInput = form.find('input[type="file"]');
+
+        let totalFields = 5; // name, email, has_phone (radio), website_name (checkbox), address
+        let filledFields = 0;
+
+        // Check text input
+        if (textInputs.val().trim() !== '') filledFields++;
+
+        // Check email input
+        if (emailInputs.val().trim() !== '') filledFields++;
+
+        // Check textarea
+        if (textareas.val().trim() !== '') filledFields++;
+
+        // Check radio
+        if (radios.filter(':checked').length > 0) filledFields++;
+
+        // Check checkboxes (at least one)
+        if (checkboxes.filter(':checked').length > 0) filledFields++;
+
+        // Check file input (if there's a file selected OR already uploaded logo shown)
+        if (fileInput[0].files.length > 0 || $('img[src*="uploads/"]').length > 0) {
+            totalFields++; // only count file if it's required
+            filledFields++;
+        } else {
+            totalFields++;
+        }
+
+        const percentage = Math.round((filledFields / totalFields) * 100);
+        $('.progress-bar')
+            .css('width', percentage + '%')
+            .attr('aria-valuenow', percentage)
+            .text(percentage + '% Complete');
+    }
+
+ 
+        // Update progress bar on input change (only inside the form)
+        $('#myForm').find('input, textarea, select').on('input change', updateProgressBar);
+        updateProgressBar(); // on load
+    });
+</script>
 <?php include './partials/layouts/layoutBottom.php'; ?>
