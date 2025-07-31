@@ -302,11 +302,17 @@ $(document).ready(function () {
 document.getElementById('editUserForm').addEventListener('submit', function (e) {
     e.preventDefault(); // Prevent default form submission
 
-    if (!emailValid) {
-       
-        return; // Stop submission
-    }
+    const email = document.querySelector('#editUserForm input[name="email"]').value;
+    const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
+    if (!emailValid) {
+        Swal.fire({
+            icon: 'error',
+            title: 'Invalid Email',
+            text: 'Please enter a valid email address.'
+        });
+        return;
+    }
     const formData = new FormData(this);
 
     fetch('update-user.php', {
