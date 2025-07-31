@@ -1,24 +1,6 @@
 <?php include './partials/layouts/layoutTop.php'; ?>
 
 <style>
-    .form-wrapper {
-        max-width: 75% !important;
-        margin: 40px auto !important;
-        padding: 40px !important;
-        background: #ffffff !important;
-        border-radius: 16px !important;
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05) !important;
-    }
-
-    .form-wrapper h4 {
-        font-size: 1.8rem !important;
-        font-weight: bold !important;
-        color: #101010 !important;
-        border-bottom: 2px solid #fec700 !important;
-        padding-bottom: 10px !important;
-        margin-bottom: 30px !important;
-    }
-
     .form-group {
         margin-bottom: 24px !important;
     }
@@ -70,18 +52,6 @@
         color: #101010 !important;
         font-weight: 500 !important;
         cursor: pointer !important;
-    }
-
-    @media (max-width: 768px) {
-        .form-wrapper {
-            width: 90% !important;
-            padding: 30px !important;
-        }
-
-        .form-check-group {
-            flex-direction: column !important;
-            align-items: flex-start !important;
-        }
     }
 
     /* Remove browser defaults for consistency */
@@ -160,6 +130,10 @@
         border-radius: 0 0 8px 8px;
         font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         box-shadow: 0 1px 5px rgba(0, 0, 0, 0.07);
+    }
+
+    .w-85{
+        width:85% !important;
     }
 </style>
 
@@ -313,12 +287,12 @@
 
         // === TEXT / EMAIL ===
         if ($type === 'text' || $type === 'email') {
-            echo '<input type="' . $type . '" class="form-control ' . $styleClass . '" id="' . $inputId . '" name="' . htmlspecialchars($fieldName) . '" placeholder="' . htmlspecialchars($placeholder) . '" value="' . htmlspecialchars($val) . '" ' . $isReadonly . '>';
+            echo '<input type="' . $type . '" class="form-control w-85 ' . $styleClass . '" id="' . $inputId . '" name="' . htmlspecialchars($fieldName) . '" placeholder="' . htmlspecialchars($placeholder) . '" value="' . htmlspecialchars($val) . '" ' . $isReadonly . '>';
         }
 
         // === TEXTAREA ===
         elseif ($type === 'textarea') {           
-            echo '<textarea class="form-control ' . $styleClass . '" id="' . $inputId . '" name="' . htmlspecialchars($fieldName) . '" rows="3" placeholder="' . htmlspecialchars($placeholder) . '" ' . $isReadonly . '>' . htmlspecialchars($val) . '</textarea>';
+            echo '<textarea class="form-control w-85 ' . $styleClass . '" id="' . $inputId . '" name="' . htmlspecialchars($fieldName) . '" rows="3" placeholder="' . htmlspecialchars($placeholder) . '" ' . $isReadonly . '>' . htmlspecialchars($val) . '</textarea>';
         }
 
         // // === RADIO ===
@@ -349,7 +323,7 @@
         // === FILE ===
         elseif ($type === 'file') {
             // echo '<input type="file" class="form-control ' . $styleClass . '" id="' . $inputId . '" name="' . htmlspecialchars($fieldName) . '" ' . ($isAdmin ? 'disabled' : '') . '>';
-            echo '<input type="file" class="form-control ' . $styleClass . '" id="' . $inputId . '" name="' . htmlspecialchars($fieldName) . '" ' . $isDisabled . '>';
+            echo '<input type="file" class="form-control w-85 ' . $styleClass . '" id="' . $inputId . '" name="' . htmlspecialchars($fieldName) . '" ' . $isDisabled . '>';
 
             if (!empty($val)) {
                 echo '<div class="mt-3">';
@@ -498,7 +472,9 @@
 ?>
 
 <div class="dashboard-main-body">
-
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-24">
+        <h6 class="fw-semibold mb-0">Marketing</h6>
+    </div>
     <div class="card h-100 p-0 radius-12 overflow-hidden">               
         <div class="card-body p-40">
             
@@ -509,7 +485,7 @@
                         <div class="col-lg-12">
                             <div class="form-wizard">
                                 <!-- Progress Bar -->
-                                <div class="progress mb-4" style="height: 20px;">
+                                <div class="progress mb-20" style="height: 20px;">
                                     <div class="progress-bar progress-bar-striped progress-bar-animated bg-warning"
                                         role="progressbar"
                                         style="width: 0%;"
@@ -519,12 +495,6 @@
                                 </div>
 
                                 <form action="" method="post" id="myForm" role="form" enctype="multipart/form-data">
-                                    <h4 class="marketing-header">Marketing</h4>
-                                    
-                                    <?php if (in_array($user_role, [8])): ?>
-                                        <input type="submit" name="save" class="form-wizard-submit" value="Save" style="float:right">
-                                    <?php endif; ?>
-                                    
                                     <?php if (in_array($user_role, [1, 2, 7])): ?>
                                         <div class="mb-5">
                                             <button type="button" id="bulkApproveBtn" class="btn btn-success btn-sm">Bulk Approve</button>
@@ -546,6 +516,9 @@
 
                                                 renderFieldExtended('logo', $savedData, $user_role, 'Logo', '', 'file');
                                             ?>
+                                            <?php if (in_array($user_role, [8])): ?>
+                                                <input type="submit" name="save" class="lufera-bg bg-hover-warning-400 text-white text-md px-56 py-11 radius-8 m-auto d-block" value="Save" >
+                                            <?php endif; ?>
                                 </form>
                             </div>
                         </div>
