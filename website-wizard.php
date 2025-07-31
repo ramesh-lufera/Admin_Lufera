@@ -1,23 +1,7 @@
 <?php include './partials/layouts/layoutTop.php'; ?>
 
 <style>
-    .form-wrapper {
-        max-width: 75% !important;
-        margin: 40px auto !important;
-        padding: 40px !important;
-        background: #ffffff !important;
-        border-radius: 16px !important;
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05) !important;
-    }
-
-    .form-wrapper h4 {
-        font-size: 1.8rem !important;
-        font-weight: bold !important;
-        color: #101010 !important;
-        border-bottom: 2px solid #fec700 !important;
-        padding-bottom: 10px !important;
-        margin-bottom: 30px !important;
-    }
+    
 
     .form-group {
         margin-bottom: 24px !important;
@@ -72,17 +56,6 @@
         cursor: pointer !important;
     }
 
-    @media (max-width: 768px) {
-        .form-wrapper {
-            width: 90% !important;
-            padding: 30px !important;
-        }
-
-        .form-check-group {
-            flex-direction: column !important;
-            align-items: flex-start !important;
-        }
-    }
 
     /* Remove browser defaults for consistency */
     .custom-checkbox-yellow {
@@ -159,6 +132,39 @@
         border-radius: 6px;
         font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    }
+    .modal {
+        position: fixed;
+        z-index: 1050;
+        top: 0; left: 0;
+        width: 100%; height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        display: none;
+        align-items: center;
+        justify-content: center;
+    }
+    .modal-content {
+        background: #fff;
+        padding: 25px 20px;
+        border-radius: 8px;
+        width: 100%;
+        max-width: 400px;
+        box-shadow: 0 5px 25px rgba(0, 0, 0, 0.2);
+        position: relative;
+    }
+    .close-btn {
+        position: absolute;
+        right: 15px;
+        top: 12px;
+        font-size: 20px;
+        cursor: pointer;
+        color: #aaa;
+    }
+    .close-btn:hover {
+        color: #000;
+    }
+    h5 {
+       font-size: 1.25rem !important;
     }
 </style>
 
@@ -498,18 +504,20 @@
 ?>
 
 <div class="dashboard-main-body">
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-24">
+        <h6 class="fw-semibold mb-0">Website</h6>
+    </div>
+
     <div class="card h-100 p-0 radius-12 overflow-hidden">               
         <div class="card-body p-40">
-            
             <div class="row justify-content-center">
                 <div class="col-xxl-10">
                 <section class="wizard-section">
                     <div class="row no-gutters">
                         <div class="col-lg-12">
                             <div class="form-wizard">
-
-                                <!-- Progress Bar -->
-                                <div class="progress mb-4" style="height: 20px;">
+                            <!-- Progress Bar -->   
+                                <div class="progress mb-20" style="height: 20px;">
                                     <div class="progress-bar progress-bar-striped progress-bar-animated bg-warning"
                                         role="progressbar"
                                         style="width: 0%;"
@@ -519,12 +527,6 @@
                                 </div>
 
                                 <form action="" method="post" id="myForm" role="form" enctype="multipart/form-data">
-                                    <h5 class="form-section-title">Website</h5>
-                                    
-                                    <?php if (in_array($user_role, [8])): ?>
-                                        <input type="submit" name="save" class="form-wizard-submit" value="Save" style="float:right">
-                                    <?php endif; ?>
-                                    
                                     <?php if (in_array($user_role, [1, 2, 7])): ?>
                                         <div class="mb-5">
                                             <button type="button" id="bulkApproveBtn" class="btn btn-success btn-sm">Bulk Approve</button>
@@ -544,6 +546,9 @@
 
                                             renderFieldExtended('logo', $savedData, $user_role, 'Logo', '', 'file');
                                         ?>
+                                        <?php if (in_array($user_role, [8])): ?>
+                                        <input type="submit" name="save" class="lufera-bg bg-hover-warning-400 text-white text-md px-56 py-11 radius-8 m-auto d-block" value="Save" >
+                                    <?php endif; ?>
                                 </form>
                             </div>
                         </div>
@@ -555,41 +560,6 @@
     </div>
 </div>
 
-<style>
-    .modal {
-        position: fixed;
-        z-index: 1050;
-        top: 0; left: 0;
-        width: 100%; height: 100%;
-        background: rgba(0, 0, 0, 0.5);
-        display: none;
-        align-items: center;
-        justify-content: center;
-    }
-    .modal-content {
-        background: #fff;
-        padding: 25px 20px;
-        border-radius: 8px;
-        width: 100%;
-        max-width: 400px;
-        box-shadow: 0 5px 25px rgba(0, 0, 0, 0.2);
-        position: relative;
-    }
-    .close-btn {
-        position: absolute;
-        right: 15px;
-        top: 12px;
-        font-size: 20px;
-        cursor: pointer;
-        color: #aaa;
-    }
-    .close-btn:hover {
-        color: #000;
-    }
-    h5 {
-       font-size: 1.25rem !important;
-    }
-</style>
 
 <script>
     document.addEventListener('DOMContentLoaded', () => {
