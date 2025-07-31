@@ -234,19 +234,21 @@
         }
     }
     .progress {
-        height: 30px;
+        height: 40px;
         background-color: #f3f3f3;
         border-radius: 8px;
         overflow: hidden;
     }
     .progress-bar {
         background-color: #fec700 !important; /* Match your form's primary color */
-        color: #ffffff;
+        color: #000;
         font-weight: 600;
         display: flex;
         align-items: center;
         justify-content: center;
         transition: width 0.6s ease;
+        height: 40px;
+        font-size:20px;
     }
 
     /* Remove browser defaults for consistency */
@@ -311,6 +313,9 @@
         min-width: 120px;
         padding: 10px;
         text-align: center;
+    }
+    .w-85{
+        width:85% !important;
     }
 </style>
 
@@ -468,7 +473,7 @@
         // Admin checkbox
         if ($isAdmin) {
             echo '<div class="me-3 d-flex align-items-center pt-4">';
-            echo '<input class="form-check-input bulk-approve-checkbox custom-checkbox custom-checkbox-yellow" type="checkbox" value="' . htmlspecialchars($fieldName) . '" id="chk_' . htmlspecialchars($fieldName) . '">';
+            echo '<input class="form-check-input bulk-approve-checkbox custom-checkbox custom-checkbox-yellow mt-0" type="checkbox" value="' . htmlspecialchars($fieldName) . '" id="chk_' . htmlspecialchars($fieldName) . '">';
             echo '</div>';
         }
 
@@ -484,12 +489,12 @@
 
         // === TEXT / Passport No ===
         if ($type === 'text' || $type === 'email') {
-            echo '<input type="' . $type . '" class="form-control ' . $styleClass . '" id="' . $inputId . '" name="' . htmlspecialchars($fieldName) . '" placeholder="' . htmlspecialchars($placeholder) . '" value="' . htmlspecialchars($val) . '" ' . $isReadonly . '>';
+            echo '<input type="' . $type . '" class="form-control w-85 ' . $styleClass . '" id="' . $inputId . '" name="' . htmlspecialchars($fieldName) . '" placeholder="' . htmlspecialchars($placeholder) . '" value="' . htmlspecialchars($val) . '" ' . $isReadonly . '>';
         }
 
         // === TEXTAREA ===
         elseif ($type === 'textarea') {           
-            echo '<textarea class="form-control ' . $styleClass . '" id="' . $inputId . '" name="' . htmlspecialchars($fieldName) . '" rows="3" placeholder="' . htmlspecialchars($placeholder) . '" ' . $isReadonly . '>' . htmlspecialchars($val) . '</textarea>';
+            echo '<textarea class="form-control  w-85 ' . $styleClass . '" id="' . $inputId . '" name="' . htmlspecialchars($fieldName) . '" rows="3" placeholder="' . htmlspecialchars($placeholder) . '" ' . $isReadonly . '>' . htmlspecialchars($val) . '</textarea>';
         }
 
         // === RADIO ===
@@ -498,7 +503,7 @@
                 $checked = ($val == $option) ? 'checked' : '';
                 echo '<div class="form-check form-check-inline">';
                 // echo '<input class="form-check-input" type="radio" id="' . $inputId . '_' . $option . '" name="' . htmlspecialchars($fieldName) . '" value="' . htmlspecialchars($option) . '" ' . $checked . ' ' . ($isAdmin ? 'disabled' : '') . '>';
-                echo '<input class="form-check-input" type="radio" id="' . $inputId . '_' . $option . '" name="' . htmlspecialchars($fieldName) . '" value="' . htmlspecialchars($option) . '" ' . $checked . ' ' . $isDisabled . '>';
+                echo '<input class="form-check-input mt-4" type="radio" id="' . $inputId . '_' . $option . '" name="' . htmlspecialchars($fieldName) . '" value="' . htmlspecialchars($option) . '" ' . $checked . ' ' . $isDisabled . '>';
                 echo '<label class="form-check-label" for="' . $inputId . '_' . $option . '">' . htmlspecialchars($option) . '</label>';
                 echo '</div>';
             }
@@ -511,7 +516,7 @@
                 $checked = in_array($option, $valArray) ? 'checked' : '';
                 echo '<div class="form-check form-check-inline">';
                 // echo '<input class="form-check-input" type="checkbox" name="' . htmlspecialchars($fieldName) . '[]" value="' . htmlspecialchars($option) . '" ' . $checked . ' ' . ($isAdmin ? 'disabled' : '') . '>';
-                echo '<input class="form-check-input" type="checkbox" name="' . htmlspecialchars($fieldName) . '[]" value="' . htmlspecialchars($option) . '" ' . $checked . ' ' . $isDisabled . '>';
+                echo '<input class="form-check-input mt-4" type="checkbox" name="' . htmlspecialchars($fieldName) . '[]" value="' . htmlspecialchars($option) . '" ' . $checked . ' ' . $isDisabled . '>';
                 echo '<label class="form-check-label">' . htmlspecialchars($option) . '</label>';
                 echo '</div>';
             }
@@ -669,7 +674,9 @@
 ?>
 
 <div class="dashboard-main-body">
-
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-24">
+        <h6 class="fw-semibold mb-0">Visa</h6>
+    </div>
     <div class="card h-100 p-0 radius-12 overflow-hidden">               
         <div class="card-body p-40">
 
@@ -680,21 +687,15 @@
                         <div class="col-lg-12">
                             <div class="form-wizard">
                                 <!-- Progress Bar -->
-                                <div class="progress mb-4" style="height: 20px;">
+                                <div class="progress mb-20">
                                     <div class="progress-bar progress-bar-striped progress-bar-animated bg-warning"
                                         role="progressbar"
-                                        style="width: 0%;"
+                                        style="min-width: 5%;"
                                         id="formProgressBar">
                                         0%
                                     </div>
                                 </div>
                                 <form action="" method="post" id="myForm" role="form" enctype="multipart/form-data">
-                                <h5>Visa</h5>
-                                    
-                                    <?php if (in_array($user_role, [8])): ?>
-                                        <input type="submit" name="save" class="form-wizard-submit" value="Save" style="float:right">
-                                    <?php endif; ?>
-
                                     <?php if (in_array($user_role, [1, 2, 7])): ?>
                                         <div class="mb-5">
                                             <button type="button" id="bulkApproveBtn" class="btn btn-success btn-sm">Bulk Approve</button>
@@ -715,6 +716,9 @@
 
                                         renderFieldExtended('logo', $savedData, $user_role, 'Photo', '', 'file');
                                     ?>
+                                    <?php if (in_array($user_role, [8])): ?>
+                                        <input type="submit" name="save" class="lufera-bg bg-hover-warning-400 text-white text-md px-56 py-11 radius-8 m-auto d-block" value="Save">
+                                    <?php endif; ?>
                                 </form>
                             </div>
                         </div>
@@ -788,7 +792,7 @@
                         const checked = opt.trim() === value ? 'checked' : '';
                         fieldContainer.innerHTML += `
                             <div class="form-check">
-                                <input class="form-check-input" type="radio" name="modalInput" value="${opt.trim()}" ${checked}>
+                                <input class="form-check-input mt-4" type="radio" name="modalInput" value="${opt.trim()}" ${checked}>
                                 <label class="form-check-label">${opt.trim()}</label>
                             </div>`;
                     });
@@ -798,7 +802,7 @@
                         const checked = selected.includes(opt.trim()) ? 'checked' : '';
                         fieldContainer.innerHTML += `
                             <div class="form-check">
-                                <input class="form-check-input" type="checkbox" name="modalInput" value="${opt.trim()}" ${checked}>
+                                <input class="form-check-input mt-4" type="checkbox" name="modalInput" value="${opt.trim()}" ${checked}>
                                 <label class="form-check-label">${opt.trim()}</label>
                             </div>`;
                     });
@@ -1054,7 +1058,7 @@
         const name = $('#field_name').val()?.trim();
         if (name) filled++;
  
-        const email = $('#field_email').val()?.trim();
+        const email = $('#field_name').val()?.trim();
         if (email) filled++;
  
         const hasPhone = $('input[name="has_phone"]:checked').val();
