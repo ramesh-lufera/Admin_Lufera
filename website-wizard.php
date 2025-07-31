@@ -166,6 +166,26 @@
     h5 {
        font-size: 1.25rem !important;
     }
+    .progress {
+        height: 40px;
+        background-color: #f3f3f3;
+        border-radius: 8px;
+        overflow: hidden;
+    }
+    .progress-bar {
+        background-color: #fec700 !important; /* Match your form's primary color */
+        color: #000;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: width 0.6s ease;
+        height: 40px;
+        font-size:20px;
+    }
+    .w-85{
+        width:85% !important;
+    }
 </style>
 
 <?php
@@ -303,7 +323,7 @@
         // Admin checkbox
         if ($isAdmin) {
             echo '<div class="me-3 d-flex align-items-center pt-4">';
-            echo '<input class="form-check-input bulk-approve-checkbox custom-checkbox custom-checkbox-yellow" type="checkbox" value="' . htmlspecialchars($fieldName) . '" id="chk_' . htmlspecialchars($fieldName) . '">';
+            echo '<input class="form-check-input bulk-approve-checkbox custom-checkbox custom-checkbox-yellow mt-0" type="checkbox" value="' . htmlspecialchars($fieldName) . '" id="chk_' . htmlspecialchars($fieldName) . '">';
             echo '</div>';
         }
 
@@ -319,12 +339,12 @@
 
         // === TEXT / EMAIL ===
         if ($type === 'text' || $type === 'email') {
-            echo '<input type="' . $type . '" class="form-control ' . $styleClass . '" id="' . $inputId . '" name="' . htmlspecialchars($fieldName) . '" placeholder="' . htmlspecialchars($placeholder) . '" value="' . htmlspecialchars($val) . '" ' . $isReadonly . '>';
+            echo '<input type="' . $type . '" class="form-control  w-85 ' . $styleClass . '" id="' . $inputId . '" name="' . htmlspecialchars($fieldName) . '" placeholder="' . htmlspecialchars($placeholder) . '" value="' . htmlspecialchars($val) . '" ' . $isReadonly . '>';
         }
 
         // === TEXTAREA ===
         elseif ($type === 'textarea') {           
-            echo '<textarea class="form-control ' . $styleClass . '" id="' . $inputId . '" name="' . htmlspecialchars($fieldName) . '" rows="3" placeholder="' . htmlspecialchars($placeholder) . '" ' . $isReadonly . '>' . htmlspecialchars($val) . '</textarea>';
+            echo '<textarea class="form-control  w-85 ' . $styleClass . '" id="' . $inputId . '" name="' . htmlspecialchars($fieldName) . '" rows="3" placeholder="' . htmlspecialchars($placeholder) . '" ' . $isReadonly . '>' . htmlspecialchars($val) . '</textarea>';
         }
 
         // === RADIO ===
@@ -333,7 +353,7 @@
                 $checked = ($val == $option) ? 'checked' : '';
                 echo '<div class="form-check form-check-inline">';
                 // echo '<input class="form-check-input" type="radio" id="' . $inputId . '_' . $option . '" name="' . htmlspecialchars($fieldName) . '" value="' . htmlspecialchars($option) . '" ' . $checked . ' ' . ($isAdmin ? 'disabled' : '') . '>';
-                echo '<input class="form-check-input" type="radio" id="' . $inputId . '_' . $option . '" name="' . htmlspecialchars($fieldName) . '" value="' . htmlspecialchars($option) . '" ' . $checked . ' ' . $isDisabled . '>';
+                echo '<input class="form-check-input mt-4" type="radio" id="' . $inputId . '_' . $option . '" name="' . htmlspecialchars($fieldName) . '" value="' . htmlspecialchars($option) . '" ' . $checked . ' ' . $isDisabled . '>';
                 echo '<label class="form-check-label" for="' . $inputId . '_' . $option . '">' . htmlspecialchars($option) . '</label>';
                 echo '</div>';
             }
@@ -346,7 +366,7 @@
                 $checked = in_array($option, $valArray) ? 'checked' : '';
                 echo '<div class="form-check form-check-inline">';
                 // echo '<input class="form-check-input" type="checkbox" name="' . htmlspecialchars($fieldName) . '[]" value="' . htmlspecialchars($option) . '" ' . $checked . ' ' . ($isAdmin ? 'disabled' : '') . '>';
-                echo '<input class="form-check-input" type="checkbox" name="' . htmlspecialchars($fieldName) . '[]" value="' . htmlspecialchars($option) . '" ' . $checked . ' ' . $isDisabled . '>';
+                echo '<input class="form-check-input mt-4" type="checkbox" name="' . htmlspecialchars($fieldName) . '[]" value="' . htmlspecialchars($option) . '" ' . $checked . ' ' . $isDisabled . '>';
                 echo '<label class="form-check-label">' . htmlspecialchars($option) . '</label>';
                 echo '</div>';
             }
@@ -355,7 +375,7 @@
         // === FILE ===
         elseif ($type === 'file') {
             // echo '<input type="file" class="form-control ' . $styleClass . '" id="' . $inputId . '" name="' . htmlspecialchars($fieldName) . '" ' . ($isAdmin ? 'disabled' : '') . '>';
-            echo '<input type="file" class="form-control ' . $styleClass . '" id="' . $inputId . '" name="' . htmlspecialchars($fieldName) . '" ' . $isDisabled . '>';
+            echo '<input type="file" class="form-control  w-85 ' . $styleClass . '" id="' . $inputId . '" name="' . htmlspecialchars($fieldName) . '" ' . $isDisabled . '>';
 
             if (!empty($val)) {
                 echo '<div class="mt-3">';
@@ -517,10 +537,10 @@
                         <div class="col-lg-12">
                             <div class="form-wizard">
                             <!-- Progress Bar -->   
-                                <div class="progress mb-20" style="height: 20px;">
+                                <div class="progress mb-20">
                                     <div class="progress-bar progress-bar-striped progress-bar-animated bg-warning"
                                         role="progressbar"
-                                        style="width: 0%;"
+                                        style="min-width: 5%;"
                                         id="formProgressBar">
                                         0%
                                     </div>
@@ -587,7 +607,7 @@
                         const checked = opt.trim() === value ? 'checked' : '';
                         fieldContainer.innerHTML += `
                             <div class="form-check">
-                                <input class="form-check-input" type="radio" name="modalInput" value="${opt.trim()}" ${checked}>
+                                <input class="form-check-input mt-4" type="radio" name="modalInput" value="${opt.trim()}" ${checked}>
                                 <label class="form-check-label">${opt.trim()}</label>
                             </div>`;
                     });
@@ -597,7 +617,7 @@
                         const checked = selected.includes(opt.trim()) ? 'checked' : '';
                         fieldContainer.innerHTML += `
                             <div class="form-check">
-                                <input class="form-check-input" type="checkbox" name="modalInput" value="${opt.trim()}" ${checked}>
+                                <input class="form-check-input mt-4" type="checkbox" name="modalInput" value="${opt.trim()}" ${checked}>
                                 <label class="form-check-label">${opt.trim()}</label>
                             </div>`;
                     });
