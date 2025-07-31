@@ -83,21 +83,6 @@
             align-items: flex-start !important;
         }
     }
-    .progress {
-        height: 30px;
-        background-color: #f3f3f3;
-        border-radius: 8px;
-        overflow: hidden;
-    }
-    .progress-bar {
-        background-color: #fec700 !important; /* Match your form's primary color */
-        color: #ffffff;
-        font-weight: 600;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        transition: width 0.6s ease;
-    }
 
     /* Remove browser defaults for consistency */
     .custom-checkbox-yellow {
@@ -162,6 +147,20 @@
         padding: 10px;
         text-align: center;
     }
+
+    .marketing-header {
+        font-size: 26px !important;
+        font-weight: 700;
+        color: #212529;
+        text-align: center;
+        padding: 18px 16px 14px;
+        margin-bottom: 30px;
+        border-top: 5px solid #fec700;
+        background-color: #ffffff;
+        border-radius: 0 0 8px 8px;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        box-shadow: 0 1px 5px rgba(0, 0, 0, 0.07);
+    }
 </style>
 
 <?php
@@ -211,7 +210,7 @@
     }
     $query->close();
 
-    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    if (isset($_POST['save'])) {
         $name = $_POST['name'] ?? '';
         $facebook_id = $_POST['facebook_id'] ?? '';
         $password = $_POST['password'] ?? '';
@@ -286,7 +285,9 @@
         $status = $savedData[$fieldName]['status'] ?? 'pending';
         $inputId = 'field_' . htmlspecialchars($fieldName);
         $isAdmin = in_array($user_role, [1, 2, 7]);
-        $isReadonly = $isAdmin ? 'readonly' : '';
+        // $isReadonly = $isAdmin ? 'readonly' : '';
+        $isReadonly = ($isAdmin || (!$isAdmin && ($status === 'approved' || $status === 'rejected'))) ? 'readonly' : '';
+        $isDisabled = ($isAdmin || (!$isAdmin && ($status === 'approved' || $status === 'rejected'))) ? 'disabled' : '';
         $dataValue = is_array($val) ? implode(',', $val) : $val;
         $dataOptions = !empty($options) ? 'data-options="' . htmlspecialchars(implode(',', $options)) . '"' : '';
 
@@ -316,18 +317,17 @@
         }
 
         // === TEXTAREA ===
-        elseif ($type === 'textarea') {
-            echo '</div>';
+        elseif ($type === 'textarea') {           
             echo '<textarea class="form-control ' . $styleClass . '" id="' . $inputId . '" name="' . htmlspecialchars($fieldName) . '" rows="3" placeholder="' . htmlspecialchars($placeholder) . '" ' . $isReadonly . '>' . htmlspecialchars($val) . '</textarea>';
         }
 
-        // === RADIO ===
+        // // === RADIO ===
         // elseif ($type === 'radio') {
-        //     echo '</div>';
         //     foreach ($options as $option) {
         //         $checked = ($val == $option) ? 'checked' : '';
         //         echo '<div class="form-check form-check-inline">';
-        //         echo '<input class="form-check-input" type="radio" id="' . $inputId . '_' . $option . '" name="' . htmlspecialchars($fieldName) . '" value="' . htmlspecialchars($option) . '" ' . $checked . ' ' . ($isAdmin ? 'disabled' : '') . '>';
+        //         // echo '<input class="form-check-input" type="radio" id="' . $inputId . '_' . $option . '" name="' . htmlspecialchars($fieldName) . '" value="' . htmlspecialchars($option) . '" ' . $checked . ' ' . ($isAdmin ? 'disabled' : '') . '>';
+        //         echo '<input class="form-check-input" type="radio" id="' . $inputId . '_' . $option . '" name="' . htmlspecialchars($fieldName) . '" value="' . htmlspecialchars($option) . '" ' . $checked . ' ' . $isDisabled . '>';
         //         echo '<label class="form-check-label" for="' . $inputId . '_' . $option . '">' . htmlspecialchars($option) . '</label>';
         //         echo '</div>';
         //     }
@@ -335,12 +335,12 @@
 
         // === CHECKBOX ===
         elseif ($type === 'checkbox') {
-            echo '</div>';
             $valArray = is_array($val) ? $val : explode(',', str_replace(' ', '', $val));
             foreach ($options as $option) {
                 $checked = in_array($option, $valArray) ? 'checked' : '';
                 echo '<div class="form-check form-check-inline">';
-                echo '<input class="form-check-input" type="checkbox" name="' . htmlspecialchars($fieldName) . '[]" value="' . htmlspecialchars($option) . '" ' . $checked . ' ' . ($isAdmin ? 'disabled' : '') . '>';
+                // echo '<input class="form-check-input" type="checkbox" name="' . htmlspecialchars($fieldName) . '[]" value="' . htmlspecialchars($option) . '" ' . $checked . ' ' . ($isAdmin ? 'disabled' : '') . '>';
+                echo '<input class="form-check-input" type="checkbox" name="' . htmlspecialchars($fieldName) . '[]" value="' . htmlspecialchars($option) . '" ' . $checked . ' ' . $isDisabled . '>';
                 echo '<label class="form-check-label">' . htmlspecialchars($option) . '</label>';
                 echo '</div>';
             }
@@ -348,8 +348,9 @@
 
         // === FILE ===
         elseif ($type === 'file') {
-            echo '<input type="file" class="form-control ' . $styleClass . '" id="' . $inputId . '" name="' . htmlspecialchars($fieldName) . '" ' . ($isAdmin ? 'disabled' : '') . '>';
-            echo '</div>';
+            // echo '<input type="file" class="form-control ' . $styleClass . '" id="' . $inputId . '" name="' . htmlspecialchars($fieldName) . '" ' . ($isAdmin ? 'disabled' : '') . '>';
+            echo '<input type="file" class="form-control ' . $styleClass . '" id="' . $inputId . '" name="' . htmlspecialchars($fieldName) . '" ' . $isDisabled . '>';
+
             if (!empty($val)) {
                 echo '<div class="mt-3">';
                 echo '<label class="d-block fw-bold">Uploaded File:</label>';
@@ -359,6 +360,7 @@
                 } else {
                     echo '<a href="' . htmlspecialchars($val) . '" target="_blank">' . htmlspecialchars(basename($val)) . '</a>';
                 }
+                echo '</div>';
                 echo '</div>';
             }
         }
@@ -388,8 +390,6 @@
         elseif (!$isAdmin && $status === 'approved') {
             echo '<span class="input-group-text text-success">&#10004;</span>';
         }
-
-        // No pending icon or button
 
         echo '</div>'; // .input-group or after field
         echo '</div>'; // .flex-grow-1
@@ -502,8 +502,6 @@
     <div class="card h-100 p-0 radius-12 overflow-hidden">               
         <div class="card-body p-40">
             
-            
-            
             <div class="row justify-content-center">
                 <div class="col-xxl-10">
                 <section class="wizard-section">
@@ -519,11 +517,13 @@
                                         0%
                                     </div>
                                 </div>
+
                                 <form action="" method="post" id="myForm" role="form" enctype="multipart/form-data">
+                                    <h4 class="marketing-header">Marketing</h4>
                                     
-                                <?php if (in_array($user_role, [8])): ?>
-                                    <input type="submit" name="save" class="form-wizard-submit" value="Save" style="float:right">
-                                <?php endif; ?>
+                                    <?php if (in_array($user_role, [8])): ?>
+                                        <input type="submit" name="save" class="form-wizard-submit" value="Save" style="float:right">
+                                    <?php endif; ?>
                                     
                                     <?php if (in_array($user_role, [1, 2, 7])): ?>
                                         <div class="mb-5">
@@ -532,23 +532,20 @@
                                         </div>
                                     <?php endif; ?>
 
-                                    <fieldset class="wizard-fieldset show">
-                                        <!-- <h5>Website</h5> -->
-                                        <h4 class="m-auto" style="width:max-content">Marketing Wizard</h4>
-                                        <?php
-                                            renderFieldExtended('name', $savedData, $user_role, 'Name', 'Enter your name', 'text');
+                                    <!-- <h4 class="m-auto" style="width:max-content">Marketing</h4> -->
+                                            <?php
+                                                renderFieldExtended('name', $savedData, $user_role, 'Name', 'Enter your name', 'text');
 
-                                            renderFieldExtended('facebook_id', $savedData, $user_role, 'Facebook ID', 'Facebook ID', 'email');
+                                                renderFieldExtended('facebook_id', $savedData, $user_role, 'Facebook ID', 'Facebook ID', 'email');
 
-                                            renderFieldExtended('password', $savedData, $user_role, 'Password', 'Password', 'text');
+                                                renderFieldExtended('password', $savedData, $user_role, 'Password', 'Password', 'text');
 
-                                            renderFieldExtended('website_type', $savedData, $user_role, 'Website Type', '', 'checkbox', ['Static', 'Dynamic']);
+                                                renderFieldExtended('website_type', $savedData, $user_role, 'Website Type', '', 'checkbox', ['Static', 'Dynamic']);
 
-                                            renderFieldExtended('address', $savedData, $user_role, 'Address', 'Enter your address', 'textarea');
+                                                renderFieldExtended('address', $savedData, $user_role, 'Address', 'Enter your address', 'textarea');
 
-                                            renderFieldExtended('logo', $savedData, $user_role, 'Logo', '', 'file');
-                                        ?>
-                                    </fieldset>
+                                                renderFieldExtended('logo', $savedData, $user_role, 'Logo', '', 'file');
+                                            ?>
                                 </form>
                             </div>
                         </div>
@@ -878,43 +875,45 @@
         });
     });
 </script>
+
+<!-- Progress Bar -->
 <script>
     function updateProgressBar() {
-    let filled = 0;
-    const totalFields = 6;
+        let filled = 0;
+        const totalFields = 6;
 
-    const name = $('#field_name').val()?.trim();
-    if (name) filled++;
+        const name = $('#field_name').val()?.trim();
+        if (name) filled++;
 
-    const facebookId = $('#field_facebook_id').val()?.trim();
-    if (facebookId) filled++;
+        const facebookId = $('#field_facebook_id').val()?.trim();
+        if (facebookId) filled++;
 
-    const password = $('#field_password').val()?.trim();
-    if (password) filled++;
+        const password = $('#field_password').val()?.trim();
+        if (password) filled++;
 
-    const websiteTypes = $('input[name="website_type[]"]:checked').length;
-    if (websiteTypes > 0) filled++;
+        const websiteTypes = $('input[name="website_type[]"]:checked').length;
+        if (websiteTypes > 0) filled++;
 
-    const address = $('#field_address').val()?.trim();
-    if (address) filled++;
+        const address = $('#field_address').val()?.trim();
+        if (address) filled++;
 
-    const logoInput = $('#field_logo');
-    const logoFile = logoInput[0]?.files?.length > 0;
-    const existingLogo = logoInput.closest('.form-group').find('img, a').length > 0;
-    if (logoFile || existingLogo) filled++;
+        const logoInput = $('#field_logo');
+        const logoFile = logoInput[0]?.files?.length > 0;
+        const existingLogo = logoInput.closest('.form-group').find('img, a').length > 0;
+        if (logoFile || existingLogo) filled++;
 
-    const percent = Math.round((filled / totalFields) * 100);
-    $('#formProgressBar').css('width', percent + '%').text(percent + '%');
-}
+        const percent = Math.round((filled / totalFields) * 100);
+        $('#formProgressBar').css('width', percent + '%').text(percent + '%');
+    }
 
  
     $(document).ready(function () {
     updateProgressBar();
 
-    $('#field_name, #field_facebook_id, #field_password, #field_address').on('input', updateProgressBar);
-    $('input[name="website_type[]"]').on('change', updateProgressBar);
-    $('#field_logo').on('change', updateProgressBar);
-});
-
+        $('#field_name, #field_facebook_id, #field_password, #field_address').on('input', updateProgressBar);
+        $('input[name="website_type[]"]').on('change', updateProgressBar);
+        $('#field_logo').on('change', updateProgressBar);
+    });
 </script>
+
 <?php include './partials/layouts/layoutBottom.php' ?>
