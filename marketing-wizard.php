@@ -1,121 +1,5 @@
 <?php include './partials/layouts/layoutTop.php'; ?>
 
-<!-- <style>
-    .form-wrapper {
-        width: 100%;
-        max-width: 750px;
-        padding: 40px;
-        background: #fff;
-        border-radius: 12px;
-        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
-        animation: fadeIn 0.5s ease-in-out;
-        margin: 50px auto;
-    }
-
-    .form-wrapper h4 {
-        text-align: center;
-        font-size: 1.8rem;
-        font-weight: 600;
-        color: #333;
-        margin-bottom: 30px;
-        position: relative;
-        padding-bottom: 8px;
-    }
-
-    .form-wrapper h4::after {
-        content: "";
-        display: block;
-        height: 3px;
-        background: #f6c90e;
-        margin: 8px auto 0;
-        border-radius: 2px;
-    }
-
-    .form-group {
-        position: relative;
-        margin-bottom: 25px;
-    }
-
-    .form-group input,
-    .form-group textarea {
-        width: 100%;
-        padding: 12px 0;
-        border: none;
-        border-bottom: 2px solid #ccc;
-        background: transparent;
-        color: #333;
-        font-size: 1rem;
-        outline: none;
-        transition: border-color 0.3s ease;
-    }
-
-    .form-group input:focus,
-    .form-group textarea:focus {
-        border-color: #f6c90e;
-    }
-
-    .form-group label {
-        position: absolute;
-        top: 12px;
-        left: 0;
-        font-size: 0.9rem;
-        color: #666;
-        transition: 0.2s ease;
-        pointer-events: none;
-    }
-    .form-group p {
-    font-size: 0.9rem;
-    color: #666;
-    }
-    .form-group input:focus + label,
-    .form-group input:not(:placeholder-shown) + label,
-    .form-group textarea:focus + label,
-    .form-group textarea:not(:placeholder-shown) + label {
-        top: -10px;
-        font-size: 0.75rem;
-        color: #f6c90e;
-    }
-
-    .form-check-inline {
-        margin-right: 15px;
-    }
-
-    .form-check-label {
-        margin-left: 5px;
-        font-size: 0.9rem;
-        color: #333;
-    }
-
-    .submit-btn {
-        width: 100%;
-        padding: 12px;
-        background: #f6c90e;
-        border: none;
-        border-radius: 6px;
-        font-size: 1rem;
-        font-weight: 600;
-        color: #333;
-        cursor: pointer;
-        transition: background 0.3s ease, transform 0.2s ease;
-    }
-
-    .submit-btn:hover {
-        background: #ffdb4d;
-        transform: translateY(-2px);
-    }
-
-    @keyframes fadeIn {
-        from { opacity: 0; transform: translateY(20px); }
-        to { opacity: 1; transform: translateY(0); }
-    }
-
-    @media (max-width: 576px) {
-        .form-wrapper {
-            padding: 25px;
-        }
-    }
-</style> -->
-
 <style>
     .form-wrapper {
         max-width: 75% !important;
@@ -392,7 +276,7 @@
                     title: "Success!",
                     text: "Data saved successfully!"
                 }).then(() => {
-                    window.location.href = "website-wizard.php";
+                    window.history.back();
                 });
             </script>';
     }
@@ -618,12 +502,7 @@
     <div class="card h-100 p-0 radius-12 overflow-hidden">               
         <div class="card-body p-40">
             
-            <!-- Progress Bar -->
-            <div class="progress mb-4">
-                <div class="progress-bar bg-success" role="progressbar" style="min-width: 10%; width: <?= $progress_percentage ?>%;" aria-valuenow="<?= $progress_percentage ?>" aria-valuemin="0" aria-valuemax="100">
-                    <?= $progress_percentage ?>% Complete
-                </div>
-            </div>
+            
             
             <div class="row justify-content-center">
                 <div class="col-xxl-10">
@@ -631,9 +510,20 @@
                     <div class="row no-gutters">
                         <div class="col-lg-12">
                             <div class="form-wizard">
+                                <!-- Progress Bar -->
+                                <div class="progress mb-4" style="height: 20px;">
+                                    <div class="progress-bar progress-bar-striped progress-bar-animated bg-warning"
+                                        role="progressbar"
+                                        style="width: 0%;"
+                                        id="formProgressBar">
+                                        0%
+                                    </div>
+                                </div>
                                 <form action="" method="post" id="myForm" role="form" enctype="multipart/form-data">
                                     
+                                <?php if (in_array($user_role, [8])): ?>
                                     <input type="submit" name="save" class="form-wizard-submit" value="Save" style="float:right">
+                                <?php endif; ?>
                                     
                                     <?php if (in_array($user_role, [1, 2, 7])): ?>
                                         <div class="mb-5">
@@ -988,5 +878,43 @@
         });
     });
 </script>
+<script>
+    function updateProgressBar() {
+    let filled = 0;
+    const totalFields = 6;
 
+    const name = $('#field_name').val()?.trim();
+    if (name) filled++;
+
+    const facebookId = $('#field_facebook_id').val()?.trim();
+    if (facebookId) filled++;
+
+    const password = $('#field_password').val()?.trim();
+    if (password) filled++;
+
+    const websiteTypes = $('input[name="website_type[]"]:checked').length;
+    if (websiteTypes > 0) filled++;
+
+    const address = $('#field_address').val()?.trim();
+    if (address) filled++;
+
+    const logoInput = $('#field_logo');
+    const logoFile = logoInput[0]?.files?.length > 0;
+    const existingLogo = logoInput.closest('.form-group').find('img, a').length > 0;
+    if (logoFile || existingLogo) filled++;
+
+    const percent = Math.round((filled / totalFields) * 100);
+    $('#formProgressBar').css('width', percent + '%').text(percent + '%');
+}
+
+ 
+    $(document).ready(function () {
+    updateProgressBar();
+
+    $('#field_name, #field_facebook_id, #field_password, #field_address').on('input', updateProgressBar);
+    $('input[name="website_type[]"]').on('change', updateProgressBar);
+    $('#field_logo').on('change', updateProgressBar);
+});
+
+</script>
 <?php include './partials/layouts/layoutBottom.php' ?>
