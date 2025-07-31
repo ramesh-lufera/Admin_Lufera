@@ -446,7 +446,7 @@
                     title: "Success!",
                     text: "Data saved successfully!"
                 }).then(() => {
-                    window.location.href = "website-wizard.php";
+                    window.history.back();
                 });
             </script>';
     }
@@ -673,11 +673,7 @@
         <div class="card-body p-40">
             
             <!-- Progress Bar -->
-            <div class="progress mb-4">
-                <div class="progress-bar bg-success" role="progressbar" style="min-width: 10%; width: <?= $progress_percentage ?>%;" aria-valuenow="<?= $progress_percentage ?>" aria-valuemin="0" aria-valuemax="100">
-                    <?= $progress_percentage ?>% Complete
-                </div>
-            </div>
+            
             
             <div class="row justify-content-center">
                 <div class="col-xxl-10">
@@ -685,9 +681,21 @@
                     <div class="row no-gutters">
                         <div class="col-lg-12">
                             <div class="form-wizard">
+                                <!-- Progress Bar -->
+                                <div class="progress mb-4" style="height: 20px;">
+                                    <div class="progress-bar progress-bar-striped progress-bar-animated bg-warning"
+                                        role="progressbar"
+                                        style="width: 0%;"
+                                        id="formProgressBar">
+                                        0%
+                                    </div>
+                                </div>
                                 <form action="" method="post" id="myForm" role="form" enctype="multipart/form-data">
                                     
+                                <?php if (in_array($user_role, [8])): ?>
                                     <input type="submit" name="save" class="form-wizard-submit" value="Save" style="float:right">
+                                <?php endif; ?>
+ 
                                     
                                     <?php if (in_array($user_role, [1, 2, 7])): ?>
                                         <div class="mb-5">
@@ -697,7 +705,7 @@
                                     <?php endif; ?>
 
                                     <fieldset class="wizard-fieldset show">
-                                        <h5>Website</h5>
+                                        <h5>Visa</h5>
                                         <?php
                                             renderFieldExtended('name', $savedData, $user_role, 'Name', 'Enter your name', 'text');
 
@@ -722,81 +730,6 @@
         </div>
     </div>
 </div>
-
-<script>
-    $(document).ready(function() {
-        function updateProgressBar() {
-            const form = $('#myForm');
-
-            // Collect all unique required input types
-            const textInputs = form.find('input[type="text"]');
-            const emailInputs = form.find('input[type="email"]');
-            const textareas = form.find('textarea');
-            const radios = form.find('input[type="radio"][name="has_phone"]');
-            const checkboxes = form.find('input[type="checkbox"][name="website_name[]"]');
-            const fileInput = form.find('input[type="file"]');
-
-            let totalFields = 5; // name, email, has_phone (radio), website_name (checkbox), address
-            let filledFields = 0;
-
-            // Check text input
-            if (textInputs.val().trim() !== '') filledFields++;
-
-            // Check email input
-            if (emailInputs.val().trim() !== '') filledFields++;
-
-            // Check textarea
-            if (textareas.val().trim() !== '') filledFields++;
-
-            // Check radio
-            if (radios.filter(':checked').length > 0) filledFields++;
-
-            // Check checkboxes (at least one)
-            if (checkboxes.filter(':checked').length > 0) filledFields++;
-
-            // Check file input (if there's a file selected OR already uploaded logo shown)
-            if (fileInput[0].files.length > 0 || $('img[src*="uploads/"]').length > 0) {
-                totalFields++; // only count file if it's required
-                filledFields++;
-            } else {
-                totalFields++;
-            }
-
-            const percentage = Math.round((filledFields / totalFields) * 100);
-            $('.progress-bar')
-                .css('width', percentage + '%')
-                .attr('aria-valuenow', percentage)
-                .text(percentage + '% Complete');
-        }
- 
-        // Update progress bar on input change (only inside the form)
-        $('#myForm').find('input, textarea, select').on('input change', updateProgressBar);
-        updateProgressBar(); // on load
-    });
-</script>
-
-<script>
-    $(document).ready(function() {
-        function updateProgressBar() {
-            const form = $('#myForm'); // Target your form here
-            
-            // Select only fields inside the form
-            const totalFields = form.find('input[type="text"], textarea, select, input[type="radio"]').length;
-            const filledFields = form.find('input[type="text"], textarea, select, input[type="radio"]:checked').filter(function() {
-                return $(this).val().trim() !== '';
-            }).length;
- 
-            const percentage = totalFields > 0 ? Math.round((filledFields / totalFields) * 100) : 0;
-            $('.progress-bar').css('width', percentage + '%').attr('aria-valuenow', percentage).text(percentage + '% Complete');
-        }
- 
-        // Update progress bar on input change (only inside the form)
-        $('#myForm').find('input, textarea, select').on('input change', updateProgressBar);
- 
-        // Initial calculation
-        updateProgressBar();
-    });
-</script>
 
 <style>
     .modal {
@@ -1114,5 +1047,44 @@
         });
     });
 </script>
+<script>
+    
+    function updateProgressBar() {
+        let filled = 0;
+        const totalFields = 6;
+ 
+        const name = $('#field_name').val()?.trim();
+        if (name) filled++;
+ 
+        const email = $('#field_email').val()?.trim();
+        if (email) filled++;
+ 
+        const hasPhone = $('input[name="has_phone"]:checked').val();
+        if (hasPhone) filled++;
+ 
+        const websiteName = $('input[name="website_name[]"]:checked').length;
+        if (websiteName > 0) filled++;
+ 
+        const address = $('#field_address').val()?.trim();
+        if (address) filled++;
+ 
+        const logoInput = $('#field_logo');
+        const logoFile = logoInput[0]?.files?.length > 0;
+        const existingLogo = logoInput.closest('.form-group').find('img, a').length > 0;
+        if (logoFile || existingLogo) filled++;
+ 
+        const percent = Math.round((filled / totalFields) * 100);
+        $('#formProgressBar').css('width', percent + '%').text(percent + '%');
+    }
+ 
+    $(document).ready(function () {
+        updateProgressBar(); // Initial calculation on page load
+ 
+        $('#field_name, #field_email, #field_address').on('input', updateProgressBar);
+        $('input[name="has_phone"]').on('change', updateProgressBar);
+        $('input[name="website_name[]"]').on('change', updateProgressBar);
+        $('#field_logo').on('change', updateProgressBar);
+    });
 
+</script>
 <?php include './partials/layouts/layoutBottom.php'; ?>
