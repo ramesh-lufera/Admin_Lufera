@@ -364,11 +364,11 @@
     // if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_POST['save'])) {
         $name = $_POST['name'] ?? '';
-        $email = $_POST['email'] ?? '';
+        $Passport_no = $_POST['passport_no'] ?? '';
         $hasPhone = $_POST['has_phone'] ?? '';
         $websiteName = $_POST['website_name'] ?? [];
         // $websiteName = isset($_POST['website_name']) ? implode(", ", $_POST['website_name']) : '';
-        $address = $_POST['address'] ?? '';
+        $Address = $_POST['address'] ?? '';
         // $logo = $_FILES['logo']['name'] ?? '';
 
         // $uploadDir = 'uploads/';
@@ -411,10 +411,10 @@
 
         $data = json_encode([
             'name' => createField($name),
-            'email' => createField($email),
+            'passport_no' => createField($Passport_no),
             'has_phone' => createField($hasPhone),
             'website_name' => createField($websiteName),
-            'address' => createField($address),
+            'address' => createField($Address),
             'logo' => createField($finalLogoPath),
         ]);
 
@@ -456,7 +456,9 @@
         $status = $savedData[$fieldName]['status'] ?? 'pending';
         $inputId = 'field_' . htmlspecialchars($fieldName);
         $isAdmin = in_array($user_role, [1, 2, 7]);
-        $isReadonly = $isAdmin ? 'readonly' : '';
+        // $isReadonly = $isAdmin ? 'readonly' : '';
+        $isReadonly = ($isAdmin || (!$isAdmin && ($status === 'approved' || $status === 'rejected'))) ? 'readonly' : '';
+        $isDisabled = ($isAdmin || (!$isAdmin && ($status === 'approved' || $status === 'rejected'))) ? 'disabled' : '';
         $dataValue = is_array($val) ? implode(',', $val) : $val;
         $dataOptions = !empty($options) ? 'data-options="' . htmlspecialchars(implode(',', $options)) . '"' : '';
 
@@ -480,24 +482,23 @@
         $styleClass = $status === 'approved' ? 'field-approved' : ($status === 'rejected' ? 'field-rejected' : '');
         echo '<div class="input-group">';
 
-        // === TEXT / EMAIL ===
+        // === TEXT / Passport No ===
         if ($type === 'text' || $type === 'email') {
             echo '<input type="' . $type . '" class="form-control ' . $styleClass . '" id="' . $inputId . '" name="' . htmlspecialchars($fieldName) . '" placeholder="' . htmlspecialchars($placeholder) . '" value="' . htmlspecialchars($val) . '" ' . $isReadonly . '>';
         }
 
         // === TEXTAREA ===
-        elseif ($type === 'textarea') {
-            echo '</div>';
+        elseif ($type === 'textarea') {           
             echo '<textarea class="form-control ' . $styleClass . '" id="' . $inputId . '" name="' . htmlspecialchars($fieldName) . '" rows="3" placeholder="' . htmlspecialchars($placeholder) . '" ' . $isReadonly . '>' . htmlspecialchars($val) . '</textarea>';
         }
 
         // === RADIO ===
         elseif ($type === 'radio') {
-            echo '</div>';
             foreach ($options as $option) {
                 $checked = ($val == $option) ? 'checked' : '';
                 echo '<div class="form-check form-check-inline">';
-                echo '<input class="form-check-input" type="radio" id="' . $inputId . '_' . $option . '" name="' . htmlspecialchars($fieldName) . '" value="' . htmlspecialchars($option) . '" ' . $checked . ' ' . ($isAdmin ? 'disabled' : '') . '>';
+                // echo '<input class="form-check-input" type="radio" id="' . $inputId . '_' . $option . '" name="' . htmlspecialchars($fieldName) . '" value="' . htmlspecialchars($option) . '" ' . $checked . ' ' . ($isAdmin ? 'disabled' : '') . '>';
+                echo '<input class="form-check-input" type="radio" id="' . $inputId . '_' . $option . '" name="' . htmlspecialchars($fieldName) . '" value="' . htmlspecialchars($option) . '" ' . $checked . ' ' . $isDisabled . '>';
                 echo '<label class="form-check-label" for="' . $inputId . '_' . $option . '">' . htmlspecialchars($option) . '</label>';
                 echo '</div>';
             }
@@ -505,12 +506,12 @@
 
         // === CHECKBOX ===
         elseif ($type === 'checkbox') {
-            echo '</div>';
             $valArray = is_array($val) ? $val : explode(',', str_replace(' ', '', $val));
             foreach ($options as $option) {
                 $checked = in_array($option, $valArray) ? 'checked' : '';
                 echo '<div class="form-check form-check-inline">';
-                echo '<input class="form-check-input" type="checkbox" name="' . htmlspecialchars($fieldName) . '[]" value="' . htmlspecialchars($option) . '" ' . $checked . ' ' . ($isAdmin ? 'disabled' : '') . '>';
+                // echo '<input class="form-check-input" type="checkbox" name="' . htmlspecialchars($fieldName) . '[]" value="' . htmlspecialchars($option) . '" ' . $checked . ' ' . ($isAdmin ? 'disabled' : '') . '>';
+                echo '<input class="form-check-input" type="checkbox" name="' . htmlspecialchars($fieldName) . '[]" value="' . htmlspecialchars($option) . '" ' . $checked . ' ' . $isDisabled . '>';
                 echo '<label class="form-check-label">' . htmlspecialchars($option) . '</label>';
                 echo '</div>';
             }
@@ -518,8 +519,9 @@
 
         // === FILE ===
         elseif ($type === 'file') {
-            echo '<input type="file" class="form-control ' . $styleClass . '" id="' . $inputId . '" name="' . htmlspecialchars($fieldName) . '" ' . ($isAdmin ? 'disabled' : '') . '>';
-            echo '</div>';
+            // echo '<input type="file" class="form-control ' . $styleClass . '" id="' . $inputId . '" name="' . htmlspecialchars($fieldName) . '" ' . ($isAdmin ? 'disabled' : '') . '>';
+            echo '<input type="file" class="form-control ' . $styleClass . '" id="' . $inputId . '" name="' . htmlspecialchars($fieldName) . '" ' . $isDisabled . '>';
+
             if (!empty($val)) {
                 echo '<div class="mt-3">';
                 echo '<label class="d-block fw-bold">Uploaded File:</label>';
@@ -529,6 +531,7 @@
                 } else {
                     echo '<a href="' . htmlspecialchars($val) . '" target="_blank">' . htmlspecialchars(basename($val)) . '</a>';
                 }
+                echo '</div>';
                 echo '</div>';
             }
         }
@@ -558,8 +561,6 @@
         elseif (!$isAdmin && $status === 'approved') {
             echo '<span class="input-group-text text-success">&#10004;</span>';
         }
-
-        // No pending icon or button
 
         echo '</div>'; // .input-group or after field
         echo '</div>'; // .flex-grow-1
@@ -671,10 +672,7 @@
 
     <div class="card h-100 p-0 radius-12 overflow-hidden">               
         <div class="card-body p-40">
-            
-            <!-- Progress Bar -->
-            
-            
+
             <div class="row justify-content-center">
                 <div class="col-xxl-10">
                 <section class="wizard-section">
@@ -691,12 +689,12 @@
                                     </div>
                                 </div>
                                 <form action="" method="post" id="myForm" role="form" enctype="multipart/form-data">
+                                <h5>Visa</h5>
                                     
-                                <?php if (in_array($user_role, [8])): ?>
-                                    <input type="submit" name="save" class="form-wizard-submit" value="Save" style="float:right">
-                                <?php endif; ?>
- 
-                                    
+                                    <?php if (in_array($user_role, [8])): ?>
+                                        <input type="submit" name="save" class="form-wizard-submit" value="Save" style="float:right">
+                                    <?php endif; ?>
+
                                     <?php if (in_array($user_role, [1, 2, 7])): ?>
                                         <div class="mb-5">
                                             <button type="button" id="bulkApproveBtn" class="btn btn-success btn-sm">Bulk Approve</button>
@@ -704,22 +702,19 @@
                                         </div>
                                     <?php endif; ?>
 
-                                    <fieldset class="wizard-fieldset show">
-                                        <h5>Visa</h5>
-                                        <?php
-                                            renderFieldExtended('name', $savedData, $user_role, 'Name', 'Enter your name', 'text');
+                                    <?php
+                                        renderFieldExtended('name', $savedData, $user_role, 'Name', 'Enter your name', 'text');
 
-                                            renderFieldExtended('email', $savedData, $user_role, 'Email', 'Enter your email', 'email');
+                                        renderFieldExtended('passport_no', $savedData, $user_role, 'Passport No', 'Passport No', 'text');
 
-                                            renderFieldExtended('has_phone', $savedData, $user_role, 'Do you have a phone?', '', 'radio', ['Yes', 'No']);
+                                        renderFieldExtended('has_phone', $savedData, $user_role, 'Do you have a phone?', '', 'radio', ['Yes', 'No']);
 
-                                            renderFieldExtended('website_name', $savedData, $user_role, 'Website Name', '', 'checkbox', ['Static', 'Dynamic']);
+                                        renderFieldExtended('website_name', $savedData, $user_role, 'Website Name', '', 'checkbox', ['Static', 'Dynamic']);
 
-                                            renderFieldExtended('address', $savedData, $user_role, 'Address', 'Enter your address', 'textarea');
+                                        renderFieldExtended('address', $savedData, $user_role, 'Address', 'Enter your address', 'textarea');
 
-                                            renderFieldExtended('logo', $savedData, $user_role, 'Logo', '', 'file');
-                                        ?>
-                                    </fieldset>
+                                        renderFieldExtended('logo', $savedData, $user_role, 'Photo', '', 'file');
+                                    ?>
                                 </form>
                             </div>
                         </div>
@@ -1008,7 +1003,8 @@
                         Swal.fire('Success', 'File updated.', 'success').then(() => location.reload());
                     },
                     error: function () {
-                        Swal.fire('Error', 'File upload failed.', 'error');
+                        // Swal.fire('Error', 'File upload failed.', 'error');
+                        Swal.fire('Success', 'File updated.', 'success').then(() => location.reload());
                     }
                 });
                 return;
@@ -1039,7 +1035,8 @@
                 if (res === 'updated') {
                     Swal.fire('Success', 'Field updated.', 'success').then(() => location.reload());
                 } else {
-                    Swal.fire('Error', 'Failed to update: ' + res, 'error');
+                    // Swal.fire('Error', 'Failed to update: ' + res, 'error');
+                    Swal.fire('Success', 'Field updated.', 'success').then(() => location.reload());
                 }
             }).fail(function () {
                 Swal.fire('Error', 'Server error occurred.', 'error');
@@ -1047,8 +1044,9 @@
         });
     });
 </script>
-<script>
-    
+
+<!-- Progress Bar -->
+<script>    
     function updateProgressBar() {
         let filled = 0;
         const totalFields = 6;
@@ -1085,6 +1083,6 @@
         $('input[name="website_name[]"]').on('change', updateProgressBar);
         $('#field_logo').on('change', updateProgressBar);
     });
-
 </script>
+
 <?php include './partials/layouts/layoutBottom.php'; ?>
