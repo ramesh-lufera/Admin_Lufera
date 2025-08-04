@@ -10,21 +10,22 @@
     $packages = [];
     $durations = [];
 
-    $category_id = isset($_GET['product_category']) ? intval($_GET['product_category']) : 0;
-    
-    // Get category name
-    $stmt = $conn->prepare("SELECT cat_name FROM categories WHERE cat_id = ?");
-    $stmt->bind_param("i", $category_id);
-    $stmt->execute();
-    $stmt->bind_result($category_name);
-    $stmt->fetch();
-    $stmt->close();
+    $product_category = isset($_GET['product_category']) ? intval($_GET['product_category']) : 0;
+
+    // $stmt = $conn->prepare("SELECT cat_name FROM categories WHERE cat_id = ?");
+    // $stmt->bind_param("i", $product_category);
+    // $stmt->execute();
+    // $stmt->bind_result($category_name);
+    // $stmt->fetch();
+    // $stmt->close();
 
     // Fetch packages by category and group by duration
     $stmt = $conn->prepare("SELECT * FROM package WHERE cat_id = ? ORDER BY duration");
-    $stmt->bind_param("i", $category_id);
+    $stmt->bind_param("i", $product_category);
     $stmt->execute();
     $result = $stmt->get_result();
+
+    $hasPackages = false;
 
     if ($result->num_rows > 0) {
         while ($row = $result->fetch_assoc()) {
@@ -34,6 +35,8 @@
             if (!in_array($duration, $durations)) {
                 $durations[] = $duration;
             }
+
+            $hasPackages = true;
         }
     }
     $stmt->close();
@@ -41,7 +44,9 @@
 
 <div class="dashboard-main-body">
     <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-24">
-        <h6 class="fw-semibold mb-0 text-capitalize"><?php echo $category_name; ?></h6>
+        <h6 class="fw-semibold mb-0 text-capitalize">
+            <?= $hasPackages ? 'Packages' : 'Packages (or) Products'; ?>
+        </h6>
     </div>
 
     <div class="card h-100 p-0 radius-12 overflow-hidden">
@@ -122,20 +127,19 @@
                             </div>
                         <?php endforeach; ?>
                     </div>
-                <?php else: ?>
-                    <!-- <div class="alert alert-warning text-center">
-                        <strong>No packages found</strong>
-                    </div> -->
-                    <div class="text-center py-32">
-                        <div class="radius-12 p-12">
-                            <h6 class="mb-0" style="color: #000; font-size: 1.125rem; font-weight: 600;">
-                                No packages or products available.
-                            </h6>
-                            <div style="height: 3px; width: 60px; background-color: #fdc701; margin: 12px auto 0; border-radius: 2px;"></div>
+                    <?php else: ?>
+                        <!-- <div class="alert alert-warning text-center">
+                            <strong>No packages found</strong>
+                        </div> -->
+                        <div class="text-center py-32">
+                            <div class="radius-12 p-12">
+                                <h6 class="mb-0" style="color: #000; font-size: 1.125rem; font-weight: 600;">
+                                    No packages or products available.
+                                </h6>
+                                <div style="height: 3px; width: 60px; background-color: #fdc701; margin: 12px auto 0; border-radius: 2px;"></div>
+                            </div>
                         </div>
-                    </div>
-                <?php endif; ?>
-
+                    <?php endif; ?>
                 </div>
             </div>
         </div>

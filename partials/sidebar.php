@@ -15,34 +15,23 @@
             $cat_url .= '.php';
         }
 
+        $catSlug = strtolower(preg_replace('/\s+/', '-', $cat_url));
+
         if (!empty($cat_name)) {
             $stmt = $conn->prepare("INSERT INTO categories (cat_name, cat_url, cat_module) VALUES (?, ?, ?)");
-            $stmt->bind_param("sss", $cat_name, $cat_url, $cat_template);
+            $stmt->bind_param("sss", $cat_name, $catSlug, $cat_template);
             $stmt->execute();
 
-            // if ($stmt->execute()) {
-                // $_SESSION['cat_id'] = $conn->insert_id;
-            // } else {
-                // $_SESSION['swal_error'] = "Failed to create category";
-            // }
+            $file_path = dirname(__DIR__) . '/' . $catSlug;
 
-            $catSlug = strtolower(preg_replace('/\s+/', '-', $cat_url));
-            $file_path = dirname(__DIR__) . '/' . $cat_url;
-
-            $cat_url = pathinfo($cat_url, PATHINFO_FILENAME);
-            $catSlug1 = strtolower(preg_replace('/\s+/', '-', $cat_url));
-
+            $catSlug1 = pathinfo($catSlug, PATHINFO_FILENAME);
             $det_file_name = $catSlug1 . '-det.php'; 
             $det_file_path = dirname(__DIR__) . '/' . $det_file_name;
 
-            // $det_file_name1 = $catSlug1 . '-wizard.php'; 
-            // $det_file_path1 = dirname(__DIR__) . '/' . $det_file_name1;
-
             $manageLink = $det_file_name;
+            $pageTitle = ucwords($cat_name);
 
             if (!file_exists($file_path)) {
-                $pageTitle = ucwords($cat_name);
-                
                 $default_content = <<<PHP
                     <?php include './partials/layouts/layoutTop.php'; ?>
                         <?php
@@ -82,29 +71,29 @@
                                     websites.cat_id = ?
                             ");
                             \$stmt->bind_param("i", \$cat_id);
-                        } else {
-                            \$stmt = \$conn->prepare("
-                                SELECT 
-                                    websites.id,
-                                    users.user_id,
-                                    users.business_name,
-                                    websites.plan,
-                                    websites.domain,
-                                    websites.status,
-                                    websites.created_at,
-                                    websites.duration 
-                                FROM 
-                                    users 
-                                JOIN 
-                                    websites ON users.user_id = websites.user_id 
-                                WHERE 
-                                    websites.user_id = ? AND websites.cat_id = ?
-                            ");
-                            \$stmt->bind_param("si", \$UserId, \$cat_id);
-                        }
+                            } else {
+                                \$stmt = \$conn->prepare("
+                                    SELECT 
+                                        websites.id,
+                                        users.user_id,
+                                        users.business_name,
+                                        websites.plan,
+                                        websites.domain,
+                                        websites.status,
+                                        websites.created_at,
+                                        websites.duration 
+                                    FROM 
+                                        users 
+                                    JOIN 
+                                        websites ON users.user_id = websites.user_id 
+                                    WHERE 
+                                        websites.user_id = ? AND websites.cat_id = ?
+                                ");
+                                \$stmt->bind_param("si", \$UserId, \$cat_id);
+                            }
 
-                        \$stmt->execute();
-                        \$result = \$stmt->get_result();
+                            \$stmt->execute();
+                            \$result = \$stmt->get_result();
 
                             \$websites = [];
                             while (\$row = mysqli_fetch_assoc(\$result)) {
@@ -551,14 +540,12 @@
 
                 if (!file_exists($view_file_path)) {
                     $view_content = <<<PHP
-                        <?php \$_GET['product_category'] = "$catSlug1"; ?>
-                            <?php include './view-package.php'; ?>
+                        <?php include './view-package.php'; ?>
                     PHP;
 
                     file_put_contents($view_file_path, $view_content);
                 }
                 
-                // ✅ If "website" template selected, also create the -det.php file
                 if ($cat_template === 'website' && !file_exists($det_file_path)) {
                     $det_content = <<<PHP
                         <?php include './website-details.php'; ?>    
@@ -566,7 +553,6 @@
 
                     file_put_contents($det_file_path, $det_content);
                 }
-                // ✅ If "marketing" template selected, also create the -det.php file
                 if ($cat_template === 'marketing' && !file_exists($det_file_path)) {
                     $det_content = <<<PHP
                         <?php include './marketing-details.php'; ?>  
@@ -574,7 +560,6 @@
 
                     file_put_contents($det_file_path, $det_content);
                 }
-                // ✅ If "visa" template selected, also create the -det.php file
                 if ($cat_template === 'visa' && !file_exists($det_file_path)) {
                     $det_content = <<<PHP
                         <?php include './visa-details.php'; ?>  
@@ -601,22 +586,22 @@
         if (!str_ends_with($edit_cat_url, '.php')) {
             $edit_cat_url .= '.php';
         }
-    
-        $stmt = $conn->prepare("UPDATE categories SET cat_name = ?, cat_url = ?, cat_module = ? WHERE cat_id = ?");
-        $stmt->bind_param("sssi", $cat_name, $edit_cat_url, $cat_module, $cat_id);
-        $stmt->execute();
 
         $editcatSlug = strtolower(preg_replace('/\s+/', '-', $edit_cat_url));
-        $file_path = dirname(__DIR__) . '/' . $edit_cat_url;
+        $file_path = dirname(__DIR__) . '/' . $editcatSlug;
 
-        $edit_cat_url = pathinfo($edit_cat_url, PATHINFO_FILENAME);
-        $editcatSlug1 = strtolower(preg_replace('/\s+/', '-', $edit_cat_url));
+        $stmt = $conn->prepare("UPDATE categories SET cat_name = ?, cat_url = ?, cat_module = ? WHERE cat_id = ?");
+        $stmt->bind_param("sssi", $cat_name, $editcatSlug, $cat_module, $cat_id);
+        $stmt->execute();
 
-        $manageLink1 = $det_file_name;
+        $editcatSlug1 = pathinfo($editcatSlug, PATHINFO_FILENAME);
+        $det_file_name1 = $editcatSlug1 . '-det.php'; 
+        $det_file_path1 = dirname(__DIR__) . '/' . $det_file_name1;
+
+        $manageLink1 = $det_file_name1;
+        $pageTitle1 = ucwords($cat_name);
 
         if (!file_exists($file_path)) {
-            $pageTitle1 = ucwords($cat_name);
-            
             $default_content = <<<PHP
                 <?php include './partials/layouts/layoutTop.php'; ?>
                     <?php
@@ -656,29 +641,29 @@
                                 websites.cat_id = ?
                         ");
                         \$stmt->bind_param("i", \$cat_id);
-                    } else {
-                        \$stmt = \$conn->prepare("
-                            SELECT 
-                                websites.id,
-                                users.user_id,
-                                users.business_name,
-                                websites.plan,
-                                websites.domain,
-                                websites.status,
-                                websites.created_at,
-                                websites.duration 
-                            FROM 
-                                users 
-                            JOIN 
-                                websites ON users.user_id = websites.user_id 
-                            WHERE 
-                                websites.user_id = ? AND websites.cat_id = ?
-                        ");
-                        \$stmt->bind_param("si", \$UserId, \$cat_id);
-                    }
+                        } else {
+                            \$stmt = \$conn->prepare("
+                                SELECT 
+                                    websites.id,
+                                    users.user_id,
+                                    users.business_name,
+                                    websites.plan,
+                                    websites.domain,
+                                    websites.status,
+                                    websites.created_at,
+                                    websites.duration 
+                                FROM 
+                                    users 
+                                JOIN 
+                                    websites ON users.user_id = websites.user_id 
+                                WHERE 
+                                    websites.user_id = ? AND websites.cat_id = ?
+                            ");
+                            \$stmt->bind_param("si", \$UserId, \$cat_id);
+                        }
 
-                    \$stmt->execute();
-                    \$result = \$stmt->get_result();
+                        \$stmt->execute();
+                        \$result = \$stmt->get_result();
 
                         \$websites = [];
                         while (\$row = mysqli_fetch_assoc(\$result)) {
@@ -1102,26 +1087,26 @@
                         </div>
 
                         <script>
-                        const searchInput = document.getElementById('searchInput');
-                        searchInput.addEventListener('keyup', function () {
-                            const filter = searchInput.value.toLowerCase();
-                            const items = document.querySelectorAll("#websiteList .list-item");
-                            items.forEach(item => {
-                            const text = item.innerText.toLowerCase();
-                            item.style.display = text.includes(filter) ? '' : 'none';
+                            const searchInput = document.getElementById('searchInput');
+                            searchInput.addEventListener('keyup', function () {
+                                const filter = searchInput.value.toLowerCase();
+                                const items = document.querySelectorAll("#websiteList .list-item");
+                                items.forEach(item => {
+                                const text = item.innerText.toLowerCase();
+                                item.style.display = text.includes(filter) ? '' : 'none';
+                                });
                             });
-                        });
                         </script>
-
                     </body>
                     </html>
                 <?php include './partials/layouts/layoutBottom.php' ?>
-                PHP;
+            PHP;
 
             file_put_contents($file_path, $default_content);
         }
     
         $_SESSION['swal_success'] = "Category updated";
+
         header("Location: " . ($_SERVER['HTTP_REFERER'] ?? 'index.php'));
         exit;
     }
@@ -1135,19 +1120,20 @@
         $stmt->execute();
         $result = $stmt->get_result();
         $cat = $result->fetch_assoc();
+
         $catUrlRaw = $cat['cat_url'] ?? null;
 
         if ($catUrlRaw) {
-            $catUrlRaw = pathinfo($catUrlRaw, PATHINFO_FILENAME);
-            $catUrl = strtolower(preg_replace('/\s+/', '-', $catUrlRaw));
+            $catUrlRawEdit = strtolower(preg_replace('/\s+/', '-', $catUrlRaw));
+            $catUrlFinal = pathinfo($catUrlRawEdit, PATHINFO_FILENAME);
 
             $baseDir = dirname(__DIR__);
             $filesToDelete = [
-                "$baseDir/{$catUrl}.php",
-                "$baseDir/{$catUrl}-det.php",
-                "$baseDir/add-{$catUrl}.php",
-                "$baseDir/view-{$catUrl}.php",
-                // "$baseDir/{$catUrl}-wizard.php"
+                "$baseDir/{$catUrlFinal}.php",
+                "$baseDir/{$catUrlFinal}-det.php",
+                "$baseDir/add-{$catUrlFinal}.php",
+                "$baseDir/view-{$catUrlFinal}.php",
+                // "$baseDir/{$catUrlFinal}-wizard.php"
             ];
 
             foreach ($filesToDelete as $file) {
@@ -1162,276 +1148,275 @@
         $stmt->execute();
 
         $_SESSION['swal_success'] = "Category deleted";
+
         header("Location: " . ($_SERVER['HTTP_REFERER'] ?? 'index.php'));
         exit;
     }
 
+    // Handle packages (or) products creation
     if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['product_category'], $_POST['product_type'])) {
-        $category_id = intval($_POST['product_category']);
+        $product_category = intval($_POST['product_category']);
         $product_type = $_POST['product_type'];
 
         if ($product_type === 'Package') {
             $stmt = $conn->prepare("SELECT cat_url FROM categories WHERE cat_id = ?");
-            $stmt->bind_param("i", $category_id);
+            $stmt->bind_param("i", $product_category);
             $stmt->execute();
             $stmt->bind_result($cat_url);
             $stmt->fetch();
             $stmt->close();
 
-            $cat_url = pathinfo($cat_url, PATHINFO_FILENAME);
-            $catSlug = strtolower(preg_replace('/\s+/', '-', $cat_url));
+            $cat_url_Slug = pathinfo($cat_url, PATHINFO_FILENAME);
+            $pack_cat_url_Slug = strtolower(preg_replace('/\s+/', '-', $cat_url_Slug));
 
-            header("Location: add-$catSlug.php");
-
-            $add_file_name = "add-$catSlug.php";
+            $add_file_name = "add-$pack_cat_url_Slug.php";
             $add_file_path = dirname(__DIR__) . '/' . $add_file_name;
+            $add_content = <<<PHP
+                <?php \$script = '<script>
+                    (() => {
+                        "use strict"
 
-            // if (!file_exists($add_file_path)) {
-                $add_content = <<<PHP
-                    <?php \$script = '<script>
-                        (() => {
-                            "use strict"
+                        // Fetch all the forms we want to apply custom Bootstrap validation styles to
+                        const forms = document.querySelectorAll(".needs-validation")
 
-                            // Fetch all the forms we want to apply custom Bootstrap validation styles to
-                            const forms = document.querySelectorAll(".needs-validation")
-
-                            // Loop over them and prevent submission
-                            Array.from(forms).forEach(form => {
-                                form.addEventListener("submit", event => {
-                                    if (!form.checkValidity()) {
-                                        event.preventDefault()
-                                        event.stopPropagation()
-                                    }
-
-                                    form.classList.add("was-validated")
-                                }, false)
-                            })
-                        })()
-                        </script>';?>
-                        <style>
-                            .toggle-icon-pass {
-                                position: absolute;
-                                top: 22px;
-                                right: 28px;
-                                transform: translateY(-50%);
-                                cursor: pointer;
-                                user-select: none;
-                                font-size: 20px;
-                            }
-                            input::-webkit-outer-spin-button,
-                            input::-webkit-inner-spin-button {
-                            -webkit-appearance: none;
-                            margin: 0;
-                            }
-
-                            /* Firefox */
-                            input[type=number] {
-                            -moz-appearance: textfield;
-                            }
-                        </style>
-
-                            <?php include './partials/layouts/layoutTop.php' ?>
-                            <?php
-
-                            ini_set('display_errors', 1);
-                            ini_set('display_startup_errors', 1);
-                            error_reporting(E_ALL);
-
-                                if (\$_SERVER['REQUEST_METHOD'] == 'POST') {
-                                    // Existing package fields
-                                    \$plan_type = \$_POST['plan_type'];
-                                    \$title = \$_POST['title'];
-                                    \$subtitle = \$_POST['subtitle'];
-                                    \$price = \$_POST['price'];
-                                    \$description = \$_POST['description'];
-                                    \$duration = \$_POST['duration'];
-                                    \$features = \$_POST['features']; // Array of features
-                                    \$created_at = date("Y-m-d H:i:s");
-
-                                    \$cat_id = $category_id;
-
-                                    \$stmt = \$conn->prepare("INSERT INTO package (plan_type, title, subtitle, price, description, duration, cat_id, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
-                                    \$stmt->bind_param("ssssssis", \$plan_type, \$title, \$subtitle, \$price, \$description, \$duration, \$cat_id, \$created_at);
-                                
-                                    if (\$stmt->execute()) {
-                                        \$package_id = \$conn->insert_id;
-                                        \$stmt->close();
-                                
-                                        // Insert features
-                                        if (!empty(\$features) && is_array(\$features)) {
-                                            \$featureStmt = \$conn->prepare("INSERT INTO features (package_id, feature) VALUES (?, ?)");
-                                            foreach (\$features as \$feature) {
-                                                \$cleaned_feature = trim(\$feature);
-                                                if (\$cleaned_feature !== "") {
-                                                    \$featureStmt->bind_param("is", \$package_id, \$cleaned_feature);
-                                                    \$featureStmt->execute();
-                                                }
-                                            }
-                                            \$featureStmt->close();
-                                        }
-                                
-                                        echo "
-                                        <script>
-                                            Swal.fire({
-                                                title: 'Success!',
-                                                text: 'Package and features saved successfully.',
-                                                confirmButtonText: 'OK'
-                                            }).then((result) => {
-                                                if (result.isConfirmed) {
-                                                    window.location.href = 'view-$catSlug.php';
-                                                }
-                                            });
-                                        </script>";
-                                    } else {
-                                        echo "<script>
-                                            alert('Error: " . \$stmt->error . "');
-                                            window.history.back();
-                                        </script>";
-                                    }
+                        // Loop over them and prevent submission
+                        Array.from(forms).forEach(form => {
+                            form.addEventListener("submit", event => {
+                                if (!form.checkValidity()) {
+                                    event.preventDefault()
+                                    event.stopPropagation()
                                 }
-                                
-                            ?>
 
-                                    <div class="dashboard-main-body">
-                                        <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-24">
-                                            <h6 class="fw-semibold mb-0">Add Package</h6>
-                                        </div>
+                                form.classList.add("was-validated")
+                            }, false)
+                        })
+                    })()
+                    </script>';?>
 
-                                        <div class="card h-100 p-0 radius-12">
-                                            <div class="card-body p-24">
-                                                <div class="row justify-content-center">
-                                                    <div class="col-xxl-12 col-xl-8 col-lg-10">
-                                                        <form method="POST" class="row gy-3 needs-validation" novalidate>
-                                                            <div class="mb-2">
-                                                                <label for="name" class="form-label fw-semibold text-primary-light text-sm mb-8">Plan Type <span class="text-danger-600">*</span></label>
-                                                                <div class="icon-field has-validation">
-                                                                    <input type="text" class="form-control radius-8" name="plan_type" required maxlength="20">
-                                                                    <div class="invalid-feedback">
-                                                                        Plan type is required
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-                                                            <div class="mb-2">
-                                                                <label for="name" class="form-label fw-semibold text-primary-light text-sm mb-8">Title <span class="text-danger-600">*</span></label>
-                                                                <div class="icon-field has-validation">
-                                                                    
-                                                                    <input type="text" class="form-control radius-8" name="title" required maxlength="20">
-                                                                    <div class="invalid-feedback">
-                                                                        Title is required
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-                                                            <div class="mb-2">
-                                                                <label for="name" class="form-label fw-semibold text-primary-light text-sm mb-8">Subtitle <span class="text-danger-600">*</span></label>
-                                                                <div class="icon-field has-validation">
-                                                                    
-                                                                    <input type="text" class="form-control radius-8" name="subtitle" required maxlength="100">
-                                                                    <div class="invalid-feedback">
-                                                                        Subtitle is required
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-                                                            <div class="mb-2">
-                                                                <label for="name" class="form-label fw-semibold text-primary-light text-sm mb-8">Price <span class="text-danger-600">*</span></label>
-                                                                <div class="icon-field has-validation">
-                                                                    
-                                                                    <input type="number" class="form-control radius-8" name="price" required maxlength="10" onkeydown="return event.key !== 'e'">
-                                                                    <div class="invalid-feedback">
-                                                                        Price is required
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-                                                            <div class="mb-2">
-                                                                <label for="name" class="form-label fw-semibold text-primary-light text-sm mb-8">Description <span class="text-danger-600">*</span></label>
-                                                                <div class="icon-field has-validation">
-                                                                    
-                                                                    <textarea class="form-control radius-8" name="description" required></textarea>
-                                                                    <div class="invalid-feedback">
-                                                                        Description is required
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-                                                            <div class="mb-2">
-                                                                <label for="name" class="form-label fw-semibold text-primary-light text-sm mb-8">Duration  <span class="text-danger-600">*</span></label>
-                                                                <div class="icon-field has-validation">
-                                                                    
-                                                                    <input type="text" class="form-control radius-8" name="duration" required maxlength="20">
-                                                                    <div class="invalid-feedback">
-                                                                        Duration is required
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-                                                            <div class="mb-2">
-                                                                <label class="form-label fw-semibold text-primary-light text-sm mb-8">Features <span class="text-danger-600">*</span></label>
-                                                                <div id="feature-wrapper">
-                                                                    <div class="feature-group mb-2 d-flex gap-2">
-                                                                        <input type="text" name="features[]" class="form-control radius-8" required placeholder="Enter a feature" />
-                                                                        <button type="button" class="btn btn-sm btn-success add-feature">+</button>
-                                                                    </div>
-                                                                </div>
-                                                                <div class="invalid-feedback">
-                                                                    At least one feature is required.
-                                                                </div>
-                                                            </div>
+                    <style>
+                        .toggle-icon-pass {
+                            position: absolute;
+                            top: 22px;
+                            right: 28px;
+                            transform: translateY(-50%);
+                            cursor: pointer;
+                            user-select: none;
+                            font-size: 20px;
+                        }
+                        input::-webkit-outer-spin-button,
+                        input::-webkit-inner-spin-button {
+                        -webkit-appearance: none;
+                        margin: 0;
+                        }
 
-                                                            <div class="d-flex align-items-center justify-content-center gap-3">
-                                                                <button type="button" class="border border-danger-600 bg-hover-danger-200 text-danger-600 text-md px-56 py-11 radius-8">
-                                                                    Cancel
-                                                                </button>
-                                                                <button type="submit" class="btn lufera-bg text-white text-md px-56 py-12 radius-8">
-                                                                    Save
-                                                                </button>
-                                                            </div>
-                                                        </form>
+                        /* Firefox */
+                        input[type=number] {
+                        -moz-appearance: textfield;
+                        }
+                    </style>
+
+                    <?php include './partials/layouts/layoutTop.php' ?>
+                    <?php
+
+                        ini_set('display_errors', 1);
+                        ini_set('display_startup_errors', 1);
+                        error_reporting(E_ALL);
+
+                        if (\$_SERVER['REQUEST_METHOD'] == 'POST') {
+                            // Existing package fields
+                            \$plan_type = \$_POST['plan_type'];
+                            \$title = \$_POST['title'];
+                            \$subtitle = \$_POST['subtitle'];
+                            \$price = \$_POST['price'];
+                            \$description = \$_POST['description'];
+                            \$duration = \$_POST['duration'];
+                            \$features = \$_POST['features']; // Array of features
+                            \$created_at = date("Y-m-d H:i:s");
+
+                            \$cat_id = $product_category;
+
+                            \$stmt = \$conn->prepare("INSERT INTO package (plan_type, title, subtitle, price, description, duration, cat_id, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+                            \$stmt->bind_param("ssssssis", \$plan_type, \$title, \$subtitle, \$price, \$description, \$duration, \$cat_id, \$created_at);
+                        
+                            if (\$stmt->execute()) {
+                                \$package_id = \$conn->insert_id;
+                                \$stmt->close();
+                        
+                                // Insert features
+                                if (!empty(\$features) && is_array(\$features)) {
+                                    \$featureStmt = \$conn->prepare("INSERT INTO features (package_id, feature) VALUES (?, ?)");
+                                    foreach (\$features as \$feature) {
+                                        \$cleaned_feature = trim(\$feature);
+                                        if (\$cleaned_feature !== "") {
+                                            \$featureStmt->bind_param("is", \$package_id, \$cleaned_feature);
+                                            \$featureStmt->execute();
+                                        }
+                                    }
+                                    \$featureStmt->close();
+                                }
+                        
+                                echo "
+                                <script>
+                                    Swal.fire({
+                                        title: 'Success!',
+                                        text: 'Package and features saved successfully.',
+                                        confirmButtonText: 'OK'
+                                    }).then((result) => {
+                                        if (result.isConfirmed) {
+                                            window.location.href = 'view-$pack_cat_url_Slug.php';
+                                        }
+                                    });
+                                </script>";
+                            } else {
+                                echo "<script>
+                                    alert('Error: " . \$stmt->error . "');
+                                    window.history.back();
+                                </script>";
+                            }
+                        }
+                        
+                    ?>
+
+                    <div class="dashboard-main-body">
+                        <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-24">
+                            <h6 class="fw-semibold mb-0">Add Package</h6>
+                        </div>
+
+                        <div class="card h-100 p-0 radius-12">
+                            <div class="card-body p-24">
+                                <div class="row justify-content-center">
+                                    <div class="col-xxl-12 col-xl-8 col-lg-10">
+                                        <form method="POST" class="row gy-3 needs-validation" novalidate>
+                                            <div class="mb-2">
+                                                <label for="name" class="form-label fw-semibold text-primary-light text-sm mb-8">Plan Type <span class="text-danger-600">*</span></label>
+                                                <div class="icon-field has-validation">
+                                                    <input type="text" class="form-control radius-8" name="plan_type" required maxlength="20">
+                                                    <div class="invalid-feedback">
+                                                        Plan type is required
                                                     </div>
                                                 </div>
                                             </div>
-                                        </div>
+                                            <div class="mb-2">
+                                                <label for="name" class="form-label fw-semibold text-primary-light text-sm mb-8">Title <span class="text-danger-600">*</span></label>
+                                                <div class="icon-field has-validation">
+                                                    
+                                                    <input type="text" class="form-control radius-8" name="title" required maxlength="20">
+                                                    <div class="invalid-feedback">
+                                                        Title is required
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="mb-2">
+                                                <label for="name" class="form-label fw-semibold text-primary-light text-sm mb-8">Subtitle <span class="text-danger-600">*</span></label>
+                                                <div class="icon-field has-validation">
+                                                    
+                                                    <input type="text" class="form-control radius-8" name="subtitle" required maxlength="100">
+                                                    <div class="invalid-feedback">
+                                                        Subtitle is required
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="mb-2">
+                                                <label for="name" class="form-label fw-semibold text-primary-light text-sm mb-8">Price <span class="text-danger-600">*</span></label>
+                                                <div class="icon-field has-validation">
+                                                    
+                                                    <input type="number" class="form-control radius-8" name="price" required maxlength="10" onkeydown="return event.key !== 'e'">
+                                                    <div class="invalid-feedback">
+                                                        Price is required
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="mb-2">
+                                                <label for="name" class="form-label fw-semibold text-primary-light text-sm mb-8">Description <span class="text-danger-600">*</span></label>
+                                                <div class="icon-field has-validation">
+                                                    
+                                                    <textarea class="form-control radius-8" name="description" required></textarea>
+                                                    <div class="invalid-feedback">
+                                                        Description is required
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="mb-2">
+                                                <label for="name" class="form-label fw-semibold text-primary-light text-sm mb-8">Duration  <span class="text-danger-600">*</span></label>
+                                                <div class="icon-field has-validation">
+                                                    
+                                                    <input type="text" class="form-control radius-8" name="duration" required maxlength="20">
+                                                    <div class="invalid-feedback">
+                                                        Duration is required
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="mb-2">
+                                                <label class="form-label fw-semibold text-primary-light text-sm mb-8">Features <span class="text-danger-600">*</span></label>
+                                                <div id="feature-wrapper">
+                                                    <div class="feature-group mb-2 d-flex gap-2">
+                                                        <input type="text" name="features[]" class="form-control radius-8" required placeholder="Enter a feature" />
+                                                        <button type="button" class="btn btn-sm btn-success add-feature">+</button>
+                                                    </div>
+                                                </div>
+                                                <div class="invalid-feedback">
+                                                    At least one feature is required.
+                                                </div>
+                                            </div>
+
+                                            <div class="d-flex align-items-center justify-content-center gap-3">
+                                                <button type="button" class="border border-danger-600 bg-hover-danger-200 text-danger-600 text-md px-56 py-11 radius-8">
+                                                    Cancel
+                                                </button>
+                                                <button type="submit" class="btn lufera-bg text-white text-md px-56 py-12 radius-8">
+                                                    Save
+                                                </button>
+                                            </div>
+                                        </form>
                                     </div>
-                                <script>
-                                    document.addEventListener("DOMContentLoaded", function () {
-                                        const featureWrapper = document.getElementById("feature-wrapper");
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                        
+                    <script>
+                        document.addEventListener("DOMContentLoaded", function () {
+                            const featureWrapper = document.getElementById("feature-wrapper");
 
-                                        featureWrapper.addEventListener("click", function (e) {
-                                            if (e.target && e.target.classList.contains("add-feature")) {
-                                                e.preventDefault();
+                            featureWrapper.addEventListener("click", function (e) {
+                                if (e.target && e.target.classList.contains("add-feature")) {
+                                    e.preventDefault();
 
-                                                const newGroup = document.createElement("div");
-                                                newGroup.className = "feature-group mb-2 d-flex gap-2";
-                                                newGroup.innerHTML = `
-                                                    <input type="text" name="features[]" class="form-control radius-8" required placeholder="Enter a feature" />
-                                                    <button type="button" class="btn btn-sm btn-danger remove-feature">−</button>
-                                                `;
-                                                featureWrapper.appendChild(newGroup);
-                                            }
+                                    const newGroup = document.createElement("div");
+                                    newGroup.className = "feature-group mb-2 d-flex gap-2";
+                                    newGroup.innerHTML = `
+                                        <input type="text" name="features[]" class="form-control radius-8" required placeholder="Enter a feature" />
+                                        <button type="button" class="btn btn-sm btn-danger remove-feature">−</button>
+                                    `;
+                                    featureWrapper.appendChild(newGroup);
+                                }
 
-                                            if (e.target && e.target.classList.contains("remove-feature")) {
-                                                e.preventDefault();
-                                                e.target.parentElement.remove();
-                                            }
-                                        });
-                                    });
-                                </script>
+                                if (e.target && e.target.classList.contains("remove-feature")) {
+                                    e.preventDefault();
+                                    e.target.parentElement.remove();
+                                }
+                            });
+                        });
+                    </script>
 
-                                <?php include './partials/layouts/layoutBottom.php' ?>
-                PHP;
-                file_put_contents($add_file_path, $add_content);
-            // }
+                <?php include './partials/layouts/layoutBottom.php' ?>
+            PHP;
+            file_put_contents($add_file_path, $add_content);
 
-            $view_file_name = "view-$catSlug.php";
+            header("Location: add-$pack_cat_url_Slug.php");
+
+            $view_file_name = "view-$pack_cat_url_Slug.php";
             $view_file_path = dirname(__DIR__) . '/' . $view_file_name;
-
             $view_content = <<<PHP
-                <?php \$_GET['product_category'] = $category_id; ?>
+                <?php \$_GET['product_category'] = $product_category; ?>
                 <?php include './view-package.php'; ?>
             PHP;
-
             file_put_contents($view_file_path, $view_content);
 
             exit;
         } elseif ($product_type === 'Product') {
             $stmt = $conn->prepare("SELECT cat_id, cat_url FROM categories WHERE cat_id = ?");
-            $stmt->bind_param("i", $category_id);
+            $stmt->bind_param("i", $product_category);
             $stmt->execute();
             $stmt->bind_result($cat_id1, $cat_url1);
             $stmt->fetch();
@@ -1440,27 +1425,21 @@
             $cat_url1 = pathinfo($cat_url1, PATHINFO_FILENAME);
             $catSlug1 = strtolower(preg_replace('/\s+/', '-', $cat_url1));
 
-            header("Location: add-$catSlug1.php?id=$cat_id1&slug=$catSlug1");
-
             $add_file_name1 = "add-$catSlug1.php";
             $add_file_path1 = dirname(__DIR__) . '/' . $add_file_name1;
-
-            // if (!file_exists($add_file_path1)) {
-                $add_content1 = <<<PHP
-                    <?php include './add-product.php' ?>
-                PHP;
-                
-                file_put_contents($add_file_path1, $add_content1);
-            // }
+            $add_content1 = <<<PHP
+                <?php include './add-product.php' ?>
+            PHP;
+            file_put_contents($add_file_path1, $add_content1);
+            
+            header("Location: add-$catSlug1.php?id=$cat_id1&slug=$catSlug1");
 
             $view_file_name1 = "view-$catSlug1.php";
             $view_file_path1 = dirname(__DIR__) . '/' . $view_file_name1;
-
             $view_content1 = <<<PHP
-                <?php \$_GET['product_category'] = $category_id; ?>
+                <?php \$_GET['product_category'] = $product_category; ?>
                 <?php include './view-product.php'; ?>
             PHP;
-
             file_put_contents($view_file_path1, $view_content1);
 
             exit;
@@ -1570,8 +1549,7 @@
 
             <?php if ($row['role'] == "1") {
                 // Fetch categories
-                // $cat_result = $conn->query("SELECT cat_id, cat_name, cat_url FROM categories ORDER BY cat_id DESC");
-                $cat_result = $conn->query("SELECT cat_id, cat_name, cat_url,cat_module FROM categories ORDER BY cat_id DESC");
+                $cat_result = $conn->query("SELECT cat_id, cat_name, cat_url, cat_module FROM categories ORDER BY cat_id DESC");
 
                 while ($cat = $cat_result->fetch_assoc()) { ?>
                     <li>
@@ -1581,7 +1559,6 @@
                                 <span><?= htmlspecialchars($cat['cat_name']) ?></span>
                             </a>
                             <div class="category-actions">
-                                <!-- <button type="button" onclick="openEditModal('<?= $cat['cat_id'] ?>', '<?= htmlspecialchars($cat['cat_name']) ?>', '<?= htmlspecialchars($cat['cat_url']) ?>')" class="icon-btn"> -->
                                 <button type="button" onclick="openEditModal('<?= $cat['cat_id'] ?>', '<?= htmlspecialchars($cat['cat_name']) ?>', '<?= htmlspecialchars($cat['cat_url']) ?>', '<?= htmlspecialchars($cat['cat_module']) ?>')" class="icon-btn">    
                                     <iconify-icon icon="mdi:pencil-outline"></iconify-icon>
                                 </button>
