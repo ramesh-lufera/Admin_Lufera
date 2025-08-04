@@ -73,15 +73,9 @@ img {
 .product-title {
   margin-top: 0; }
 
-.color {
-  display: inline-block;
-  vertical-align: middle;
-  margin-right: 10px;
-  height: 2em;
-  width: 2em;
-  border-radius: 2px; }
-  .color:first-of-type {
-    margin-left: 20px; }
+.colors, .price {
+  font-size: 20px !important;
+}
 
 @-webkit-keyframes opacity {
   0% {
@@ -125,14 +119,14 @@ img {
 					<div class="preview col-md-6">
 						
 						<div class="preview-pic tab-content">
-						  <div id="pic-1"><img src="uploads/products/<?php echo $row['product_image'] ?>" class="prod-img" /></div>
+						  <div id="pic-1"><img src="uploads/products/<?php echo $row['product_image'] ?>" class="prod-img rounded-4" /></div>
 						  
 						</div>
 						
 					</div>
 					<div class="details col-md-6">
-						<h3 class="product-title"><?php echo $row['name'] ?></h3>
-                        <h6 class="product-title"><?php echo $row['subtitle'] ?></h6>
+						<h3 class="product-title fs-1"><?php echo $row['name'] ?></h3>
+            <h6 class="product-title"><?php echo $row['subtitle'] ?></h6>
 						
 						<p class="product-description"><?php echo $row['description'] ?>.</p>
 						<h4 class="price">Price: <span>$<?php echo $row['price'] ?></span></h4>
@@ -147,7 +141,7 @@ img {
                   <input type="hidden" name="price" value="<?= htmlspecialchars($row['price']) ?>">
                   <input type="hidden" name="duration" value="1 Year">
                   <input type="hidden" name="created_on" value="<?= date("Y-m-d") ?>">
-                  <button type="submit" class="lufera-bg text-center text-white text-sm btn-sm px-12 py-10 w-100 radius-8 mt-28">Get started</button>
+                  <button type="submit" class="lufera-bg bg-hover-warning-400 text-white text-md px-56 py-11 radius-8">Get started</button>
               </form>
 							<!-- <button class="like btn btn-default" type="button"><span class="fa fa-heart"></span></button> -->
 						</div>
