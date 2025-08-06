@@ -15,6 +15,8 @@ img {
   max-width: 100%; }
 .prod-img{
     min-height: 455px;
+    max-height: 455px;
+    object-fit: cover;
 }
 .preview {
   display: -webkit-box;
@@ -130,6 +132,7 @@ img {
 						
 						<p class="product-description"><?php echo $row['description'] ?>.</p>
 						<h4 class="price">Price: <span>$<?php echo $row['price'] ?></span></h4>
+            <h4 class="price">Validity: <span><?php echo $row['duration'] ?></span></h4>
 						
 						<h6 class="colors">Category: <?php echo $row['category'] ?></h6>
             <h6 class="colors">Tags: <?php echo $row['tags'] ?></h6>
@@ -139,7 +142,7 @@ img {
                   <input type="hidden" name="plan_name" value="<?= htmlspecialchars($row['name']) ?>">
                   <input type="hidden" name="subtitle" value="<?= htmlspecialchars($row['subtitle']) ?>">
                   <input type="hidden" name="price" value="<?= htmlspecialchars($row['price']) ?>">
-                  <input type="hidden" name="duration" value="1 Year">
+                  <input type="hidden" name="duration" value="<?= htmlspecialchars($row['duration']) ?>">
                   <input type="hidden" name="created_on" value="<?= date("Y-m-d") ?>">
                   <button type="submit" class="lufera-bg bg-hover-warning-400 text-white text-md px-56 py-11 radius-8">Get started</button>
               </form>

@@ -4,6 +4,9 @@
     .nav-link:focus, .nav-link:hover {
         color: #fdc701 !important;
     }
+    button:disabled{
+        opacity: 0.7;
+    }
 </style>
 
 <?php
@@ -40,6 +43,13 @@
         }
     }
     $stmt->close();
+
+    // Get active symbol
+    $result = $conn->query("SELECT symbol FROM currencies WHERE is_active = 1 LIMIT 1");
+    $symbol = "$"; // default
+    if ($row = $result->fetch_assoc()) {
+        $symbol = $row['symbol'];
+    }
 ?>
 
 <div class="dashboard-main-body">
@@ -83,14 +93,15 @@
                                     <?php foreach ($packages[$duration] as $package): ?>
                                         <div class="col-xxl-4 col-sm-6">
                                             <div class="pricing-plan position-relative radius-24 overflow-hidden border">
-                                                <div class="d-flex align-items-center gap-16">
-                                                    <div>
-                                                        <span class="fw-medium text-md text-secondary-light"><?= htmlspecialchars($package['plan_type']) ?></span>
-                                                        <h6 class="mb-0"><?= htmlspecialchars($package['title']) ?></h6>
-                                                    </div>
-                                                </div>
-                                                <p class="mt-16 mb-0 text-secondary-light mb-28"><?= htmlspecialchars($package['subtitle']) ?></p>
-                                                <h3 class="mb-24">$<?= htmlspecialchars($package['price']) ?> 
+                                            <h6><?= htmlspecialchars($package['package_name']) ?></h6>    
+                                            <!-- <span class="fw-medium text-md text-secondary-light"><?= htmlspecialchars($package['plan_type']) ?></span> -->
+                                                <?php $isActive = ($package['is_active'] == 1); ?>
+                                                <?php if (!$isActive): ?>
+                                                    <p class="mb-0 text-sm text-secondary-light text-danger fw-semibold mt-2 float-end">Inactive</p>
+                                                <?php endif; ?> 
+                                                <p class="mb-0"><?= htmlspecialchars($package['title']) ?></p>
+                                                <p class=" mb-0 text-secondary-light mb-28"><?= htmlspecialchars($package['subtitle']) ?></p>
+                                                <h3 class="mb-24" id="currency-symbol-display"><?= htmlspecialchars($symbol) ?><?= htmlspecialchars($package['price']) ?>
                                                     <span class="fw-medium text-md text-secondary-light">/<?= htmlspecialchars($package['duration']) ?></span> 
                                                 </h3>
                                                 <span class="mb-20 fw-medium"><?= htmlspecialchars($package['description']) ?></span>
@@ -113,13 +124,15 @@
                                                 </ul>
 
                                                 <form action="cart.php" method="POST">
-                                                    <input type="hidden" name="plan_name" value="<?= htmlspecialchars($package['title']) ?>">
+                                                    <input type="hidden" name="plan_name" value="<?= htmlspecialchars($package['package_name']) ?>">
+                                                    <input type="hidden" name="title" value="<?= htmlspecialchars($package['title']) ?>">
                                                     <input type="hidden" name="subtitle" value="<?= htmlspecialchars($package['subtitle']) ?>">
                                                     <input type="hidden" name="price" value="<?= htmlspecialchars($package['price']) ?>">
                                                     <input type="hidden" name="duration" value="<?= htmlspecialchars($package['duration']) ?>">
                                                     <input type="hidden" name="created_on" value="<?= date("Y-m-d") ?>">
-                                                    <button type="submit" class="lufera-bg text-center text-white text-sm btn-sm px-12 py-10 w-100 radius-8 mt-28">Get started</button>
+                                                    <button type="submit" class="lufera-bg text-center text-white text-sm btn-sm px-12 py-10 w-100 radius-8 mt-28" <?php echo !$isActive ? 'disabled' : ''; ?>>Get started</button>
                                                 </form>
+                                                
                                             </div>
                                         </div>
                                     <?php endforeach; ?>

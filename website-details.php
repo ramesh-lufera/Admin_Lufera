@@ -80,7 +80,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     // Assuming each user has one website entry, and you are updating it. 
     // You might use a user_id or some unique key to identify the row.
     $user_id = $_SESSION['user_id']; // Example, if using sessions.
-    echo $websiteId;
+    
     // Check if a record exists
     $checkSql = "SELECT * FROM websites WHERE id = ?";
     $stmt = $conn->prepare($checkSql);

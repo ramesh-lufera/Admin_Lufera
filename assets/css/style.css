@@ -12231,7 +12231,6 @@ div.dt-container .dt-paging .dt-paging-button:hover:hover, div.dt-container .dt-
 
 .form-check .form-check-input {
   border: 1px solid var(--text-secondary-light);
-  background: transparent;
   width: 18px;
   height: 18px;
   position: relative;
@@ -14987,7 +14986,7 @@ td.fc-header-center {
     font-size: 1rem;
   }
 }
-.sidebar-menu li a:hover, .to-top-list li .hover-text-primary:hover {
+.sidebar-menu li a:hover, .to-top-list li .hover-text-primary:hover, .nav-link, .nav-link:focus, .nav-link:hover {
   color: #fec700;
 }
 
@@ -15165,5 +15164,8 @@ div.dt-container .dt-search input{
 }
 table.dataTable thead>tr>th.dt-orderable-asc:hover, table.dataTable thead>tr>th.dt-orderable-desc:hover, table.dataTable thead>tr>td.dt-orderable-asc:hover, table.dataTable thead>tr>td.dt-orderable-desc:hover{
   outline: none;
+}
+.form-check-input:checked{
+  background-color: #fdc701;
 }
 /* === footer css end === */
