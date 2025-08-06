@@ -1,4 +1,5 @@
 <?php include './partials/layouts/layoutTop.php' ?>
+
 <style>
     .tagline{
         border-bottom:1px solid #fec700;
@@ -15,15 +16,11 @@
         margin: 10px 0 0;
     }
 </style>
-<div class="dashboard-main-body">
-    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-24">
-        <h6 class="fw-semibold mb-0">Your Cart</h6>
-        
-    </div>
 
 <?php
     if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $plan_name = $_POST['plan_name'];
+        $title = $_POST['title'];
         $subtitle = $_POST['subtitle'];
         $price = $_POST['price'];
         $duration = $_POST['duration'];
@@ -32,13 +29,26 @@
         $total_price = $price + $gst;
         $auto_id = rand(10000000, 99999999);
     }
+
+    // Get active symbol
+    $result = $conn->query("SELECT symbol FROM currencies WHERE is_active = 1 LIMIT 1");
+    $symbol = "$"; // default
+    if ($row = $result->fetch_assoc()) {
+        $symbol = $row['symbol'];
+    }
 ?>
+
+<div class="dashboard-main-body">
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-24">
+        <h6 class="fw-semibold mb-0"><?php echo $plan_name; ?></h6>
+    </div>
+
     <div class="mb-40">
         <div class="row gy-4">
             <div class="col-xxl-6 col-sm-6">
                 <div class="card h-100 radius-12">
                 <div class="card-header py-10 border-none" style="box-shadow: 0px 3px 3px 0px lightgray">
-                    <h6 class="mb-0"><?php echo $plan_name; ?></h6>
+                    <h6 class="mb-0"><?php echo $title; ?></h6>
                     <p class="mb-0"><?php echo $subtitle; ?></p>
                 </div>
                     <div class="card-body p-16">
@@ -68,11 +78,11 @@
                                         ?>
                                     </td>
                                 </tr>
-                                <tr>
-                                    <td class="border-0" colspan="2">Renews at $1500/year for 3 Years
+                                <!-- <tr>
+                                    <td class="border-0" colspan="2" id="currency-symbol-display">Renews at <?= htmlspecialchars($symbol) ?>1500/year for 3 Years
                                         <p class="text-sm ad-box">Great news! Your FREE domain + 3 months FREE are included with this order</p>
                                     </td>
-                                </tr>
+                                </tr> -->
                             </tbody>
                         </table>
                     </div>
@@ -90,7 +100,7 @@
                             <p class="mb-0">Sub total does not include applicable taxes</p>
                         </div>
                         <div class="align-content-center">
-                            <h4 class="mb-0">$<?php echo $price; ?></h4>
+                            <h4 class="mb-0" id="currency-symbol-display"><?= htmlspecialchars($symbol) ?><?php echo $price; ?></h4>
                         </div>
                     </div>
                     <div class="card-body p-16">
@@ -102,11 +112,11 @@
                                 </tr>
                                 <tr>
                                     <td>Tax (GST 18%)</td>
-                                    <td class="text-end">$<?php echo $gst; ?></td>
+                                    <td class="text-end" id="currency-symbol-display"><?= htmlspecialchars($symbol) ?><?php echo $gst; ?></td>
                                 </tr>
                                 <tr>
                                     <td class="border-0">Estimated Total</td>
-                                    <td class="border-0 text-end">$<?php echo $total_price; ?></td>
+                                    <td class="border-0 text-end" id="currency-symbol-display"><?= htmlspecialchars($symbol) ?><?php echo $total_price; ?></td>
                                 </tr>
                             </tbody>
                         </table>

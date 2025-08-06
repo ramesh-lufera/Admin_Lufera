@@ -57,6 +57,13 @@
                 </script>";
             }
     }
+
+    // Get active symbol
+    $result1 = $conn->query("SELECT symbol FROM currencies WHERE is_active = 1 LIMIT 1");
+    $symbol = "$"; // default
+    if ($row1 = $result1->fetch_assoc()) {
+        $symbol = $row1['symbol'];
+    }
 ?>
 <style>
     .plan-details-table tbody tr td{
@@ -78,9 +85,9 @@
                 Record Payment
             </button>
             <?php } ?>
-            <button type="button" class="btn btn-sm btn-success radius-8 d-inline-flex align-items-center gap-1" data-bs-toggle="modal" data-bs-target="#Payment">
-                <iconify-icon icon="lucide:dollar-sign" class="text-xl"></iconify-icon>
-                Payment History
+            <button type="button" class="btn btn-sm btn-success radius-8 d-inline-flex align-items-center gap-1" data-bs-toggle="modal" data-bs-target="#Payment" id="currency-symbol-display">
+                <!-- <iconify-icon icon="lucide:dollar-sign" class="text-xl"></iconify-icon> -->
+                <?= htmlspecialchars($symbol) ?> Payment History
             </button>
             <!-- <button type="button" class="btn btn-sm btn-success radius-8 d-inline-flex align-items-center gap-1" >
                 <iconify-icon icon="basil:edit-outline" class="text-xl"></iconify-icon>
@@ -121,7 +128,7 @@
                             echo '<tr>
                                     <td>' . htmlspecialchars($row_history['invoice_no']) . '</td>
                                     <td>' . htmlspecialchars($row_history['payment_method']) . '</td>
-                                    <td>' . htmlspecialchars($row_history['amount']) . '</td>
+                                    <td id="currency-symbol-display">' . htmlspecialchars($symbol) . htmlspecialchars($row_history['amount']) . '</td>
                                     <td>' . htmlspecialchars($row_history['remarks']) . '</td>
                                     <td>' . date('d/m/Y', strtotime($row_history['paid_date'])) . '</td>
                                 </tr>';
@@ -259,7 +266,7 @@
                             <p class="mb-0">Order Summary includes discounts & taxes</p>
                         </div>
                         <div class="align-content-center">
-                            <h4 class="mb-0">$<?php echo $row['amount']; ?></h4>
+                            <h4 class="mb-0" id="currency-symbol-display"><?= htmlspecialchars($symbol) ?><?php echo $row['amount']; ?></h4>
                         </div>
                         
                     </div>
@@ -272,19 +279,19 @@
                             <tbody>
                                 <tr>
                                     <td><?php echo $row['plan']; ?> Website</td>
-                                    <td class="text-end">$<?php echo $row['price']; ?></td>
+                                    <td class="text-end" id="currency-symbol-display"><?= htmlspecialchars($symbol) ?><?php echo $row['price']; ?></td>
                                 </tr>
                                 <tr>
                                     <td>Tax (GST 18%)</td>
-                                    <td class="text-end">$<?php echo $row['gst']; ?></td>
+                                    <td class="text-end" id="currency-symbol-display"><?= htmlspecialchars($symbol) ?><?php echo $row['gst']; ?></td>
                                 </tr>
                                 <tr>
                                     <td class="fw-bold">Payments</td>
-                                    <td class="text-end fw-bold">$<?php echo $row['payment_made']; ?></td>
+                                    <td class="text-end fw-bold" id="currency-symbol-display"><?= htmlspecialchars($symbol) ?><?php echo $row['payment_made']; ?></td>
                                 </tr>
                                 <tr>
                                     <td class="fw-bold border-0">Total Payable</td>
-                                    <td class="text-end fw-bold border-0">$<?php echo $row['balance_due']; ?></td>
+                                    <td class="text-end fw-bold border-0" id="currency-symbol-display"><?= htmlspecialchars($symbol) ?><?php echo $row['balance_due']; ?></td>
                                 </tr>
                             </tbody>
                         </table>

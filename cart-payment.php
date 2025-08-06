@@ -93,6 +93,13 @@
             $stmt->execute();
         }
     }
+
+    // Get active symbol
+    $result = $conn->query("SELECT symbol FROM currencies WHERE is_active = 1 LIMIT 1");
+    $symbol = "$"; // default
+    if ($row = $result->fetch_assoc()) {
+        $symbol = $row['symbol'];
+    }
 ?>
 
 <!-- SweetAlert2 CDN -->
@@ -250,11 +257,11 @@
                                             ?>
                                         </td>
                                     </tr>
-                                    <tr>
-                                        <td class="border-0" colspan="2">Renews at $1500/year for 3 Years
+                                    <!-- <tr>
+                                        <td class="border-0" colspan="2" id="currency-symbol-display">Renews at <?= htmlspecialchars($symbol) ?>1500/year for 3 Years
                                             <p class="text-sm ad-box">Great news! Your FREE domain + 3 months FREE are included with this order</p>
                                         </td>
-                                    </tr>
+                                    </tr> -->
                                 </tbody>
                             </table>
                         </div>
@@ -270,7 +277,7 @@
                                 <p class="mb-0">Sub total does not include applicable taxes</p>
                             </div>
                             <div class="align-content-center">
-                                <h4 class="mb-0">$<?php echo $price; ?></h4>
+                                <h4 class="mb-0" id="currency-symbol-display"><?= htmlspecialchars($symbol) ?><?php echo $price; ?></h4>
                             </div>
                         </div>
                         <div class="card-body p-16">
@@ -282,11 +289,11 @@
                                     </tr>
                                     <tr>
                                         <td>Tax (GST 18%)</td>
-                                        <td class="text-end">$<?php echo $gst; ?></td>
+                                        <td class="text-end" id="currency-symbol-display"><?= htmlspecialchars($symbol) ?><?php echo $gst; ?></td>
                                     </tr>
                                     <tr>
                                         <td class="border-0">Estimated Total</td>
-                                        <td class="border-0 text-end">$<?php echo $total_price; ?></td>
+                                        <td class="border-0 text-end" id="currency-symbol-display"><?= htmlspecialchars($symbol) ?><?php echo $total_price; ?></td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -311,8 +318,7 @@
                                     $payments = [
                                         'Bank Transfer' => 'bank-transfer',
                                         'Direct Pay'    => 'direct-pay',
-                                        'PayPal'        => 'paypal',
-                                        'Card'          => 'card'
+                                        'PayPal'        => 'paypal-button-container'
                                     ];
                                     foreach ($payments as $label => $target): ?>
                                         <div class="payment-option-box">
@@ -333,7 +339,21 @@
                                         </div>
                                 <?php endforeach; ?>                            
                             </div>
-
+                            <?php
+                                $sql = "SELECT * FROM bank_details LIMIT 1";
+                                $result = $conn->query($sql);
+                                if ($result->num_rows > 0) {
+                                    $row = $result->fetch_assoc();
+                                    $id = $row['id'];
+                                    $bank_name = $row['bank_name'];
+                                    $ac_name = $row['ac_name'];
+                                    $ac_no = $row['ac_no'];
+                                    $branch = $row['branch'];
+                                    $ifsc_code = $row['ifsc_code'];
+                                    $micr = $row['micr'];
+                                    $swift_code = $row['swift_code'];
+                                }
+                            ?>
                             <div id="bank-transfer" class="payment-detail">
                                 <div class="row mt-3">
                                     <div class="col-12">
@@ -349,13 +369,13 @@
                                                 <div class="table-responsive">
                                                 <table class="table table-bordered small mb-0">
                                                     <tbody>
-                                                    <tr><td>Bank Name</td><td>Kotak Mahindra Bank</td></tr>
-                                                    <tr><td>Account Name</td><td>Avinash Balasubramaniyam</td></tr>
-                                                    <tr><td>Account No</td><td>84548518445</td></tr>
-                                                    <tr><td>Account Branch</td><td>Thillainagar, Trichy</td></tr>
-                                                    <tr><td>IFSC</td><td>FGF545DFSE</td></tr>
-                                                    <tr><td>MICR</td><td>4852124</td></tr>
-                                                    <tr><td>Swift Code</td><td>FDSEWSWR</td></tr>
+                                                    <tr><td>Bank Name</td><td><?php echo htmlspecialchars($bank_name); ?></td></tr>
+                                                    <tr><td>Account Name</td><td><?php echo htmlspecialchars($ac_name); ?></td></tr>
+                                                    <tr><td>Account No</td><td><?php echo htmlspecialchars($ac_no); ?></td></tr>
+                                                    <tr><td>Account Branch</td><td><?php echo htmlspecialchars($branch); ?></td></tr>
+                                                    <tr><td>IFSC</td><td><?php echo htmlspecialchars($ifsc_code); ?></td></tr>
+                                                    <tr><td>MICR</td><td><?php echo htmlspecialchars($micr); ?></td></tr>
+                                                    <tr><td>Swift Code</td><td><?php echo htmlspecialchars($swift_code); ?></td></tr>
                                                     </tbody>
                                                 </table>
                                                 </div>
@@ -365,8 +385,6 @@
                                                 <p class="mb-1 fw-medium">Please let us know!</p>
                                                 <p class="mb-1 text-muted small">Once you are done with your payment please let us know.</p>
                                                 <p class="mb-3 text-muted small">Thank You.</p>
-                                                <button type="button" class="lufera-bg text-center btn-sm px-12 py-10" style="width:100px; border: 1px solid #000">Explore</button>
-                                                <!-- <button type="button" class="lufera-bg text-white px-4 py-2">Explore</button> -->
                                                 </div>
                                             </div>
                                             </div>
@@ -392,8 +410,6 @@
                                                             <p class="mb-1 fw-medium">Please confirm your payment with one of our representative.</p>
                                                             <p class="mb-1 text-muted small">Contact your Relationship manager or call us at +91 -86-80808-204 or write to us at info@luferatech.com.</p>
                                                             <p class="mb-3 text-muted small">For futher support.</p>
-                                                            <button type="button" class="lufera-bg text-center btn-sm px-12 py-10" style="width:100px; border: 1px solid #000">Explore</button>
-                                                            <!-- <button type="button" class="lufera-bg text-white px-4 py-2">Explore</button> -->
                                                         </div>
                                                     </div>
                                                 </div>
@@ -403,8 +419,8 @@
                                     </div>
                                 </div>
                             </div>
-                            <div id="paypal" class="payment-detail">PayPal...</div>
-                            <div id="card" class="payment-detail">Card...</div>
+                            <!-- <div id="paypal" class="payment-detail">PayPal...</div> -->
+                            <div id="paypal-button-container" class="payment-detail mt-3"></div>
                         </div>
                     </div>
                 </div>
@@ -412,6 +428,30 @@
         </div>    
     </form>
 </div>
+
+<script src="https://www.paypal.com/sdk/js?client-id=AcXyC6yJbA3cipIidV1fFZ-cz0F99YIzjN8SV9imJSem5MTjTuqAotwcvcI1GFJL0I4axsVtLvkdpgck&currency=USD"></script>
+
+<script>
+    paypal.Buttons({
+        createOrder: function(data, actions) {
+            return actions.order.create({
+                purchase_units: [{
+                    amount: {
+                        // value: '1.00'
+                        value: '<?= $total_price ?>'
+                    }
+                }]
+            });
+        },
+        onApprove: function(data, actions) {
+            return actions.order.capture().then(function(details) {
+                alert('Payment successful! Thank you, ' + details.payer.name.given_name + '!');
+                console.log('Capture result', details, JSON.stringify(details, null, 2));
+                // You can redirect or save order details here
+            });
+        }
+    }).render('#paypal-button-container');
+</script>
 
 <script>
     $('#updateForm').submit(function(e) {

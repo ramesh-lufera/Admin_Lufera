@@ -34,6 +34,13 @@
     $results = $conn->query($user);
     $rows = $results->fetch_assoc();
     $user_ids = $rows['email'];
+
+     // Get active symbol
+    $result1 = $conn->query("SELECT symbol FROM currencies WHERE is_active = 1 LIMIT 1");
+    $symbol = "$"; // default
+    if ($row1 = $result1->fetch_assoc()) {
+        $symbol = $row1['symbol'];
+    }
 ?>
         <div class="dashboard-main-body">
 
@@ -133,7 +140,7 @@
                                                         <td><?php echo $row['duration']; ?> </td>
                                                         <td><?php echo $row['payment_method']; ?> </td>
                                                         <td><?php echo $row['status']; ?> </td>
-                                                        <td class="text-end text-sm">$ <?php echo $row['price']; ?> </td>
+                                                        <td class="text-end text-sm" id="currency-symbol-display"><?= htmlspecialchars($symbol) ?> <?php echo $row['price']; ?> </td>
                                                     </tr>
                                                 </tbody>
                                             </table>
@@ -153,13 +160,13 @@
                                                         <tr>
                                                             <td class="pe-64 border-bottom p-8">Subtotal</td>
                                                             <td class="border-bottom p-8">
-                                                                <span class="text-primary-light fw-semibold">$ <?php echo $row['subtotal']; ?></span>
+                                                                <span class="text-primary-light fw-semibold" id="currency-symbol-display"><?= htmlspecialchars($symbol) ?> <?php echo $row['subtotal']; ?></span>
                                                             </td>
                                                         </tr>
                                                         <tr>
                                                             <td class="pe-64 border-bottom p-8">GST 18%</td>
                                                             <td class="border-bottom p-8">
-                                                                <span class="text-primary-light fw-semibold">$ <?php echo $row['gst']; ?></span>
+                                                                <span class="text-primary-light fw-semibold" id="currency-symbol-display"><?= htmlspecialchars($symbol) ?> <?php echo $row['gst']; ?></span>
                                                             </td>
                                                         </tr>
                                                         <tr>
@@ -167,7 +174,7 @@
                                                                 <span class="text-primary-light">Total</span>
                                                             </td>
                                                             <td class="border-bottom p-8">
-                                                                <span class="text-primary-light fw-semibold">$ <?php echo $row['amount']; ?></span>
+                                                                <span class="text-primary-light fw-semibold" id="currency-symbol-display"><?= htmlspecialchars($symbol) ?> <?php echo $row['amount']; ?></span>
                                                             </td>
                                                         </tr>
                                                         <?php if($row['payment_made'] != null){ ?>
@@ -176,7 +183,7 @@
                                                                 <span class="text-primary-light">Payment Made</span>
                                                             </td>
                                                             <td class="border-bottom p-8">
-                                                                <span class="text-primary-light fw-semibold">$ <?php echo $row['payment_made']; ?></span>
+                                                                <span class="text-primary-light fw-semibold" id="currency-symbol-display"><?= htmlspecialchars($symbol) ?> <?php echo $row['payment_made']; ?></span>
                                                             </td>
                                                         </tr>
                                                         <?php } ?>
@@ -185,7 +192,7 @@
                                                                 <span class="text-primary-light">Balance Due</span>
                                                             </td>
                                                             <td class="border-bottom p-8">
-                                                                <span class="text-primary-light fw-semibold">$ <?php echo $row['balance_due']; ?></span>
+                                                                <span class="text-primary-light fw-semibold" id="currency-symbol-display"><?= htmlspecialchars($symbol) ?> <?php echo $row['balance_due']; ?></span>
                                                             </td>
                                                         </tr>
                                                     </tbody>
