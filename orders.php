@@ -75,6 +75,13 @@
         }
     }
 
+    // Get active symbol
+    $result = $conn->query("SELECT symbol FROM currencies WHERE is_active = 1 LIMIT 1");
+    $symbol = "$"; // default
+    if ($row = $result->fetch_assoc()) {
+        $symbol = $row['symbol'];
+    }
+
     $result = mysqli_query($conn, $query);
 ?>
 
@@ -113,7 +120,7 @@
                             </td>
                             <td class="text-center"><?php echo $row['invoice_id']; ?></td>
                             <td class="text-center"><?= date('d M Y', strtotime($row['created_on'])) ?></td>
-                            <td class="text-center">$ <?= number_format($row['amount'], 2) ?></td>
+                            <td class="text-center" id="currency-symbol-display"><?= htmlspecialchars($symbol) ?> <?= number_format($row['amount'], 2) ?></td>
                             <!-- <td> <span class="bg-success-focus text-success-main px-24 py-4 rounded-pill fw-medium text-sm">Paid</span> </td> -->
                             <!-- <td>
                                 <a href="javascript:void(0)" class="btn btn-success btn-sm fw-medium text-white me-2" id="approveButton" onclick="approveAction()">

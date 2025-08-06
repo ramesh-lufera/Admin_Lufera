@@ -82,7 +82,14 @@ input[type=number] {
 
         $stmt->close();
        
-        }
+    }
+
+    // Get active symbol
+    $result1 = $conn->query("SELECT symbol FROM currencies WHERE is_active = 1 LIMIT 1");
+    $symbol = "$"; // default
+    if ($row1 = $result1->fetch_assoc()) {
+        $symbol = $row1['symbol'];
+    }
 ?>
         <div class="dashboard-main-body">
 
@@ -201,7 +208,13 @@ input[type=number] {
                                                                     <span class="percent-icon">
                                                                     <select id="discountType" name="discount_type">
                                                                         <option value="%" <?php if ($row['discount_type'] === '%') echo 'selected'; ?>>%</option>
-                                                                        <option value="$" <?php if ($row['discount_type'] === '$') echo 'selected'; ?>>$</option>
+                                                                        <!-- <option value="$" <?php if ($row['discount_type'] === '$') echo 'selected'; ?>>$</option> -->
+                                                                        <option id="currency-symbol-display" 
+                                                                                value="<?= htmlspecialchars($symbol) ?>" 
+                                                                                <?php if ($row['discount_type'] === $symbol) echo 'selected'; ?>>
+                                                                            <?= htmlspecialchars($symbol) ?>
+                                                                        </option>
+
                                                                     </select>
 
                                                                         <iconify-icon icon="mdi-menu-down" class="align-content-center"></iconify-icon>

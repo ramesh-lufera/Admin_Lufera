@@ -96,13 +96,13 @@
                     </div>
                     <div class="modal-body p-24">
                     <ul class="nav nav-tabs" id="roleTab" role="tablist">
-  <li class="nav-item" role="presentation">
-    <button class="nav-link active" id="step1-tab" data-bs-toggle="tab" data-bs-target="#step1" type="button" role="tab">Role</button>
-  </li>
-  <li class="nav-item" role="presentation">
-    <button class="nav-link" id="step2-tab" data-bs-toggle="tab" data-bs-target="#step2" type="button" role="tab">Permission</button>
-  </li>
-</ul>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="step1-tab" data-bs-toggle="tab" data-bs-target="#step1" type="button" role="tab">Role</button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="step2-tab" data-bs-toggle="tab" data-bs-target="#step2" type="button" role="tab">Permission</button>
+                    </li>
+                    </ul>
                         <div class="tab-content" id="pills-tabContent">
                             <div class="tab-pane fade show active" id="step1" role="tabpanel">
                                 <div class="row mt-20">
@@ -195,6 +195,7 @@ function isStep1Valid() {
 $(document).ready(function() {
     $('#role-table').DataTable();
 } );
+
 $(document).on("click", ".add-role-btn", function () {
     // Reset form
     $("#roleForm")[0].reset();
