@@ -52,44 +52,65 @@
                             \$UserId = \$row['user_id'];
                             \$role = \$row['role'];
 
+                            \$category = "select * from categories where cat_id = \$cat_id";
+                            \$cat_query = \$conn ->query(\$category);
+                            \$cat_row = \$cat_query ->fetch_assoc();
+                            \$cat_module = \$cat_row['cat_module'];
+
                             if (\$role == '1' || \$role == '2' || \$role == '7') {
-                            \$stmt = \$conn->prepare("
+                            \$sql = "
                                 SELECT 
                                     websites.id,
                                     users.user_id,
                                     users.business_name,
                                     websites.plan,
                                     websites.domain,
+                                    websites.access_www,
                                     websites.status,
                                     websites.created_at,
-                                    websites.duration
+                                    websites.duration,
+                                    JSON_UNQUOTE(JSON_EXTRACT(`json`.name, '$.name.value')) AS json_name
                                 FROM 
                                     users 
                                 JOIN 
                                     websites ON users.user_id = websites.user_id
+                                LEFT JOIN
+                                    `json` ON `json`.website_id = websites.id
                                 WHERE 
                                     websites.cat_id = ?
-                            ");
+                            ";
+                                                \$stmt = \$conn->prepare(\$sql);
+                            if (!\$stmt) {
+                                die("Prepare failed: " . \$conn->error);
+                            }
                             \$stmt->bind_param("i", \$cat_id);
                             } else {
-                                \$stmt = \$conn->prepare("
+                                \$sql = "
                                     SELECT 
                                         websites.id,
                                         users.user_id,
                                         users.business_name,
                                         websites.plan,
                                         websites.domain,
+                                        websites.access_www,
                                         websites.status,
                                         websites.created_at,
-                                        websites.duration 
+                                        websites.duration,
+                                        JSON_UNQUOTE(JSON_EXTRACT(`json`.name, '$.name.value')) AS json_name
                                     FROM 
-                                        users 
+                                        users
                                     JOIN 
-                                        websites ON users.user_id = websites.user_id 
+                                        websites ON users.user_id = websites.user_id
+                                    LEFT JOIN 
+                                        `json` ON `json`.website_id = websites.id
                                     WHERE 
                                         websites.user_id = ? AND websites.cat_id = ?
-                                ");
-                                \$stmt->bind_param("si", \$UserId, \$cat_id);
+                                ";
+                                \$stmt = \$conn->prepare(\$sql);
+                            if (!\$stmt) {
+                                die("Prepare failed: " . \$conn->error);
+                            }
+                            \$stmt->bind_param("si", \$UserId, \$cat_id);
                             }
 
                             \$stmt->execute();
@@ -470,24 +491,34 @@
                                         <!-- Domain Title -->
                                         <div class="site-info-header">
                                             <h6>
-                                            <?php echo htmlspecialchars(\$site['business_name']); ?>
+                                            <?php echo htmlspecialchars(\$site['plan']); ?>
                                             <span style="visibility:hidden"><?php echo htmlspecialchars(\$site['user_id']); ?></span>
                                             </h6>
                                         </div>
                                         <!-- Website (no link, color applied only to domain text) -->
+                                         <?php if (\$cat_module == "website"): ?> 
                                         <div class="site-info-meta">
                                             $pageTitle: 
                                             <span class="<?php echo \$domainColorClass; ?>">
-                                                <?php echo htmlspecialchars(\$site['domain']); ?>
+                                                <?php echo htmlspecialchars(\$site['access_www']); ?>
                                             </span>
                                         </div>
-                                        <div class="site-info-meta" style="color: <?php echo \$color; ?>;">
-                                            <strong>Expires:</strong>
-                                            <?php echo \$expiresText; ?>
+                                        <?php elseif (\$cat_module == "visa"): ?> 
+                                        <div class="site-info-meta">
+                                            Name: 
+                                            <span class="<?php echo \$domainColorClass; ?>">
+                                                <?php echo htmlspecialchars(\$site['json_name']); ?>
+                                            </span>
+                                        </div>
+                                        <?php endif; ?>
+                                        <div class="site-info-meta">
+                                            Expires:
+                                            <span style="color: <?php echo \$color; ?>;">
+                                                <?php echo \$Validity; ?>
+                                            </span>
                                         </div>
                                         </div>
                                         <div class="manage-btn-wrapper">
-                                        <div class="plan">Plan: <?php echo htmlspecialchars(\$site['plan']); ?></div>
                                         <!-- <a href="dashboard.php?site=<?php echo urlencode(\$site['domain']); ?>" class="dashboard-btn">Manage</a> -->
                                         <a href="$manageLink?website_id=<?php echo (int)\$site['id']; ?>" class="dashboard-btn">Manage</a>
                                         </div>
@@ -630,6 +661,7 @@
                                 users.business_name,
                                 websites.plan,
                                 websites.domain,
+                                websites.access_www,
                                 websites.status,
                                 websites.created_at,
                                 websites.duration
@@ -649,6 +681,7 @@
                                     users.business_name,
                                     websites.plan,
                                     websites.domain,
+                                    websites.access_www,
                                     websites.status,
                                     websites.created_at,
                                     websites.duration 
@@ -1040,7 +1073,7 @@
                                     <!-- Domain Title -->
                                     <div class="site-info-header">
                                         <h6>
-                                        <?php echo htmlspecialchars(\$site['business_name']); ?>
+                                        <?php echo htmlspecialchars(\$site['plan']); ?>
                                         <span style="visibility:hidden"><?php echo htmlspecialchars(\$site['user_id']); ?></span>
                                         </h6>
                                     </div>
@@ -1048,16 +1081,15 @@
                                     <div class="site-info-meta">
                                         $pageTitle1: 
                                         <span class="<?php echo \$domainColorClass; ?>">
-                                            <?php echo htmlspecialchars(\$site['domain']); ?>
+                                            <?php echo htmlspecialchars(\$site['access_www']); ?>
                                         </span>
                                     </div>
                                     <div class="site-info-meta" style="color: <?php echo \$color; ?>;">
                                         <strong>Expires:</strong>
-                                        <?php echo \$expiresText; ?>
+                                        <?php echo \$Validity; ?>
                                     </div>
                                     </div>
                                     <div class="manage-btn-wrapper">
-                                    <div class="plan">Plan: <?php echo htmlspecialchars(\$site['plan']); ?></div>
                                     <!-- <a href="dashboard.php?site=<?php echo urlencode(\$site['domain']); ?>" class="dashboard-btn">Manage</a> -->
                                     <a href="$manageLink1?website_id=<?php echo (int)\$site['id']; ?>" class="dashboard-btn">Manage</a>
                                     </div>
@@ -1224,6 +1256,7 @@
 
                         if (\$_SERVER['REQUEST_METHOD'] == 'POST') {
                             // Existing package fields
+                            \$package_name = \$_POST['package_name'];
                             \$plan_type = \$_POST['plan_type'];
                             \$title = \$_POST['title'];
                             \$subtitle = \$_POST['subtitle'];
@@ -1235,8 +1268,8 @@
 
                             \$cat_id = $product_category;
 
-                            \$stmt = \$conn->prepare("INSERT INTO package (plan_type, title, subtitle, price, description, duration, cat_id, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
-                            \$stmt->bind_param("ssssssis", \$plan_type, \$title, \$subtitle, \$price, \$description, \$duration, \$cat_id, \$created_at);
+                            \$stmt = \$conn->prepare("INSERT INTO package (package_name, plan_type, title, subtitle, price, description, duration, cat_id, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                            \$stmt->bind_param("sssssssis", \$package_name, \$plan_type, \$title, \$subtitle, \$price, \$description, \$duration, \$cat_id, \$created_at);
                         
                             if (\$stmt->execute()) {
                                 \$package_id = \$conn->insert_id;
@@ -1286,19 +1319,28 @@
                             <div class="card-body p-24">
                                 <div class="row justify-content-center">
                                     <div class="col-xxl-12 col-xl-8 col-lg-10">
-                                        <form method="POST" class="row gy-3 needs-validation" novalidate>
+                                        <form method="POST" class="row gy-3 needs-validation" novalidate autocomplete="off">
                                             <div class="mb-2">
-                                                <label for="name" class="form-label fw-semibold text-primary-light text-sm mb-8">Plan Type <span class="text-danger-600">*</span></label>
-                                                <div class="icon-field has-validation">
+                                                <label for="name" class="form-label fw-semibold text-primary-light text-sm mb-8">Package name <span class="text-danger-600">*</span></label>
+                                                <div class="has-validation">
+                                                    <input type="text" class="form-control radius-8" name="package_name" required maxlength="30">
+                                                    <div class="invalid-feedback">
+                                                        Package name is required
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="mb-2">
+                                                <label for="name" class="form-label fw-semibold text-primary-light text-sm mb-8">Tagline <span class="text-danger-600">*</span></label>
+                                                <div class="has-validation">
                                                     <input type="text" class="form-control radius-8" name="plan_type" required maxlength="20">
                                                     <div class="invalid-feedback">
-                                                        Plan type is required
+                                                        Tagline is required
                                                     </div>
                                                 </div>
                                             </div>
                                             <div class="mb-2">
                                                 <label for="name" class="form-label fw-semibold text-primary-light text-sm mb-8">Title <span class="text-danger-600">*</span></label>
-                                                <div class="icon-field has-validation">
+                                                <div class="has-validation">
                                                     
                                                     <input type="text" class="form-control radius-8" name="title" required maxlength="20">
                                                     <div class="invalid-feedback">
@@ -1308,7 +1350,7 @@
                                             </div>
                                             <div class="mb-2">
                                                 <label for="name" class="form-label fw-semibold text-primary-light text-sm mb-8">Subtitle <span class="text-danger-600">*</span></label>
-                                                <div class="icon-field has-validation">
+                                                <div class="has-validation">
                                                     
                                                     <input type="text" class="form-control radius-8" name="subtitle" required maxlength="100">
                                                     <div class="invalid-feedback">
@@ -1318,7 +1360,7 @@
                                             </div>
                                             <div class="mb-2">
                                                 <label for="name" class="form-label fw-semibold text-primary-light text-sm mb-8">Price <span class="text-danger-600">*</span></label>
-                                                <div class="icon-field has-validation">
+                                                <div class="has-validation">
                                                     
                                                     <input type="number" class="form-control radius-8" name="price" required maxlength="10" onkeydown="return event.key !== 'e'">
                                                     <div class="invalid-feedback">
@@ -1328,7 +1370,7 @@
                                             </div>
                                             <div class="mb-2">
                                                 <label for="name" class="form-label fw-semibold text-primary-light text-sm mb-8">Description <span class="text-danger-600">*</span></label>
-                                                <div class="icon-field has-validation">
+                                                <div class="has-validation">
                                                     
                                                     <textarea class="form-control radius-8" name="description" required></textarea>
                                                     <div class="invalid-feedback">
@@ -1338,7 +1380,7 @@
                                             </div>
                                             <div class="mb-2">
                                                 <label for="name" class="form-label fw-semibold text-primary-light text-sm mb-8">Duration  <span class="text-danger-600">*</span></label>
-                                                <div class="icon-field has-validation">
+                                                <div class="has-validation">
                                                     
                                                     <input type="text" class="form-control radius-8" name="duration" required maxlength="20">
                                                     <div class="invalid-feedback">
@@ -1621,17 +1663,23 @@
                         <li>
                             <a href="credentials.php"><i class="ri-circle-fill circle-icon text-warning-600 w-auto"></i> Credentials</a>
                         </li>
-                        <li>
+                        <!-- <li>
                             <a href="notification-alert.php"><i class="ri-circle-fill circle-icon text-warning-600 w-auto"></i> Notification Alert</a>
                         </li>
                         <li>
                             <a href="theme.php"><i class="ri-circle-fill circle-icon text-warning-600 w-auto"></i> Theme</a>
-                        </li>
+                        </li> -->
                         <li>
                             <a href="currencies.php"><i class="ri-circle-fill circle-icon text-warning-600 w-auto"></i> Currencies</a>
                         </li>
                         <li>
-                            <a href="language.php"><i class="ri-circle-fill circle-icon text-warning-600 w-auto"></i> Languages</a>
+                            <a href="bank_details.php"><i class="ri-circle-fill circle-icon text-warning-600 w-auto"></i> Bank Details</a>
+                        </li>
+                        <li>
+                            <a href="view_products.php"><i class="ri-circle-fill circle-icon text-warning-600 w-auto"></i> Products List</a>
+                        </li>
+                        <li>
+                            <a href="view_packages.php"><i class="ri-circle-fill circle-icon text-warning-600 w-auto"></i> Packages List</a>
                         </li>
                         <li>
                             <a href="payment-gateway.php"><i class="ri-circle-fill circle-icon text-warning-600 w-auto"></i> Payment Gateway</a>
