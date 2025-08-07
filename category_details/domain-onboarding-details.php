@@ -205,7 +205,7 @@
             </div>
             <div class="d-flex gap-2">
             <button type="button" class="btn btn-sm btn-upgrade">Upgrade</button>
-                <a href="../wizards/website-onboarding-wizard.php?id=<?= $websiteId ?>"><button type="button" class="btn btn-sm btn-edit-website">Wizard</button></a>
+                <a href="./domain-onboarding-wizard.php?id=<?= $websiteId ?>"><button type="button" class="btn btn-sm btn-edit-website">Wizard</button></a>
             </div>
         </div>
         <form method="post" autocomplete="off">
