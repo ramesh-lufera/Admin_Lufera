@@ -18,6 +18,15 @@
     $Id = $_SESSION['user_id'];
     $query = "SELECT * FROM package WHERE is_deleted = 0 ORDER BY created_at DESC";
     $result = mysqli_query($conn, $query);
+
+    // Get active symbol
+    $result1 = $conn->query("SELECT symbol FROM currencies WHERE is_active = 1 LIMIT 1");
+    $symbol = "$"; // default
+    if ($row1 = $result1->fetch_assoc()) {
+        $symbol = $row1['symbol'];
+    }
+
+    $result1 = mysqli_query($conn, $query);
 ?>
 
 <body>
@@ -32,7 +41,6 @@
     <thead>
         <tr>
             <th scope="col">Name</th>
-            <th scope="col" class="text-center">Tagline</th>
             <th scope="col" class="text-center">Title</th>
             <th scope="col" class="text-center">Subtitle</th>
             <th scope="col" class="text-center">Price</th>
@@ -50,10 +58,9 @@
                     <?= htmlspecialchars($row['package_name']) ?>
                 </div>
             </td>
-            <td class="text-center"><?= htmlspecialchars($row['plan_type']) ?></td>
             <td class="text-center"><?= htmlspecialchars($row['title']) ?></td>
             <td class="text-center"><?= htmlspecialchars($row['subtitle']) ?></td>
-            <td class="text-center">$ <?= number_format($row['price'], 2) ?></td>
+            <td class="text-center" id="currency-symbol-display"><?= htmlspecialchars($symbol) ?> <?= number_format($row['price'], 2) ?></td>
             <td class="text-center"><?= htmlspecialchars($row['duration']) ?></td>
             <td class="text-center">
                 <button class="toggle-status btn btn-sm <?= $row['is_active'] ? 'btn-success' : 'btn-secondary' ?>" 

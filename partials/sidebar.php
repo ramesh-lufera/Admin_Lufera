@@ -579,21 +579,56 @@
                 
                 if ($cat_template === 'website' && !file_exists($det_file_path)) {
                     $det_content = <<<PHP
-                        <?php include './website-details.php'; ?>    
+                        <?php include './category-details/website-details.php'; ?>    
                     PHP;
 
                     file_put_contents($det_file_path, $det_content);
                 }
                 if ($cat_template === 'marketing' && !file_exists($det_file_path)) {
                     $det_content = <<<PHP
-                        <?php include './marketing-details.php'; ?>  
+                        <?php include './category-details/marketing-details.php'; ?>  
                     PHP;
 
                     file_put_contents($det_file_path, $det_content);
                 }
                 if ($cat_template === 'visa' && !file_exists($det_file_path)) {
                     $det_content = <<<PHP
-                        <?php include './visa-details.php'; ?>  
+                        <?php include './category-details/visa-details.php'; ?>  
+                    PHP;
+
+                    file_put_contents($det_file_path, $det_content);
+                }
+                if ($cat_template === 'website-onboarding' && !file_exists($det_file_path)) {
+                    $det_content = <<<PHP
+                        <?php include './category-details/website-onboarding-details.php'; ?>  
+                    PHP;
+
+                    file_put_contents($det_file_path, $det_content);
+                }
+                if ($cat_template === 'marketing-onboarding' && !file_exists($det_file_path)) {
+                    $det_content = <<<PHP
+                        <?php include './category-details/marketing-onboarding-details.php'; ?>  
+                    PHP;
+
+                    file_put_contents($det_file_path, $det_content);
+                }
+                if ($cat_template === 'domain-onboarding' && !file_exists($det_file_path)) {
+                    $det_content = <<<PHP
+                        <?php include './category-details/domain-onboarding-details.php'; ?>  
+                    PHP;
+
+                    file_put_contents($det_file_path, $det_content);
+                }
+                if ($cat_template === 'email-onboarding' && !file_exists($det_file_path)) {
+                    $det_content = <<<PHP
+                        <?php include './category-details/email-onboarding-details.php'; ?>  
+                    PHP;
+
+                    file_put_contents($det_file_path, $det_content);
+                }
+                if ($cat_template === 'mobile-app-onboarding' && !file_exists($det_file_path)) {
+                    $det_content = <<<PHP
+                        <?php include './category-details/mobile-app-onboarding-details.php'; ?>  
                     PHP;
 
                     file_put_contents($det_file_path, $det_content);
@@ -1256,20 +1291,28 @@
 
                         if (\$_SERVER['REQUEST_METHOD'] == 'POST') {
                             // Existing package fields
-                            \$package_name = \$_POST['package_name'];
-                            \$plan_type = \$_POST['plan_type'];
+                            \$package_name = \$_POST['package_name'];                           
                             \$title = \$_POST['title'];
                             \$subtitle = \$_POST['subtitle'];
                             \$price = \$_POST['price'];
                             \$description = \$_POST['description'];
-                            \$duration = \$_POST['duration'];
                             \$features = \$_POST['features']; // Array of features
                             \$created_at = date("Y-m-d H:i:s");
 
+                            \$duration_value = isset(\$_POST['duration_value']) ? intval(\$_POST['duration_value']) : 0;
+                            \$duration_unit = isset(\$_POST['duration_unit']) ? \$_POST['duration_unit'] : '';
+ 
+                            if (\$duration_value > 0 && in_array(\$duration_unit, ['days', 'months', 'years'])) {
+                            \$duration = \$duration_value . ' ' . \$duration_unit; // e.g., "10 days"
+                            } else {
+                                echo "<script>alert('Invalid duration input.'); window.history.back();</script>";
+                                exit;
+                            }
+
                             \$cat_id = $product_category;
 
-                            \$stmt = \$conn->prepare("INSERT INTO package (package_name, plan_type, title, subtitle, price, description, duration, cat_id, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
-                            \$stmt->bind_param("sssssssis", \$package_name, \$plan_type, \$title, \$subtitle, \$price, \$description, \$duration, \$cat_id, \$created_at);
+                            \$stmt = \$conn->prepare("INSERT INTO package (package_name, title, subtitle, price, description, duration, cat_id, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+                            \$stmt->bind_param("ssssssis", \$package_name, \$title, \$subtitle, \$price, \$description, \$duration, \$cat_id, \$created_at);
                         
                             if (\$stmt->execute()) {
                                 \$package_id = \$conn->insert_id;
@@ -1323,7 +1366,7 @@
                                             <div class="mb-2">
                                                 <label for="name" class="form-label fw-semibold text-primary-light text-sm mb-8">Package name <span class="text-danger-600">*</span></label>
                                                 <div class="has-validation">
-                                                    <input type="text" class="form-control radius-8" name="package_name" required maxlength="30">
+                                                    <input type="text" class="form-control radius-8" name="package_name" required maxlength="100">
                                                     <div class="invalid-feedback">
                                                         Package name is required
                                                     </div>
@@ -1332,7 +1375,7 @@
                                             <div class="mb-2">
                                                 <label for="name" class="form-label fw-semibold text-primary-light text-sm mb-8">Tagline <span class="text-danger-600">*</span></label>
                                                 <div class="has-validation">
-                                                    <input type="text" class="form-control radius-8" name="plan_type" required maxlength="20">
+                                                    <input type="text" class="form-control radius-8" name="plan_type" required maxlength="100">
                                                     <div class="invalid-feedback">
                                                         Tagline is required
                                                     </div>
@@ -1342,7 +1385,7 @@
                                                 <label for="name" class="form-label fw-semibold text-primary-light text-sm mb-8">Title <span class="text-danger-600">*</span></label>
                                                 <div class="has-validation">
                                                     
-                                                    <input type="text" class="form-control radius-8" name="title" required maxlength="20">
+                                                    <input type="text" class="form-control radius-8" name="title" required maxlength="100">
                                                     <div class="invalid-feedback">
                                                         Title is required
                                                     </div>
@@ -1362,7 +1405,7 @@
                                                 <label for="name" class="form-label fw-semibold text-primary-light text-sm mb-8">Price <span class="text-danger-600">*</span></label>
                                                 <div class="has-validation">
                                                     
-                                                    <input type="number" class="form-control radius-8" name="price" required maxlength="10" onkeydown="return event.key !== 'e'">
+                                                    <input type="number" class="form-control radius-8" name="price" required maxlength="20" onkeydown="return event.key !== 'e'">
                                                     <div class="invalid-feedback">
                                                         Price is required
                                                     </div>
@@ -1379,13 +1422,18 @@
                                                 </div>
                                             </div>
                                             <div class="mb-2">
-                                                <label for="name" class="form-label fw-semibold text-primary-light text-sm mb-8">Duration  <span class="text-danger-600">*</span></label>
-                                                <div class="has-validation">
-                                                    
-                                                    <input type="text" class="form-control radius-8" name="duration" required maxlength="20">
-                                                    <div class="invalid-feedback">
-                                                        Duration is required
-                                                    </div>
+                                                <label class="form-label">Duration <span class="text-danger-600">*</span></label>
+                                                <div class="d-flex gap-2">
+                                                    <input type="number" name="duration_value" class="form-control radius-8" required min="1" style="width: 60%;">
+                                                    <select name="duration_unit" class="form-control radius-8" required style="width: 40%;">
+                                                        <option value="days">Days</option>
+                                                        <option value="months">Months</option>
+                                                        <option value="years">Years</option>
+                                                        <option value="hours">Hours</option>
+                                                    </select>
+                                                </div>
+                                                <div class="invalid-feedback">
+                                                    Duration is required
                                                 </div>
                                             </div>
                                             <div class="mb-2">
@@ -1730,7 +1778,6 @@
                 <label for="cat_url">URL</label>
                 <input type="text" name="cat_url" id="cat_url" required placeholder="URL">
             </div>
-            <!-- New Dropdown Field -->
             <div class="custom-form-group">
                 <label for="cat_template">Module</label>
                 <select name="cat_template" id="cat_template" required>
@@ -1738,6 +1785,11 @@
                     <option value="website">Website</option>
                     <option value="marketing">Marketing</option>
                     <option value="visa">Visa</option>
+                    <option value="website-onboarding">Website Onboarding</option>
+                    <option value="marketing-onboarding">Marketing Onboarding</option>
+                    <option value="domain-onboarding">Domain Onboarding</option>
+                    <option value="email-onboarding">Email Onboarding</option>
+                    <option value="mobile-app-onboarding">Mobile App Onboarding</option>
                 </select>
             </div>
             <div class="custom-modal-footer">
@@ -1772,6 +1824,11 @@
                     <option value="website">Website</option>
                     <option value="marketing">Marketing</option>
                     <option value="visa">Visa</option>
+                    <option value="website-onboarding">Website Onboarding</option>
+                    <option value="marketing-onboarding">Marketing Onboarding</option>
+                    <option value="domain-onboarding">Domain Onboarding</option>
+                    <option value="email-onboarding">Email Onboarding</option>
+                    <option value="mobile-app-onboarding">Mobile App Onboarding</option>
                 </select>
             </div>
             <div class="custom-modal-footer">
