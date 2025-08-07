@@ -4,10 +4,21 @@
     }
     </style>
     <?php
-    include './partials/layouts/layoutTop.php';
-    $category_id = isset($_GET['product_category']) ? intval($_GET['product_category']) : 0;
-    $query = "SELECT * FROM products where cat_id = $category_id && is_deleted != 1";
-    $result = $conn ->query($query);
+        include './partials/layouts/layoutTop.php';
+
+        $category_id = isset($_GET['product_category']) ? intval($_GET['product_category']) : 0;
+
+        $query = "SELECT * FROM products where cat_id = $category_id && is_deleted != 1";
+        $result = $conn ->query($query);
+
+        // Get active symbol
+        $result1 = $conn->query("SELECT symbol FROM currencies WHERE is_active = 1 LIMIT 1");
+        $symbol = "$"; // default
+        if ($row1 = $result1->fetch_assoc()) {
+            $symbol = $row1['symbol'];
+        }
+
+        $result1 = mysqli_query($conn, $query);
     ?>
     <div class="dashboard-main-body">
         <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-24">
@@ -33,7 +44,7 @@
                                         </div>
                                         <div class="py-16 px-24">
                                             <h6 class="mb-4"><?php echo htmlspecialchars($row['name']); ?></h6>
-                                            <p class="mb-0 text-sm text-secondary-light"><b>Price</b> : $<?php echo htmlspecialchars($row['price']); ?></p>
+                                            <p class="mb-0 text-sm text-secondary-light" id="currency-symbol-display"><b>Price</b> : <?= htmlspecialchars($symbol) ?><?php echo htmlspecialchars($row['price']); ?></p>
                                             <p class="mb-0 text-sm text-secondary-light float-start"><b>Validity</b> : <?php echo htmlspecialchars($row['duration']); ?></p>
                                             <?php if (!$isActive): ?>
                                                 <p class="mb-0 text-sm text-secondary-light text-danger fw-semibold mt-2 float-end">Inactive</p>

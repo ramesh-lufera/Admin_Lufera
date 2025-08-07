@@ -103,11 +103,20 @@ img {
     </style>
   </head>
   <?php
-    $id = $_GET['id'];
-    $query = "SELECT * FROM products where id = $id";
-    $result = $conn ->query($query);
-    $row = $result->fetch_assoc();
-    ?>
+      $id = $_GET['id'];
+      $query = "SELECT * FROM products where id = $id";
+      $result = $conn ->query($query);
+      $row = $result->fetch_assoc();
+
+      // Get active symbol
+      $result1 = $conn->query("SELECT symbol FROM currencies WHERE is_active = 1 LIMIT 1");
+      $symbol = "$"; // default
+      if ($row1 = $result1->fetch_assoc()) {
+          $symbol = $row1['symbol'];
+      }
+
+      $result1 = mysqli_query($conn, $query);
+  ?>
   <body>
   <div class="dashboard-main-body">
     <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-24">
@@ -131,7 +140,7 @@ img {
             <h6 class="product-title"><?php echo $row['subtitle'] ?></h6>
 						
 						<p class="product-description"><?php echo $row['description'] ?>.</p>
-						<h4 class="price">Price: <span>$<?php echo $row['price'] ?></span></h4>
+						<h4 class="price" id="currency-symbol-display">Price: <span><?= htmlspecialchars($symbol) ?><?php echo $row['price'] ?></span></h4>
             <h4 class="price">Validity: <span><?php echo $row['duration'] ?></span></h4>
 						
 						<h6 class="colors">Category: <?php echo $row['category'] ?></h6>
