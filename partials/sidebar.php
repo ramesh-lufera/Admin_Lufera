@@ -579,56 +579,56 @@
                 
                 if ($cat_template === 'website' && !file_exists($det_file_path)) {
                     $det_content = <<<PHP
-                        <?php include './category-details/website-details.php'; ?>    
+                        <?php include './category_details/website-details.php'; ?>    
                     PHP;
 
                     file_put_contents($det_file_path, $det_content);
                 }
                 if ($cat_template === 'marketing' && !file_exists($det_file_path)) {
                     $det_content = <<<PHP
-                        <?php include './category-details/marketing-details.php'; ?>  
+                        <?php include './category_details/marketing-details.php'; ?>  
                     PHP;
 
                     file_put_contents($det_file_path, $det_content);
                 }
                 if ($cat_template === 'visa' && !file_exists($det_file_path)) {
                     $det_content = <<<PHP
-                        <?php include './category-details/visa-details.php'; ?>  
+                        <?php include './category_details/visa-details.php'; ?>  
                     PHP;
 
                     file_put_contents($det_file_path, $det_content);
                 }
                 if ($cat_template === 'website-onboarding' && !file_exists($det_file_path)) {
                     $det_content = <<<PHP
-                        <?php include './category-details/website-onboarding-details.php'; ?>  
+                        <?php include './category_details/website-onboarding-details.php'; ?>  
                     PHP;
 
                     file_put_contents($det_file_path, $det_content);
                 }
                 if ($cat_template === 'marketing-onboarding' && !file_exists($det_file_path)) {
                     $det_content = <<<PHP
-                        <?php include './category-details/marketing-onboarding-details.php'; ?>  
+                        <?php include './category_details/marketing-onboarding-details.php'; ?>  
                     PHP;
 
                     file_put_contents($det_file_path, $det_content);
                 }
                 if ($cat_template === 'domain-onboarding' && !file_exists($det_file_path)) {
                     $det_content = <<<PHP
-                        <?php include './category-details/domain-onboarding-details.php'; ?>  
+                        <?php include './category_details/domain-onboarding-details.php'; ?>  
                     PHP;
 
                     file_put_contents($det_file_path, $det_content);
                 }
                 if ($cat_template === 'email-onboarding' && !file_exists($det_file_path)) {
                     $det_content = <<<PHP
-                        <?php include './category-details/email-onboarding-details.php'; ?>  
+                        <?php include './category_details/email-onboarding-details.php'; ?>  
                     PHP;
 
                     file_put_contents($det_file_path, $det_content);
                 }
                 if ($cat_template === 'mobile-app-onboarding' && !file_exists($det_file_path)) {
                     $det_content = <<<PHP
-                        <?php include './category-details/mobile-app-onboarding-details.php'; ?>  
+                        <?php include './category_details/mobile-app-onboarding-details.php'; ?>  
                     PHP;
 
                     file_put_contents($det_file_path, $det_content);
