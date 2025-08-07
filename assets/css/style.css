@@ -15094,7 +15094,9 @@ td.fc-header-center {
   background-color: var(--white);
   margin-block-start: auto;
 }
-
+.lufera-color{
+  color: #fec700 !important;
+}
 .lufera-bg{
   background-color: #fec700 !important;
 }
