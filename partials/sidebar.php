@@ -1373,15 +1373,6 @@
                                                 </div>
                                             </div>
                                             <div class="mb-2">
-                                                <label for="name" class="form-label fw-semibold text-primary-light text-sm mb-8">Tagline <span class="text-danger-600">*</span></label>
-                                                <div class="has-validation">
-                                                    <input type="text" class="form-control radius-8" name="plan_type" required maxlength="100">
-                                                    <div class="invalid-feedback">
-                                                        Tagline is required
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <div class="mb-2">
                                                 <label for="name" class="form-label fw-semibold text-primary-light text-sm mb-8">Title <span class="text-danger-600">*</span></label>
                                                 <div class="has-validation">
                                                     
