@@ -73,7 +73,6 @@
 
           if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $package_name = $_POST['package_name'];
-            $plan_type = $_POST['plan_type'];
             $title = $_POST['title'];
             $subtitle = $_POST['subtitle'];
             $price = $_POST['price'];
@@ -83,8 +82,8 @@
             $updated_at = date("Y-m-d H:i:s");
             $cat_id = $_POST['cat_id'];
         
-            $stmt = $conn->prepare("UPDATE package SET package_name=?, plan_type=?, title=?, subtitle=?, price=?, description=?, duration=?, cat_id=?, created_at=? WHERE id=?");
-            $stmt->bind_param("sssssssisi", $package_name, $plan_type, $title, $subtitle, $price, $description, $duration, $cat_id, $updated_at, $package_id);
+            $stmt = $conn->prepare("UPDATE package SET package_name=?, title=?, subtitle=?, price=?, description=?, duration=?, cat_id=?, created_at=? WHERE id=?");
+            $stmt->bind_param("ssssssisi", $package_name, $title, $subtitle, $price, $description, $duration, $cat_id, $updated_at, $package_id);
         
             if ($stmt->execute()) {
                 $stmt->close();
@@ -147,19 +146,6 @@
                                           value="<?php echo htmlspecialchars($package['package_name']); ?>">
                                     <div class="invalid-feedback">
                                         Package name is required
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="mb-2">
-                                <label class="form-label fw-semibold text-primary-light text-sm mb-8">
-                                    Tagline <span class="text-danger-600">*</span>
-                                </label>
-                                <div class="has-validation">
-                                    <input type="text" class="form-control radius-8" name="plan_type" required maxlength="30"
-                                          value="<?php echo htmlspecialchars($package['plan_type']); ?>">
-                                    <div class="invalid-feedback">
-                                        Tagline is required
                                     </div>
                                 </div>
                             </div>

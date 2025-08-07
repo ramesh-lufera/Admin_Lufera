@@ -1,9 +1,6 @@
 <?php include './partials/layouts/layoutTop.php' ?>
 
 <style>
-    .tagline{
-        border-bottom:1px solid #fec700;
-    }
     .plan-details-table tbody tr td{
         padding: 15px .5rem;
         border-bottom: 1px solid #dadada;

@@ -103,12 +103,8 @@
 ?>
 
 <!-- SweetAlert2 CDN -->
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <style>
-    .tagline {
-        border-bottom: 1px solid #fec700;
-    }
     .plan-details-table tbody tr td {
         padding: 15px .5rem;
         border-bottom: 1px solid #dadada;

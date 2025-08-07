@@ -215,7 +215,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         <div class="form-group mb-2">
                           <label class="form-label">Product name <span class="text-danger-600">*</span></label>
                             <div class="has-validation">
-                              <input type="text" class="form-control radius-8" id="name" name="name" required maxlength="30">
+                              <input type="text" class="form-control radius-8" id="name" name="name" required maxlength="100">
                               <div class="invalid-feedback">
                                 Product name is required
                               </div>
@@ -224,7 +224,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         <div class="form-group mb-2">
                             <label class="form-label">Title <span class="text-danger-600">*</span></label>
                             <div class="has-validation">
-                                <input type="text" class="form-control radius-8" id="title" name="title" required maxlength="30">
+                                <input type="text" class="form-control radius-8" id="title" name="title" required maxlength="100">
                                 <div class="invalid-feedback">
                                 Title is required
                                 </div>
@@ -233,7 +233,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         <div class="form-group mb-2">
                             <label class="form-label">Subtitle <span class="text-danger-600">*</span></label>
                             <div class="has-validation">
-                                <input type="text" class="form-control radius-8" id="subtitle" name="subtitle" required maxlength="30">
+                                <input type="text" class="form-control radius-8" id="subtitle" name="subtitle" required maxlength="100">
                                 <div class="invalid-feedback">
                                 Subtitle is required
                                 </div>
@@ -242,7 +242,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         <div class="form-group mb-2">
                             <label class="form-label">Description <span class="text-danger-600">*</span></label>
                             <div class="has-validation">
-                                <input type="text" class="form-control radius-8" id="description" name="description" required maxlength="30">
+                                <input type="text" class="form-control radius-8" id="description" name="description" required>
                                 </textarea>
                                 <div class="invalid-feedback">
                                   Description is required
@@ -278,7 +278,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         <div class="form-group mb-2">
                             <label class="form-label">Category <span class="text-danger-600">*</span></label>
                             <div class="has-validation">
-                                <input type="text" class="form-control radius-8" id="category" name="category" required maxlength="30">
+                                <input type="text" class="form-control radius-8" id="category" name="category" required maxlength="100">
                                 <div class="invalid-feedback">
                                 Category is required
                                 </div>
@@ -287,7 +287,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         <div class="form-group mb-2">
                             <label class="form-label">Tags <span class="text-danger-600">*</span></label>
                             <div class="has-validation">
-                                <input type="text" class="form-control radius-8" id="tags" name="tags" required maxlength="30">
+                                <input type="text" class="form-control radius-8" id="tags" name="tags" required maxlength="100">
                                 <div class="invalid-feedback">
                                 Tags is required
                                 </div>
