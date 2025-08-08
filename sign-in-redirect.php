@@ -36,7 +36,7 @@
             $phone = '';
             $created_at = date("Y-m-d H:i:s");
             $method = "1";
-            $role = "user";
+            $role = "8";
             $google_photo = $userInfo->picture;
             $business_name = $address = $city = $state = $country = $pincode = $dob = null;
 
