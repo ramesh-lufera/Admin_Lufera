@@ -1,5 +1,6 @@
 <?php include './partials/layouts/layoutTop.php'; ?>
 
+
 <style>
     
 
@@ -236,41 +237,50 @@
     $query->close();
 
     if (isset($_POST['save'])) {
-        $name = $_POST['name'] ?? '';
+        $company_name = $_POST['company_name'] ?? '';
+        $contact_person = $_POST['contact_person'] ?? '';
         $email = $_POST['email'] ?? '';
-        $hasPhone = $_POST['has_phone'] ?? '';
-        $websiteName = $_POST['website_name'] ?? [];
-        $address = $_POST['address'] ?? '';
-        $logo = $_FILES['logo']['name'] ?? '';
+        $phone = $_POST['phone'] ?? '';
+        $website = $_POST['website'] ?? '';
 
-        $finalLogoPath = '';
-
-        if (!empty($_FILES['logo']['tmp_name']) && is_uploaded_file($_FILES['logo']['tmp_name'])) {
-            $uploadDir = 'uploads/';
-            if (!is_dir($uploadDir)) {
-                mkdir($uploadDir, 0777, true);
-            }
-
-            $uniqueName = uniqid() . '-' . basename($_FILES['logo']['name']);
-            $finalLogoPath = $uploadDir . $uniqueName;
-            move_uploaded_file($_FILES['logo']['tmp_name'], $finalLogoPath);
-        }
-
+        $service_needed = $_POST['service_needed'] ?? '';
+        $details = $_POST['details'] ?? '';
+        
         function createField($value) {
             return [
                 'value' => $value,
                 'status' => 'pending'
             ];
         }
-
+        
         $data = json_encode([
-            'name' => createField($name),
+            'company_name' => createField($company_name),
+            'contact_person' => createField($contact_person),
             'email' => createField($email),
-            'has_phone' => createField($hasPhone),
-            'website_name' => createField($websiteName),
-            'address' => createField($address),
-            'logo' => createField($finalLogoPath),
+            'phone' => createField($phone),
+            'website' => createField($website),
+        
+            'service_needed' => createField($service_needed),
+            'details' => createField($details),
+        
+            // === Domain Information ===
+            'has_domain' => createField($_POST['has_domain'] ?? ''),
+            'domain_name' => createField($_POST['domain_name'] ?? ''),
+            'use_domain_for_email' => createField($_POST['use_domain_for_email'] ?? ''),
+        
+            // === User Details ===
+            'email_accounts' => createField($_POST['email_accounts'] ?? ''),
+            'email_format' => createField($_POST['email_format'] ?? ''),
+            'user_list' => createField($_POST['user_list'] ?? ''),
+        
+            // === Technical Information ===
+            'provider' => createField($_POST['provider'] ?? ''),
+            'existing_settings' => createField($_POST['existing_settings'] ?? ''),
+        
+            // === Additional Notes ===
+            'notes' => createField($_POST['notes'] ?? ''),
         ]);
+        
 
         $website_id = isset($_GET['id']) ? intval($_GET['id']) : 0;
 
@@ -337,8 +347,8 @@
         $styleClass = $status === 'approved' ? 'field-approved' : ($status === 'rejected' ? 'field-rejected' : '');
         echo '<div class="input-group">';
 
-        // === TEXT / EMAIL ===
-        if ($type === 'text' || $type === 'email') {
+        // === TEXT / EMAIL / URL / DATE ===
+        if ($type === 'text' || $type === 'email' || $type === 'url' || $type === 'date') {
             echo '<input type="' . $type . '" class="form-control  w-85 ' . $styleClass . '" id="' . $inputId . '" name="' . htmlspecialchars($fieldName) . '" placeholder="' . htmlspecialchars($placeholder) . '" value="' . htmlspecialchars($val) . '" ' . $isReadonly . '>';
         }
 
@@ -389,6 +399,17 @@
                 echo '</div>';
                 echo '</div>';
             }
+        }
+
+        // === SELECT ===
+        elseif ($type === 'select') {
+            echo '<select class="form-control w-85 h-auto ' . $styleClass . '" id="' . $inputId . '" name="' . htmlspecialchars($fieldName) . '" ' . $isDisabled . '>';
+            echo '<option value="">-- Select an option --</option>';
+            foreach ($options as $option) {
+                $selected = ($val == $option) ? 'selected' : '';
+                echo '<option value="' . htmlspecialchars($option) . '" ' . $selected . '>' . htmlspecialchars(ucfirst($option)) . '</option>';
+            }
+            echo '</select>';
         }
 
         // === Admin Buttons ===
@@ -525,7 +546,8 @@
 
 <div class="dashboard-main-body">
     <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-24">
-        <h6 class="fw-semibold mb-0">Website</h6>
+        <h6 class="fw-semibold mb-0">Email Services Onboarding Form
+        </h6>
     </div>
 
     <div class="card h-100 p-0 radius-12 overflow-hidden">               
@@ -553,19 +575,52 @@
                                             <button type="button" id="bulkRejectBtn" class="btn btn-danger btn-sm">Bulk Reject</button>
                                         </div>
                                     <?php endif; ?>
+                                        <h5>1. Company Information</h5>
                                         <?php
-                                            renderFieldExtended('name', $savedData, $user_role, 'Name', 'Enter your name', 'text');
+                                        
+                                            renderFieldExtended('company_name', $savedData, $user_role, 'Company Name', '', 'text');
 
-                                            renderFieldExtended('email', $savedData, $user_role, 'Email', 'Enter your email', 'email');
+                                            renderFieldExtended('contact_person', $savedData, $user_role, 'Contact Person', '', 'text');
 
-                                            renderFieldExtended('has_phone', $savedData, $user_role, 'Do you have a phone?', '', 'radio', ['Yes', 'No']);
+                                            renderFieldExtended('email', $savedData, $user_role, 'Email', '', 'email');
 
-                                            renderFieldExtended('website_name', $savedData, $user_role, 'Website Name', '', 'checkbox', ['Static', 'Dynamic']);
+                                            renderFieldExtended('phone', $savedData, $user_role, 'Phone', '', 'text');
 
-                                            renderFieldExtended('address', $savedData, $user_role, 'Address', 'Enter your address', 'textarea');
+                                            renderFieldExtended('website', $savedData, $user_role, 'Website', '', 'url');
 
-                                            renderFieldExtended('logo', $savedData, $user_role, 'Logo', '', 'file');
                                         ?>
+                                        <h5>2. Purpose of Email Services</h5>
+                                        <?php
+                                            renderFieldExtended('service_needed',$savedData, $user_role, 'Type of Service Needed', '', 'select', ['New Email Setup', 'Email Migration', 'Email Reselling', 'Email Marketing Setup', 'Other']);
+                                            
+                                            renderFieldExtended('details', $savedData, $user_role, 'Details or Requirements', '', 'textarea');
+
+                                        ?> 
+                                       <h5>3. Domain Information</h5>
+                                        <?php
+                                            renderFieldExtended('has_domain', $savedData, $user_role, 'Do you have a domain?', '', 'select', ['Yes', 'No']);
+                                            renderFieldExtended('domain_name', $savedData, $user_role, 'If Yes, provide domain name', '', 'text');
+                                            renderFieldExtended('use_domain_for_email', $savedData, $user_role, 'Do you want to use this domain for email?', '', 'select', ['Yes', 'No']);
+                                        ?>
+
+                                        <h5>4. User Details</h5>
+                                        <?php
+                                            renderFieldExtended('email_accounts', $savedData, $user_role, 'How many email accounts do you need?', '', 'text');
+                                            renderFieldExtended('email_format', $savedData, $user_role, 'Preferred email ID format (e.g. name@domain.com)', '', 'text');
+                                            renderFieldExtended('user_list', $savedData, $user_role, 'List of users (if available)', '', 'textarea');
+                                        ?>
+
+                                        <h5>5. Technical Information</h5>
+                                        <?php
+                                            renderFieldExtended('provider', $savedData, $user_role, 'Preferred Email Provider (e.g. Zoho, Google Workspace, Microsoft 365, Others)', '', 'text');
+                                            renderFieldExtended('existing_settings', $savedData, $user_role, 'Any existing email configuration or settings?', '', 'textarea');
+                                        ?>
+
+                                        <h5>6. Additional Notes or Questions</h5>
+                                        <?php
+                                            renderFieldExtended('notes', $savedData, $user_role, 'Anything else we should know?', '', 'textarea');
+                                        ?>
+
                                         <?php if (in_array($user_role, [8])): ?>
                                         <input type="submit" name="save" class="lufera-bg bg-hover-warning-400 text-white text-md px-56 py-11 radius-8 m-auto d-block" value="Save" >
                                     <?php endif; ?>
@@ -694,7 +749,7 @@
 </script>
 
 <div id="editModal" class="modal" style="display:none;">
-    <div class="modal-content p-4 rounded" style="background:#fff; max-width:500px; margin:auto;">
+    <div class="modal-content p-20 rounded" style="background:#fff; max-width:500px; margin:auto;">
         <span class="close-btn float-end" title="Close" style="cursor:pointer;">&times;</span>
         <h5 class="mb-3">Edit Field</h5>
         <div id="editFieldContainer" class="mb-3"></div>
@@ -867,41 +922,49 @@
 <!-- Progress bar -->
 <script>
     function updateProgressBar() {
-        let filled = 0;
-        const totalFields = 6;
- 
-        const name = $('#field_name').val()?.trim();
-        if (name) filled++;
- 
-        const email = $('#field_email').val()?.trim();
-        if (email) filled++;
- 
-        const hasPhone = $('input[name="has_phone"]:checked').val();
-        if (hasPhone) filled++;
- 
-        const websiteName = $('input[name="website_name[]"]:checked').length;
-        if (websiteName > 0) filled++;
- 
-        const address = $('#field_address').val()?.trim();
-        if (address) filled++;
- 
-        const logoInput = $('#field_logo');
-        const logoFile = logoInput[0]?.files?.length > 0;
-        const existingLogo = logoInput.closest('.form-group').find('img, a').length > 0;
-        if (logoFile || existingLogo) filled++;
- 
-        const percent = Math.round((filled / totalFields) * 100);
-        $('#formProgressBar').css('width', percent + '%').text(percent + '%');
-    }
- 
-    $(document).ready(function () {
-        updateProgressBar(); // Initial calculation on page load
- 
-        $('#field_name, #field_email, #field_address').on('input', updateProgressBar);
-        $('input[name="has_phone"]').on('change', updateProgressBar);
-        $('input[name="website_name[]"]').on('change', updateProgressBar);
-        $('#field_logo').on('change', updateProgressBar);
-    });
+    let filled = 0;
+    const totalFields = 16; // Adjusted to match total active fields
+
+    if ($('#field_company_name').val()?.trim()) filled++;
+    if ($('#field_contact_person').val()?.trim()) filled++;
+    if ($('#field_email').val()?.trim()) filled++;
+    if ($('#field_phone').val()?.trim()) filled++;
+    if ($('#field_website').val()?.trim()) filled++;
+    if ($('#field_service_needed').val()?.trim()) filled++;
+    if ($('#field_details').val()?.trim()) filled++;
+
+    // Domain Information
+    if ($('#field_has_domain').val()?.trim()) filled++;
+    if ($('#field_domain_name').val()?.trim()) filled++;
+    if ($('#field_use_domain_for_email').val()?.trim()) filled++;
+
+    // User Details
+    if ($('#field_email_accounts').val()?.trim()) filled++;
+    if ($('#field_email_format').val()?.trim()) filled++;
+    if ($('#field_user_list').val()?.trim()) filled++;
+
+    // Technical Information
+    if ($('#field_provider').val()?.trim()) filled++;
+    if ($('#field_existing_settings').val()?.trim()) filled++;
+
+    // Additional Notes
+    if ($('#field_notes').val()?.trim()) filled++;
+
+    const percent = Math.round((filled / totalFields) * 100);
+    $('#formProgressBar').css('width', percent + '%').text(percent + '%');
+}
+
+$(document).ready(function () {
+    updateProgressBar();
+
+    $('#field_company_name, #field_contact_person, #field_email, #field_phone, #field_website, #field_details, #field_domain_name, #field_email_accounts, #field_email_format, #field_user_list, #field_provider, #field_existing_settings, #field_notes')
+        .on('input', updateProgressBar);
+
+    $('#field_service_needed, #field_has_domain, #field_use_domain_for_email')
+        .on('change', updateProgressBar);
+});
+
+
 </script>
 
 <?php include './partials/layouts/layoutBottom.php'; ?>

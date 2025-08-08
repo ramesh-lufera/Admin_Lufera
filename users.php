@@ -2,39 +2,32 @@
 
 <?php
     // Fetch users data from the database
-    $sql = "SELECT * FROM users where role != '1'";
+    $sql = "SELECT 
+    users.user_id, 
+    users.first_name, 
+    users.first_name, 
+    users.last_name, 
+    users.phone,
+    users.email,
+    users.role, 
+    users.id AS id,
+    roles.name AS role_name
+FROM 
+    users 
+LEFT JOIN 
+    roles ON users.role = roles.id
+WHERE 
+    users.role != '1'" ;
     $result = mysqli_query($conn, $sql);
-
-    // // Set the number of records per page
-    // $records_per_page = 5;
-
-    // // Get the current page from the URL (if not set, default to 1)
-    // $current_page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
-
-    // // Calculate the starting record for the SQL query
-    // $start_from = ($current_page - 1) * $records_per_page;
-
-    // // Fetch users data for the current page
-    // $sql = "SELECT * FROM users ORDER BY created_at ASC LIMIT $start_from, $records_per_page";
-    // $result = mysqli_query($conn, $sql);
-
-    // // Get the total number of records
-    // $total_sql = "SELECT COUNT(*) FROM users";
-    // $total_result = mysqli_query($conn, $total_sql);
-    // $total_row = mysqli_fetch_row($total_result);
-    // $total_records = $total_row[0];
-
-    // // Calculate total number of pages
-    // $total_pages = ceil($total_records / $records_per_page);
 ?>
 
 <div class="dashboard-main-body">
     <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-24">
         <h6 class="fw-semibold mb-0">Users List</h6>
         <a href="add-user.php" class="btn lufera-bg text-white text-sm btn-sm px-12 py-12 radius-8 d-flex align-items-center gap-2">
-                <iconify-icon icon="ic:baseline-plus" class="icon text-xl line-height-1"></iconify-icon>
-                Add New User
-            </a>
+            <iconify-icon icon="ic:baseline-plus" class="icon text-xl line-height-1"></iconify-icon>
+            Add New User
+        </a>
     </div>
 
     <div class="card h-100 p-0 radius-12">
@@ -43,21 +36,12 @@
                 <table class="table bordered-table sm-table mb-0" id="userTable">
                     <thead>
                         <tr>
-                            <th scope="col">
-                                <!-- <div class="d-flex align-items-center gap-10">
-                                    <div class="form-check style-check d-flex align-items-center">
-                                        <input class="form-check-input radius-4 border input-form-dark" type="checkbox" name="checkbox" id="selectAll">
-                                    </div>
-                                    Id
-                                </div> -->
-                                User ID
-                            </th>
+                            <th scope="col">User ID</th>
                             <th scope="col">First Name</th>
                             <th scope="col">Last Name</th>
                             <th scope="col">Email</th>
                             <th scope="col">Phone</th>
-                            <th scope="col">Username</th>
-                            <!-- <th scope="col" class="text-center">Status</th> -->
+                            <th scope="col">Role</th>
                             <th scope="col" class="text-center">Action</th>
                         </tr>
                     </thead>
@@ -65,12 +49,6 @@
                         <?php
                         if (mysqli_num_rows($result) > 0) {
                             while ($row = mysqli_fetch_assoc($result)) {
-                            //     <div class="d-flex align-items-center gap-10">
-                            //     <div class="form-check style-check d-flex align-items-center">
-                            //         <input class="form-check-input radius-4 border border-neutral-400" type="checkbox" name="checkbox">
-                            //     </div>
-                            //     ' . htmlspecialchars($row['id']) . '
-                            // </div>
                                 echo '<tr>
                                     <td>' . htmlspecialchars($row['user_id']) . '</td>
 
@@ -82,7 +60,16 @@
 
                                     <td>' . htmlspecialchars($row['phone']) . '</td>
 
-                                    <td>' . htmlspecialchars($row['username']) . '</td>
+                                    <td>' . htmlspecialchars($row['role_name']) . '
+                                        <button 
+                                        class="btn not-active px-18 py-11 fa fa-edit" 
+                                        data-bs-toggle="modal" 
+                                        data-bs-target="#assignRoleModal"
+                                        data-userid=' . $row['id'] .'
+                                        data-firstname="' . htmlspecialchars($row['first_name'] . ' ' . $row['last_name']) .'
+                                        ">
+                                        </button>
+                                    </td>
 
 
                                     <td class="text-center">
@@ -111,36 +98,7 @@
                     </tbody>
                 </table>
             </div>
-            <!-- Pagination -->
-            <!-- <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mt-24">
-                <span>Showing <?php echo ($start_from + 1); ?> to <?php echo min($start_from + $records_per_page, $total_records); ?> of <?php echo $total_records; ?> entries</span>
-                
-                <ul class="d-flex flex-wrap align-items-center gap-2 justify-content-center">
-                    <?php if ($current_page > 1): ?>
-                    <li class="page-item">
-                        <a class="page-link bg-neutral-200 text-secondary-light fw-semibold radius-8 border-0 d-flex align-items-center justify-content-center h-32-px w-32-px text-md" href="?page=<?php echo ($current_page - 1); ?>">
-                            <iconify-icon icon="ep:d-arrow-left" class=""></iconify-icon>
-                        </a>
-                    </li>
-                    <?php endif; ?>
-
-                    <?php for ($i = 1; $i <= $total_pages; $i++): ?>
-                    <li class="page-item">
-                        <a class="page-link <?php echo ($i == $current_page) ? 'bg-primary-600 text-white' : 'bg-neutral-200 text-secondary-light'; ?> fw-semibold radius-8 border-0 d-flex align-items-center justify-content-center h-32-px w-32-px text-md" style="<?php echo ($i == $current_page) ? 'background-color: #fec700 !important' : 'bg-neutral-200 text-secondary-light'; ?>" href="?page=<?php echo $i; ?>">
-                        <?php echo $i; ?>
-                        </a>
-                    </li>    
-                    <?php endfor; ?>     
-                    
-                    <?php if ($current_page < $total_pages): ?>
-                    <li class="page-item">
-                        <a class="page-link bg-neutral-200 text-secondary-light fw-semibold radius-8 border-0 d-flex align-items-center justify-content-center h-32-px w-32-px text-md" href="?page=<?php echo ($current_page + 1); ?>">
-                            <iconify-icon icon="ep:d-arrow-right" class=""></iconify-icon>
-                        </a>
-                    </li>
-                    <?php endif; ?>
-                </ul>
-            </div> -->
+            
         </div>
     </div>
 </div>
@@ -159,7 +117,42 @@
         </div>
     </div>
 </div>
+    <!-- Assign Role Modal -->
+    <div class="modal fade" id="assignRoleModal" tabindex="-1" aria-labelledby="assignRoleModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h5 class="modal-title">Assign Role</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+            <input type="hidden" id="modal_user_id">
+            <div class="mb-3">
+                <label for="modal_first_name" class="form-label">Name</label>
+                <input type="text" class="form-control" id="modal_first_name" readonly>
+            </div>
+            <div class="mb-3">
+                <label for="modal_role" class="form-label">Role</label>
+                <select class="form-select" id="modal_role" required>
+                    <option value="">Select Role</option>
+                    <?php
+                    $rolesQuery = "SELECT id, name FROM roles WHERE isActive = 1 && id != 1";
+                    $rolesResult = mysqli_query($conn, $rolesQuery);
+                    while($role = mysqli_fetch_assoc($rolesResult)) {
+                        echo '<option value="' . $role['id'] . '">' . htmlspecialchars($role['name']) . '</option>';
+                    }
+                    ?>
+                </select>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button type="button" id="submitRoleChange" class="btn lufera-bg">Update Role</button>
+        </div>
+    </div>
+  </div>
+</div>
 
+<!-- Edit user -->
 <div class="modal fade" id="editUserModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered">
         <div class="modal-content radius-12 p-4">
@@ -199,38 +192,6 @@
             });
         });
     });
-</script>
-
-<script>
-    // function searchTable() {
-    //     // Get the value from the search input
-    //     let searchTerm = document.getElementById("searchInput").value.toLowerCase();
-
-    //     // Get the table and rows
-    //     let table = document.getElementById("userTable");
-    //     let rows = table.getElementsByTagName("tr");
-
-    //     // Loop through the table rows and hide those that don't match the search term
-    //     for (let i = 1; i < rows.length; i++) {  // Start at 1 to skip the header row
-    //         let cells = rows[i].getElementsByTagName("td");
-    //         let matchFound = false;
-
-    //         // Check if any of the cells in the row match the search term
-    //         for (let j = 0; j < cells.length; j++) {
-    //             if (cells[j].innerText.toLowerCase().includes(searchTerm)) {
-    //                 matchFound = true;
-    //                 break;  // No need to check further if a match is found
-    //             }
-    //         }
-
-    //         // Show or hide the row based on whether a match was found
-    //         if (matchFound) {
-    //             rows[i].style.display = "";
-    //         } else {
-    //             rows[i].style.display = "none";
-    //         }
-    //     }
-    // }
 </script>
 
 <script>
@@ -341,5 +302,61 @@ document.getElementById('editUserForm').addEventListener('submit', function (e) 
 });
 });
 
+//Assign role
+
+document.addEventListener('DOMContentLoaded', function () {
+    var assignRoleModal = document.getElementById('assignRoleModal');
+
+    // Fill modal on show
+    assignRoleModal.addEventListener('show.bs.modal', function (event) {
+        var button = event.relatedTarget;
+        var userId = button.getAttribute('data-userid');
+        var firstName = button.getAttribute('data-firstname');
+
+        document.getElementById('modal_user_id').value = userId;
+        document.getElementById('modal_first_name').value = firstName;
+    });
+
+    // AJAX role update on button click
+    document.getElementById('submitRoleChange').addEventListener('click', function () {
+        var userId = document.getElementById('modal_user_id').value;
+        var roleId = document.getElementById('modal_role').value;
+
+        if (!roleId) {
+            alert("Please select a role.");
+            return;
+        }
+
+        fetch('update-role.php', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: `user_id=${encodeURIComponent(userId)}&role_id=${encodeURIComponent(roleId)}`
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+            Swal.fire({
+                icon: 'success',
+                title: 'Role updated successfully',
+                showConfirmButton: false,
+                timer: 1500
+            }).then(() => {
+                location.reload(); // refresh to reflect changes
+            });
+        } else {
+            Swal.fire({
+                icon: 'error',
+                title: 'Failed to update role',
+            });
+        }
+        })
+        .catch(error => {
+            console.error("Error:", error);
+            alert("An error occurred.");
+        });
+    });
+});
 </script>
 <?php include './partials/layouts/layoutBottom.php' ?>

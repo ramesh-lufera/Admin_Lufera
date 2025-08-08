@@ -1,8 +1,5 @@
 <?php include './partials/layouts/layoutTop.php'; ?>
-
 <style>
-    
-
     .form-group {
         margin-bottom: 24px !important;
     }
@@ -186,6 +183,10 @@
     .w-85{
         width:85% !important;
     }
+.edit-icon, .update-icon, .approve-btn, .reject-btn{
+	width:45px;
+	height:45px;
+}
 </style>
 
 <?php
@@ -236,49 +237,111 @@
     $query->close();
 
     if (isset($_POST['save'])) {
-        $name = $_POST['name'] ?? '';
+        $company_name = $_POST['company_name'] ?? '';
+        $contact_person = $_POST['contact_person'] ?? '';
         $email = $_POST['email'] ?? '';
-        $hasPhone = $_POST['has_phone'] ?? '';
-        $websiteName = $_POST['website_name'] ?? [];
-        $address = $_POST['address'] ?? '';
-        $logo = $_FILES['logo']['name'] ?? '';
-
-        $finalLogoPath = '';
-
-        if (!empty($_FILES['logo']['tmp_name']) && is_uploaded_file($_FILES['logo']['tmp_name'])) {
+        $phone = $_POST['phone'] ?? '';
+        $website = $_POST['website'] ?? '';
+    
+        $app_name = $_POST['app_name'] ?? '';
+        $platform = $_POST['platform'] ?? '';
+        $app_description = $_POST['app_description'] ?? '';
+        $core_features = $_POST['core_features'] ?? '';
+    
+        $logo_provided = $_POST['logo_provided'] ?? '';
+        $color_style = $_POST['color_style'] ?? '';
+        $screenshots = $_FILES['screenshots']['name'] ?? '';
+    
+        $user_login = $_POST['user_login'] ?? '';
+        $backend_details = $_POST['backend_details'] ?? '';
+        $push_notifications = $_POST['push_notifications'] ?? '';
+        $payment_integration = $_POST['payment_integration'] ?? '';
+    
+        $admin_panel = $_POST['admin_panel'] ?? '';
+        $admin_functions = $_POST['admin_functions'] ?? '';
+    
+        $google_dev_account = $_POST['google_dev_account'] ?? '';
+        $apple_dev_account = $_POST['apple_dev_account'] ?? '';
+    
+        $budget = $_POST['budget'] ?? '';
+        $launch_date = $_POST['launch_date'] ?? '';
+        $timeline_constraints = $_POST['timeline_constraints'] ?? '';
+    
+        $extra_notes = $_POST['extra_notes'] ?? '';
+    
+        // Handle file upload for screenshots
+        if (!empty($_FILES['screenshots']['name'])) {
             $uploadDir = 'uploads/';
             if (!is_dir($uploadDir)) {
                 mkdir($uploadDir, 0777, true);
             }
-
-            $uniqueName = uniqid() . '-' . basename($_FILES['logo']['name']);
-            $finalLogoPath = $uploadDir . $uniqueName;
-            move_uploaded_file($_FILES['logo']['tmp_name'], $finalLogoPath);
+            $fileName = time() . '_' . preg_replace("/[^a-zA-Z0-9.\-_]/", "", $_FILES['screenshots']['name']);
+            $targetPath = $uploadDir . $fileName;
+            if (move_uploaded_file($_FILES['screenshots']['tmp_name'], $targetPath)) {
+                $screenshots = $targetPath;
+            }
+        } else {
+            // Keep existing file if no new one was chosen
+            $screenshots = $_POST['screenshots_existing'] ?? '';
         }
 
+    
         function createField($value) {
             return [
                 'value' => $value,
                 'status' => 'pending'
             ];
         }
-
+    
         $data = json_encode([
-            'name' => createField($name),
+            // 1. Client & Business Info
+            'company_name' => createField($company_name),
+            'contact_person' => createField($contact_person),
             'email' => createField($email),
-            'has_phone' => createField($hasPhone),
-            'website_name' => createField($websiteName),
-            'address' => createField($address),
-            'logo' => createField($finalLogoPath),
+            'phone' => createField($phone),
+            'website' => createField($website),
+    
+            // 2. App Overview
+            'app_name' => createField($app_name),
+            'platform' => createField($platform),
+            'app_description' => createField($app_description),
+            'core_features' => createField($core_features),
+    
+            // 3. Design & Branding
+            'logo_provided' => createField($logo_provided),
+            'color_style' => createField($color_style),
+            'screenshots' => createField($screenshots),
+    
+            // 4. Functionality
+            'user_login' => createField($user_login),
+            'backend_details' => createField($backend_details),
+            'push_notifications' => createField($push_notifications),
+            'payment_integration' => createField($payment_integration),
+    
+            // 5. Admin Panel
+            'admin_panel' => createField($admin_panel),
+            'admin_functions' => createField($admin_functions),
+    
+            // 6. App Publishing
+            'google_dev_account' => createField($google_dev_account),
+            'apple_dev_account' => createField($apple_dev_account),
+    
+            // 7. Budget & Timeline
+            'budget' => createField($budget),
+            'launch_date' => createField($launch_date),
+            'timeline_constraints' => createField($timeline_constraints),
+    
+            // 8. Notes or Questions
+            'extra_notes' => createField($extra_notes),
         ]);
-
+    
         $website_id = isset($_GET['id']) ? intval($_GET['id']) : 0;
-
+    
         $check = $conn->prepare("SELECT id FROM json WHERE user_id = ? AND website_id = ?");
         $check->bind_param("ii", $user_id, $website_id);
         $check->execute();
         $check->store_result();
-
+    
         if ($check->num_rows > 0) {
             $update = $conn->prepare("UPDATE json SET name = ? WHERE user_id = ? AND website_id = ?");
             $update->bind_param("sii", $data, $user_id, $website_id);
@@ -290,9 +353,9 @@
             $success = $insert->execute();
             $insert->close();
         }
-
+    
         $check->close();
-
+    
         echo '
             <script>
                 Swal.fire({
@@ -300,11 +363,11 @@
                     title: "Success!",
                     text: "Data saved successfully!"
                 }).then(() => {
-                    // window.location.href = "website-wizard.php";
                     window.history.back();
                 });
             </script>';
     }
+    
 
     function renderFieldExtended($fieldName, $savedData, $user_role, $label = '', $placeholder = '', $type = 'text', $options = []) {
         $val = $savedData[$fieldName]['value'] ?? '';
@@ -338,7 +401,7 @@
         echo '<div class="input-group">';
 
         // === TEXT / EMAIL ===
-        if ($type === 'text' || $type === 'email') {
+        if ($type === 'text' || $type === 'email' || $type === 'url' || $type === 'date') {
             echo '<input type="' . $type . '" class="form-control  w-85 ' . $styleClass . '" id="' . $inputId . '" name="' . htmlspecialchars($fieldName) . '" placeholder="' . htmlspecialchars($placeholder) . '" value="' . htmlspecialchars($val) . '" ' . $isReadonly . '>';
         }
 
@@ -374,10 +437,13 @@
 
         // === FILE ===
         elseif ($type === 'file') {
-            // echo '<input type="file" class="form-control ' . $styleClass . '" id="' . $inputId . '" name="' . htmlspecialchars($fieldName) . '" ' . ($isAdmin ? 'disabled' : '') . '>';
-            echo '<input type="file" class="form-control  w-85 ' . $styleClass . '" id="' . $inputId . '" name="' . htmlspecialchars($fieldName) . '" ' . $isDisabled . '>';
-
+            echo '<input type="file" class="form-control w-100 ' . $styleClass . '" 
+                    id="' . $inputId . '" name="' . htmlspecialchars($fieldName) . '" ' . $isDisabled . '>';
+        
+            // Hidden input to store existing file path
             if (!empty($val)) {
+                echo '<input type="hidden" name="' . htmlspecialchars($fieldName) . '_existing" value="' . htmlspecialchars($val) . '">';
+                
                 echo '<div class="mt-3">';
                 echo '<label class="d-block fw-bold">Uploaded File:</label>';
                 $ext = strtolower(pathinfo($val, PATHINFO_EXTENSION));
@@ -387,13 +453,28 @@
                     echo '<a href="' . htmlspecialchars($val) . '" target="_blank">' . htmlspecialchars(basename($val)) . '</a>';
                 }
                 echo '</div>';
-                echo '</div>';
             }
+        }        
+
+        // === DATE ===
+         elseif ($type === 'date') {
+            echo '<input type="' . $type . '" class="form-control  w-85 ' . $styleClass . '" id="' . $inputId . '" name="' . htmlspecialchars($fieldName) . '" placeholder="' . htmlspecialchars($placeholder) . '" value="' . htmlspecialchars($val) . '" ' . $isReadonly . '>';
+        }
+    
+        // === SELECT ===
+        elseif ($type === 'select') {
+            echo '<select class="form-control w-85 h-auto ' . $styleClass . '" id="' . $inputId . '" name="' . htmlspecialchars($fieldName) . '" ' . $isDisabled . '>';
+            echo '<option value="">-- Select an option --</option>';
+            foreach ($options as $option) {
+                $selected = ($val == $option) ? 'selected' : '';
+                echo '<option value="' . htmlspecialchars($option) . '" ' . $selected . '>' . htmlspecialchars(ucfirst($option)) . '</option>';
+            }
+            echo '</select>';
         }
 
         // === Admin Buttons ===
         if ($isAdmin) {
-            echo '<div class="btn-group mt-2 ms-1">';
+            echo '<div class="btn-group ms-1">';
             echo '<button type="button" class="btn btn-sm edit-icon" style="background-color: #FEC700; color: black;" data-field="' . htmlspecialchars($fieldName) . '" title="Edit">&#9998;</button>';
             echo '<button type="button" class="btn btn-sm update-icon d-none" style="background-color: #00B4D8; color: white;" data-field="' . htmlspecialchars($fieldName) . '" title="Update">&#128190;</button>';
             echo '<button type="button" class="btn btn-success btn-sm approve-btn" data-field="' . htmlspecialchars($fieldName) . '" title="Approve">&#10004;</button>';
@@ -525,7 +606,8 @@
 
 <div class="dashboard-main-body">
     <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-24">
-        <h6 class="fw-semibold mb-0">Website</h6>
+        <h6 class="fw-semibold mb-0">Mobile App Development Onboarding Form
+        </h6>
     </div>
 
     <div class="card h-100 p-0 radius-12 overflow-hidden">               
@@ -553,19 +635,63 @@
                                             <button type="button" id="bulkRejectBtn" class="btn btn-danger btn-sm">Bulk Reject</button>
                                         </div>
                                     <?php endif; ?>
+                                    <h5>1. Client & Business Info</h5>
                                         <?php
-                                            renderFieldExtended('name', $savedData, $user_role, 'Name', 'Enter your name', 'text');
-
-                                            renderFieldExtended('email', $savedData, $user_role, 'Email', 'Enter your email', 'email');
-
-                                            renderFieldExtended('has_phone', $savedData, $user_role, 'Do you have a phone?', '', 'radio', ['Yes', 'No']);
-
-                                            renderFieldExtended('website_name', $savedData, $user_role, 'Website Name', '', 'checkbox', ['Static', 'Dynamic']);
-
-                                            renderFieldExtended('address', $savedData, $user_role, 'Address', 'Enter your address', 'textarea');
-
-                                            renderFieldExtended('logo', $savedData, $user_role, 'Logo', '', 'file');
+                                        renderFieldExtended('company_name', $savedData, $user_role, 'Company Name', '', 'text');
+                                        renderFieldExtended('contact_person', $savedData, $user_role, 'Contact Person', '', 'text');
+                                        renderFieldExtended('email', $savedData, $user_role, 'Email', '', 'email');
+                                        renderFieldExtended('phone', $savedData, $user_role, 'Phone', '', 'text');
+                                        renderFieldExtended('website', $savedData, $user_role, 'Website (if any)', '', 'url');
                                         ?>
+
+                                        <h5>2. App Overview</h5>
+                                        <?php
+                                        renderFieldExtended('app_name', $savedData, $user_role, 'App Name (Tentative)', '', 'text');
+                                        renderFieldExtended('platform', $savedData, $user_role, 'Platform', '', 'select', ['Android','iOS','Both Android & iOS']);
+                                        renderFieldExtended('app_description', $savedData, $user_role, 'Brief Description of the App', '', 'textarea');
+                                        renderFieldExtended('core_features', $savedData, $user_role, 'Core Features / Functionalities', '', 'textarea');
+                                        ?>
+
+                                        <h5>3. Design & Branding</h5>
+                                        <?php
+                                        renderFieldExtended('logo_provided', $savedData, $user_role, 'Logo Provided?', '', 'select', ['Yes','No','Need Help with Logo Design']);
+                                        renderFieldExtended('color_style', $savedData, $user_role, 'Preferred Colors / Style', '', 'text');
+                                        renderFieldExtended('screenshots', $savedData, $user_role, 'Upload Screens / Sketches (if any)', '', 'file');
+                                        ?>
+
+                                        <h5>4. Functionality</h5>
+                                        <?php
+                                        renderFieldExtended('user_login', $savedData, $user_role, 'Will the app require user login?', '', 'select', ['Yes','No']);
+                                        renderFieldExtended('backend_details', $savedData, $user_role, 'Any backend/database/API required?', '', 'textarea');
+                                        renderFieldExtended('push_notifications', $savedData, $user_role, 'Push Notifications?', '', 'select', ['Yes','No']);
+                                        renderFieldExtended('payment_integration', $savedData, $user_role, 'Payment Integration Needed?', '', 'select', ['Yes','No']);
+                                        ?>
+
+                                        <h5>5. Admin Panel</h5>
+                                        <?php
+                                        renderFieldExtended('admin_panel', $savedData, $user_role, 'Do you need a web-based admin panel?', '', 'select', ['Yes','No']);
+                                        renderFieldExtended('admin_functions', $savedData, $user_role, 'What should the admin be able to do?', '', 'textarea');
+                                        ?>
+
+                                        <h5>6. App Publishing</h5>
+                                        <?php
+                                        renderFieldExtended('google_dev_account', $savedData, $user_role, 'Do you have a Google Play Developer Account?', '', 'select', ['Yes','No','Need Help Creating One']);
+                                        renderFieldExtended('apple_dev_account', $savedData, $user_role, 'Do you have an Apple Developer Account?', '', 'select', ['Yes','No','Need Help Creating One']);
+                                        ?>
+
+                                        <h5>7. Budget & Timeline</h5>
+                                        <?php
+                                        renderFieldExtended('budget', $savedData, $user_role, 'Approximate Budget', '', 'text');
+                                        renderFieldExtended('launch_date', $savedData, $user_role, 'Expected Launch Date', '', 'date');
+                                        renderFieldExtended('timeline_constraints', $savedData, $user_role, 'Any Deadline or Time Constraints?', '', 'textarea');
+                                        ?>
+
+                                        <h5>8. Notes or Questions</h5>
+                                        <?php
+                                        renderFieldExtended('extra_notes', $savedData, $user_role, 'Anything else you want to share?', '', 'textarea');
+                                        ?>
+
+ 
                                         <?php if (in_array($user_role, [8])): ?>
                                         <input type="submit" name="save" class="lufera-bg bg-hover-warning-400 text-white text-md px-56 py-11 radius-8 m-auto d-block" value="Save" >
                                     <?php endif; ?>
@@ -868,40 +994,69 @@
 <script>
     function updateProgressBar() {
         let filled = 0;
-        const totalFields = 6;
- 
-        const name = $('#field_name').val()?.trim();
-        if (name) filled++;
- 
-        const email = $('#field_email').val()?.trim();
-        if (email) filled++;
- 
-        const hasPhone = $('input[name="has_phone"]:checked').val();
-        if (hasPhone) filled++;
- 
-        const websiteName = $('input[name="website_name[]"]:checked').length;
-        if (websiteName > 0) filled++;
- 
-        const address = $('#field_address').val()?.trim();
-        if (address) filled++;
- 
-        const logoInput = $('#field_logo');
-        const logoFile = logoInput[0]?.files?.length > 0;
-        const existingLogo = logoInput.closest('.form-group').find('img, a').length > 0;
-        if (logoFile || existingLogo) filled++;
- 
+        const totalFields = 23;
+
+        // 1. Client & Business Info
+        if ($('#field_company_name').val()?.trim()) filled++;
+        if ($('#field_contact_person').val()?.trim()) filled++;
+        if ($('#field_email').val()?.trim()) filled++;
+        if ($('#field_phone').val()?.trim()) filled++;
+        if ($('#field_website').val()?.trim()) filled++;
+
+        // 2. App Overview
+        if ($('#field_app_name').val()?.trim()) filled++;
+        if ($('#field_platform').val()?.trim()) filled++;
+        if ($('#field_app_description').val()?.trim()) filled++;
+        if ($('#field_core_features').val()?.trim()) filled++;
+
+        // 3. Design & Branding
+        if ($('#field_logo_provided').val()?.trim()) filled++;
+        if ($('#field_color_style').val()?.trim()) filled++;
+        if ($('#field_screenshots').val()) filled++; // file input
+
+        // 4. Functionality
+        if ($('#field_user_login').val()?.trim()) filled++;
+        if ($('#field_backend_details').val()?.trim()) filled++;
+        if ($('#field_push_notifications').val()?.trim()) filled++;
+        if ($('#field_payment_integration').val()?.trim()) filled++;
+
+        // 5. Admin Panel
+        if ($('#field_admin_panel').val()?.trim()) filled++;
+        if ($('#field_admin_functions').val()?.trim()) filled++;
+
+        // 6. App Publishing
+        if ($('#field_google_dev_account').val()?.trim()) filled++;
+        if ($('#field_apple_dev_account').val()?.trim()) filled++;
+
+        // 7. Budget & Timeline
+        if ($('#field_budget').val()?.trim()) filled++;
+        if ($('#field_launch_date').val()?.trim()) filled++;
+        if ($('#field_timeline_constraints').val()?.trim()) filled++;
+
+        // 8. Notes or Questions
+        if ($('#field_extra_notes').val()?.trim()) filled++;
+
+        // Calculate percentage
         const percent = Math.round((filled / totalFields) * 100);
         $('#formProgressBar').css('width', percent + '%').text(percent + '%');
     }
- 
+
     $(document).ready(function () {
-        updateProgressBar(); // Initial calculation on page load
- 
-        $('#field_name, #field_email, #field_address').on('input', updateProgressBar);
-        $('input[name="has_phone"]').on('change', updateProgressBar);
-        $('input[name="website_name[]"]').on('change', updateProgressBar);
-        $('#field_logo').on('change', updateProgressBar);
+        // Initial load
+        updateProgressBar();
+
+        // Attach events for all text/textarea/date
+        $('#field_company_name, #field_contact_person, #field_email, #field_phone, #field_website, #field_app_name, #field_app_description, #field_core_features, #field_color_style, #field_backend_details, #field_admin_functions, #field_budget, #field_launch_date, #field_timeline_constraints, #field_extra_notes')
+            .on('input', updateProgressBar);
+
+        // Attach events for all select dropdowns
+        $('#field_platform, #field_logo_provided, #field_user_login, #field_push_notifications, #field_payment_integration, #field_admin_panel, #field_google_dev_account, #field_apple_dev_account')
+            .on('change', updateProgressBar);
+
+        // File upload change
+        $('#field_screenshots').on('change', updateProgressBar);
     });
 </script>
+
 
 <?php include './partials/layouts/layoutBottom.php'; ?>

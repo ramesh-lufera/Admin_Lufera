@@ -236,25 +236,34 @@
     $query->close();
 
     if (isset($_POST['save'])) {
-        $name = $_POST['name'] ?? '';
-        $email = $_POST['email'] ?? '';
-        $hasPhone = $_POST['has_phone'] ?? '';
-        $websiteName = $_POST['website_name'] ?? [];
-        $address = $_POST['address'] ?? '';
-        $logo = $_FILES['logo']['name'] ?? '';
+        $bussiness_name = $_POST['bussiness_name'] ?? '';
+        $industry_niche = $_POST['industry_niche'] ?? '';
+        $describe_bussiness = $_POST['describe_bussiness'] ?? '';
+        $target_audience = $_POST['target_audience'] ?? '';
 
-        $finalLogoPath = '';
+        $existing_website = $_POST['existing_website'] ?? '';
+        $website_purpose = $_POST['website_purpose'] ?? '';
+        $top_goals = $_POST['top_goals'] ?? '';
+        
+        $has_logo = $_POST['has_logo'] ?? '';
+        $has_branding = $_POST['has_branding'] ?? '';
+        $reference_websites = $_POST['reference_websites'] ?? '';
 
-        if (!empty($_FILES['logo']['tmp_name']) && is_uploaded_file($_FILES['logo']['tmp_name'])) {
-            $uploadDir = 'uploads/';
-            if (!is_dir($uploadDir)) {
-                mkdir($uploadDir, 0777, true);
-            }
+        $content_ready = $_POST['content_ready'] ?? '';
+        $page_count = $_POST['page_count'] ?? '';
+        $features = $_POST['features'] ?? '';
 
-            $uniqueName = uniqid() . '-' . basename($_FILES['logo']['name']);
-            $finalLogoPath = $uploadDir . $uniqueName;
-            move_uploaded_file($_FILES['logo']['tmp_name'], $finalLogoPath);
-        }
+        $has_domain = $_POST['has_domain'] ?? '';
+        $domain_name = $_POST['domain_name'] ?? '';
+        $has_hosting = $_POST['has_hosting'] ?? '';
+        $platform_preference = $_POST['platform_preference'] ?? '';
+
+        $launch_date = $_POST['launch_date'] ?? '';
+        $budget_range = $_POST['budget_range'] ?? '';
+
+        $contact_name = $_POST['contact_name'] ?? '';
+        $contact_info = $_POST['contact_info'] ?? '';
+        $communication_method = $_POST['communication_method'] ?? '';
 
         function createField($value) {
             return [
@@ -262,14 +271,36 @@
                 'status' => 'pending'
             ];
         }
-
+        
         $data = json_encode([
-            'name' => createField($name),
-            'email' => createField($email),
-            'has_phone' => createField($hasPhone),
-            'website_name' => createField($websiteName),
-            'address' => createField($address),
-            'logo' => createField($finalLogoPath),
+            'bussiness_name' => createField($bussiness_name),
+            'industry_niche' => createField($industry_niche),
+            'describe_bussiness' => createField($describe_bussiness),
+            'target_audience' => createField($target_audience),
+
+            'existing_website' => createField($existing_website),
+            'website_purpose' => createField($website_purpose),
+            'top_goals' => createField($top_goals),
+
+            'has_logo' => createField($has_logo),
+            'has_branding' => createField($has_branding),
+            'reference_websites' => createField($reference_websites),
+
+            'content_ready' => createField($content_ready),
+            'page_count' => createField($page_count),
+            'features' => createField($features),
+
+            'has_domain' => createField($has_domain),
+            'domain_name' => createField($domain_name),
+            'has_hosting' => createField($has_hosting),
+            'platform_preference' => createField($platform_preference),
+
+            'launch_date' => createField($launch_date),
+            'budget_range' => createField($budget_range),
+
+            'contact_name' => createField($contact_name),
+            'contact_info' => createField($contact_info),
+            'communication_method' => createField($communication_method),
         ]);
 
         $website_id = isset($_GET['id']) ? intval($_GET['id']) : 0;
@@ -389,6 +420,22 @@
                 echo '</div>';
                 echo '</div>';
             }
+        }
+
+        // === DATE ===
+         elseif ($type === 'date') {
+            echo '<input type="' . $type . '" class="form-control  w-85 ' . $styleClass . '" id="' . $inputId . '" name="' . htmlspecialchars($fieldName) . '" placeholder="' . htmlspecialchars($placeholder) . '" value="' . htmlspecialchars($val) . '" ' . $isReadonly . '>';
+        }
+    
+        // === SELECT ===
+        elseif ($type === 'select') {
+            echo '<select class="form-control w-85 h-auto ' . $styleClass . '" id="' . $inputId . '" name="' . htmlspecialchars($fieldName) . '" ' . $isDisabled . '>';
+            echo '<option value="">-- Select an option --</option>';
+            foreach ($options as $option) {
+                $selected = ($val == $option) ? 'selected' : '';
+                echo '<option value="' . htmlspecialchars($option) . '" ' . $selected . '>' . htmlspecialchars(ucfirst($option)) . '</option>';
+            }
+            echo '</select>';
         }
 
         // === Admin Buttons ===
@@ -525,7 +572,8 @@
 
 <div class="dashboard-main-body">
     <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-24">
-        <h6 class="fw-semibold mb-0">Website</h6>
+        <h6 class="fw-semibold mb-0">Web Development Client Onboarding Form
+        </h6>
     </div>
 
     <div class="card h-100 p-0 radius-12 overflow-hidden">               
@@ -553,19 +601,62 @@
                                             <button type="button" id="bulkRejectBtn" class="btn btn-danger btn-sm">Bulk Reject</button>
                                         </div>
                                     <?php endif; ?>
+                                        <h5>1. Business Information</h5>
                                         <?php
-                                            renderFieldExtended('name', $savedData, $user_role, 'Name', 'Enter your name', 'text');
+                                        
+                                            renderFieldExtended('bussiness_name', $savedData, $user_role, 'Business Name', '', 'text');
 
-                                            renderFieldExtended('email', $savedData, $user_role, 'Email', 'Enter your email', 'email');
+                                            renderFieldExtended('industry_niche', $savedData, $user_role, 'Industry / Niche', '', 'text');
 
-                                            renderFieldExtended('has_phone', $savedData, $user_role, 'Do you have a phone?', '', 'radio', ['Yes', 'No']);
+                                            renderFieldExtended('describe_bussiness', $savedData, $user_role, 'Describe Your Business', '', 'textarea');
 
-                                            renderFieldExtended('website_name', $savedData, $user_role, 'Website Name', '', 'checkbox', ['Static', 'Dynamic']);
+                                            renderFieldExtended('target_audience', $savedData, $user_role, 'Target Audience', '', 'textarea');
 
-                                            renderFieldExtended('address', $savedData, $user_role, 'Address', 'Enter your address', 'textarea');
-
-                                            renderFieldExtended('logo', $savedData, $user_role, 'Logo', '', 'file');
                                         ?>
+                                        <h5>2. Website Objectives</h5>
+                                        <?php
+                                            renderFieldExtended('website_purpose',$savedData, $user_role, 'Primary Purpose of Website', '', 'select', ['Informational / Brochure Site', 'ecommerce', 'portfolio', 'Booking/Appointment', 'Custom Functionality']);
+                                            
+                                            renderFieldExtended('top_goals', $savedData, $user_role, 'Top 3 Goals for Website', '', 'textarea');
+
+                                            renderFieldExtended('existing_website', $savedData, $user_role, 'Do you have an existing website?', '', 'text');
+
+                                        ?> 
+                                        <h5>3. Design & Branding</h5>
+                                        <?php
+                                            renderFieldExtended('has_logo', $savedData, $user_role, 'Do you have a logo?', '', 'select', ['yes', 'no']);
+                                            renderFieldExtended('has_branding', $savedData, $user_role, 'Do you have brand colors / guidelines?', '', 'select', ['yes', 'no']);
+                                            renderFieldExtended('reference_websites', $savedData, $user_role, 'Reference Websites You Like', 'Add links and what you like about them', 'textarea');
+                                        ?>
+
+                                        <h5>4. Content</h5>
+                                        <?php
+                                            renderFieldExtended('content_ready', $savedData, $user_role, 'Do you have content ready? (Text, images, videos)', '', 'select', ['yes', 'no', 'partially']);
+                                            renderFieldExtended('page_count', $savedData, $user_role, 'How many pages do you expect?', 'E.g., Home, About, Services, Contact, Blog', 'text');
+                                            renderFieldExtended('features', $savedData, $user_role, 'Special Features Needed', 'E.g., Blog, Contact Form, Chat, Member Login, Payment Gateway', 'textarea');
+                                        ?>
+
+                                        <h5>5. Technical & Access</h5>
+                                        <?php
+                                            renderFieldExtended('has_domain', $savedData, $user_role, 'Do you already have a domain?', '', 'select', ['yes', 'no']);
+                                            renderFieldExtended('domain_name', $savedData, $user_role, 'Domain Name (if any)', '', 'text');
+                                            renderFieldExtended('has_hosting', $savedData, $user_role, 'Do you have hosting?', '', 'select', ['yes', 'no']);
+                                            renderFieldExtended('platform_preference', $savedData, $user_role, 'Any specific platform preference?', '', 'select', ['wordpress', 'shopify', 'custom', 'not_sure']);
+                                        ?>
+
+                                        <h5>6. Timeline & Budget</h5>
+                                        <?php
+                                            renderFieldExtended('launch_date', $savedData, $user_role, 'Expected Launch Date', '', 'date'); // You can use 'date' if needed, but HTML5 date input has limitations
+                                            renderFieldExtended('budget_range', $savedData, $user_role, 'Budget Range', '', 'text');
+                                        ?>
+
+                                        <h5>7. Contact & Communication</h5>
+                                        <?php
+                                            renderFieldExtended('contact_name', $savedData, $user_role, 'Point of Contact Name', '', 'text');
+                                            renderFieldExtended('contact_info', $savedData, $user_role, 'Email & Phone', '', 'text');
+                                            renderFieldExtended('communication_method', $savedData, $user_role, 'Preferred Communication Method', '', 'select', ['email', 'whatsapp', 'phone', 'zoom']);
+                                        ?>
+ 
                                         <?php if (in_array($user_role, [8])): ?>
                                         <input type="submit" name="save" class="lufera-bg bg-hover-warning-400 text-white text-md px-56 py-11 radius-8 m-auto d-block" value="Save" >
                                     <?php endif; ?>
@@ -868,40 +959,91 @@
 <script>
     function updateProgressBar() {
         let filled = 0;
-        const totalFields = 6;
+        const totalFields = 22;
  
-        const name = $('#field_name').val()?.trim();
-        if (name) filled++;
- 
-        const email = $('#field_email').val()?.trim();
-        if (email) filled++;
- 
-        const hasPhone = $('input[name="has_phone"]:checked').val();
-        if (hasPhone) filled++;
- 
-        const websiteName = $('input[name="website_name[]"]:checked').length;
-        if (websiteName > 0) filled++;
- 
-        const address = $('#field_address').val()?.trim();
-        if (address) filled++;
- 
-        const logoInput = $('#field_logo');
-        const logoFile = logoInput[0]?.files?.length > 0;
-        const existingLogo = logoInput.closest('.form-group').find('img, a').length > 0;
-        if (logoFile || existingLogo) filled++;
+        const bussiness_name = $('#field_bussiness_name').val()?.trim();
+        if (bussiness_name) filled++;
+
+        const industry_niche = $('#field_industry_niche').val()?.trim();
+        if (industry_niche) filled++;
+
+        const describe_bussiness = $('#field_describe_bussiness').val()?.trim();
+        if (describe_bussiness) filled++;
+
+        const target_audience = $('#field_target_audience').val()?.trim();
+        if (target_audience) filled++;
+
+        const top_goals = $('#field_top_goals').val()?.trim();
+        if (top_goals) filled++;
+
+        const existing_website = $('#field_existing_website').val()?.trim();
+        if (existing_website) filled++;
+        
+        const website_purpose = $('#field_website_purpose').val()?.trim();
+        if (website_purpose) filled++;
+
+        const has_logo = $('#field_has_logo').val()?.trim();
+        if (has_logo) filled++;
+
+        const has_branding = $('#field_has_branding').val()?.trim();
+        if (has_branding) filled++;
+
+        const reference_websites = $('#field_reference_websites').val()?.trim();
+        if (reference_websites) filled++;
+
+        const content_ready = $('#field_content_ready').val()?.trim();
+        if (content_ready) filled++;
+
+        const page_count = $('#field_page_count').val()?.trim();
+        if (page_count) filled++;
+
+        const features = $('#field_features').val()?.trim();
+        if (features) filled++;
+
+        const has_domain = $('#field_has_domain').val()?.trim();
+        if (has_domain) filled++;
+
+        const domain_name = $('#field_domain_name').val()?.trim();
+        if (domain_name) filled++;
+
+        const has_hosting = $('#field_has_hosting').val()?.trim();
+        if (has_hosting) filled++;
+
+        const platform_preference = $('#field_platform_preference').val()?.trim();
+        if (platform_preference) filled++;
+
+        const launch_date = $('#field_launch_date').val()?.trim();
+        if (launch_date) filled++;
+
+        const budget_range = $('#field_budget_range').val()?.trim();
+        if (budget_range) filled++;
+
+        const contact_name = $('#field_contact_name').val()?.trim();
+        if (contact_name) filled++;
+
+        const contact_info = $('#field_contact_info').val()?.trim();
+        if (contact_info) filled++;
+
+        const communication_method = $('#field_communication_method').val()?.trim();
+        if (communication_method) filled++;
  
         const percent = Math.round((filled / totalFields) * 100);
         $('#formProgressBar').css('width', percent + '%').text(percent + '%');
     }
  
     $(document).ready(function () {
-        updateProgressBar(); // Initial calculation on page load
- 
-        $('#field_name, #field_email, #field_address').on('input', updateProgressBar);
-        $('input[name="has_phone"]').on('change', updateProgressBar);
-        $('input[name="website_name[]"]').on('change', updateProgressBar);
-        $('#field_logo').on('change', updateProgressBar);
-    });
+  // Initial progress update
+  updateProgressBar();
+
+  // Input and textarea fields (text, date, etc.) — use 'input'
+  $('#field_bussiness_name, #field_industry_niche, #field_existing_website, #field_describe_bussiness, #field_top_goals, #field_target_audience, #field_reference_websites, #field_page_count, #field_features, #field_domain_name, #field_budget_range, #field_contact_name, #field_contact_info')
+    .on('input', updateProgressBar);
+
+  // Select dropdown fields — use 'change'
+  $('#field_website_purpose, #field_has_logo, #field_has_branding, #field_content_ready, #field_has_domain, #field_has_hosting, #field_platform_preference, #field_launch_date, #field_communication_method')
+    .on('change', updateProgressBar);
+});
+
 </script>
 
 <?php include './partials/layouts/layoutBottom.php'; ?>
