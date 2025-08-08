@@ -1,8 +1,6 @@
 <?php include './partials/layouts/layoutTop.php'; ?>
 
 <style>
-    
-
     .form-group {
         margin-bottom: 24px !important;
     }
@@ -55,7 +53,6 @@
         font-weight: 500 !important;
         cursor: pointer !important;
     }
-
 
     /* Remove browser defaults for consistency */
     .custom-checkbox-yellow {
@@ -121,50 +118,22 @@
         text-align: center;
     }
 
-    .form-section-title {
-        font-size: 24px;
-        font-weight: 600;
-        color: #333;
-        padding: 12px 16px;
-        margin-bottom: 25px;
-        border-left: 5px solid #fec700;
-        background-color: #fffdf3;
-        border-radius: 6px;
+    .marketing-header {
+        font-size: 26px !important;
+        font-weight: 700;
+        color: #212529;
+        text-align: center;
+        padding: 18px 16px 14px;
+        margin-bottom: 30px;
+        border-top: 5px solid #fec700;
+        background-color: #ffffff;
+        border-radius: 0 0 8px 8px;
         font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        box-shadow: 0 1px 5px rgba(0, 0, 0, 0.07);
     }
-    .modal {
-        position: fixed;
-        z-index: 1050;
-        top: 0; left: 0;
-        width: 100%; height: 100%;
-        background: rgba(0, 0, 0, 0.5);
-        display: none;
-        align-items: center;
-        justify-content: center;
-    }
-    .modal-content {
-        background: #fff;
-        padding: 25px 20px;
-        border-radius: 8px;
-        width: 100%;
-        max-width: 400px;
-        box-shadow: 0 5px 25px rgba(0, 0, 0, 0.2);
-        position: relative;
-    }
-    .close-btn {
-        position: absolute;
-        right: 15px;
-        top: 12px;
-        font-size: 20px;
-        cursor: pointer;
-        color: #aaa;
-    }
-    .close-btn:hover {
-        color: #000;
-    }
-    h5 {
-       font-size: 1.25rem !important;
+
+    .w-85{
+        width:85% !important;
     }
     .progress {
         height: 40px;
@@ -183,8 +152,22 @@
         height: 40px;
         font-size:20px;
     }
-    .w-85{
-        width:85% !important;
+
+    .notice-yellow {
+        background-color: #fff3cd;
+        color: #000;
+        border-left: 6px solid #ffc107;
+        padding: 16px 20px;
+        margin: 20px 0;
+        font-size: 15px;
+        border-radius: 4px;
+        line-height: 1.6;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    }
+    .notice-yellow strong {
+        display: block;
+        font-weight: bold;
+        margin-bottom: 6px;
     }
 </style>
 
@@ -236,25 +219,65 @@
     $query->close();
 
     if (isset($_POST['save'])) {
-        $name = $_POST['name'] ?? '';
+        $full_name = $_POST['full_name'] ?? '';
         $email = $_POST['email'] ?? '';
-        $hasPhone = $_POST['has_phone'] ?? '';
-        $websiteName = $_POST['website_name'] ?? [];
-        $address = $_POST['address'] ?? '';
-        $logo = $_FILES['logo']['name'] ?? '';
-
-        $finalLogoPath = '';
-
-        if (!empty($_FILES['logo']['tmp_name']) && is_uploaded_file($_FILES['logo']['tmp_name'])) {
-            $uploadDir = 'uploads/';
-            if (!is_dir($uploadDir)) {
-                mkdir($uploadDir, 0777, true);
-            }
-
-            $uniqueName = uniqid() . '-' . basename($_FILES['logo']['name']);
-            $finalLogoPath = $uploadDir . $uniqueName;
-            move_uploaded_file($_FILES['logo']['tmp_name'], $finalLogoPath);
-        }
+        $phone = $_POST['phone'] ?? '';
+        $domain_name = $_POST['domain_name'] ?? '';
+        $registered = $_POST['registered'] ?? '';
+        $registrar = $_POST['registrar'] ?? '';
+        $transfer_assistance = $_POST['transfer_assistance'] ?? '';
+        $expected_price = $_POST['expected_price'] ?? '';
+        $listed_elsewhere = $_POST['listed_elsewhere'] ?? '';
+        $listing_platforms = $_POST['listing_platforms'] ?? '';
+        $sale_type = $_POST['sale_type'] ?? '';
+        $domain_niche = $_POST['domain_niche'] ?? '';
+        $additional_assets = $_POST['additional_assets'] ?? '';
+        $communication_mode = $_POST['communication_mode'] ?? '';
+        $additional_notes = $_POST['additional_notes'] ?? '';
+        $reg_first_name = $_POST['reg_first_name'] ?? '';
+        $reg_last_name = $_POST['reg_last_name'] ?? '';
+        $reg_email = $_POST['reg_email'] ?? '';
+        $reg_company = $_POST['reg_company'] ?? '';
+        $reg_address = $_POST['reg_address'] ?? '';
+        $reg_city = $_POST['reg_city'] ?? '';
+        $reg_state = $_POST['reg_state'] ?? '';
+        $reg_country = $_POST['reg_country'] ?? '';
+        $reg_zip = $_POST['reg_zip'] ?? '';
+        $reg_phone_code = $_POST['reg_phone_code'] ?? '';
+        $reg_phone = $_POST['reg_phone'] ?? '';
+        $admin_first_name = $_POST['admin_first_name'] ?? '';
+        $admin_last_name = $_POST['admin_last_name'] ?? '';
+        $admin_email = $_POST['admin_email'] ?? '';
+        $admin_company = $_POST['admin_company'] ?? '';
+        $admin_address = $_POST['admin_address'] ?? '';
+        $admin_city = $_POST['admin_city'] ?? '';
+        $admin_state = $_POST['admin_state'] ?? '';
+        $admin_country = $_POST['admin_country'] ?? '';
+        $admin_zip = $_POST['admin_zip'] ?? '';
+        $admin_phone_code = $_POST['admin_phone_code'] ?? '';
+        $admin_phone = $_POST['admin_phone'] ?? '';
+        $tech_first_name = $_POST['tech_first_name'] ?? '';
+        $tech_last_name = $_POST['tech_last_name'] ?? '';
+        $tech_email = $_POST['tech_email'] ?? '';
+        $tech_company = $_POST['tech_company'] ?? '';
+        $tech_address = $_POST['tech_address'] ?? '';
+        $tech_city = $_POST['tech_city'] ?? '';
+        $tech_state = $_POST['tech_state'] ?? '';
+        $tech_country = $_POST['tech_country'] ?? '';
+        $tech_zip = $_POST['tech_zip'] ?? '';
+        $tech_phone_code = $_POST['tech_phone_code'] ?? '';
+        $tech_phone = $_POST['tech_phone'] ?? '';
+        $bill_first_name = $_POST['bill_first_name'] ?? '';
+        $bill_last_name = $_POST['bill_last_name'] ?? '';
+        $bill_email = $_POST['bill_email'] ?? '';
+        $bill_company = $_POST['bill_company'] ?? '';
+        $bill_address = $_POST['bill_address'] ?? '';
+        $bill_city = $_POST['bill_city'] ?? '';
+        $bill_state = $_POST['bill_state'] ?? '';
+        $bill_country = $_POST['bill_country'] ?? '';
+        $bill_zip = $_POST['bill_zip'] ?? '';
+        $bill_phone_code = $_POST['bill_phone_code'] ?? '';
+        $bill_phone = $_POST['bill_phone'] ?? '';
 
         function createField($value) {
             return [
@@ -264,12 +287,65 @@
         }
 
         $data = json_encode([
-            'name' => createField($name),
+            'full_name' => createField($full_name),
             'email' => createField($email),
-            'has_phone' => createField($hasPhone),
-            'website_name' => createField($websiteName),
-            'address' => createField($address),
-            'logo' => createField($finalLogoPath),
+            'phone' => createField($phone),
+            'domain_name' => createField($domain_name),
+            'registered' => createField($registered),
+            'registrar' => createField($registrar),
+            'transfer_assistance' => createField($transfer_assistance),
+            'expected_price' => createField($expected_price),
+            'listed_elsewhere' => createField($listed_elsewhere),
+            'listing_platforms' => createField($listing_platforms),
+            'sale_type' => createField($sale_type),
+            'domain_niche' => createField($domain_niche),
+            'additional_assets' => createField($additional_assets),
+            'communication_mode' => createField($communication_mode),
+            'additional_notes' => createField($additional_notes),
+            'reg_first_name' => createField($reg_first_name),
+            'reg_last_name' => createField($reg_last_name),
+            'reg_email' => createField($reg_email),
+            'reg_company' => createField($reg_company),
+            'reg_address' => createField($reg_address),
+            'reg_city' => createField($reg_city),
+            'reg_state' => createField($reg_state),
+            'reg_country' => createField($reg_country),
+            'reg_zip' => createField($reg_zip),
+            'reg_phone_code' => createField($reg_phone_code),
+            'reg_phone' => createField($reg_phone),
+            'admin_first_name' => createField($admin_first_name),
+            'admin_last_name' => createField($admin_last_name),
+            'admin_email' => createField($admin_email),
+            'admin_company' => createField($admin_company),
+            'admin_address' => createField($admin_address),
+            'admin_city' => createField($admin_city),
+            'admin_state' => createField($admin_state),
+            'admin_country' => createField($admin_country),
+            'admin_zip' => createField($admin_zip),
+            'admin_phone_code' => createField($admin_phone_code),
+            'admin_phone' => createField($admin_phone),
+            'tech_first_name' => createField($tech_first_name),
+            'tech_last_name' => createField($tech_last_name),
+            'tech_email' => createField($tech_email),
+            'tech_company' => createField($tech_company),
+            'tech_address' => createField($tech_address),
+            'tech_city' => createField($tech_city),
+            'tech_state' => createField($tech_state),
+            'tech_country' => createField($tech_country),
+            'tech_zip' => createField($tech_zip),
+            'tech_phone_code' => createField($tech_phone_code),
+            'tech_phone' => createField($tech_phone),
+            'bill_first_name' => createField($bill_first_name),
+            'bill_last_name' => createField($bill_last_name),
+            'bill_email' => createField($bill_email),
+            'bill_company' => createField($bill_company),
+            'bill_address' => createField($bill_address),
+            'bill_city' => createField($bill_city),
+            'bill_state' => createField($bill_state),
+            'bill_country' => createField($bill_country),
+            'bill_zip' => createField($bill_zip),
+            'bill_phone_code' => createField($bill_phone_code),
+            'bill_phone' => createField($bill_phone),
         ]);
 
         $website_id = isset($_GET['id']) ? intval($_GET['id']) : 0;
@@ -300,7 +376,6 @@
                     title: "Success!",
                     text: "Data saved successfully!"
                 }).then(() => {
-                    // window.location.href = "website-wizard.php";
                     window.history.back();
                 });
             </script>';
@@ -339,25 +414,50 @@
 
         // === TEXT / EMAIL ===
         if ($type === 'text' || $type === 'email') {
-            echo '<input type="' . $type . '" class="form-control  w-85 ' . $styleClass . '" id="' . $inputId . '" name="' . htmlspecialchars($fieldName) . '" placeholder="' . htmlspecialchars($placeholder) . '" value="' . htmlspecialchars($val) . '" ' . $isReadonly . '>';
+            echo '<input type="' . $type . '" class="form-control w-85 ' . $styleClass . '" id="' . $inputId . '" name="' . htmlspecialchars($fieldName) . '" placeholder="' . htmlspecialchars($placeholder) . '" value="' . htmlspecialchars($val) . '" ' . $isReadonly . '>';
         }
 
         // === TEXTAREA ===
         elseif ($type === 'textarea') {           
-            echo '<textarea class="form-control  w-85 ' . $styleClass . '" id="' . $inputId . '" name="' . htmlspecialchars($fieldName) . '" rows="3" placeholder="' . htmlspecialchars($placeholder) . '" ' . $isReadonly . '>' . htmlspecialchars($val) . '</textarea>';
+            echo '<textarea class="form-control w-85 ' . $styleClass . '" id="' . $inputId . '" name="' . htmlspecialchars($fieldName) . '" rows="3" placeholder="' . htmlspecialchars($placeholder) . '" ' . $isReadonly . '>' . htmlspecialchars($val) . '</textarea>';
         }
 
-        // === RADIO ===
-        elseif ($type === 'radio') {
+        // // === SELECT (Dropdown) ===
+        // elseif ($type === 'select') {
+        //     echo '<select class="form-control w-85 ' . $styleClass . '" id="' . $inputId . '" name="' . htmlspecialchars($fieldName) . '" ' . $isDisabled . '>';
+        //     foreach ($options as $option) {
+        //         $selected = ($val == $option) ? 'selected' : '';
+        //         echo '<option value="' . htmlspecialchars($option) . '" ' . $selected . '>' . htmlspecialchars($option) . '</option>';
+        //     }
+        //     echo '</select>';
+        // }
+
+        // === SELECT (Dropdown) ===
+        elseif ($type === 'select') {
+            echo '<select class="form-control w-85 ' . $styleClass . '" id="' . $inputId . '" name="' . htmlspecialchars($fieldName) . '" ' . $isDisabled . '>';
+
+            // Default placeholder option
+            echo '<option value="" disabled ' . (empty($val) ? 'selected' : '') . '>Select an option</option>';
+
             foreach ($options as $option) {
-                $checked = ($val == $option) ? 'checked' : '';
-                echo '<div class="form-check form-check-inline">';
-                // echo '<input class="form-check-input" type="radio" id="' . $inputId . '_' . $option . '" name="' . htmlspecialchars($fieldName) . '" value="' . htmlspecialchars($option) . '" ' . $checked . ' ' . ($isAdmin ? 'disabled' : '') . '>';
-                echo '<input class="form-check-input mt-4" type="radio" id="' . $inputId . '_' . $option . '" name="' . htmlspecialchars($fieldName) . '" value="' . htmlspecialchars($option) . '" ' . $checked . ' ' . $isDisabled . '>';
-                echo '<label class="form-check-label" for="' . $inputId . '_' . $option . '">' . htmlspecialchars($option) . '</label>';
-                echo '</div>';
+                $selected = ($val == $option) ? 'selected' : '';
+                echo '<option value="' . htmlspecialchars($option) . '" ' . $selected . '>' . htmlspecialchars($option) . '</option>';
             }
+
+            echo '</select>';
         }
+
+        // // === RADIO ===
+        // elseif ($type === 'radio') {
+        //     foreach ($options as $option) {
+        //         $checked = ($val == $option) ? 'checked' : '';
+        //         echo '<div class="form-check form-check-inline">';
+        //         // echo '<input class="form-check-input" type="radio" id="' . $inputId . '_' . $option . '" name="' . htmlspecialchars($fieldName) . '" value="' . htmlspecialchars($option) . '" ' . $checked . ' ' . ($isAdmin ? 'disabled' : '') . '>';
+        //         echo '<input class="form-check-input" type="radio" id="' . $inputId . '_' . $option . '" name="' . htmlspecialchars($fieldName) . '" value="' . htmlspecialchars($option) . '" ' . $checked . ' ' . $isDisabled . '>';
+        //         echo '<label class="form-check-label" for="' . $inputId . '_' . $option . '">' . htmlspecialchars($option) . '</label>';
+        //         echo '</div>';
+        //     }
+        // }
 
         // === CHECKBOX ===
         elseif ($type === 'checkbox') {
@@ -375,7 +475,7 @@
         // === FILE ===
         elseif ($type === 'file') {
             // echo '<input type="file" class="form-control ' . $styleClass . '" id="' . $inputId . '" name="' . htmlspecialchars($fieldName) . '" ' . ($isAdmin ? 'disabled' : '') . '>';
-            echo '<input type="file" class="form-control  w-85 ' . $styleClass . '" id="' . $inputId . '" name="' . htmlspecialchars($fieldName) . '" ' . $isDisabled . '>';
+            echo '<input type="file" class="form-control w-85 ' . $styleClass . '" id="' . $inputId . '" name="' . htmlspecialchars($fieldName) . '" ' . $isDisabled . '>';
 
             if (!empty($val)) {
                 echo '<div class="mt-3">';
@@ -402,12 +502,22 @@
         }
 
         // === USER Rejected Fields – Show Edit Icon ===
+        // if (!$isAdmin && $status === 'rejected') {
+        //     echo '<button type="button" class="input-group-text text-warning edit-btn ms-2" title="Edit"
+        //         data-field="' . htmlspecialchars($fieldName) . '"
+        //         data-type="' . htmlspecialchars($type) . '"
+        //         data-value="' . htmlspecialchars($dataValue) . '"
+        //         ' . $dataOptions . '>
+        //         &#9998;
+        //     </button>';
+        // }
+
         if (!$isAdmin && $status === 'rejected') {
             echo '<button type="button" class="input-group-text text-warning edit-btn ms-2" title="Edit"
                 data-field="' . htmlspecialchars($fieldName) . '"
                 data-type="' . htmlspecialchars($type) . '"
-                data-value="' . htmlspecialchars($dataValue) . '"
-                ' . $dataOptions . '>
+                data-value="' . htmlspecialchars(is_array($val) ? implode(',', $val) : $val) . '"'
+                . (!empty($options) ? ' data-options="' . htmlspecialchars(implode(',', $options)) . '"' : '') . '>
                 &#9998;
             </button>';
         }
@@ -525,18 +635,18 @@
 
 <div class="dashboard-main-body">
     <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-24">
-        <h6 class="fw-semibold mb-0">Website</h6>
+        <h6 class="fw-semibold mb-0">Domain Sales Client Onboarding Form</h6>
     </div>
-
     <div class="card h-100 p-0 radius-12 overflow-hidden">               
         <div class="card-body p-40">
+            
             <div class="row justify-content-center">
                 <div class="col-xxl-10">
                 <section class="wizard-section">
                     <div class="row no-gutters">
                         <div class="col-lg-12">
                             <div class="form-wizard">
-                            <!-- Progress Bar -->   
+                                <!-- Progress Bar -->
                                 <div class="progress mb-20">
                                     <div class="progress-bar progress-bar-striped progress-bar-animated bg-warning"
                                         role="progressbar"
@@ -553,20 +663,114 @@
                                             <button type="button" id="bulkRejectBtn" class="btn btn-danger btn-sm">Bulk Reject</button>
                                         </div>
                                     <?php endif; ?>
+
+                                    <h5>1. Client Information</h5>
                                         <?php
-                                            renderFieldExtended('name', $savedData, $user_role, 'Name', 'Enter your name', 'text');
-
-                                            renderFieldExtended('email', $savedData, $user_role, 'Email', 'Enter your email', 'email');
-
-                                            renderFieldExtended('has_phone', $savedData, $user_role, 'Do you have a phone?', '', 'radio', ['Yes', 'No']);
-
-                                            renderFieldExtended('website_name', $savedData, $user_role, 'Website Name', '', 'checkbox', ['Static', 'Dynamic']);
-
-                                            renderFieldExtended('address', $savedData, $user_role, 'Address', 'Enter your address', 'textarea');
-
-                                            renderFieldExtended('logo', $savedData, $user_role, 'Logo', '', 'file');
+                                            renderFieldExtended('full_name', $savedData, $user_role, 'Full Name', '', 'text');
+                                            renderFieldExtended('email', $savedData, $user_role, 'Email Address', '', 'text');
+                                            renderFieldExtended('phone', $savedData, $user_role, 'Phone Number', '', 'text');
                                         ?>
-                                        <?php if (in_array($user_role, [8])): ?>
+
+                                    <h5>2. Domain Details</h5>
+                                        <?php
+                                            renderFieldExtended('domain_name', $savedData, $user_role, 'Domain Name', 'example.com', 'text');
+                                            renderFieldExtended('registered', $savedData, $user_role, 'Is the domain already registered?', '', 'select', ['Yes', 'No']);
+                                            renderFieldExtended('registrar', $savedData, $user_role, 'Registrar (if registered)', '', 'text');
+                                            renderFieldExtended('transfer_assistance', $savedData, $user_role, 'Do you want us to handle the transfer process?', '', 'select', ['Yes', 'No']);
+                                        ?>
+
+                                    <h5>3. Sale Details</h5>
+                                    <?php
+                                        renderFieldExtended('expected_price', $savedData, $user_role, 'Expected Selling Price (INR/USD)', '', 'text');
+                                        renderFieldExtended('listed_elsewhere', $savedData, $user_role, 'Is the domain listed elsewhere?', '', 'select', ['No', 'Yes']);
+                                        renderFieldExtended('listing_platforms', $savedData, $user_role, 'If yes, mention platforms (e.g., Sedo, Afternic, Flippa)', '', 'textarea');
+                                        renderFieldExtended('sale_type', $savedData, $user_role, 'Is it part of a bundle or single domain sale?', '', 'select', ['Single Domain', 'Part of a Bundle']);
+                                    ?>
+
+                                    <h5>4. Domain Use and Branding</h5>
+                                    <?php
+                                        renderFieldExtended('domain_niche', $savedData, $user_role, 'Describe the value or niche of the domain', '', 'textarea');
+                                        renderFieldExtended('additional_assets', $savedData, $user_role, 'Any additional assets included? (e.g., logo, website)', '', 'textarea');
+                                    ?>
+
+                                    <h5>5. Communication & Support</h5>
+                                    <?php
+                                        renderFieldExtended('communication_mode', $savedData, $user_role, 'Preferred Mode of Communication', '', 'select', ['Email','WhatsApp','Phone']);
+                                        renderFieldExtended('additional_notes', $savedData, $user_role, 'Additional Notes / Instructions', '', 'textarea');
+                                    ?>
+
+                                    <h5>6. Domain Contact Details (Wizard)</h5>
+                                    <div class="notice-yellow">
+                                        <strong>Important:</strong> Accurate details are crucial to maintain your domain's security and compliance with ICANN (domain name regulator). Incorrect information can lead to your domain registration getting cancelled under the terms of your registration agreement.
+                                        <br><br>
+                                        If any of the stated information is out of date or incorrect, please make sure to update your information through our Wizard at any time.
+                                    </div>
+
+                                    <!-- Registrant Contact -->
+                                    <h6>Registrant Contact</h6>
+                                    <?php
+                                        renderFieldExtended('reg_first_name', $savedData, $user_role, 'First Name', '', 'text');
+                                        renderFieldExtended('reg_last_name', $savedData, $user_role, 'Last Name', '', 'text');
+                                        renderFieldExtended('reg_email', $savedData, $user_role, 'Email', '', 'text');
+                                        renderFieldExtended('reg_company', $savedData, $user_role, 'Company Name', '', 'text');
+                                        renderFieldExtended('reg_address', $savedData, $user_role, 'Address', '', 'text');
+                                        renderFieldExtended('reg_city', $savedData, $user_role, 'City', '', 'text');
+                                        renderFieldExtended('reg_state', $savedData, $user_role, 'State', '', 'text');
+                                        renderFieldExtended('reg_country', $savedData, $user_role, 'Country Code', '', 'text');
+                                        renderFieldExtended('reg_zip', $savedData, $user_role, 'Zip', '', 'text');
+                                        renderFieldExtended('reg_phone_code', $savedData, $user_role, 'Phone Country Code', '', 'text');
+                                        renderFieldExtended('reg_phone', $savedData, $user_role, 'Phone Number', '', 'text');
+                                    ?>
+
+                                    <!-- Admin Contact -->
+                                    <h6>Administrative Contact<div style="float:right;"><input type="checkbox" class="form-check-input mt-4" name="admin_same"> Copy if same as Registrant</div></h6>
+                                    <?php
+                                        renderFieldExtended('admin_first_name', $savedData, $user_role, 'First Name', '', 'text');
+                                        renderFieldExtended('admin_last_name', $savedData, $user_role, 'Last Name', '', 'text');
+                                        renderFieldExtended('admin_email', $savedData, $user_role, 'Email', '', 'text');
+                                        renderFieldExtended('admin_company', $savedData, $user_role, 'Company Name', '', 'text');
+                                        renderFieldExtended('admin_address', $savedData, $user_role, 'Address', '', 'text');
+                                        renderFieldExtended('admin_city', $savedData, $user_role, 'City', '', 'text');
+                                        renderFieldExtended('admin_state', $savedData, $user_role, 'State', '', 'text');
+                                        renderFieldExtended('admin_country', $savedData, $user_role, 'Country Code', '', 'text');
+                                        renderFieldExtended('admin_zip', $savedData, $user_role, 'Zip', '', 'text');
+                                        renderFieldExtended('admin_phone_code', $savedData, $user_role, 'Phone Country Code', '', 'text');
+                                        renderFieldExtended('admin_phone', $savedData, $user_role, 'Phone Number', '', 'text');
+                                    ?>
+
+                                    <!-- Tech Contact -->
+                                    <h6>Technical Contact<div style="float:right;"><input type="checkbox" class="form-check-input mt-4" name="tech_same"> Copy if same as Registrant</div></h6>
+                                    <?php
+                                        renderFieldExtended('tech_first_name', $savedData, $user_role, 'First Name', '', 'text');
+                                        renderFieldExtended('tech_last_name', $savedData, $user_role, 'Last Name', '', 'text');
+                                        renderFieldExtended('tech_email', $savedData, $user_role, 'Email', '', 'text');
+                                        renderFieldExtended('tech_company', $savedData, $user_role, 'Company Name', '', 'text');
+                                        renderFieldExtended('tech_address', $savedData, $user_role, 'Address', '', 'text');
+                                        renderFieldExtended('tech_city', $savedData, $user_role, 'City', '', 'text');
+                                        renderFieldExtended('tech_state', $savedData, $user_role, 'State', '', 'text');
+                                        renderFieldExtended('tech_country', $savedData, $user_role, 'Country Code', '', 'text');
+                                        renderFieldExtended('tech_zip', $savedData, $user_role, 'Zip', '', 'text');
+                                        renderFieldExtended('tech_phone_code', $savedData, $user_role, 'Phone Country Code', '', 'text');
+                                        renderFieldExtended('tech_phone', $savedData, $user_role, 'Phone Number', '', 'text');
+                                    ?>
+
+                                    <!-- Billing Contact -->
+                                    <h6>Billing Contact<div style="float:right;"><input type="checkbox" class="form-check-input mt-4" name="billing_same"> Copy if same as Registrant</div></h6>
+                                    <?php
+                                        renderFieldExtended('bill_first_name', $savedData, $user_role, 'First Name', '', 'text');
+                                        renderFieldExtended('bill_last_name', $savedData, $user_role, 'Last Name', '', 'text');
+                                        renderFieldExtended('bill_email', $savedData, $user_role, 'Email', '', 'text');
+                                        renderFieldExtended('bill_company', $savedData, $user_role, 'Company Name', '', 'text');
+                                        renderFieldExtended('bill_address', $savedData, $user_role, 'Address', '', 'text');
+                                        renderFieldExtended('bill_city', $savedData, $user_role, 'City', '', 'text');
+                                        renderFieldExtended('bill_state', $savedData, $user_role, 'State', '', 'text');
+                                        renderFieldExtended('bill_country', $savedData, $user_role, 'Country Code', '', 'text');
+                                        renderFieldExtended('bill_zip', $savedData, $user_role, 'Zip', '', 'text');
+                                        renderFieldExtended('bill_phone_code', $savedData, $user_role, 'Phone Country Code', '', 'text');
+                                        renderFieldExtended('bill_phone', $savedData, $user_role, 'Phone Number', '', 'text');
+                                    ?>
+
+                                    <?php if (in_array($user_role, [8])): ?>
                                         <input type="submit" name="save" class="lufera-bg bg-hover-warning-400 text-white text-md px-56 py-11 radius-8 m-auto d-block" value="Save" >
                                     <?php endif; ?>
                                 </form>
@@ -580,6 +784,41 @@
     </div>
 </div>
 
+<style>
+    .modal {
+        position: fixed;
+        z-index: 1050;
+        top: 0; left: 0;
+        width: 100%; height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        display: none;
+        align-items: center;
+        justify-content: center;
+    }
+    .modal-content {
+        background: #fff;
+        padding: 25px 20px;
+        border-radius: 8px;
+        width: 100%;
+        max-width: 400px;
+        box-shadow: 0 5px 25px rgba(0, 0, 0, 0.2);
+        position: relative;
+    }
+    .close-btn {
+        position: absolute;
+        right: 15px;
+        top: 12px;
+        font-size: 20px;
+        cursor: pointer;
+        color: #aaa;
+    }
+    .close-btn:hover {
+        color: #000;
+    }
+    h5 {
+       font-size: 1.25rem !important;
+    }
+</style>
 
 <script>
     document.addEventListener('DOMContentLoaded', () => {
@@ -634,6 +873,19 @@
                     fieldContainer.innerHTML = `
                         ${filePreview}
                         <input type="file" class="form-control" id="modalInput">`;
+                } 
+                // else {
+                //     // Default input (text, email, number etc.)
+                //     fieldContainer.innerHTML = `<input type="text" id="modalInput" class="form-control" value="${value}" />`;
+                // }
+                else if (currentType === 'select') {
+                    let selectHTML = `<select id="modalInput" class="form-control">`;
+                    options.forEach(opt => {
+                        const selected = opt.trim() === value ? 'selected' : '';
+                        selectHTML += `<option value="${opt.trim()}" ${selected}>${opt.trim()}</option>`;
+                    });
+                    selectHTML += `</select>`;
+                    fieldContainer.innerHTML = selectHTML;
                 } else {
                     // Default input (text, email, number etc.)
                     fieldContainer.innerHTML = `<input type="text" id="modalInput" class="form-control" value="${value}" />`;
@@ -864,44 +1116,146 @@
     });
 </script>
 
-<!-- Progress bar -->
+<!-- Progress Bar -->
 <script>
+    const fieldNames = [
+        'full_name',
+        'email',
+        'phone',
+        'domain_name',
+        'registered',
+        'registrar',
+        'transfer_assistance',
+        'expected_price',
+        'listed_elsewhere',
+        'listing_platforms',
+        'sale_type',
+        'domain_niche',
+        'additional_assets',
+        'communication_mode',
+        'additional_notes',
+        'reg_first_name',
+        'reg_last_name',
+        'reg_email',
+        'reg_company',
+        'reg_address',
+        'reg_city',
+        'reg_state',
+        'reg_country',
+        'reg_zip',
+        'reg_phone_code',
+        'reg_phone',
+        'admin_first_name',
+        'admin_last_name',
+        'admin_email',
+        'admin_company',
+        'admin_address',
+        'admin_city',
+        'admin_state',
+        'admin_country',
+        'admin_zip',
+        'admin_phone_code',
+        'admin_phone',
+        'tech_first_name',
+        'tech_last_name',
+        'tech_email',
+        'tech_company',
+        'tech_address',
+        'tech_city',
+        'tech_state',
+        'tech_country',
+        'tech_zip',
+        'tech_phone_code',
+        'tech_phone',
+        'bill_first_name',
+        'bill_last_name',
+        'bill_email',
+        'bill_company',
+        'bill_address',
+        'bill_city',
+        'bill_state',
+        'bill_country',
+        'bill_zip',
+        'bill_phone_code',
+        'bill_phone'
+    ];
+
+    function normalizeName(name) {
+        return name.replace(/[\[\]\/]/g, "\\$&");
+    }
+
+    function isFieldFilled($field) {
+        const tag = $field.prop('tagName').toLowerCase();
+        const type = $field.attr('type');
+
+        if (tag === 'select' || tag === 'textarea') {
+            return !!$field.val()?.trim();
+        }
+
+        if (type === 'file') {
+            const filesPresent = $field[0]?.files?.length > 0;
+            const hasExisting = $field.closest('.form-group').find('img, a').length > 0;
+            return filesPresent || hasExisting;
+        }
+
+        if (type === 'checkbox' || type === 'radio') {
+            return $(`input[name="${$field.attr('name')}"]:checked`).length > 0;
+        }
+
+        return !!$field.val()?.trim();
+    }
+
     function updateProgressBar() {
         let filled = 0;
-        const totalFields = 6;
- 
-        const name = $('#field_name').val()?.trim();
-        if (name) filled++;
- 
-        const email = $('#field_email').val()?.trim();
-        if (email) filled++;
- 
-        const hasPhone = $('input[name="has_phone"]:checked').val();
-        if (hasPhone) filled++;
- 
-        const websiteName = $('input[name="website_name[]"]:checked').length;
-        if (websiteName > 0) filled++;
- 
-        const address = $('#field_address').val()?.trim();
-        if (address) filled++;
- 
-        const logoInput = $('#field_logo');
-        const logoFile = logoInput[0]?.files?.length > 0;
-        const existingLogo = logoInput.closest('.form-group').find('img, a').length > 0;
-        if (logoFile || existingLogo) filled++;
- 
-        const percent = Math.round((filled / totalFields) * 100);
-        $('#formProgressBar').css('width', percent + '%').text(percent + '%');
+        const total = fieldNames.length;
+
+        for (const name of fieldNames) {
+            const $field = $(`[name="${normalizeName(name)}"]`);
+            if ($field.length && isFieldFilled($field)) {
+                filled++;
+            }
+        }
+
+        const percent = Math.round((filled / total) * 100);
+        $('#formProgressBar')
+            .css('width', percent + '%')
+            .text(percent + '%');
     }
- 
+
     $(document).ready(function () {
-        updateProgressBar(); // Initial calculation on page load
- 
-        $('#field_name, #field_email, #field_address').on('input', updateProgressBar);
-        $('input[name="has_phone"]').on('change', updateProgressBar);
-        $('input[name="website_name[]"]').on('change', updateProgressBar);
-        $('#field_logo').on('change', updateProgressBar);
+        updateProgressBar();
+        $(document).on('input change', 'input, select, textarea', updateProgressBar);
     });
 </script>
 
-<?php include './partials/layouts/layoutBottom.php'; ?>
+<script>
+    $(document).ready(function () {
+        function copyRegistrantTo(prefix) {
+            const fields = ['first_name', 'last_name', 'email', 'company', 'address', 'city', 'state', 'country', 'zip', 'phone_code', 'phone'];
+            fields.forEach(function(field) {
+                const regVal = $(`[name="reg_${field}"]`).val();
+                $(`[name="${prefix}_${field}"]`).val(regVal).trigger('input');
+            });
+        }
+
+        $('input[name="admin_same"]').on('change', function () {
+            if ($(this).is(':checked')) {
+                copyRegistrantTo('admin');
+            }
+        });
+
+        $('input[name="tech_same"]').on('change', function () {
+            if ($(this).is(':checked')) {
+                copyRegistrantTo('tech');
+            }
+        });
+
+        $('input[name="billing_same"]').on('change', function () {
+            if ($(this).is(':checked')) {
+                copyRegistrantTo('bill');
+            }
+        });
+    });
+</script>
+
+<?php include './partials/layouts/layoutBottom.php' ?>

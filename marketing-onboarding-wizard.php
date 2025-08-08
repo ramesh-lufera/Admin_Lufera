@@ -202,25 +202,28 @@
     $query->close();
 
     if (isset($_POST['save'])) {
-        $name = $_POST['name'] ?? '';
-        $facebook_id = $_POST['facebook_id'] ?? '';
-        $password = $_POST['password'] ?? '';
-        $websiteType = $_POST['website_type'] ?? [];
-        $address = $_POST['address'] ?? '';
-        $logo = $_FILES['logo']['name'] ?? '';
-
-        $finalLogoPath = '';
-
-        if (!empty($_FILES['logo']['tmp_name']) && is_uploaded_file($_FILES['logo']['tmp_name'])) {
-            $uploadDir = 'uploads/';
-            if (!is_dir($uploadDir)) {
-                mkdir($uploadDir, 0777, true);
-            }
-
-            $uniqueName = uniqid() . '-' . basename($_FILES['logo']['name']);
-            $finalLogoPath = $uploadDir . $uniqueName;
-            move_uploaded_file($_FILES['logo']['tmp_name'], $finalLogoPath);
-        }
+        $Business_name = $_POST['business_name'] ?? '';
+        $Industry_niche = $_POST['industry/niche'] ?? '';
+        $Target_audience = $_POST['target_audience'] ?? '';
+        $Unique_selling_proposition = $_POST['unique_selling_proposition'] ?? '';
+        $Main_competitors = $_POST['main_competitors'] ?? '';
+        $Logo_brand_guidelines = $_POST['logo/brand_guidelines'] ?? '';
+        $Website_url = $_POST['website_url'] ?? '';
+        $Social_media_links = $_POST['social_media_links'] ?? '';
+        $Google_analytics_tag_manager_IDs = $_POST['google_analytics/tag_manager_IDs'] ?? '';
+        $Other_platform_access = $_POST['other_platform_access'] ?? '';
+        $Main_goals = $_POST['main_goals'] ?? '';
+        $Preferred_channels = $_POST['preferred_channels'] ?? '';
+        $Monthly_marketing_budget = $_POST['monthly_marketing_budget'] ?? '';
+        $Products_services_to_promote = $_POST['products/services_to_promote'] ?? '';
+        $Any_existing_offers_campaigns = $_POST['any_existing_offers/campaigns'] ?? '';
+        $Content_bank = $_POST['content_bank'] ?? '';
+        $Primary_point_of_contact = $_POST['primary_point_of_contact'] ?? '';
+        $Email_phone = $_POST['email&phone'] ?? '';
+        $Preferred_communication_channel = $_POST['preferred_communication_channel'] ?? '';
+        $Reporting_frequency = $_POST['reporting_frequency'] ?? '';
+        $Past_campaigns_tools_used = $_POST['past_campaigns/tools_used'] ?? '';
+        $Top_performing_content = $_POST['top-performing_content'] ?? '';
 
         function createField($value) {
             return [
@@ -230,12 +233,28 @@
         }
 
         $data = json_encode([
-            'name' => createField($name),
-            'facebook_id' => createField($facebook_id),
-            'password' => createField($password),
-            'website_type' => createField($websiteType),
-            'address' => createField($address),
-            'logo' => createField($finalLogoPath),
+            'business_name' => createField($Business_name),
+            'industry/niche' => createField($Industry_niche),
+            'target_audience' => createField($Target_audience),
+            'unique_selling_proposition' => createField($Unique_selling_proposition),
+            'main_competitors' => createField($Main_competitors),
+            'logo/brand_guidelines' => createField($Logo_brand_guidelines),
+            'website_url' => createField($Website_url),
+            'social_media_links' => createField($Social_media_links),
+            'google_analytics/tag_manager_IDs' => createField($Google_analytics_tag_manager_IDs),
+            'other_platform_access' => createField($Other_platform_access),
+            'main_goals' => createField($Main_goals),
+            'preferred_channels' => createField($Preferred_channels),
+            'monthly_marketing_budget' => createField($Monthly_marketing_budget),
+            'products/services_to_promote' => createField($Products_services_to_promote),
+            'any_existing_offers/campaigns' => createField($Any_existing_offers_campaigns),
+            'content_bank' => createField($Content_bank),
+            'primary_point_of_contact' => createField($Primary_point_of_contact),
+            'email&phone' => createField($Email_phone),
+            'preferred_communication_channel' => createField($Preferred_communication_channel),
+            'reporting_frequency' => createField($Reporting_frequency),
+            'past_campaigns/tools_used' => createField($Past_campaigns_tools_used),
+            'top-performing_content' => createField($Top_performing_content),
         ]);
 
         $website_id = isset($_GET['id']) ? intval($_GET['id']) : 0;
@@ -312,6 +331,31 @@
             echo '<textarea class="form-control w-85 ' . $styleClass . '" id="' . $inputId . '" name="' . htmlspecialchars($fieldName) . '" rows="3" placeholder="' . htmlspecialchars($placeholder) . '" ' . $isReadonly . '>' . htmlspecialchars($val) . '</textarea>';
         }
 
+        // // === SELECT (Dropdown) ===
+        // elseif ($type === 'select') {
+        //     echo '<select class="form-control w-85 ' . $styleClass . '" id="' . $inputId . '" name="' . htmlspecialchars($fieldName) . '" ' . $isDisabled . '>';
+        //     foreach ($options as $option) {
+        //         $selected = ($val == $option) ? 'selected' : '';
+        //         echo '<option value="' . htmlspecialchars($option) . '" ' . $selected . '>' . htmlspecialchars($option) . '</option>';
+        //     }
+        //     echo '</select>';
+        // }
+
+        // === SELECT (Dropdown) ===
+        elseif ($type === 'select') {
+            echo '<select class="form-control w-85 ' . $styleClass . '" id="' . $inputId . '" name="' . htmlspecialchars($fieldName) . '" ' . $isDisabled . '>';
+
+            // Default placeholder option
+            echo '<option value="" disabled ' . (empty($val) ? 'selected' : '') . '>Select an option</option>';
+
+            foreach ($options as $option) {
+                $selected = ($val == $option) ? 'selected' : '';
+                echo '<option value="' . htmlspecialchars($option) . '" ' . $selected . '>' . htmlspecialchars($option) . '</option>';
+            }
+
+            echo '</select>';
+        }
+
         // // === RADIO ===
         // elseif ($type === 'radio') {
         //     foreach ($options as $option) {
@@ -367,12 +411,22 @@
         }
 
         // === USER Rejected Fields – Show Edit Icon ===
+        // if (!$isAdmin && $status === 'rejected') {
+        //     echo '<button type="button" class="input-group-text text-warning edit-btn ms-2" title="Edit"
+        //         data-field="' . htmlspecialchars($fieldName) . '"
+        //         data-type="' . htmlspecialchars($type) . '"
+        //         data-value="' . htmlspecialchars($dataValue) . '"
+        //         ' . $dataOptions . '>
+        //         &#9998;
+        //     </button>';
+        // }
+
         if (!$isAdmin && $status === 'rejected') {
             echo '<button type="button" class="input-group-text text-warning edit-btn ms-2" title="Edit"
                 data-field="' . htmlspecialchars($fieldName) . '"
                 data-type="' . htmlspecialchars($type) . '"
-                data-value="' . htmlspecialchars($dataValue) . '"
-                ' . $dataOptions . '>
+                data-value="' . htmlspecialchars(is_array($val) ? implode(',', $val) : $val) . '"'
+                . (!empty($options) ? ' data-options="' . htmlspecialchars(implode(',', $options)) . '"' : '') . '>
                 &#9998;
             </button>';
         }
@@ -490,7 +544,7 @@
 
 <div class="dashboard-main-body">
     <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-24">
-        <h6 class="fw-semibold mb-0">Marketing</h6>
+        <h6 class="fw-semibold mb-0">Digital Marketing Client Onboarding Form</h6>
     </div>
     <div class="card h-100 p-0 radius-12 overflow-hidden">               
         <div class="card-body p-40">
@@ -519,23 +573,74 @@
                                         </div>
                                     <?php endif; ?>
 
-                                    <!-- <h4 class="m-auto" style="width:max-content">Marketing</h4> -->
-                                            <?php
-                                                renderFieldExtended('name', $savedData, $user_role, 'Name', 'Enter your name', 'text');
+                                    <h5>1. Business Information</h5>
+                                    <?php
+                                        renderFieldExtended('business_name', $savedData, $user_role, 'Business Name', '', 'text');
 
-                                                renderFieldExtended('facebook_id', $savedData, $user_role, 'Facebook ID', 'Facebook ID', 'email');
+                                        renderFieldExtended('industry/niche', $savedData, $user_role, 'Industry / Niche', '', 'text');
 
-                                                renderFieldExtended('password', $savedData, $user_role, 'Password', 'Password', 'text');
+                                        renderFieldExtended('target_audience', $savedData, $user_role, 'Target Audience', '', 'textarea');
 
-                                                renderFieldExtended('website_type', $savedData, $user_role, 'Website Type', '', 'checkbox', ['Static', 'Dynamic']);
+                                        renderFieldExtended('unique_selling_proposition', $savedData, $user_role, 'Unique Selling Proposition (USP)', '', 'textarea');
 
-                                                renderFieldExtended('address', $savedData, $user_role, 'Address', 'Enter your address', 'textarea');
+                                        renderFieldExtended('main_competitors', $savedData, $user_role, 'Main Competitors', '', 'textarea');
+                                    ?>
 
-                                                renderFieldExtended('logo', $savedData, $user_role, 'Logo', '', 'file');
-                                            ?>
-                                            <?php if (in_array($user_role, [8])): ?>
-                                                <input type="submit" name="save" class="lufera-bg bg-hover-warning-400 text-white text-md px-56 py-11 radius-8 m-auto d-block" value="Save" >
-                                            <?php endif; ?>
+                                    <h5>2. Branding & Assets</h5>
+                                    <?php
+                                        renderFieldExtended('logo/brand_guidelines', $savedData, $user_role, 'Logo / Brand Guidelines (Upload separately)', 'Describe brand colors, fonts, voice, etc.', 'textarea');
+                                    ?>
+
+                                    <h5>3. Digital Presence</h5>
+                                    <?php
+                                        renderFieldExtended('website_url', $savedData, $user_role, 'Website URL', '', 'text');
+
+                                        renderFieldExtended('social_media_links', $savedData, $user_role, 'Social Media Links', '', 'textarea');
+
+                                        renderFieldExtended('google_analytics/tag_manager_IDs', $savedData, $user_role, 'Google Analytics / Tag Manager IDs', '', 'textarea');
+
+                                        renderFieldExtended('other_platform_access', $savedData, $user_role, 'Other Platform Access (e.g., Facebook Ads, Email Tools)', '', 'textarea');
+                                    ?>
+
+                                    <h5>4. Marketing Objectives</h5>
+                                    <?php
+                                        renderFieldExtended('main_goals', $savedData, $user_role, 'Main Goals', 'E.g., Increase traffic, generate leads, grow followers', 'textarea');
+
+                                        renderFieldExtended('preferred_channels', $savedData, $user_role, 'Preferred Channels', '', 'select', ['SEO', 'Google Ads (PPC)', 'Social Media Marketing', 'Email Marketing', 'Content Marketing', 'Influencer Marketing']);
+
+                                        renderFieldExtended('monthly_marketing_budget', $savedData, $user_role, 'Monthly Marketing Budget', '', 'textarea');
+                                    ?>
+
+                                    <h5>5. Content & Offers</h5>
+                                    <?php
+                                        renderFieldExtended('products/services_to_promote', $savedData, $user_role, 'Products/Services to Promote', '', 'textarea');
+
+                                        renderFieldExtended('any_existing_offers/campaigns', $savedData, $user_role, 'Any Existing Offers / Campaigns', '', 'textarea');
+
+                                        renderFieldExtended('content_bank', $savedData, $user_role, 'Content Bank (Blog links, brochures, etc.)', '', 'textarea');
+                                    ?>
+
+                                    <h5>6. Communication & Legal</h5>
+                                    <?php
+                                        renderFieldExtended('primary_point_of_contact', $savedData, $user_role, 'Primary Point of Contact', '', 'text');
+
+                                        renderFieldExtended('email&phone', $savedData, $user_role, 'Email & Phone', '', 'text');
+
+                                        renderFieldExtended('preferred_communication_channel', $savedData, $user_role, 'Preferred Communication Channel', '', 'select', ['Email', 'WhatsApp', 'Phone Call', 'Zoom / Meet']);
+
+                                        renderFieldExtended('reporting_frequency', $savedData, $user_role, 'Reporting Frequency', '', 'select', ['Weekly', 'Bi-Weekly', 'Monthly']);
+                                    ?>
+                                    
+                                    <h5>7. Past Marketing Data (Optional)</h5>
+                                    <?php
+                                        renderFieldExtended('past_campaigns/tools_used', $savedData, $user_role, 'Past Campaigns / Tools Used', '', 'textarea');
+
+                                        renderFieldExtended('top-performing_content', $savedData, $user_role, 'Top-Performing Content (if known)', '', 'textarea');
+                                    ?>
+
+                                    <?php if (in_array($user_role, [8])): ?>
+                                        <input type="submit" name="save" class="lufera-bg bg-hover-warning-400 text-white text-md px-56 py-11 radius-8 m-auto d-block" value="Save" >
+                                    <?php endif; ?>
                                 </form>
                             </div>
                         </div>
@@ -636,6 +741,19 @@
                     fieldContainer.innerHTML = `
                         ${filePreview}
                         <input type="file" class="form-control" id="modalInput">`;
+                } 
+                // else {
+                //     // Default input (text, email, number etc.)
+                //     fieldContainer.innerHTML = `<input type="text" id="modalInput" class="form-control" value="${value}" />`;
+                // }
+                else if (currentType === 'select') {
+                    let selectHTML = `<select id="modalInput" class="form-control">`;
+                    options.forEach(opt => {
+                        const selected = opt.trim() === value ? 'selected' : '';
+                        selectHTML += `<option value="${opt.trim()}" ${selected}>${opt.trim()}</option>`;
+                    });
+                    selectHTML += `</select>`;
+                    fieldContainer.innerHTML = selectHTML;
                 } else {
                     // Default input (text, email, number etc.)
                     fieldContainer.innerHTML = `<input type="text" id="modalInput" class="form-control" value="${value}" />`;
@@ -867,7 +985,7 @@
 </script>
 
 <!-- Progress Bar -->
-<script>
+<!-- <script>
     function updateProgressBar() {
         let filled = 0;
         const totalFields = 6;
@@ -903,6 +1021,84 @@
         $('#field_name, #field_facebook_id, #field_password, #field_address').on('input', updateProgressBar);
         $('input[name="website_type[]"]').on('change', updateProgressBar);
         $('#field_logo').on('change', updateProgressBar);
+    });
+</script> -->
+
+<script>
+    const fieldNames = [
+        'business_name',
+        'industry/niche',
+        'target_audience',
+        'unique_selling_proposition',
+        'main_competitors',
+        'logo/brand_guidelines',
+        'website_url',
+        'social_media_links',
+        'google_analytics/tag_manager_IDs',
+        'other_platform_access',
+        'main_goals',
+        'preferred_channels',
+        'monthly_marketing_budget',
+        'products/services_to_promote',
+        'any_existing_offers/campaigns',
+        'content_bank',
+        'primary_point_of_contact',
+        'email&phone',
+        'preferred_communication_channel',
+        'reporting_frequency',
+        'past_campaigns/tools_used',
+        'top-performing_content'
+    ];
+
+    function normalizeName(name) {
+        // Convert names like "industry/niche" to a jQuery-safe selector
+        return name.replace(/[\[\]\/]/g, "\\$&");
+    }
+
+    function isFieldFilled($field) {
+        const tag = $field.prop('tagName').toLowerCase();
+        const type = $field.attr('type');
+
+        if (tag === 'select' || tag === 'textarea') {
+            return !!$field.val()?.trim();
+        }
+
+        if (type === 'file') {
+            const filesPresent = $field[0]?.files?.length > 0;
+            const hasExisting = $field.closest('.form-group').find('img, a').length > 0;
+            return filesPresent || hasExisting;
+        }
+
+        if (type === 'checkbox' || type === 'radio') {
+            return $(`input[name="${$field.attr('name')}"]:checked`).length > 0;
+        }
+
+        // Default case: input[type=text], input[type=email], etc.
+        return !!$field.val()?.trim();
+    }
+
+    function updateProgressBar() {
+        let filled = 0;
+        const total = fieldNames.length;
+
+        for (const name of fieldNames) {
+            const $field = $(`[name="${normalizeName(name)}"]`);
+            if ($field.length && isFieldFilled($field)) {
+                filled++;
+            }
+        }
+
+        const percent = Math.round((filled / total) * 100);
+        $('#formProgressBar')
+            .css('width', percent + '%')
+            .text(percent + '%');
+    }
+
+    $(document).ready(function () {
+        updateProgressBar();
+
+        // Watch all relevant field changes
+        $(document).on('input change', 'input, select, textarea', updateProgressBar);
     });
 </script>
 
