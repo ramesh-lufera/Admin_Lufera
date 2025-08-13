@@ -33,7 +33,7 @@
         $phone = '';
         $created_at = date("Y-m-d H:i:s");
         $method = "1";
-        $role = "7";
+        $role = "8";
         $photo = $google_user->picture;
         $business_name = $address = $city = $state = $country = $pincode = $dob = null;
 

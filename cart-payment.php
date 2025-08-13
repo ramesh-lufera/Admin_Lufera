@@ -102,8 +102,6 @@
     }
 ?>
 
-<!-- SweetAlert2 CDN -->
-
 <style>
     .plan-details-table tbody tr td {
         padding: 15px .5rem;
@@ -415,7 +413,6 @@
                                     </div>
                                 </div>
                             </div>
-                            <!-- <div id="paypal" class="payment-detail">PayPal...</div> -->
                             <div id="paypal-button-container" class="payment-detail mt-3"></div>
                         </div>
                     </div>
@@ -425,6 +422,7 @@
     </form>
 </div>
 
+<!-- PayPal -->
 <script src="https://www.paypal.com/sdk/js?client-id=AcXyC6yJbA3cipIidV1fFZ-cz0F99YIzjN8SV9imJSem5MTjTuqAotwcvcI1GFJL0I4axsVtLvkdpgck&currency=USD"></script>
 
 <script>
@@ -444,9 +442,38 @@
                 alert('Payment successful! Thank you, ' + details.payer.name.given_name + '!');
                 console.log('Capture result', details, JSON.stringify(details, null, 2));
                 // You can redirect or save order details here
+
+                document.getElementById('continuePayBtn').click();
             });
         }
     }).render('#paypal-button-container');
+</script>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const payBtn = document.getElementById('continuePayBtn');
+        const paypalContainer = document.getElementById('paypal-button-container');
+
+        // Always hide PayPal section initially
+        paypalContainer.style.display = 'none';
+
+        // Listen for changes in payment method radio buttons
+        document.querySelectorAll('input[name="pay_method"]').forEach(radio => {
+            radio.addEventListener('change', function () {
+                const selectedTarget = this.getAttribute('data-target');
+
+                if (selectedTarget === 'paypal-button-container') {
+                    // Hide continue button (inline style) and show PayPal section
+                    payBtn.style.display = 'none';
+                    paypalContainer.style.display = 'block';
+                } else {
+                    // Show continue button (inline style) and hide PayPal section
+                    payBtn.style.display = 'inline-block';
+                    paypalContainer.style.display = 'none';
+                }
+            });
+        });
+    });
 </script>
 
 <script>
