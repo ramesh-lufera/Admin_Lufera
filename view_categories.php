@@ -36,11 +36,14 @@
             $stmt->bind_param("sss", $cat_name, $catSlug, $cat_template);
             $stmt->execute();
 
-            $file_path = dirname(__DIR__) . '/' . $catSlug;
+            //$file_path = dirname(__DIR__) . '/' . $catSlug;
+            $file_path = realpath(__DIR__) . '/' . $catSlug;
+
 
             $catSlug1 = pathinfo($catSlug, PATHINFO_FILENAME);
             $det_file_name = $catSlug1 . '-det.php'; 
-            $det_file_path = dirname(__DIR__) . '/' . $det_file_name;
+            //$det_file_path = dirname(__DIR__) . '/' . $det_file_name;
+            $det_file_path = realpath(__DIR__) . '/' . $det_file_name;
 
             $manageLink = $det_file_name;
             $pageTitle = ucwords($cat_name);
@@ -581,7 +584,9 @@
                 file_put_contents($file_path, $default_content);
 
                 $view_file_name = "view-$catSlug1.php";
-                $view_file_path = dirname(__DIR__) . '/' . $view_file_name;
+                //$view_file_path = dirname(__DIR__) . '/' . $view_file_name;
+                $view_file_path = realpath(__DIR__) . '/' . $view_file_name;
+
 
                 if (!file_exists($view_file_path)) {
                     $view_content = <<<PHP
@@ -678,7 +683,9 @@
         }
 
         $editcatSlug = strtolower(preg_replace('/\s+/', '-', $edit_cat_url));
-        $file_path = dirname(__DIR__) . '/' . $editcatSlug;
+        //$file_path = dirname(__DIR__) . '/' . $editcatSlug;
+        $file_path = realpath(__DIR__) . '/' . $editcatSlug;
+
 
         $stmt = $conn->prepare("UPDATE categories SET cat_name = ?, cat_url = ?, cat_module = ? WHERE cat_id = ?");
         $stmt->bind_param("sssi", $cat_name, $editcatSlug, $cat_module, $cat_id);
@@ -686,7 +693,8 @@
 
         $editcatSlug1 = pathinfo($editcatSlug, PATHINFO_FILENAME);
         $det_file_name1 = $editcatSlug1 . '-det.php'; 
-        $det_file_path1 = dirname(__DIR__) . '/' . $det_file_name1;
+        //$det_file_path1 = dirname(__DIR__) . '/' . $det_file_name1;
+        $det_file_path1 = realpath(__DIR__) . '/' . $det_file_name1;
 
         $manageLink1 = $det_file_name1;
         $pageTitle1 = ucwords($cat_name);
@@ -1227,7 +1235,8 @@
             $catUrlRawEdit = strtolower(preg_replace('/\s+/', '-', $catUrlRaw));
             $catUrlFinal = pathinfo($catUrlRawEdit, PATHINFO_FILENAME);
 
-            $baseDir = dirname(__DIR__);
+            //$baseDir = dirname(__DIR__);
+            $baseDir = realpath(__DIR__); 
             $filesToDelete = [
                 "$baseDir/{$catUrlFinal}.php",
                 "$baseDir/{$catUrlFinal}-det.php",
@@ -1367,11 +1376,11 @@
             <div class="modal-body">
                 <div class="mb-8">
                     <label for="cat_name" class="form-label">Name</label>
-                    <input type="text" class="form-control" name="cat_name" id="cat_name" required placeholder="Name">
+                    <input type="text" class="form-control" name="cat_name" id="cat_name" required >
                 </div>
                 <div class="mb-8">
                     <label for="cat_url" class="form-label">URL</label>
-                    <input type="text" class="form-control" name="cat_url" id="cat_url" required placeholder="URL">
+                    <input type="text" class="form-control" name="cat_url" id="cat_url" required >
                 </div>
                 <div class="mb-8">
                     <label for="cat_template" class="form-label">Module</label>
@@ -1518,6 +1527,14 @@ $(document).ready(function() {
             }
         });
     }
+
+    $(document).ready(function() {
+    $('[data-bs-target="#add-category-modal"]').on('click', function() {
+        // Replace '#add-category-form' with your actual form's ID
+        $('#add-category-form')[0].reset();
+    });
+});
+
 </script>
 </body>
 </html>
