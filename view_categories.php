@@ -16,7 +16,7 @@
     include './partials/layouts/layoutTop.php';
 
     $Id = $_SESSION['user_id'];
-    $query = "SELECT * FROM Categories ORDER BY created_at DESC";
+    $query = "SELECT * FROM categories ORDER BY created_at DESC";
     $result = mysqli_query($conn, $query);
 
     // Handle category creation
@@ -1289,6 +1289,7 @@
                         <thead>
                             <tr>
                                 <th scope="col">Category Name</th>
+                                <th scope="col">Category URL</th>
                                 <th scope="col" class="text-center">Module</th>
                                 <th scope="col" class="text-center">Action</th>
                             </tr>
@@ -1298,12 +1299,31 @@
                             <?php while ($row = $result->fetch_assoc()): ?>
                             <tr>
                                 <td><?= htmlspecialchars($row['cat_name']) ?></td>
-                                <td class="text-center"><?= htmlspecialchars($row['cat_module']) ?></td>
-                                
+                                <td><?= htmlspecialchars($row['cat_url']) ?></td>
+                                <?php
+                                // map values to their labels
+                                $modules = [
+                                    "website" => "Website",
+                                    "marketing" => "Marketing",
+                                    "visa" => "Visa",
+                                    "website-onboarding" => "Website Onboarding",
+                                    "marketing-onboarding" => "Marketing Onboarding",
+                                    "domain-onboarding" => "Domain Onboarding",
+                                    "email-onboarding" => "Email Onboarding",
+                                    "mobile-app-onboarding" => "Mobile App Onboarding"
+                                ];
+
+                                // get value from db
+                                $value = $row['cat_module'];
+
+                                // show label if exists, otherwise show raw value
+                                $label = isset($modules[$value]) ? $modules[$value] : $value;
+                                ?>
+                                <td class="text-center"><?= htmlspecialchars($label) ?></td>                               
                                 <td class="text-center">
                                     <a onclick="openEditModal('<?= $row['cat_id'] ?>', '<?= htmlspecialchars($row['cat_name']) ?>', '<?= htmlspecialchars($row['cat_url']) ?>', '<?= htmlspecialchars($row['cat_module']) ?>')" class="fa fa-edit fw-medium w-32-px h-32-px bg-warning-focus text-warning-main rounded-circle d-inline-flex align-items-center justify-content-center cursor-pointer">
                                     </a>
-                                    <form method="post" class="delete-form d-inline" id="add-category-form">
+                                    <form method="post" class="delete-form d-inline">
                                     <input type="hidden" name="delete_cat_id" value="<?= $row['cat_id'] ?>">
                                     <a onclick="confirmDelete(this)" class="fa fa-trash-alt fw-medium w-32-px h-32-px bg-danger-focus text-danger-main rounded-circle d-inline-flex align-items-center justify-content-center cursor-pointer">
                                     </a>
@@ -1364,7 +1384,7 @@
 <div class="modal fade" id="add-category-modal" tabindex="-1" aria-labelledby="assignRoleModalLabel" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content">
-        <form method="post" action="">
+        <form method="post" action="" id="add-category-form">
             <div class="modal-header">
                 <h5 class="modal-title">Add New category</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
