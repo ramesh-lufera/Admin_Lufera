@@ -738,7 +738,20 @@
                     fieldContainer.innerHTML = `
                         ${filePreview}
                         <input type="file" class="form-control" id="modalInput">`;
-                } else {
+                } else if (currentType === 'select') {
+                    let selectHTML = `<select id="modalInput" class="form-control">`;
+                    options.forEach(opt => {
+                        const selected = opt.trim() === value ? 'selected' : '';
+                        selectHTML += `<option value="${opt.trim()}" ${selected}>${opt.trim()}</option>`;
+                    });
+                    selectHTML += `</select>`;
+                    fieldContainer.innerHTML = selectHTML;
+                } 
+                else if (currentType === 'date') {
+                    // Default input (text, email, number etc.)
+                    fieldContainer.innerHTML = `<input type="date" id="modalInput" class="form-control" value="${value}" />`;
+                }
+                else {
                     // Default input (text, email, number etc.)
                     fieldContainer.innerHTML = `<input type="text" id="modalInput" class="form-control" value="${value}" />`;
                 }
@@ -798,7 +811,7 @@
 </script>
 
 <div id="editModal" class="modal" style="display:none;">
-    <div class="modal-content p-4 rounded" style="background:#fff; max-width:500px; margin:auto;">
+    <div class="modal-content p-20 rounded" style="background:#fff; max-width:500px; margin:auto;">
         <span class="close-btn float-end" title="Close" style="cursor:pointer;">&times;</span>
         <h5 class="mb-3">Edit Field</h5>
         <div id="editFieldContainer" class="mb-3"></div>
