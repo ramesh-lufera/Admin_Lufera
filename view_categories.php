@@ -16,7 +16,7 @@
     include './partials/layouts/layoutTop.php';
 
     $Id = $_SESSION['user_id'];
-    $query = "SELECT * FROM Categories ORDER BY created_at DESC";
+    $query = "SELECT * FROM categories ORDER BY created_at DESC";
     $result = mysqli_query($conn, $query);
 
     // Handle category creation
