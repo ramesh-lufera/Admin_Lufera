@@ -335,7 +335,6 @@
         list-style: none;
         margin: 0;
         padding: 0;
-        border-top: 1px solid #eee; 
     }
     .sidebar-menu-area {
         height: 100%;
@@ -450,7 +449,7 @@
                     </li> -->
             <?php } ?>
             </ul>
-            <ul class="sidebar-menu bottom-menu" id="sidebar-menu">
+            <ul class="sidebar-menu bottom-menu" id="sidebar-menu" style="border-top: 1px solid #eee; ">
             <li>
                 <a href="orders.php">
                     <iconify-icon icon="hugeicons:invoice-03" class="menu-icon"></iconify-icon>

@@ -696,6 +696,14 @@
                     fieldContainer.innerHTML = `
                         ${filePreview}
                         <input type="file" class="form-control" id="modalInput">`;
+                } else if (currentType === 'select') {
+                    let selectHTML = `<select id="modalInput" class="form-control">`;
+                    options.forEach(opt => {
+                        const selected = opt.trim() === value ? 'selected' : '';
+                        selectHTML += `<option value="${opt.trim()}" ${selected}>${opt.trim()}</option>`;
+                    });
+                    selectHTML += `</select>`;
+                    fieldContainer.innerHTML = selectHTML;
                 } else {
                     // Default input (text, email, number etc.)
                     fieldContainer.innerHTML = `<input type="text" id="modalInput" class="form-control" value="${value}" />`;

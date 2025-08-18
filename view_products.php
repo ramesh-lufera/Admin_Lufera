@@ -100,7 +100,7 @@
 
 
 <div class="modal fade" id="add-product-modal" tabindex="-1" aria-labelledby="assignRoleModalLabel" aria-hidden="true">
-  <div class="modal-dialog">
+  <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content">
         <form method="post" action="">
             <div class="modal-header">

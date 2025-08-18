@@ -121,12 +121,7 @@
                             <td class="text-center"><?php echo $row['invoice_id']; ?></td>
                             <td class="text-center"><?= date('d M Y', strtotime($row['created_on'])) ?></td>
                             <td class="text-center" id="currency-symbol-display"><?= htmlspecialchars($symbol) ?> <?= number_format($row['amount'], 2) ?></td>
-                            <!-- <td> <span class="bg-success-focus text-success-main px-24 py-4 rounded-pill fw-medium text-sm">Paid</span> </td> -->
-                            <!-- <td>
-                                <a href="javascript:void(0)" class="btn btn-success btn-sm fw-medium text-white me-2" id="approveButton" onclick="approveAction()">
-                                    Approve
-                                </a>
-                            </td> -->
+                           
 
                             <td class="text-center">
                                 <?php if (($role === '1' || $role === '2') && $row['status'] === 'Pending'){ ?>
@@ -151,26 +146,19 @@
                                 <?php } ?>
                             </td>
                             <td class="text-center">
-                                <a href="order-summary.php?id=<?php echo $row['invoice_id']; ?>" class="w-32-px h-32-px bg-primary-light text-primary-600 rounded-circle d-inline-flex align-items-center justify-content-center">
-                                    <iconify-icon icon="iconamoon:eye-light"></iconify-icon>
+                                <a href="order-summary.php?id=<?php echo $row['invoice_id']; ?>" class="fa fa-eye view-user-btn bg-info-focus text-info-600 bg-hover-info-200 fw-medium w-32-px h-32-px d-inline-flex justify-content-center align-items-center rounded-circle">
                                 </a>
-                                <a href="invoice-preview.php?id=<?php echo $row['invoice_id']; ?>" class="w-32-px h-32-px bg-warning-focus text-warning-main rounded-circle d-inline-flex align-items-center justify-content-center">
-                                    <iconify-icon icon="iconamoon:invoice"></iconify-icon>
+                                <a href="invoice-preview.php?id=<?php echo $row['invoice_id']; ?>" class="fa fa-file view-user-btn bg-warning-focus text-warning-600 bg-hover-warning-200 fw-medium w-32-px h-32-px d-inline-flex justify-content-center align-items-center rounded-circle">
                                 </a>
                                 <?php if (($role === '1' || $role === '2') && $row['status'] === 'Pending'){ ?>
                                     <form method="POST" style="display:inline;">
                                         <input type="hidden" name="approve_id" value="<?= $row['id'] ?>">
-                                        <button type="submit" class="w-32-px h-32-px bg-success-focus text-success-main rounded-circle d-inline-flex align-items-center justify-content-center mb-8">
-                                        <iconify-icon icon="iconamoon:check"></iconify-icon>
+                                        <button type="submit" class="fa fa-check-square view-user-btn bg-success-focus text-success-600 bg-hover-success-200 fw-medium w-32-px h-32-px d-inline-flex justify-content-center align-items-center rounded-circle">
+                                        
                                         </button>
                                     </form>
                                 <?php } ?>
-                                <!-- <a href="javascript:void(0)" class="w-32-px h-32-px bg-success-focus text-success-main rounded-circle d-inline-flex align-items-center justify-content-center">
-                                    <iconify-icon icon="lucide:edit"></iconify-icon>
-                                </a>
-                                <a href="javascript:void(0)" class="w-32-px h-32-px bg-danger-focus text-danger-main rounded-circle d-inline-flex align-items-center justify-content-center">
-                                    <iconify-icon icon="mingcute:delete-2-line"></iconify-icon>
-                                </a> -->
+                               
                             </td>
                         </tr>
                         <?php endwhile; ?>
@@ -178,64 +166,9 @@
                     </tbody>
                 </table>
             </div>
-                <!-- <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mt-24">
-                    <span>Showing 1 to 10 of 12 entries</span>
-                    <ul class="pagination d-flex flex-wrap align-items-center gap-2 justify-content-center">
-                        <li class="page-item">
-                            <a class="page-link text-secondary-light fw-medium radius-4 border-0 px-10 py-10 d-flex align-items-center justify-content-center h-32-px w-32-px bg-base" href="javascript:void(0)">
-                                <iconify-icon icon="ep:d-arrow-left" class="text-xl"></iconify-icon>
-                            </a>
-                        </li>
-                        <li class="page-item">
-                            <a class="page-link bg-primary-600 text-white fw-medium radius-4 border-0 px-10 py-10 d-flex align-items-center justify-content-center h-32-px w-32-px" href="javascript:void(0)">1</a>
-                        </li>
-                        <li class="page-item">
-                            <a class="page-link bg-primary-50 text-secondary-light fw-medium radius-4 border-0 px-10 py-10 d-flex align-items-center justify-content-center h-32-px w-32-px" href="javascript:void(0)">2</a>
-                        </li>
-                        <li class="page-item">
-                            <a class="page-link bg-primary-50 text-secondary-light fw-medium radius-4 border-0 px-10 py-10 d-flex align-items-center justify-content-center h-32-px w-32-px" href="javascript:void(0)">3</a>
-                        </li>
-                        <li class="page-item">
-                            <a class="page-link text-secondary-light fw-medium radius-4 border-0 px-10 py-10 d-flex align-items-center justify-content-center h-32-px w-32-px bg-base" href="javascript:void(0)">
-                                <iconify-icon icon="ep:d-arrow-right" class="text-xl"></iconify-icon>
-                            </a>
-                        </li>
-                    </ul>
-                </div> -->
-
-                <!-- Pagination -->
-                <!-- <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mt-24">
-                    <span>Showing <?php echo ($start_from + 1); ?> to <?php echo min($start_from + $records_per_page, $total_records); ?> of <?php echo $total_records; ?> entries</span>
-                    
-                    <ul class="d-flex flex-wrap align-items-center gap-2 justify-content-center">
-                        <?php if ($current_page > 1): ?>
-                        <li class="page-item">
-                            <a class="page-link bg-neutral-200 text-secondary-light fw-semibold radius-8 border-0 d-flex align-items-center justify-content-center h-32-px w-32-px text-md" href="?page=<?php echo ($current_page - 1); ?>">
-                                <iconify-icon icon="ep:d-arrow-left" class=""></iconify-icon>
-                            </a>
-                        </li>
-                        <?php endif; ?>
-
-                        <?php for ($i = 1; $i <= $total_pages; $i++): ?>
-                        <li class="page-item">
-                            <a class="page-link <?php echo ($i == $current_page) ? 'bg-primary-600 text-white' : 'bg-neutral-200 text-secondary-light'; ?> fw-semibold radius-8 border-0 d-flex align-items-center justify-content-center h-32-px w-32-px text-md" style="<?php echo ($i == $current_page) ? 'background-color: #fec700 !important' : 'bg-neutral-200 text-secondary-light'; ?>" href="?page=<?php echo $i; ?>">
-                            <?php echo $i; ?>
-                            </a>
-                        </li>    
-                        <?php endfor; ?>     
-                        
-                        <?php if ($current_page < $total_pages): ?>
-                        <li class="page-item">
-                            <a class="page-link bg-neutral-200 text-secondary-light fw-semibold radius-8 border-0 d-flex align-items-center justify-content-center h-32-px w-32-px text-md" href="?page=<?php echo ($current_page + 1); ?>">
-                                <iconify-icon icon="ep:d-arrow-right" class=""></iconify-icon>
-                            </a>
-                        </li>
-                        <?php endif; ?>
-                    </ul>
-                </div> -->
-            </div>
         </div>
     </div>
+</div>
 
     <script>
         $(document).ready(function() {

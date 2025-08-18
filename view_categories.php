@@ -1269,8 +1269,6 @@
         });
         </script>";
         exit;
-
-        exit;
     }
 ?>
 
@@ -1303,13 +1301,11 @@
                                 <td class="text-center"><?= htmlspecialchars($row['cat_module']) ?></td>
                                 
                                 <td class="text-center">
-                                    <a onclick="openEditModal('<?= $row['cat_id'] ?>', '<?= htmlspecialchars($row['cat_name']) ?>', '<?= htmlspecialchars($row['cat_url']) ?>', '<?= htmlspecialchars($row['cat_module']) ?>')" class="w-32-px h-32-px bg-warning-focus text-warning-main rounded-circle d-inline-flex align-items-center justify-content-center cursor-pointer">
-                                        <iconify-icon icon="lucide:edit"></iconify-icon>
+                                    <a onclick="openEditModal('<?= $row['cat_id'] ?>', '<?= htmlspecialchars($row['cat_name']) ?>', '<?= htmlspecialchars($row['cat_url']) ?>', '<?= htmlspecialchars($row['cat_module']) ?>')" class="fa fa-edit fw-medium w-32-px h-32-px bg-warning-focus text-warning-main rounded-circle d-inline-flex align-items-center justify-content-center cursor-pointer">
                                     </a>
-                                    <form method="post" class="delete-form d-inline">
+                                    <form method="post" class="delete-form d-inline" id="add-category-form">
                                     <input type="hidden" name="delete_cat_id" value="<?= $row['cat_id'] ?>">
-                                    <a onclick="confirmDelete(this)" class="w-32-px h-32-px bg-danger-focus text-danger-main rounded-circle d-inline-flex align-items-center justify-content-center cursor-pointer">
-                                        <iconify-icon icon="mdi:delete-outline"></iconify-icon>
+                                    <a onclick="confirmDelete(this)" class="fa fa-trash-alt fw-medium w-32-px h-32-px bg-danger-focus text-danger-main rounded-circle d-inline-flex align-items-center justify-content-center cursor-pointer">
                                     </a>
                                 </form>
                                     

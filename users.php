@@ -74,18 +74,14 @@ WHERE
 
                                     <td class="text-center">
                                         <div class="d-flex align-items-center gap-10 justify-content-center">
-                                            <button type="button" class="view-user-btn bg-info-focus text-info-600 bg-hover-info-200 fw-medium w-40-px h-40-px d-flex justify-content-center align-items-center rounded-circle" data-id='.$row['id'].' data-bs-toggle="modal" data-bs-target="#viewUserModal">
-                                                <iconify-icon icon="majesticons:eye-line" class="icon text-xl"></iconify-icon>
+                                            <button type="button" class="fa fa-eye view-user-btn bg-info-focus text-info-600 bg-hover-info-200 fw-medium w-40-px h-40-px d-flex justify-content-center align-items-center rounded-circle" data-id='.$row['id'].' data-bs-toggle="modal" data-bs-target="#viewUserModal">
                                             </button>
-                                            <button type="button" class="edit-user-btn bg-success-focus text-success-600 bg-hover-success-200 fw-medium w-40-px h-40-px d-flex justify-content-center align-items-center rounded-circle" 
+                                            <button type="button" class="fa fa-edit edit-user-btn bg-success-focus text-success-600 bg-hover-success-200 fw-medium w-40-px h-40-px d-flex justify-content-center align-items-center rounded-circle" 
                                                 data-id='.$row['id'].'
                                                 data-bs-toggle="modal" 
                                                 data-bs-target="#editUserModal">
-                                                <iconify-icon icon="lucide:edit" class="menu-icon"></iconify-icon>
                                             </button>
-
-                                            <button type="button" class="remove-item-btn bg-danger-focus bg-hover-danger-200 text-danger-600 fw-medium w-40-px h-40-px d-flex justify-content-center align-items-center rounded-circle" data-id='.$row['id'].'>
-                                                <iconify-icon icon="fluent:delete-24-regular" class="menu-icon"></iconify-icon>
+                                            <button type="button" class="fa fa-trash-alt remove-item-btn bg-danger-focus bg-hover-danger-200 text-danger-600 fw-medium w-40-px h-40-px d-flex justify-content-center align-items-center rounded-circle" data-id='.$row['id'].'>
                                             </button>
                                         </div>
                                     </td>
