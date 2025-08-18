@@ -1,9 +1,6 @@
 <?php include './partials/layouts/layoutTop.php'; ?>
 
-
 <style>
-    
-
     .form-group {
         margin-bottom: 24px !important;
     }
@@ -558,7 +555,8 @@
                     <div class="row no-gutters">
                         <div class="col-lg-12">
                             <div class="form-wizard">
-                            <!-- Progress Bar -->   
+
+                                <!-- Progress Bar -->   
                                 <div class="progress mb-20">
                                     <div class="progress-bar progress-bar-striped progress-bar-animated bg-warning"
                                         role="progressbar"
@@ -567,14 +565,27 @@
                                         0%
                                     </div>
                                 </div>
-
                                 <form action="" method="post" id="myForm" role="form" enctype="multipart/form-data">
-                                    <?php if (in_array($user_role, [1, 2, 7])): ?>
+                                    <!-- <?php if (in_array($user_role, [1, 2, 7])): ?>
                                         <div class="mb-5">
                                             <button type="button" id="bulkApproveBtn" class="btn btn-success btn-sm">Bulk Approve</button>
                                             <button type="button" id="bulkRejectBtn" class="btn btn-danger btn-sm">Bulk Reject</button>
                                         </div>
+                                    <?php endif; ?> -->
+
+                                    <?php if (in_array($user_role, [1, 2, 7])): ?>
+                                        <div class="d-flex justify-content-between align-items-center mb-3">
+                                            <div class="form-check d-flex align-items-center m-0">
+                                                <input type="checkbox" class="form-check-input me-2" id="select_all_admin" style="margin-top: 0;">
+                                                <label for="select_all_admin" class="form-check-label fw-bold m-0">Select / Deselect All</label>
+                                            </div>
+                                            <div>
+                                                <button type="button" id="bulkApproveBtn" class="btn btn-success btn-sm">Bulk Approve</button>
+                                                <button type="button" id="bulkRejectBtn" class="btn btn-danger btn-sm">Bulk Reject</button>
+                                            </div>
+                                        </div>
                                     <?php endif; ?>
+
                                         <h5>1. Company Information</h5>
                                         <?php
                                         
@@ -602,28 +613,25 @@
                                             renderFieldExtended('domain_name', $savedData, $user_role, 'If Yes, provide domain name', '', 'text');
                                             renderFieldExtended('use_domain_for_email', $savedData, $user_role, 'Do you want to use this domain for email?', '', 'select', ['Yes', 'No']);
                                         ?>
-
                                         <h5>4. User Details</h5>
                                         <?php
                                             renderFieldExtended('email_accounts', $savedData, $user_role, 'How many email accounts do you need?', '', 'text');
                                             renderFieldExtended('email_format', $savedData, $user_role, 'Preferred email ID format (e.g. name@domain.com)', '', 'text');
                                             renderFieldExtended('user_list', $savedData, $user_role, 'List of users (if available)', '', 'textarea');
                                         ?>
-
                                         <h5>5. Technical Information</h5>
                                         <?php
                                             renderFieldExtended('provider', $savedData, $user_role, 'Preferred Email Provider (e.g. Zoho, Google Workspace, Microsoft 365, Others)', '', 'text');
                                             renderFieldExtended('existing_settings', $savedData, $user_role, 'Any existing email configuration or settings?', '', 'textarea');
                                         ?>
-
                                         <h5>6. Additional Notes or Questions</h5>
                                         <?php
                                             renderFieldExtended('notes', $savedData, $user_role, 'Anything else we should know?', '', 'textarea');
                                         ?>
 
                                         <?php if (in_array($user_role, [8])): ?>
-                                        <input type="submit" name="save" class="lufera-bg bg-hover-warning-400 text-white text-md px-56 py-11 radius-8 m-auto d-block" value="Save" >
-                                    <?php endif; ?>
+                                            <input type="submit" name="save" class="lufera-bg bg-hover-warning-400 text-white text-md px-56 py-11 radius-8 m-auto d-block" value="Save" >
+                                        <?php endif; ?>
                                 </form>
                             </div>
                         </div>
@@ -634,7 +642,6 @@
         </div>
     </div>
 </div>
-
 
 <script>
     document.addEventListener('DOMContentLoaded', () => {
@@ -952,19 +959,37 @@
 
     const percent = Math.round((filled / totalFields) * 100);
     $('#formProgressBar').css('width', percent + '%').text(percent + '%');
-}
+    }
 
-$(document).ready(function () {
-    updateProgressBar();
+    $(document).ready(function () {
+        updateProgressBar();
 
-    $('#field_company_name, #field_contact_person, #field_email, #field_phone, #field_website, #field_details, #field_domain_name, #field_email_accounts, #field_email_format, #field_user_list, #field_provider, #field_existing_settings, #field_notes')
-        .on('input', updateProgressBar);
+        $('#field_company_name, #field_contact_person, #field_email, #field_phone, #field_website, #field_details, #field_domain_name, #field_email_accounts, #field_email_format, #field_user_list, #field_provider, #field_existing_settings, #field_notes')
+            .on('input', updateProgressBar);
 
-    $('#field_service_needed, #field_has_domain, #field_use_domain_for_email')
-        .on('change', updateProgressBar);
-});
+        $('#field_service_needed, #field_has_domain, #field_use_domain_for_email')
+            .on('change', updateProgressBar);
+    });
+</script>
 
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const selectAllCheckbox = document.getElementById('select_all_admin');
+        if (selectAllCheckbox) {
+            selectAllCheckbox.addEventListener('change', function () {
+                const checkboxes = document.querySelectorAll('.bulk-approve-checkbox');
+                checkboxes.forEach(cb => cb.checked = selectAllCheckbox.checked);
+            });
 
+            // Optional: If all are manually selected/deselected, update the "Select All" checkbox
+            document.querySelectorAll('.bulk-approve-checkbox').forEach(cb => {
+                cb.addEventListener('change', function () {
+                    const allChecked = document.querySelectorAll('.bulk-approve-checkbox:checked').length === document.querySelectorAll('.bulk-approve-checkbox').length;
+                    selectAllCheckbox.checked = allChecked;
+                });
+            });
+        }
+    });
 </script>
 
 <?php include './partials/layouts/layoutBottom.php'; ?>

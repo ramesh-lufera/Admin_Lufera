@@ -575,12 +575,26 @@
                                 </div>
 
                                 <form action="" method="post" id="myForm" role="form" enctype="multipart/form-data">
-                                    <?php if (in_array($user_role, [1, 2, 7])): ?>
+                                    <!-- <?php if (in_array($user_role, [1, 2, 7])): ?>
                                         <div class="mb-5">
                                             <button type="button" id="bulkApproveBtn" class="btn btn-success btn-sm">Bulk Approve</button>
                                             <button type="button" id="bulkRejectBtn" class="btn btn-danger btn-sm">Bulk Reject</button>
                                         </div>
+                                    <?php endif; ?> -->
+
+                                    <?php if (in_array($user_role, [1, 2, 7])): ?>
+                                        <div class="d-flex justify-content-between align-items-center mb-3">
+                                            <div class="form-check d-flex align-items-center m-0">
+                                                <input type="checkbox" class="form-check-input me-2" id="select_all_admin" style="margin-top: 0;">
+                                                <label for="select_all_admin" class="form-check-label fw-bold m-0">Select / Deselect All</label>
+                                            </div>
+                                            <div>
+                                                <button type="button" id="bulkApproveBtn" class="btn btn-success btn-sm">Bulk Approve</button>
+                                                <button type="button" id="bulkRejectBtn" class="btn btn-danger btn-sm">Bulk Reject</button>
+                                            </div>
+                                        </div>
                                     <?php endif; ?>
+
                                         <?php
                                             renderFieldExtended('name', $savedData, $user_role, 'Name', 'Enter your name', 'text');
 
@@ -607,7 +621,6 @@
         </div>
     </div>
 </div>
-
 
 <script>
     document.addEventListener('DOMContentLoaded', () => {
@@ -929,6 +942,26 @@
         $('input[name="has_phone"]').on('change', updateProgressBar);
         $('input[name="website_name[]"]').on('change', updateProgressBar);
         $('#field_logo').on('change', updateProgressBar);
+    });
+</script>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const selectAllCheckbox = document.getElementById('select_all_admin');
+        if (selectAllCheckbox) {
+            selectAllCheckbox.addEventListener('change', function () {
+                const checkboxes = document.querySelectorAll('.bulk-approve-checkbox');
+                checkboxes.forEach(cb => cb.checked = selectAllCheckbox.checked);
+            });
+
+            // Optional: If all are manually selected/deselected, update the "Select All" checkbox
+            document.querySelectorAll('.bulk-approve-checkbox').forEach(cb => {
+                cb.addEventListener('change', function () {
+                    const allChecked = document.querySelectorAll('.bulk-approve-checkbox:checked').length === document.querySelectorAll('.bulk-approve-checkbox').length;
+                    selectAllCheckbox.checked = allChecked;
+                });
+            });
+        }
     });
 </script>
 
