@@ -62,7 +62,7 @@ WHERE
 
                                     <td>' . htmlspecialchars($row['role_name']) . '
                                         <button 
-                                        class="btn not-active px-18 py-11 fa fa-edit" 
+                                        class="not-active px-18 py-11 fa fa-edit" 
                                         data-bs-toggle="modal" 
                                         data-bs-target="#assignRoleModal"
                                         data-userid=' . $row['id'] .'
@@ -115,7 +115,7 @@ WHERE
 </div>
     <!-- Assign Role Modal -->
     <div class="modal fade" id="assignRoleModal" tabindex="-1" aria-labelledby="assignRoleModalLabel" aria-hidden="true">
-  <div class="modal-dialog">
+  <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content">
         <div class="modal-header">
             <h5 class="modal-title">Assign Role</h5>

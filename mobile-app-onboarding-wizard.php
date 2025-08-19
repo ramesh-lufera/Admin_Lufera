@@ -1101,5 +1101,43 @@
         }
     });
 </script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    // Target email + url fields
+    const emailField = document.getElementById('field_email');
+    const urlField   = document.getElementById('field_website');
+    const form       = document.getElementById('myForm');
+
+    // Prevent browser's default tooltip
+    emailField.addEventListener('invalid', function (e) {
+        e.preventDefault();
+        if (!emailField.validity.valid) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Invalid Email',
+                text: 'Please type a valid email address.'
+            });
+        }
+    });
+
+    urlField.addEventListener('invalid', function (e) {
+        e.preventDefault();
+        if (!urlField.validity.valid) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Invalid URL',
+                text: 'Please type a valid website URL (e.g. https://example.com).'
+            });
+        }
+    });
+
+    // Optional: prevent form submission if invalid
+    form.addEventListener('submit', function (e) {
+        if (!emailField.checkValidity() || !urlField.checkValidity()) {
+            e.preventDefault(); // Stop submission
+        }
+    });
+});
+</script>
 
 <?php include './partials/layouts/layoutBottom.php'; ?>
