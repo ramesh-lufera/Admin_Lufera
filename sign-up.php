@@ -40,7 +40,7 @@
         $phone = trim($_POST['phone']);
         $created_at = date("Y-m-d H:i:s");
         $method = "1";
-        $role = "user";
+        $role = "8";
         $lname = $business_name = $address = $city = $state = $country = $pincode = $dob = null;
 
         // Validation
@@ -90,6 +90,7 @@
                 $_SESSION['user_id'] = $stmt->insert_id;
                 $success = "Registration successful!";
                 $username = $email = $password = $fname = $phone = "" ; // clear inputs
+                unset($_POST['checkbox']); //
             } else {
                 $errors['general'] = "Error while registering user.";
             }
@@ -148,7 +149,7 @@
                         <span class="icon translate-middle-y">
                             <iconify-icon icon="mage:email"></iconify-icon>
                         </span>
-                        <input type="email" class="form-control h-56-px bg-neutral-50 radius-12 <?= isset($errors['email']) ? 'error-border' : '' ?>" placeholder="Email" name="email" value="<?= htmlspecialchars($email) ?>">
+                        <input type="email" class="form-control h-56-px bg-neutral-50 radius-12 <?= isset($errors['email']) ? 'error-border' : '' ?>" placeholder="Email" name="email" id="email" value="<?= htmlspecialchars($email) ?>">
                         <?php if (isset($errors['email'])): ?>
                             <div class="error"><?= $errors['email'] ?></div>
                         <?php endif; ?>
@@ -168,7 +169,7 @@
                         <span class="icon translate-middle-y">
                             <iconify-icon icon="mage:edit"></iconify-icon>
                         </span>
-                        <input type="text" class="form-control h-56-px bg-neutral-50 radius-12 <?= isset($errors['username']) ? 'error-border' : '' ?>" placeholder="Username" name="username" value="<?= htmlspecialchars($username) ?>">
+                        <input type="text" class="form-control h-56-px bg-neutral-50 radius-12 <?= isset($errors['username']) ? 'error-border' : '' ?>" placeholder="Username" name="username" id="uname" value="<?= htmlspecialchars($username) ?>" readonly>
                         <?php if (isset($errors['username'])): ?>
                             <div class="error"><?= $errors['username'] ?></div>
                         <?php endif; ?>
@@ -180,7 +181,7 @@
                                 <span class="icon translate-middle-y">
                                     <iconify-icon icon="solar:lock-password-outline"></iconify-icon>
                                 </span>
-                                <input type="password" class="form-control h-56-px bg-neutral-50 radius-12 <?= isset($errors['password']) ? 'error-border' : '' ?>" id="your-password" placeholder="Password" name="password" value="<?= htmlspecialchars($password) ?>">
+                                <input type="password" class="form-control h-56-px bg-neutral-50 radius-12 <?= isset($errors['password']) ? 'error-border' : '' ?>" id="your-password" placeholder="Password" name="password" value="<?= htmlspecialchars($password) ?>" autocomplete="off" >
                                 <?php if (isset($errors['password'])): ?>
                                     <div class="error"><?= $errors['password'] ?></div>
                                 <?php endif; ?>
@@ -207,7 +208,7 @@
                         <div class="error"><?= $errors['checkbox'] ?></div>
                     <?php endif; ?>
 
-                    <button type="submit" class="btn lufera-bg text-white text-sm btn-sm px-12 py-16 w-100 radius-12 mt-32"> Sign Up</button>
+                    <button type="submit" class="btn lufera-bg text-white text-sm btn-sm px-12 py-16 w-100 radius-12 mt-32" id="add-category-modal"> Sign Up</button>
 
                     <div class="mt-32 center-border-horizontal text-center">
                         <span class="bg-base z-1 px-4">Or sign up with</span>
@@ -254,5 +255,15 @@
     <?php include './partials/scripts.php' ?>
 
 </body>
+<script>
+document.getElementById('email').addEventListener('input', function() {
+        const email = this.value;
+        const usernameField = document.getElementById('uname');
+        const atIndex = email.indexOf('@');
+        if (atIndex > 0) {
+            usernameField.value = email.substring(0, atIndex);
+        }
+    });
+</script>
 
 </html>
