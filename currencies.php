@@ -95,104 +95,68 @@
     }
 ?>
 
-    <!-- Bootstrap CDN -->
-    <!-- <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"> -->
+    <div class="dashboard-main-body">
+        <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-24">
+            <h6 class="fw-semibold mb-0">Currencies</h6>
+            <button type="button" class="btn lufera-bg text-white text-sm btn-sm px-12 py-12 radius-8 d-flex align-items-center gap-2" data-bs-toggle="modal" data-bs-target="#exampleModal">
+                <iconify-icon icon="ic:baseline-plus" class="icon text-xl line-height-1"></iconify-icon>
+                Add Currency
+            </button>
+        </div>
 
-        <div class="dashboard-main-body">
-            <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-24">
-                <h6 class="fw-semibold mb-0">Currencies</h6>
-                <!-- <ul class="d-flex align-items-center gap-2">
-                    <li class="fw-medium">
-                        <a href="index.php" class="d-flex align-items-center gap-1 hover-text-primary">
-                            <iconify-icon icon="solar:home-smile-angle-outline" class="icon text-lg"></iconify-icon>
-                            Dashboard
-                        </a>
-                    </li>
-                    <li>-</li>
-                    <li class="fw-medium">Settings - Currencies</li>
-                </ul> -->
-            </div>
+        <div class="card h-100 p-0 radius-12">
+            <div class="card-body p-24">
+                <div class="table-responsive scroll-sm">
+                    <table class="table bordered-table sm-table mb-0" id="currencies-table">
+                        <thead>
+                            <tr>
+                                <th scope="col"> S.L</th>
+                                <th scope="col" class="text-center">Name</th>
+                                <th scope="col" class="text-center">Symbol</th>
+                                <th scope="col" class="text-center">Code</th>
+                                <th scope="col" class="text-center">Status</th>
+                                <th scope="col" class="text-center">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php
+                                $i = 1;
+                                $result = $conn->query("SELECT * FROM currencies");
 
-            <div class="card h-100 p-0 radius-12">
-                <div class="card-header border-bottom bg-base py-16 px-24 d-flex align-items-center flex-wrap gap-3 justify-content-between">
-                    <div class="d-flex align-items-center flex-wrap gap-3">
-                        <!-- <span class="text-md fw-medium text-secondary-light mb-0">Show</span>
-                        <select class="form-select form-select-sm w-auto ps-12 py-6 radius-12 h-40-px">
-                            <option>1</option>
-                            <option>2</option>
-                            <option>3</option>
-                            <option>4</option>
-                            <option>5</option>
-                            <option>6</option>
-                            <option>7</option>
-                            <option>8</option>
-                            <option>9</option>
-                            <option>10</option>
-                        </select>
-                        <form class="navbar-search">
-                            <input type="text" class="bg-base h-40-px w-auto" name="search" placeholder="Search">
-                            <iconify-icon icon="ion:search-outline" class="icon"></iconify-icon>
-                        </form> -->
-                    </div>
+                                while ($row = $result->fetch_assoc()) {
+                                $isDefault = ($row['id'] == 1); // assume Dollar Default is id=1
+                                ?>
+                                    <tr>
+                                        <td><?= $i++ ?></td>
+                                        <td class="text-center"><?= htmlspecialchars($row['name']) ?></td>
+                                        <td class="text-center"><?= htmlspecialchars($row['symbol']) ?></td>
+                                        <td class="text-center"><?= htmlspecialchars($row['code']) ?></td>
+                                        <!-- <td class="text-center"><input type="checkbox" disabled></td> -->
+                                        
+                                        <!-- <td>
+                                            <div class="form-switch switch-primary d-flex align-items-center justify-content-center">
+                                                <input class="form-check-input" type="checkbox" role="switch">
+                                            </div>
+                                        </td> -->
+                                        <td>
+                                            <div class="form-switch switch-primary d-flex align-items-center justify-content-center">
+                                                <input
+                                                    class="form-check-input currency-toggle"
+                                                    
+                                                    type="checkbox"
+                                                    role="switch"
+                                                    data-id="<?= $row['id']; ?>"
+                                                    <?= $row['is_active'] ? 'checked' : '' ?>
+                                                >
+                                            </div>
+                                        </td>
 
-                    <button type="button" class="btn btn-primary text-sm btn-sm px-12 py-12 radius-8 d-flex align-items-center gap-2 lufera-bg" data-bs-toggle="modal" data-bs-target="#exampleModal">
-                        <iconify-icon icon="ic:baseline-plus" class="icon text-xl line-height-1"></iconify-icon>
-                        Add Currency
-                    </button>
-                </div>
-                <div class="card-body p-24">
-                    <div class="table-responsive scroll-sm">
-
-                        <table class="table bordered-table sm-table mb-0" id="currencies-table">
-                            <thead>
-                                <tr>
-                                    <th scope="col"> S.L</th>
-                                    <th scope="col" class="text-center">Name</th>
-                                    <th scope="col" class="text-center">Symbol</th>
-                                    <th scope="col" class="text-center">Code</th>
-                                    <th scope="col" class="text-center">Status</th>
-                                    <th scope="col" class="text-center">Action</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <?php
-                                    $i = 1;
-                                    $result = $conn->query("SELECT * FROM currencies");
-
-                                    while ($row = $result->fetch_assoc()) {
-                                    $isDefault = ($row['id'] == 1); // assume Dollar Default is id=1
-                                    ?>
-                                        <tr>
-                                            <td><?= $i++ ?></td>
-                                            <td class="text-center"><?= htmlspecialchars($row['name']) ?></td>
-                                            <td class="text-center"><?= htmlspecialchars($row['symbol']) ?></td>
-                                            <td class="text-center"><?= htmlspecialchars($row['code']) ?></td>
-                                            <!-- <td class="text-center"><input type="checkbox" disabled></td> -->
-                                            
-                                            <!-- <td>
-                                                <div class="form-switch switch-primary d-flex align-items-center justify-content-center">
-                                                    <input class="form-check-input" type="checkbox" role="switch">
-                                                </div>
-                                            </td> -->
-                                            <td>
-                                                <div class="form-switch switch-primary d-flex align-items-center justify-content-center">
-                                                    <input
-                                                        class="form-check-input currency-toggle"
-                                                        type="checkbox"
-                                                        role="switch"
-                                                        data-id="<?= $row['id']; ?>"
-                                                        <?= $row['is_active'] ? 'checked' : '' ?>
-                                                    >
-                                                </div>
-                                            </td>
-
-                                            <td class="text-center">
-                                                <div class="d-flex align-items-center gap-10 justify-content-center">
-                                                    <!-- <button type="button" class="bg-success-100 text-success-600 bg-hover-success-200 fw-medium w-40-px h-40-px d-flex justify-content-center align-items-center rounded-circle" data-bs-toggle="modal" data-bs-target="#exampleModalEdit">
-                                                        <iconify-icon icon="lucide:edit" class="menu-icon"></iconify-icon>
-                                                    </button> -->
-                                                     <!-- Example trigger (Edit button) -->
-                                                    <button
+                                        <td class="text-center">
+                                            <div class="d-flex align-items-center gap-10 justify-content-center">
+                                                <!-- <button type="button" class="bg-success-100 text-success-600 bg-hover-success-200 fw-medium w-40-px h-40-px d-flex justify-content-center align-items-center rounded-circle" data-bs-toggle="modal" data-bs-target="#exampleModalEdit">
+                                                    <iconify-icon icon="lucide:edit" class="menu-icon"></iconify-icon>
+                                                </button> -->
+                                                <button
                                                     class="edit-btn bg-success-100 text-success-600 bg-hover-success-200 fw-medium w-40-px h-40-px d-flex justify-content-center align-items-center rounded-circle"
                                                     data-id="<?= $row['id'] ?>"
                                                     data-name="<?= htmlspecialchars($row['name']) ?>"
@@ -200,68 +164,30 @@
                                                     data-code="<?= htmlspecialchars($row['code']) ?>"
                                                     data-bs-toggle="modal"
                                                     data-bs-target="#exampleModalEdit"
-                                                    >
+                                                >
                                                     <iconify-icon icon="lucide:edit" class="menu-icon"></iconify-icon>
-                                                    </button>
+                                                </button>
 
-
-                                                    <!-- <button type="button" class="remove-item-button bg-danger-focus bg-hover-danger-200 text-danger-600 fw-medium w-40-px h-40-px d-flex justify-content-center align-items-center rounded-circle">
-                                                        <iconify-icon icon="fluent:delete-24-regular" class="menu-icon"></iconify-icon>
-                                                    </button> -->
-                                                    <button class="delete-btn remove-item-button bg-danger-focus bg-hover-danger-200 text-danger-600 fw-medium w-40-px h-40-px d-flex justify-content-center align-items-center rounded-circle" data-id="<?= $row['id'] ?>">
-                                                        <iconify-icon icon="fluent:delete-24-regular" class="menu-icon"></iconify-icon>
-                                                    </button>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                     <?php } ?>
-                            </tbody>
-                        </table>
-                    </div>
-
-                    <!-- <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mt-24">
-                        <span>Showing 1 to 10 of 12 entries</span>
-                        <ul class="pagination d-flex flex-wrap align-items-center gap-2 justify-content-center">
-                            <li class="page-item">
-                                <a class="page-link bg-neutral-200 text-secondary-light fw-semibold radius-8 border-0 d-flex align-items-center justify-content-center h-32-px w-32-px text-md" href="javascript:void(0)">
-                                    <iconify-icon icon="ep:d-arrow-left" class=""></iconify-icon>
-                                </a>
-                            </li>
-                            <li class="page-item">
-                                <a class="page-link text-secondary-light fw-semibold radius-8 border-0 d-flex align-items-center justify-content-center h-32-px w-32-px text-md bg-primary-600 text-white" href="javascript:void(0)">1</a>
-                            </li>
-                            <li class="page-item">
-                                <a class="page-link bg-neutral-200 text-secondary-light fw-semibold radius-8 border-0 d-flex align-items-center justify-content-center h-32-px w-32-px" href="javascript:void(0)">2</a>
-                            </li>
-                            <li class="page-item">
-                                <a class="page-link bg-neutral-200 text-secondary-light fw-semibold radius-8 border-0 d-flex align-items-center justify-content-center h-32-px w-32-px text-md" href="javascript:void(0)">3</a>
-                            </li>
-                            <li class="page-item">
-                                <a class="page-link bg-neutral-200 text-secondary-light fw-semibold radius-8 border-0 d-flex align-items-center justify-content-center h-32-px w-32-px text-md" href="javascript:void(0)">4</a>
-                            </li>
-                            <li class="page-item">
-                                <a class="page-link bg-neutral-200 text-secondary-light fw-semibold radius-8 border-0 d-flex align-items-center justify-content-center h-32-px w-32-px text-md" href="javascript:void(0)">5</a>
-                            </li>
-                            <li class="page-item">
-                                <a class="page-link bg-neutral-200 text-secondary-light fw-semibold radius-8 border-0 d-flex align-items-center justify-content-center h-32-px w-32-px text-md" href="javascript:void(0)">
-                                    <iconify-icon icon="ep:d-arrow-right" class=""></iconify-icon>
-                                </a>
-                            </li>
-                        </ul>
-                    </div> -->
+                                                <!-- <button type="button" class="remove-item-button bg-danger-focus bg-hover-danger-200 text-danger-600 fw-medium w-40-px h-40-px d-flex justify-content-center align-items-center rounded-circle">
+                                                    <iconify-icon icon="fluent:delete-24-regular" class="menu-icon"></iconify-icon>
+                                                </button> -->
+                                                <button class="delete-btn remove-item-button bg-danger-focus bg-hover-danger-200 text-danger-600 fw-medium w-40-px h-40-px d-flex justify-content-center align-items-center rounded-circle" data-id="<?= $row['id'] ?>">
+                                                    <iconify-icon icon="fluent:delete-24-regular" class="menu-icon"></iconify-icon>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                <?php } ?>
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
+    </div>
 
-        <!-- Bootstrap JS CDN -->
-        <!-- <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script> -->
-
-        <?php include './partials/footer.php' ?>
+    <?php include './partials/footer.php' ?>
         
     </main>
-
-    <!-- SweetAlert -->
-    <!-- <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script> -->
 
     <script>
         $(document).ready(function() {

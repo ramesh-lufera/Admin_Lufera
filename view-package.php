@@ -15,13 +15,6 @@
 
     $product_category = isset($_GET['product_category']) ? intval($_GET['product_category']) : 0;
 
-    // $stmt = $conn->prepare("SELECT cat_name FROM categories WHERE cat_id = ?");
-    // $stmt->bind_param("i", $product_category);
-    // $stmt->execute();
-    // $stmt->bind_result($category_name);
-    // $stmt->fetch();
-    // $stmt->close();
-
     // Fetch packages by category and group by duration
     $stmt = $conn->prepare("SELECT * FROM package WHERE is_deleted = 0 AND is_active = 1 AND cat_id = ? ORDER BY duration");
     $stmt->bind_param("i", $product_category);
@@ -93,17 +86,17 @@
                                     <?php foreach ($packages[$duration] as $package): ?>
                                         <div class="col-xxl-4 col-sm-6">
                                             <div class="pricing-plan position-relative radius-24 overflow-hidden border">
-                                            <!-- <h6><?= htmlspecialchars($package['package_name']) ?></h6>     -->
-                                            <!-- <span class="fw-medium text-md text-secondary-light"><?= htmlspecialchars($package['plan_type']) ?></span> -->
+                                                <!-- <h6><?= htmlspecialchars($package['package_name']) ?></h6>     -->
+                                                <!-- <span class="fw-medium text-md text-secondary-light"><?= htmlspecialchars($package['plan_type']) ?></span> -->
                                                 <?php $isActive = ($package['is_active'] == 1); ?>
                                                 <?php if (!$isActive): ?>
                                                     <p class="mb-0 text-sm text-secondary-light text-danger fw-semibold mt-2 float-end">Inactive</p>
                                                 <?php endif; ?> 
-                                                <p class="mb-0 lufera-color"><?= htmlspecialchars($package['title']) ?></p>
-                                                <p class=" mb-0 text-secondary-light mb-28"><?= htmlspecialchars($package['subtitle']) ?></p>
-                                                <h3 class="mb-24" id="currency-symbol-display"><?= htmlspecialchars($symbol) ?><?= htmlspecialchars($package['price']) ?>
+                                                <h5 class="mb-0 lufera-color"><?= htmlspecialchars($package['title']) ?></h5>
+                                                <p class="mb-0 text-secondary-light mb-28"><?= htmlspecialchars($package['subtitle']) ?></p>
+                                                <h4 class="mb-24" id="currency-symbol-display"><?= htmlspecialchars($symbol) ?><?= htmlspecialchars($package['price']) ?>
                                                     <span class="fw-medium text-md text-secondary-light">/<?= htmlspecialchars($package['duration']) ?></span> 
-                                                </h3>
+                                                </h4>
                                                 <span class="mb-20 fw-medium"><?= htmlspecialchars($package['description']) ?></span>
 
                                                 <ul>

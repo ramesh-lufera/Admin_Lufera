@@ -477,10 +477,19 @@
                     </a>
                     <ul class="sidebar-submenu">
                         <li>
-                            <a href="company.php"><i class="ri-circle-fill circle-icon text-warning-600 w-auto"></i> Company</a>
+                            <a href="role-access.php"><i class="ri-circle-fill circle-icon text-warning-600 w-auto"></i> Role</a>
                         </li>
                         <li>
-                            <a href="role-access.php"><i class="ri-circle-fill circle-icon text-warning-600 w-auto"></i> Role</a>
+                            <a href="view_categories.php"><i class="ri-circle-fill circle-icon text-warning-600 w-auto"></i> Categories</a>
+                        </li>
+                        <li>
+                            <a href="view_packages.php"><i class="ri-circle-fill circle-icon text-warning-600 w-auto"></i> Packages</a>
+                        </li>
+                        <li>
+                            <a href="view_products.php"><i class="ri-circle-fill circle-icon text-warning-600 w-auto"></i> Products</a>
+                        </li>
+                        <li>
+                            <a href="company.php"><i class="ri-circle-fill circle-icon text-warning-600 w-auto"></i> Company</a>
                         </li>
                         <li>
                             <a href="credentials.php"><i class="ri-circle-fill circle-icon text-warning-600 w-auto"></i> Credentials</a>
@@ -490,15 +499,6 @@
                         </li>
                         <li>
                             <a href="bank_details.php"><i class="ri-circle-fill circle-icon text-warning-600 w-auto"></i> Bank Details</a>
-                        </li>
-                        <li>
-                            <a href="view_categories.php"><i class="ri-circle-fill circle-icon text-warning-600 w-auto"></i> Categories List</a>
-                        </li>
-                        <li>
-                            <a href="view_products.php"><i class="ri-circle-fill circle-icon text-warning-600 w-auto"></i> Products List</a>
-                        </li>
-                        <li>
-                            <a href="view_packages.php"><i class="ri-circle-fill circle-icon text-warning-600 w-auto"></i> Packages List</a>
                         </li>
                         <li>
                             <a href="payment-gateway.php"><i class="ri-circle-fill circle-icon text-warning-600 w-auto"></i> Payment Gateway</a>
