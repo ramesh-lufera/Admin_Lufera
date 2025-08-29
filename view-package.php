@@ -117,6 +117,7 @@
                                                 </ul>
 
                                                 <form action="cart.php" method="POST">
+                                                    <input type="hidden" name="id" value="<?= htmlspecialchars($package['id']) ?>">
                                                     <input type="hidden" name="plan_name" value="<?= htmlspecialchars($package['package_name']) ?>">
                                                     <input type="hidden" name="title" value="<?= htmlspecialchars($package['title']) ?>">
                                                     <input type="hidden" name="subtitle" value="<?= htmlspecialchars($package['subtitle']) ?>">

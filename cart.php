@@ -16,6 +16,7 @@
 
 <?php
     if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+        $id = $_POST['id'];
         $plan_name = $_POST['plan_name'];
         $title = $_POST['title'];
         $subtitle = $_POST['subtitle'];
@@ -131,6 +132,7 @@
         if($row["username"] && $row["email"] && $row["phone"] && $row["first_name"] && $row["last_name"] && $row["business_name"] && $row["address"] && $row["city"] && $row["state"] && $row["country"] && $row["pincode"] != ""){
     ?>
     <form action="cart-payment.php" method="POST">
+        <input type="hidden" name="id" value="<?php echo $id; ?>">
         <input type="hidden" name="plan_name" value="<?php echo $plan_name; ?>">
         <input type="hidden" name="price" value="<?php echo $price; ?>">
         <input type="hidden" name="duration" value="<?php echo $duration; ?>">

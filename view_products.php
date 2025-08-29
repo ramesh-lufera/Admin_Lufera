@@ -97,8 +97,6 @@
         </div>
     </div>
 
-
-
 <div class="modal fade" id="add-product-modal" tabindex="-1" aria-labelledby="assignRoleModalLabel" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content">
@@ -108,29 +106,42 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                <div class="form-group">
-                <label for="product_category" class="form-label">Select Category</label>
-                <select class="form-control" id="product_category" name="product_category" required>
-                    <option value="">-- Choose Category --</option>
-                    <?php
-                    $categories = $conn->query("SELECT cat_id, cat_name FROM categories ORDER BY cat_name ASC");
-                    while ($cat = $categories->fetch_assoc()) {
-                        echo "<option value='" . $cat['cat_id'] . "'>" . htmlspecialchars($cat['cat_name']) . "</option>";
-                    }
-                    ?>
-                </select>
+                <div class="form-group mb-8">
+                    <label for="product_category" class="form-label">Category</label>
+                    <select class="form-control" id="product_category" name="product_category" required>
+                        <option value="">-- Select Category --</option>
+                        <?php
+                        $categories = $conn->query("SELECT cat_id, cat_name FROM categories ORDER BY cat_name ASC");
+                        while ($cat = $categories->fetch_assoc()) {
+                            echo "<option value='" . $cat['cat_id'] . "'>" . htmlspecialchars($cat['cat_name']) . "</option>";
+                        }
+                        ?>
+                    </select>
                 </div>
-
+                <div class="mb-8">
+                    <label for="template" class="form-label">Module</label>
+                    <select name="template" class="form-control" id="template" required>
+                        <option value="">-- Select Module --</option>
+                        <option value="website">Website</option>
+                        <option value="marketing">Marketing</option>
+                        <option value="visa">Visa</option>
+                        <option value="website-onboarding">Website Onboarding</option>
+                        <option value="marketing-onboarding">Marketing Onboarding</option>
+                        <option value="domain-onboarding">Domain Onboarding</option>
+                        <option value="email-onboarding">Email Onboarding</option>
+                        <option value="mobile-app-onboarding">Mobile App Onboarding</option>
+                    </select>
+                </div>
                 <!-- Type Radio Toggle -->
                 <div class="form-group d-none">
-                <label >Type</label>
-                <div class="radio-group">
-                    <input type="radio" id="type_package" name="product_type" value="Package" required>
-                    <label for="type_package">Package</label>
+                    <label >Type</label>
+                    <div class="radio-group">
+                        <input type="radio" id="type_package" name="product_type" value="Package" required>
+                        <label for="type_package">Package</label>
 
-                    <input type="radio" id="type_product" name="product_type" value="Product" checked>
-                    <label for="type_product">Product</label>
-                </div>
+                        <input type="radio" id="type_product" name="product_type" value="Product" checked>
+                        <label for="type_product">Product</label>
+                    </div>
                 </div>
             </div>
             <div class="modal-footer">
@@ -141,11 +152,6 @@
   </div>
 </div>
 
-        <script>
-    $(document).ready(function() {
-        $('#productPackageTable').DataTable();
-    });
-</script>
 <script>
 $(document).ready(function() {
     $('#productPackageTable').DataTable();
