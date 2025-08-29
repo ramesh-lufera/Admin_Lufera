@@ -3,13 +3,16 @@
     include './partials/connection.php';
     require_once 'vendor/autoload.php';
 
+    use PHPMailer\PHPMailer\PHPMailer;
+    use PHPMailer\PHPMailer\Exception;
+
     $dotenv = Dotenv\Dotenv::createImmutable(__DIR__);
     $dotenv->load();
 
     // Google Client Configuration
     require './partials/google-config.php';
-    // $client->setRedirectUri('https://admin.luferatech.com/sign-in-redirect.php');
-    $client->setRedirectUri('http://localhost/Admin_Lufera/sign-in-redirect.php');
+    $redirectUri = rtrim($_ENV['GOOGLE_REDIRECT_URI'], '/') . '/sign-in-redirect.php';
+    $client->setRedirectUri($redirectUri);
 
     function generateUserId() {
         $letters = substr(str_shuffle('ABCDEFGHIJKLMNOPQRSTUVWXYZ'), 0, 3);
@@ -56,6 +59,73 @@
                 $insert = $conn->prepare("INSERT INTO users (user_id, username, email, phone, password, first_name, last_name, business_name, address, city, state, country, pincode, dob, created_at, method, role, photo) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
                 $insert->bind_param("ssssssssssssssssss", $newUserId, $username, $email, $phone, $password, $fname, $lname, $business_name, $address, $city, $state, $country, $pincode, $dob, $created_at, $method, $role, $google_photo);
                 $insert->execute();
+
+                // Send Welcome Email (only for NEW user)
+                $login_link = rtrim($_ENV['EMAIL_COMMON_LINK'], '/') . '/sign-in.php';
+
+                $mail = new PHPMailer(true);
+                try {
+                    $mail->isSMTP();
+                    $mail->Host       = 'smtp.gmail.com';
+                    $mail->SMTPAuth   = true;
+                    $mail->Username   = $_ENV['EMAIL_USERNAME'];
+                    $mail->Password   = $_ENV['GMAIL_APP_PASSWORD'];
+                    $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
+                    $mail->Port       = 587;
+
+                    $mail->setFrom($_ENV['EMAIL_USERNAME'], 'Lufera Infotech');
+                    $mail->addAddress($email, $username);
+
+                    $mail->isHTML(true);
+                    $mail->Subject = "Welcome to Admin Dashboard!";
+                    $mail->Body = '
+                        <!DOCTYPE html>
+                        <html>
+                        <head><meta charset="UTF-8"><title>Welcome</title></head>
+                        <body style="margin:0;padding:0;background:#f5f5f5;font-family:Roboto,Arial,sans-serif;">
+                        <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background:#f5f5f5;padding:30px 0;">
+                            <tr><td align="center">
+                            <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="600" 
+                                style="background:#ffffff;border:1px solid #e0e0e0;border-radius:8px;box-shadow:0 2px 6px rgba(0,0,0,0.08);overflow:hidden;">
+                                <tr>
+                                    <td style="padding:20px;text-align:center;">
+                                    <img src="' . htmlspecialchars($_ENV['EMAIL_IMAGE_LINK']) . '?text=L" alt="Lufera Infotech Logo" 
+                                        style="width:150px;height:48px;display:block;margin:auto;">
+                                    </td>
+                                </tr>
+                                <tr><td style="border-top:1px solid #eaeaea;"></td></tr>
+                                <tr>
+                                    <td style="padding:30px 40px;text-align:left;font-size:15px;line-height:1.6;color:#101010;">
+                                    <h3 style="margin:0 0 15px;font-size:20px;font-weight:500;">Welcome, ' . htmlspecialchars($fname) . '!</h3>
+                                    <p>We’re excited to have you on board at <b>Admin Dashboard</b>.</p>
+                                    <p>Your account has been successfully created and verified. You can now log in and start exploring our platform.</p>
+                                    <div style="margin:30px 0;text-align:center;">
+                                        <a href="' . htmlspecialchars($login_link) . '" 
+                                        style="background:#fec700;color:#101010;text-decoration:none;
+                                                padding:12px 28px;border-radius:4px;font-weight:bold;display:inline-block;">
+                                        Go to Login
+                                        </a>
+                                    </div>
+                                    <p>If you have any questions, feel free to reply to this email.</p>
+                                    </td>
+                                </tr>
+                                <tr><td style="border-top:1px solid #eaeaea;"></td></tr>
+                                <tr>
+                                    <td style="padding:20px;text-align:center;font-size:12px;color:#777;">
+                                    You’re receiving this email because your account has been successfully created.<br>
+                                    &copy; 2025 Lufera Infotech. All rights reserved.
+                                    </td>
+                                </tr>
+                            </table>
+                            </td></tr>
+                        </table>
+                        </body>
+                        </html>
+                    ';
+                    $mail->send();
+                } catch (Exception $e) {
+                    error_log("Welcome email failed: {$mail->ErrorInfo}");
+                }
             }
 
             // Get user ID and username
