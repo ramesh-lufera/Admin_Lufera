@@ -2,14 +2,14 @@
     $userid = $_SESSION['user_id'];
 
     $sql = "SELECT role FROM users WHERE id = $userid";
-    $result = $conn ->query($sql);
-    $row = $result ->fetch_assoc();
-
+    $result = $conn->query($sql);
+    $row = $result->fetch_assoc();
 
     // Handle packages (or) products creation
-    if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['product_category'], $_POST['product_type'])) {
+    if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['product_category'], $_POST['product_type'], $_POST['template'])) {
         $product_category = intval($_POST['product_category']);
         $product_type = $_POST['product_type'];
+        $template = $_POST['template'];
 
         if ($product_type === 'Package') {
             $stmt = $conn->prepare("SELECT cat_url FROM categories WHERE cat_id = ?");
@@ -25,121 +25,145 @@
             $add_file_name = "add-$pack_cat_url_Slug.php";
             $add_file_path = dirname(__DIR__) . '/' . $add_file_name;
             $add_content = <<<PHP
-                <?php \$script = '<script>
-                    (() => {
-                        "use strict"
+<?php \$script = '<script>
+    (() => {
+        "use strict"
 
-                        // Fetch all the forms we want to apply custom Bootstrap validation styles to
-                        const forms = document.querySelectorAll(".needs-validation")
+        const forms = document.querySelectorAll(".needs-validation");
+        Array.from(forms).forEach(form => {
+            form.addEventListener("submit", event => {
+                if (!form.checkValidity()) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                }
+                form.classList.add("was-validated");
+            }, false);
+        });
+    })()
+</script>';?>
 
-                        // Loop over them and prevent submission
-                        Array.from(forms).forEach(form => {
-                            form.addEventListener("submit", event => {
-                                if (!form.checkValidity()) {
-                                    event.preventDefault()
-                                    event.stopPropagation()
-                                }
+<style>
+    .toggle-icon-pass {
+        position: absolute;
+        top: 22px;
+        right: 28px;
+        transform: translateY(-50%);
+        cursor: pointer;
+        user-select: none;
+        font-size: 20px;
+    }
+    input::-webkit-outer-spin-button,
+    input::-webkit-inner-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+    }
+    input[type=number] {
+        -moz-appearance: textfield;
+    }
+</style>
 
-                                form.classList.add("was-validated")
-                            }, false)
-                        })
-                    })()
-                    </script>';?>
+<?php include './partials/layouts/layoutTop.php' ?>
+<?php
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
 
-                    <style>
-                        .toggle-icon-pass {
-                            position: absolute;
-                            top: 22px;
-                            right: 28px;
-                            transform: translateY(-50%);
-                            cursor: pointer;
-                            user-select: none;
-                            font-size: 20px;
-                        }
-                        input::-webkit-outer-spin-button,
-                        input::-webkit-inner-spin-button {
-                        -webkit-appearance: none;
-                        margin: 0;
-                        }
+if (\$_SERVER['REQUEST_METHOD'] == 'POST') {
+    \$package_name = \$_POST['package_name'];                           
+    \$title = \$_POST['title'];
+    \$subtitle = \$_POST['subtitle'];
+    \$price = \$_POST['price'];
+    \$description = \$_POST['description'];
+    \$features = \$_POST['features'];
+    \$created_at = date("Y-m-d H:i:s");
 
-                        /* Firefox */
-                        input[type=number] {
-                        -moz-appearance: textfield;
-                        }
-                    </style>
+    \$duration_value = isset(\$_POST['duration_value']) ? intval(\$_POST['duration_value']) : 0;
+    \$duration_unit = isset(\$_POST['duration_unit']) ? \$_POST['duration_unit'] : '';
 
-                    <?php include './partials/layouts/layoutTop.php' ?>
-                    <?php
+    if (\$duration_value > 0 && in_array(\$duration_unit, ['days', 'months', 'years'])) {
+        \$duration = \$duration_value . ' ' . \$duration_unit;
+    } else {
+        echo "<script>alert('Invalid duration input.'); window.history.back();</script>";
+        exit;
+    }
 
-                        ini_set('display_errors', 1);
-                        ini_set('display_startup_errors', 1);
-                        error_reporting(E_ALL);
+    \$cat_id = $product_category;
+    \$template = "$template";
 
-                        if (\$_SERVER['REQUEST_METHOD'] == 'POST') {
-                            // Existing package fields
-                            \$package_name = \$_POST['package_name'];                           
-                            \$title = \$_POST['title'];
-                            \$subtitle = \$_POST['subtitle'];
-                            \$price = \$_POST['price'];
-                            \$description = \$_POST['description'];
-                            \$features = \$_POST['features']; // Array of features
-                            \$created_at = date("Y-m-d H:i:s");
+    \$stmt = \$conn->prepare("INSERT INTO package (package_name, title, subtitle, price, description, duration, cat_id, created_at, template) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
+    \$stmt->bind_param("ssssssiss", \$package_name, \$title, \$subtitle, \$price, \$description, \$duration, \$cat_id, \$created_at, \$template);
 
-                            \$duration_value = isset(\$_POST['duration_value']) ? intval(\$_POST['duration_value']) : 0;
-                            \$duration_unit = isset(\$_POST['duration_unit']) ? \$_POST['duration_unit'] : '';
- 
-                            if (\$duration_value > 0 && in_array(\$duration_unit, ['days', 'months', 'years'])) {
-                            \$duration = \$duration_value . ' ' . \$duration_unit; // e.g., "10 days"
-                            } else {
-                                echo "<script>alert('Invalid duration input.'); window.history.back();</script>";
-                                exit;
-                            }
+    if (\$stmt->execute()) {
+        \$package_id = \$conn->insert_id;
+        \$stmt->close();
 
-                            \$cat_id = $product_category;
+        if (!empty(\$features) && is_array(\$features)) {
+            \$featureStmt = \$conn->prepare("INSERT INTO features (package_id, feature) VALUES (?, ?)");
+            foreach (\$features as \$feature) {
+                \$cleaned_feature = trim(\$feature);
+                if (\$cleaned_feature !== "") {
+                    \$featureStmt->bind_param("is", \$package_id, \$cleaned_feature);
+                    \$featureStmt->execute();
+                }
+            }
+            \$featureStmt->close();
+        }
 
-                            \$stmt = \$conn->prepare("INSERT INTO package (package_name, title, subtitle, price, description, duration, cat_id, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
-                            \$stmt->bind_param("ssssssis", \$package_name, \$title, \$subtitle, \$price, \$description, \$duration, \$cat_id, \$created_at);
-                        
-                            if (\$stmt->execute()) {
-                                \$package_id = \$conn->insert_id;
-                                \$stmt->close();
-                        
-                                // Insert features
-                                if (!empty(\$features) && is_array(\$features)) {
-                                    \$featureStmt = \$conn->prepare("INSERT INTO features (package_id, feature) VALUES (?, ?)");
-                                    foreach (\$features as \$feature) {
-                                        \$cleaned_feature = trim(\$feature);
-                                        if (\$cleaned_feature !== "") {
-                                            \$featureStmt->bind_param("is", \$package_id, \$cleaned_feature);
-                                            \$featureStmt->execute();
-                                        }
-                                    }
-                                    \$featureStmt->close();
-                                }
-                        
-                                echo "
-                                <script>
-                                    Swal.fire({
-                                        title: 'Success!',
-                                        text: 'Package and features saved successfully.',
-                                        confirmButtonText: 'OK'
-                                    }).then((result) => {
-                                        if (result.isConfirmed) {
-                                            window.location.href = 'view-$pack_cat_url_Slug.php';
-                                        }
-                                    });
-                                </script>";
-                            } else {
-                                echo "<script>
-                                    alert('Error: " . \$stmt->error . "');
-                                    window.history.back();
-                                </script>";
-                            }
-                        }
-                        
-                    ?>
+        // create details file if missing
+        
+        \$slug = isset(\$_GET['slug']) ? \$_GET['slug'] : '';
+        \$det_file_path = \$slug . "-det.php";
 
-                    <div class="dashboard-main-body">
+        if (!file_exists(\$det_file_path)) {
+    \$base_php = <<<'CODE'
+<?php 
+include './partials/connection.php';
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
+
+\$product_id = isset(\$_GET['product_id']) ? (int) \$_GET['product_id'] : 0;
+\$template = \$_GET['template'] ?? '';
+
+\$sql = "SELECT * FROM package WHERE id = " . \$product_id; 
+\$result = \$conn->query(\$sql);
+
+if (\$result && \$result->num_rows > 0) {
+    \$row = \$result->fetch_assoc();
+    \$id = \$row['id'];
+    \$template_product = \$row['template'];
+}
+?>
+
+<?php if (!empty(\$template_product)): ?>
+    <?php include "./category_details/{\$template_product}-details.php"; ?>
+<?php endif; ?>
+CODE;
+
+    file_put_contents(\$det_file_path, \$base_php);
+}
+
+
+
+
+        echo "<script>
+            Swal.fire({
+                title: 'Success!',
+                text: 'Package and features saved successfully.',
+                confirmButtonText: 'OK'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    window.location.href = 'view-$pack_cat_url_Slug.php';
+                }
+            });
+        </script>";
+    } else {
+        echo "<script>alert('Error: " . \$stmt->error . "'); window.history.back();</script>";
+    }
+}
+?>
+
+<div class="dashboard-main-body">
                         <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-24">
                             <h6 class="fw-semibold mb-0">Add Package</h6>
                         </div>
@@ -266,18 +290,28 @@
                         });
                     </script>
 
-                <?php include './partials/layouts/layoutBottom.php' ?>
-            PHP;
-            file_put_contents($add_file_path, $add_content);
+<?php include './partials/layouts/layoutBottom.php' ?>
+PHP;
 
-            header("Location: add-$pack_cat_url_Slug.php");
+            file_put_contents($add_file_path, $add_content);
+            $stmt = $conn->prepare("SELECT cat_id, cat_url FROM categories WHERE cat_id = ?");
+            $stmt->bind_param("i", $product_category);
+            $stmt->execute();
+            $stmt->bind_result($cat_id1, $cat_url1);
+            $stmt->fetch();
+            $stmt->close();
+
+            $cat_url1 = pathinfo($cat_url1, PATHINFO_FILENAME);
+            $catSlug1 = strtolower(preg_replace('/\s+/', '-', $cat_url1));
+            //header("Location: add-$pack_cat_url_Slug.php");
+            header("Location: add-$pack_cat_url_Slug.php?id=$cat_id1&slug=$catSlug1&template=$template");
 
             $view_file_name = "view-$pack_cat_url_Slug.php";
             $view_file_path = dirname(__DIR__) . '/' . $view_file_name;
             $view_content = <<<PHP
-                <?php \$_GET['product_category'] = $product_category; ?>
-                <?php include './view-package.php'; ?>
-            PHP;
+<?php \$_GET['product_category'] = $product_category; ?>
+<?php include './view-package.php'; ?>
+PHP;
             file_put_contents($view_file_path, $view_content);
 
             exit;
@@ -299,7 +333,7 @@
             PHP;
             file_put_contents($add_file_path1, $add_content1);
             
-            header("Location: add-$catSlug1.php?id=$cat_id1&slug=$catSlug1");
+            header("Location: add-$catSlug1.php?id=$cat_id1&slug=$catSlug1&template=$template");
 
             $view_file_name1 = "view-$catSlug1.php";
             $view_file_path1 = dirname(__DIR__) . '/' . $view_file_name1;
@@ -415,7 +449,7 @@
 
             <?php if ($row['role'] == "1") {
                 // Fetch categories
-                $cat_result = $conn->query("SELECT cat_id, cat_name, cat_url, cat_module FROM categories ORDER BY cat_id DESC");
+                $cat_result = $conn->query("SELECT cat_id, cat_name, cat_url FROM categories ORDER BY cat_id DESC");
 
                 while ($cat = $cat_result->fetch_assoc()) { ?>
                     <li>

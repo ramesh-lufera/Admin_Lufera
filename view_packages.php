@@ -104,19 +104,32 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                <div class="form-group">
-                <label for="product_category" class="form-label">Select Category</label>
-                <select class="form-control" id="product_category" name="product_category" required>
-                    <option value="">-- Choose Category --</option>
-                    <?php
-                    $categories = $conn->query("SELECT cat_id, cat_name FROM categories ORDER BY cat_name ASC");
-                    while ($cat = $categories->fetch_assoc()) {
-                        echo "<option value='" . $cat['cat_id'] . "'>" . htmlspecialchars($cat['cat_name']) . "</option>";
-                    }
-                    ?>
-                </select>
+                <div class="form-group mb-8">
+                    <label for="product_category" class="form-label">Category</label>
+                    <select class="form-control" id="product_category" name="product_category" required>
+                        <option value="">-- Select Category --</option>
+                        <?php
+                        $categories = $conn->query("SELECT cat_id, cat_name FROM categories ORDER BY cat_name ASC");
+                        while ($cat = $categories->fetch_assoc()) {
+                            echo "<option value='" . $cat['cat_id'] . "'>" . htmlspecialchars($cat['cat_name']) . "</option>";
+                        }
+                        ?>
+                    </select>
                 </div>
-
+                <div class="mb-8">
+                    <label for="template" class="form-label">Module</label>
+                    <select name="template" class="form-control" id="template" required>
+                        <option value="">-- Select Module --</option>
+                        <option value="website">Website</option>
+                        <option value="marketing">Marketing</option>
+                        <option value="visa">Visa</option>
+                        <option value="website-onboarding">Website Onboarding</option>
+                        <option value="marketing-onboarding">Marketing Onboarding</option>
+                        <option value="domain-onboarding">Domain Onboarding</option>
+                        <option value="email-onboarding">Email Onboarding</option>
+                        <option value="mobile-app-onboarding">Mobile App Onboarding</option>
+                    </select>
+                </div>
                 <!-- Type Radio Toggle -->
                 <div class="form-group d-none">
                 <label >Type</label>

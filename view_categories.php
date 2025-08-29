@@ -23,7 +23,6 @@
     if (isset($_POST['save'])) {
         $cat_name = trim($_POST['cat_name']);
         $cat_url = trim($_POST['cat_url']);
-        $cat_template = trim($_POST['cat_template']);
 
         if (!str_ends_with($cat_url, '.php')) {
             $cat_url .= '.php';
@@ -32,8 +31,8 @@
         $catSlug = strtolower(preg_replace('/\s+/', '-', $cat_url));
 
         if (!empty($cat_name)) {
-            $stmt = $conn->prepare("INSERT INTO categories (cat_name, cat_url, cat_module) VALUES (?, ?, ?)");
-            $stmt->bind_param("sss", $cat_name, $catSlug, $cat_template);
+            $stmt = $conn->prepare("INSERT INTO categories (cat_name, cat_url) VALUES (?, ?)");
+            $stmt->bind_param("ss", $cat_name, $catSlug);
             $stmt->execute();
 
             //$file_path = dirname(__DIR__) . '/' . $catSlug;
@@ -86,6 +85,7 @@
                                     websites.status,
                                     websites.created_at,
                                     websites.duration,
+                                    websites.product_id,
                                     JSON_UNQUOTE(JSON_EXTRACT(`json`.name, '$.name.value')) AS json_name
                                 FROM 
                                     users 
@@ -113,6 +113,7 @@
                                         websites.status,
                                         websites.created_at,
                                         websites.duration,
+                                        websites.product_id,
                                         JSON_UNQUOTE(JSON_EXTRACT(`json`.name, '$.name.value')) AS json_name
                                     FROM 
                                         users
@@ -536,8 +537,9 @@
                                         </div>
                                         </div>
                                         <div class="manage-btn-wrapper">
-                                        <!-- <a href="dashboard.php?site=<?php echo urlencode(\$site['domain']); ?>" class="dashboard-btn">Manage</a> -->
-                                        <a href="$manageLink?website_id=<?php echo (int)\$site['id']; ?>" class="dashboard-btn">Manage</a>
+                                        <!--<a href="$manageLink?website_id=<?php echo (int)\$site['id']; ?>" class="dashboard-btn">Manage</a>-->
+                                        <a href="$manageLink?website_id=<?php echo (int)\$site['id']; ?>&product_id=<?php echo (int)\$site['product_id']; ?>" class="dashboard-btn">Manage</a>
+
                                         </div>
                                     </div>
                                     <?php endforeach; ?>
@@ -596,62 +598,7 @@
                     file_put_contents($view_file_path, $view_content);
                 }
                 
-                if ($cat_template === 'website' && !file_exists($det_file_path)) {
-                    $det_content = <<<PHP
-                        <?php include './category_details/website-details.php'; ?>    
-                    PHP;
-
-                    file_put_contents($det_file_path, $det_content);
-                }
-                if ($cat_template === 'marketing' && !file_exists($det_file_path)) {
-                    $det_content = <<<PHP
-                        <?php include './category_details/marketing-details.php'; ?>  
-                    PHP;
-
-                    file_put_contents($det_file_path, $det_content);
-                }
-                if ($cat_template === 'visa' && !file_exists($det_file_path)) {
-                    $det_content = <<<PHP
-                        <?php include './category_details/visa-details.php'; ?>  
-                    PHP;
-
-                    file_put_contents($det_file_path, $det_content);
-                }
-                if ($cat_template === 'website-onboarding' && !file_exists($det_file_path)) {
-                    $det_content = <<<PHP
-                        <?php include './category_details/website-onboarding-details.php'; ?>  
-                    PHP;
-
-                    file_put_contents($det_file_path, $det_content);
-                }
-                if ($cat_template === 'marketing-onboarding' && !file_exists($det_file_path)) {
-                    $det_content = <<<PHP
-                        <?php include './category_details/marketing-onboarding-details.php'; ?>  
-                    PHP;
-
-                    file_put_contents($det_file_path, $det_content);
-                }
-                if ($cat_template === 'domain-onboarding' && !file_exists($det_file_path)) {
-                    $det_content = <<<PHP
-                        <?php include './category_details/domain-onboarding-details.php'; ?>  
-                    PHP;
-
-                    file_put_contents($det_file_path, $det_content);
-                }
-                if ($cat_template === 'email-onboarding' && !file_exists($det_file_path)) {
-                    $det_content = <<<PHP
-                        <?php include './category_details/email-onboarding-details.php'; ?>  
-                    PHP;
-
-                    file_put_contents($det_file_path, $det_content);
-                }
-                if ($cat_template === 'mobile-app-onboarding' && !file_exists($det_file_path)) {
-                    $det_content = <<<PHP
-                        <?php include './category_details/mobile-app-onboarding-details.php'; ?>  
-                    PHP;
-
-                    file_put_contents($det_file_path, $det_content);
-                }
+                
             }
 
             //$_SESSION['swal_success'] = "Category created";
@@ -1397,20 +1344,6 @@
                 <div class="mb-8">
                     <label for="cat_url" class="form-label">URL</label>
                     <input type="text" class="form-control" name="cat_url" id="cat_url" required >
-                </div>
-                <div class="mb-8">
-                    <label for="cat_template" class="form-label">Module</label>
-                    <select name="cat_template" class="form-control" id="cat_template" required>
-                        <option value="">-- Select Module --</option>
-                        <option value="website">Website</option>
-                        <option value="marketing">Marketing</option>
-                        <option value="visa">Visa</option>
-                        <option value="website-onboarding">Website Onboarding</option>
-                        <option value="marketing-onboarding">Marketing Onboarding</option>
-                        <option value="domain-onboarding">Domain Onboarding</option>
-                        <option value="email-onboarding">Email Onboarding</option>
-                        <option value="mobile-app-onboarding">Mobile App Onboarding</option>
-                    </select>
                 </div>
             </div>
             <div class="modal-footer">

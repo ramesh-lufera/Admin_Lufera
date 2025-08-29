@@ -109,10 +109,6 @@
     }
   </style>
 <?php
-ini_set('display_errors', 1);
-ini_set('display_startup_errors', 1);
-error_reporting(E_ALL);
-
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $name = $_POST['name'];
     $title = $_POST['title'];
@@ -123,6 +119,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $tags = $_POST['tags'];
     $created_at = date("Y-m-d H:i:s");
     $cat_id = $_GET['id'];
+    $template = $_GET['template'];
     $slug = isset($_GET['slug']) ? $_GET['slug'] : '';
 
     $duration_value = isset($_POST['duration_value']) ? intval($_POST['duration_value']) : 0;
@@ -165,27 +162,62 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         echo "<script>alert('Please upload a product image.'); window.history.back();</script>";
         exit;
     }
-
     // Insert into database
-    $stmt = $conn->prepare("INSERT INTO products (name, title, subtitle, price, description, category, tags, product_image, cat_id, duration, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+    $stmt = $conn->prepare("INSERT INTO products 
+    (name, title, subtitle, price, description, category, tags, product_image, cat_id, duration, template, created_at) 
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
 
-    $stmt->bind_param("ssssssssiss", $name, $title, $subtitle, $price, $description, $category, $tags, $product_image, $cat_id, $duration, $created_at);
+$stmt->bind_param("ssssssssisss", $name, $title, $subtitle, $price, $description, $category, $tags, $product_image, $cat_id, $duration, $template,  $created_at);
 
-    if ($stmt->execute()) {
-        echo "<script>
-            Swal.fire({
-                title: 'Success!',
-                text: 'Product saved successfully.',
-                confirmButtonText: 'OK'
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    window.location.href = 'view-$slug.php';
-                }
-            });
-        </script>";
-    } else {
-        echo "<script>alert('Error: " . $stmt->error . "'); window.history.back();</script>";
-    }
+if ($stmt->execute()) {
+    // --------- CREATE -det.php FILE IF NOT EXISTS ---------
+    $det_file_path = $slug . "-det.php";
+
+    if (!file_exists($det_file_path)) {
+        // Base PHP content for all templates (connection + product fetching)
+        $base_php = <<<'PHP'
+        <?php 
+        include './partials/connection.php';
+        ini_set('display_errors', 1);
+        ini_set('display_startup_errors', 1);
+        error_reporting(E_ALL);
+
+        $product_id = $_GET['product_id'];
+
+        $sql = "SELECT * FROM products WHERE id = $product_id";
+        $result = $conn->query($sql);
+
+        if ($result->num_rows > 0) {
+            $row = $result->fetch_assoc();
+            $id = $row['id'];
+            $template_product = $row['template'];
+        }
+        ?>
+        <p class="text-center">id <?php echo $template_product; ?></p>
+
+        PHP;
+        
+        $det_content = $base_php . "<?php include './category_details/' . \$template_product . '-details.php'; ?>";
+        file_put_contents($det_file_path, $det_content);
+            }
+
+            // --------- SUCCESS MESSAGE ---------
+            echo "<script>
+                Swal.fire({
+                    title: 'Success!',
+                    text: 'Product saved successfully.',
+                    confirmButtonText: 'OK'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        window.location.href = 'view-$slug.php';
+                    }
+                });
+            </script>";
+        } else {
+            echo "<script>alert('Error: " . $stmt->error . "'); window.history.back();</script>";
+        }
+
+  
 }
 ?>
 
