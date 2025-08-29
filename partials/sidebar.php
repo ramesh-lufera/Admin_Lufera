@@ -142,10 +142,6 @@ CODE;
 
     file_put_contents(\$det_file_path, \$base_php);
 }
-
-
-
-
         echo "<script>
             Swal.fire({
                 title: 'Success!',
@@ -163,7 +159,7 @@ CODE;
 }
 ?>
 
-<div class="dashboard-main-body">
+                    <div class="dashboard-main-body">
                         <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-24">
                             <h6 class="fw-semibold mb-0">Add Package</h6>
                         </div>
@@ -511,7 +507,7 @@ PHP;
                     </a>
                     <ul class="sidebar-submenu">
                         <li>
-                            <a href="role-access.php"><i class="ri-circle-fill circle-icon text-warning-600 w-auto"></i> Role</a>
+                            <a href="role-access.php"><i class="ri-circle-fill circle-icon text-warning-600 w-auto"></i> Roles</a>
                         </li>
                         <li>
                             <a href="view_categories.php"><i class="ri-circle-fill circle-icon text-warning-600 w-auto"></i> Categories</a>
