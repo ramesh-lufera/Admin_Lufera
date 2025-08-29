@@ -15,18 +15,33 @@
 <?php 
     include './partials/layouts/layoutTop.php';
 
+    require_once __DIR__ . '/vendor/autoload.php';
+    use Dotenv\Dotenv;
+    use PHPMailer\PHPMailer\PHPMailer;
+    use PHPMailer\PHPMailer\Exception;
+
+    $dotenv = Dotenv::createImmutable(__DIR__);
+    $dotenv->load();
+
     $Id = $_SESSION['user_id'];
 
     // Fetch users data from the database
     $sql = "SELECT * FROM users ORDER BY created_at ASC";
     $result = mysqli_query($conn, $sql);
     
-    $sql = "select * from users where id = $Id";
-    $result = $conn ->query($sql);
-    $row = $result ->fetch_assoc();
+    $sql1 = "select * from users where id = $Id";
+    $result1 = $conn ->query($sql1);
+    $row = $result1 ->fetch_assoc();
     $role = $row['role'];
     $UserId = $row['user_id'];
     $photo = !empty($row['photo']) ? $row['photo'] : 'assets/images/user1.png';
+
+    // Get active symbol
+    $result2 = $conn->query("SELECT symbol FROM currencies WHERE is_active = 1 LIMIT 1");
+    $symbol = "$"; // default
+    if ($row1 = $result2->fetch_assoc()) {
+        $symbol = $row1['symbol'];
+    }
 
     // ADMIN approves → Notify USER
     if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['approve_id']) && ($role === '1' || $role === '2')) {
@@ -35,12 +50,28 @@
         // Approve order
         $conn->query("UPDATE orders SET status = 'Approved' WHERE id = $orderId");
 
+        // SweetAlert flag
+        $_SESSION['order_approved'] = true;
+
         date_default_timezone_set('Asia/Kolkata');
+
+        // Get order + user details
+        $res = $conn->query("SELECT o.invoice_id, o.plan, o.amount, u.email, u.first_name, u.last_name 
+                             FROM orders o 
+                             INNER JOIN users u ON o.user_id = u.user_id 
+                             WHERE o.id = $orderId");
+        $order = $res->fetch_assoc();
+
+        $userEmail = $order['email'];
+        $userName  = $order['first_name'] . " " . $order['last_name'];
+        $planName  = $order['plan'];
+        $invoiceId = $order['invoice_id'];
+        $amount    = $order['amount'];
 
         // Get user_id for notification
         $res = $conn->query("SELECT user_id FROM orders WHERE id = $orderId");
-        $order = $res->fetch_assoc();
-        $userId = $order['user_id'];
+        $user = $res->fetch_assoc();
+        $userId = $user['user_id'];
 
         // Add notification
         $msg = "Your payment has been approved.";
@@ -48,23 +79,120 @@
         $stmt = $conn->prepare("INSERT INTO notifications (user_id, message, n_photo, created_at) VALUES (?, ?, ?, ?)");
         $stmt->bind_param("ssss", $userId, $msg, $photo, $createdAt);
         $stmt->execute();
+
+        // ✅ Send Email to User
+        try {
+            $mail = new PHPMailer(true);
+            $mail->isSMTP();
+            $mail->Host       = 'smtp.gmail.com';
+            $mail->SMTPAuth   = true;
+            $mail->Username   = $_ENV['EMAIL_USERNAME']; 
+            $mail->Password   = $_ENV['GMAIL_APP_PASSWORD']; 
+            $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
+            $mail->Port       = 587;
+
+            $mail->setFrom($_ENV['EMAIL_USERNAME'], 'Lufera Infotech');
+            $mail->addAddress($userEmail, $userName);
+
+            $mail->isHTML(true);
+            $mail->Subject = "Your Order Has Been Approved";
+
+            $mail->Body = '
+                <!DOCTYPE html>
+                <html>
+                <head>
+                <meta charset="UTF-8">
+                <title>Order Approved</title>
+                </head>
+                <body style="margin:0;padding:0;background:#f5f5f5;font-family:Roboto,Arial,sans-serif;">
+                <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background:#f5f5f5;padding:30px 0;">
+                    <tr>
+                    <td align="center">
+                        <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="600" 
+                            style="background:#ffffff;border:1px solid #e0e0e0;border-radius:8px;box-shadow:0 2px 6px rgba(0,0,0,0.08);overflow:hidden;">
+                        
+                        <!-- Header -->
+                        <tr>
+                            <td style="padding:20px;text-align:center;">
+                            <img src="' . htmlspecialchars($_ENV['EMAIL_IMAGE_LINK']) . '" alt="Lufera Infotech Logo" style="width:150px;height:48px;display:block;margin:auto;">
+                            </td>
+                        </tr>
+
+                        <!-- Divider -->
+                        <tr>
+                            <td style="border-top:1px solid #eaeaea;"></td>
+                        </tr>
+
+                        <!-- Main Content -->
+                        <tr>
+                            <td style="padding:30px 40px;text-align:left;font-size:15px;line-height:1.6;color:#101010;">
+                            <h3 style="margin:0 0 15px;font-size:20px;font-weight:500;">Order Approved</h3>
+                            <p>Hello <b>' . htmlspecialchars($userName) . '</b>,</p>
+                            <p>Your order has been approved by the admin. Here are the details:</p>
+                            
+                            <table cellpadding="8" cellspacing="0" border="0" width="100%" style="border:1px solid #eaeaea;margin:20px 0;font-size:14px;">
+                                <tr><td><b>Plan</b></td><td>' . htmlspecialchars($planName) . '</td></tr>
+                                <tr><td><b>Invoice ID</b></td><td>' . htmlspecialchars($invoiceId) . '</td></tr>
+                                <tr><td><b>Total Paid</b></td><td id="currency-symbol-display">' . htmlspecialchars($symbol) . htmlspecialchars($amount) . '</td></tr>
+                            </table>
+
+                            <p>You can now access your purchased service from your dashboard.</p>
+                            
+                            <div style="margin:30px 0;text-align:center;">
+                                <a href="' . htmlspecialchars($_ENV['EMAIL_COMMON_LINK']) . '/orders.php" 
+                                style="background:#fec700;color:#101010;text-decoration:none;
+                                        padding:12px 28px;border-radius:4px;font-weight:bold;display:inline-block;">
+                                View My Orders
+                                </a>
+                            </div>
+
+                            <p>If you have any questions, feel free to reply to this email.</p>
+                            </td>
+                        </tr>
+
+                        <!-- Divider -->
+                        <tr>
+                            <td style="border-top:1px solid #eaeaea;"></td>
+                        </tr>
+
+                        <!-- Footer -->
+                        <tr>
+                            <td style="padding:20px;text-align:center;font-size:12px;color:#777;">
+                            You’re receiving this email because your payment was approved at <b>Admin Dashboard</b>.<br>
+                            &copy; 2025 Lufera Infotech. All rights reserved.
+                            </td>
+                        </tr>
+
+                        </table>
+                    </td>
+                    </tr>
+                </table>
+                </body>
+                </html>
+            ';
+
+            $mail->send();
+
+        } catch (Exception $e) {
+            error_log("Email not sent. Error: {$mail->ErrorInfo}");
+        }
     }
     
     // JOIN orders with users
     $query = "
-    SELECT
-        orders.id, 
-        orders.invoice_id,
-        orders.plan,
-        orders.amount,
-        orders.status,
-        orders.created_on,
-        users.username,
-        users.first_name,
-        users.last_name,
-        users.photo
-    FROM orders
-    INNER JOIN users ON orders.user_id = users.user_id
+        SELECT
+            orders.id, 
+            orders.invoice_id,
+            orders.plan,
+            orders.amount,
+            orders.status,
+            orders.created_on,
+            users.username,
+            users.first_name,
+            users.last_name,
+            users.photo
+        FROM orders
+        INNER JOIN users ON orders.user_id = users.user_id
     ";
 
     if ($role !== '1' && $role !== '2') {
@@ -73,13 +201,6 @@
         } else {
             $query .= " WHERE 1 = 0";
         }
-    }
-
-    // Get active symbol
-    $result = $conn->query("SELECT symbol FROM currencies WHERE is_active = 1 LIMIT 1");
-    $symbol = "$"; // default
-    if ($row = $result->fetch_assoc()) {
-        $symbol = $row['symbol'];
     }
 
     $result = mysqli_query($conn, $query);
@@ -170,18 +291,31 @@
     </div>
 </div>
 
-    <script>
-        $(document).ready(function() {
-            $('#userTable').DataTable();
-        } );
+<script>
+    $(document).ready(function() {
+        $('#userTable').DataTable();
+    } );
 
-        function approveAction() {
-            // Blur the Approve button by adding a "disabled" class and prevent it from being clicked
-            let approveButton = document.getElementById('approveButton');
-            approveButton.classList.add('disabled');  // Add "disabled" class for visual effect
-            approveButton.setAttribute('disabled', true);  // Disable the button to prevent further clicks
-        }
+    function approveAction() {
+        // Blur the Approve button by adding a "disabled" class and prevent it from being clicked
+        let approveButton = document.getElementById('approveButton');
+        approveButton.classList.add('disabled');  // Add "disabled" class for visual effect
+        approveButton.setAttribute('disabled', true);  // Disable the button to prevent further clicks
+    }
+</script>
+
+<?php if (isset($_SESSION['order_approved']) && $_SESSION['order_approved'] === true): ?>
+    <script>
+        Swal.fire({
+            title: "Order Approved",
+            // text: "The order has been successfully approved!",
+            icon: "success",
+            confirmButtonText: "OK"
+        });
     </script>
+    <?php unset($_SESSION['order_approved']); ?>
+<?php endif; ?>
+
 </body>
 </html>
 

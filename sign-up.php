@@ -23,14 +23,24 @@
     session_start();
     include './partials/head.php';
     include './partials/connection.php';
+
+    use PHPMailer\PHPMailer\PHPMailer;
+    use PHPMailer\PHPMailer\Exception;
+
     require_once 'vendor/autoload.php';
 
     $dotenv = Dotenv\Dotenv::createImmutable(__DIR__);
     $dotenv->load();
 
-      $username = $email = $password = $fname = $phone = "" ;
-      $errors = [];
-      $success = "";
+    $username = $email = $password = $fname = $phone = "" ;
+    $errors = [];
+    $success = "";
+
+    // Show success message after verification redirect
+    if (isset($_SESSION['success_message'])) {
+        $success = $_SESSION['success_message'];
+        unset($_SESSION['success_message']);
+    }
 
     if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $username = trim($_POST['username']);
@@ -41,6 +51,9 @@
         $created_at = date("Y-m-d H:i:s");
         $method = "1";
         $role = "8";
+        $token    = bin2hex(random_bytes(32)); // secure token
+        $is_verified = 0;
+
         $lname = $business_name = $address = $city = $state = $country = $pincode = $dob = null;
 
         // Validation
@@ -74,35 +87,138 @@
         }
 
         // Insert if no errors
+        // If no errors -> save pending signup and send email
         if (empty($errors)) {
-            function generateUserId() {
-                $letters = substr(str_shuffle('ABCDEFGHIJKLMNOPQRSTUVWXYZ'), 0, 3);
-                $numbers = substr(str_shuffle('0123456789'), 0, 3);
-                return $letters . $numbers;
-            }
-            
-            $newUserId = generateUserId();
-            
-            $stmt = $conn->prepare("INSERT INTO users (user_id, username, email, phone, password, first_name,last_name,business_name,address,city,state,country,pincode,dob,created_at,method,role,photo ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-            $stmt->bind_param("ssssssssssssssssss", $newUserId, $username, $email, $phone, $password, $fname, $lname, $business_name, $address, $city, $state, $country, $pincode, $dob, $created_at, $method, $role, $photo);
-            
-            if ($stmt->execute()) {
-                $_SESSION['user_id'] = $stmt->insert_id;
-                $success = "Registration successful!";
-                $username = $email = $password = $fname = $phone = "" ; // clear inputs
-                unset($_POST['checkbox']); //
-            } else {
-                $errors['general'] = "Error while registering user.";
+            $_SESSION['pending_user'] = [
+                'username'   => $username,
+                'email'      => $email,
+                'phone'      => $phone,
+                'password'   => $password,
+                'first_name' => $fname,
+                'created_at' => $created_at,
+                'method'     => $method,
+                'role'       => $role,
+                'token'      => $token
+            ];
+
+            $verify_link = $_ENV['EMAIL_COMMON_LINK'] . "/email-verify.php?token=" . $token;
+
+            // ============== SEND EMAIL =================
+            $mail = new PHPMailer(true);
+
+            try {
+                $mail->isSMTP();
+                $mail->Host       = 'smtp.gmail.com';
+                $mail->SMTPAuth   = true;
+                $mail->Username   = $_ENV['EMAIL_USERNAME']; 
+                $mail->Password   = $_ENV['GMAIL_APP_PASSWORD'];
+                $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
+                $mail->Port       = 587;
+
+                $mail->setFrom($_ENV['EMAIL_USERNAME'], 'Lufera Infotech');
+                $mail->addAddress($email, $username);
+
+                $mail->isHTML(true);
+                $mail->Subject = "Verify your Admin Dashboard Account";
+
+                $mail->Body = '
+                    <!DOCTYPE html>
+                    <html>
+                    <head>
+                    <meta charset="UTF-8">
+                    <title>Email Verification</title>
+                    </head>
+                    <body style="margin:0;padding:0;background:#f5f5f5;font-family:Roboto,Arial,sans-serif;">
+                    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background:#f5f5f5;padding:30px 0;">
+                        <tr>
+                        <td align="center">
+                            <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="600" 
+                                style="background:#ffffff;border:1px solid #e0e0e0;border-radius:8px;box-shadow:0 2px 6px rgba(0,0,0,0.08);overflow:hidden;">
+                            
+                            <!-- Header -->
+                            <tr>
+                                <td style="padding:20px;text-align:center;">
+                                <img src="' . htmlspecialchars($_ENV['EMAIL_IMAGE_LINK']) . '" alt="Lufera Infotech Logo" style="width:150px;height:48px;display:block;margin:auto;">
+                                </td>
+                            </tr>
+
+                            <!-- Divider -->
+                            <tr>
+                                <td style="border-top:1px solid #eaeaea;"></td>
+                            </tr>
+
+                            <!-- Main Content -->
+                            <tr>
+                                <td style="padding:30px 40px;text-align:left;font-size:15px;line-height:1.6;color:#101010;">
+                                <h3 style="margin:0 0 15px;font-size:20px;font-weight:500;">Verify your email address</h3>
+                                <p>Hello <b>' . htmlspecialchars($username) . '</b>,</p>
+                                <p>You recently created an account at <b>Admin Dashboard</b>. Please verify your email address to activate your account.</p>
+                                <div style="margin:30px 0;text-align:center;">
+                                    <a href="' . $verify_link . '" 
+                                    style="background:#fec700;color:#101010;text-decoration:none;
+                                            padding:12px 28px;border-radius:4px;font-weight:bold;display:inline-block;">
+                                    Verify Email
+                                    </a>
+                                </div>
+                                <p>If you didn\'t sign up, you can safely ignore this email.</p>
+                                </td>
+                            </tr>
+
+                            <!-- Divider -->
+                            <tr>
+                                <td style="border-top:1px solid #eaeaea;"></td>
+                            </tr>
+
+                            <!-- Footer -->
+                            <tr>
+                                <td style="padding:20px;text-align:center;font-size:12px;color:#777;">
+                                You’re receiving this email to verify your Admin Dashboard account.<br>
+                                &copy; 2025 Lufera Infotech. All rights reserved.
+                                </td>
+                            </tr>
+
+                            </table>
+                        </td>
+                        </tr>
+                    </table>
+                    </body>
+                    </html>
+                ';
+
+                $mail->send();
+                $success = "Check your email to verify your account.";
+            } catch (Exception $e) {
+                $errors['mail'] = "Message could not be sent. Mailer Error: {$mail->ErrorInfo}";
             }
 
-            $stmt->close();
+            // function generateUserId() {
+            //     $letters = substr(str_shuffle('ABCDEFGHIJKLMNOPQRSTUVWXYZ'), 0, 3);
+            //     $numbers = substr(str_shuffle('0123456789'), 0, 3);
+            //     return $letters . $numbers;
+            // }
+            
+            // $newUserId = generateUserId();
+            
+            // $stmt = $conn->prepare("INSERT INTO users (user_id, username, email, phone, password, first_name,last_name,business_name,address,city,state,country,pincode,dob,created_at,method,role,photo ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+            // $stmt->bind_param("ssssssssssssssssss", $newUserId, $username, $email, $phone, $password, $fname, $lname, $business_name, $address, $city, $state, $country, $pincode, $dob, $created_at, $method, $role, $photo);
+            
+            // if ($stmt->execute()) {
+            //     $_SESSION['user_id'] = $stmt->insert_id;
+            //     $success = "Registration successful!";
+            //     $username = $email = $password = $fname = $phone = "" ; // clear inputs
+            //     unset($_POST['checkbox']); //
+            // } else {
+            //     $errors['general'] = "Error while registering user.";
+            // }
+
+            // $stmt->close();
         }
     }
 
     // Google Client Configuration
     require './partials/google-config.php';
-    // $client->setRedirectUri('https://admin.luferatech.com/sign-up-redirect.php');
-    $client->setRedirectUri('http://localhost/Admin_Lufera/sign-up-redirect.php');
+    $redirectUri = rtrim($_ENV['GOOGLE_REDIRECT_URI'], '/') . '/sign-up-redirect.php';
+    $client->setRedirectUri($redirectUri);
 
     // Force account selection every time
     $client->setPrompt('select_account');
@@ -128,6 +244,10 @@
                     <h4 class="mb-12">Sign Up</h4>
                     <p class="mb-32 text-secondary-light text-lg">Welcome back! Enter your details</p>
                 </div>
+
+                <!-- <?php if ($success): ?>
+                    <p class="success"><?= $success ?></p>
+                <?php endif; ?> -->
 
                 <?php if ($success): ?>
                     <p class="success"><?= $success ?></p>
@@ -255,8 +375,9 @@
     <?php include './partials/scripts.php' ?>
 
 </body>
+
 <script>
-document.getElementById('email').addEventListener('input', function() {
+    document.getElementById('email').addEventListener('input', function() {
         const email = this.value;
         const usernameField = document.getElementById('uname');
         const atIndex = email.indexOf('@');

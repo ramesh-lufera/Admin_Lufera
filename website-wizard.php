@@ -223,21 +223,8 @@
     $website_id = $_GET['id'] ?? 0;
     $website_id = intval($website_id);
 
-    // $query = $conn->prepare("SELECT name FROM json WHERE website_id = ?");
-    // $query->bind_param("i", $website_id);
-    // $query->execute();
-    // $query->store_result();
-
-    // if ($query->num_rows > 0) {
-    //     $query->bind_result($jsonData);
-    //     $query->fetch();
-    //     $savedData = json_decode($jsonData, true);
-    // }
-    // $query->close();
-
-    // Try to load data for this website
-    $query = $conn->prepare("SELECT name FROM json WHERE user_id = ? AND website_id = ?");
-    $query->bind_param("ii", $user_id, $website_id);
+    $query = $conn->prepare("SELECT name FROM json WHERE website_id = ?");
+    $query->bind_param("i", $website_id);
     $query->execute();
     $query->store_result();
 
@@ -245,22 +232,7 @@
         $query->bind_result($jsonData);
         $query->fetch();
         $savedData = json_decode($jsonData, true);
-    } else {
-        // Fallback: Get latest saved data for the same user from another website
-        $fallback = $conn->prepare("
-            SELECT name FROM json 
-            WHERE user_id = ? AND website_id != ? 
-            ORDER BY id DESC LIMIT 1
-        ");
-        $fallback->bind_param("ii", $user_id, $website_id);
-        $fallback->execute();
-        $fallback->bind_result($jsonData);
-        if ($fallback->fetch()) {
-            $savedData = json_decode($jsonData, true);
-        }
-        $fallback->close();
     }
-
     $query->close();
 
     if (isset($_POST['save'])) {

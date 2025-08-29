@@ -1,4 +1,13 @@
-<?php include './partials/layouts/layoutTop.php' ?>
+<?php include './partials/layouts/layoutTop.php';
+      
+      use PHPMailer\PHPMailer\PHPMailer;
+      use PHPMailer\PHPMailer\Exception;
+
+      require_once 'vendor/autoload.php';
+
+      $dotenv = Dotenv\Dotenv::createImmutable(__DIR__);
+      $dotenv->load();
+?>
 
 <?php
     $Id = $_SESSION['user_id'];
@@ -13,6 +22,7 @@
     $photo = !empty($row['photo']) ? $row['photo'] : 'assets/images/user1.png';
 
     if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+        $id = $_POST['id'];
         $plan_name = $_POST['plan_name'];
         $price = $_POST['price'];
         $duration = $_POST['duration'];
@@ -26,7 +36,15 @@
         $created_on = $_POST['created_on'];
     }
 
+    // Get active symbol
+    $result1 = $conn->query("SELECT symbol FROM currencies WHERE is_active = 1 LIMIT 1");
+    $symbol = "$"; // default
+    if ($row = $result1->fetch_assoc()) {
+        $symbol = $row['symbol'];
+    }
+
     if (isset($_POST['save'])) {
+        $product_id = $_POST['id'];
         $pay_method = $_POST['pay_method'];
         $rec_id = $_POST['rec_id'];
         $plan_name = $_POST['plan_name'];
@@ -34,43 +52,109 @@
         $total_price = $_POST['total_price'];
         $created_at = date("Y-m-d H:i:s");
         $price = $_POST['price'];
-        $user_id = $_SESSION['user_id'];
-        $sql = "SELECT user_id FROM users WHERE id = $user_id";
-        $result = mysqli_query($conn, $sql);
-        $row = mysqli_fetch_assoc($result);
-        $client_id = $row['user_id'];
         $gst = $_POST['gst'];
         $discount = $payment_made = "0";
+
+        $user_id = $_SESSION['user_id'];
+
+        $sql    = "SELECT user_id, email, username FROM users WHERE id = $user_id LIMIT 1";
+        $result2 = mysqli_query($conn, $sql);
+        $row    = mysqli_fetch_assoc($result2);
+        $client_id = $row['user_id'];
+        $toEmail   = $row['email'];     // purchaser email
+        $username  = $row['username'];  // purchaser username
+        $toName    = $row['username'];
  
         $sql = "INSERT INTO orders (user_id, invoice_id, plan, duration, amount, gst, price, status, payment_method, discount, payment_made, created_on, subtotal, balance_due) VALUES 
                 ('$client_id', '$rec_id', '$plan_name', '$duration' ,'$total_price', '$gst', '$price', 'Pending', '$pay_method', '$discount', '$payment_made', '$created_at', '$total_price', '$total_price')";
 
         if (mysqli_query($conn, $sql)) {
-
             // Generate a domain from the username
             // $domain = strtolower(preg_replace('/\s+/', '', $username)) . ".lufera.com";
 
             $domain = "N/A";
 
             // Insert new website record
-            $siteInsert = "INSERT INTO websites (user_id, domain, plan, duration, status, cat_id, invoice_id) 
-                        VALUES ('$client_id', '$domain', '$plan_name', '$duration', 'Pending', '$cat_id', '$rec_id')";
+            $siteInsert = "INSERT INTO websites (user_id, domain, plan, duration, status, cat_id, invoice_id, product_id) 
+                        VALUES ('$client_id', '$domain', '$plan_name', '$duration', 'Pending', '$cat_id', '$rec_id', '$product_id')";
             mysqli_query($conn, $siteInsert);
 
             echo "
             <script>
                 Swal.fire({
                     title: 'Success!',
-                    text: 'Invoice Created Successfully.',
+                    text: 'Purchased Successfully.',
                     confirmButtonText: 'OK',
                     allowOutsideClick: false
                 }).then((result) => {
                     if (result.isConfirmed) {
-                        // window.location.href = 'invoice-preview.php?id=$rec_id';
                         window.location.href = 'orders.php';
                     }
                 });
             </script>";
+
+            $orders_link = rtrim($_ENV['EMAIL_COMMON_LINK'], '/') . '/orders.php';
+
+            // ===================== SEND PURCHASE EMAIL =====================
+            $mail = new PHPMailer(true);
+            try {
+                $mail->isSMTP();
+                $mail->Host       = 'smtp.gmail.com';
+                $mail->SMTPAuth   = true;
+                $mail->Username   = $_ENV['EMAIL_USERNAME'];
+                $mail->Password   = $_ENV['GMAIL_APP_PASSWORD'];
+                $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
+                $mail->Port       = 587;
+
+                $mail->setFrom($_ENV['EMAIL_USERNAME'], 'Lufera Infotech');
+                $mail->addAddress($toEmail, $toName);
+
+                $mail->isHTML(true);
+                $mail->Subject = "Purchase Confirmation - Order #$rec_id";
+                $mail->Body = '
+                    <!DOCTYPE html>
+                    <html>
+                    <head><meta charset="UTF-8"><title>Purchase Confirmation</title></head>
+                    <body style="margin:0;padding:0;background:#f5f5f5;font-family:Roboto,Arial,sans-serif;">
+                    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background:#f5f5f5;padding:30px 0;">
+                        <tr><td align="center">
+                            <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="600" 
+                                style="background:#ffffff;border:1px solid #e0e0e0;border-radius:8px;box-shadow:0 2px 6px rgba(0,0,0,0.08);overflow:hidden;">
+                                <tr><td style="padding:20px;text-align:center;">
+                                    <img src="' . htmlspecialchars($_ENV['EMAIL_IMAGE_LINK']) . '" alt="Lufera Infotech Logo" style="width:150px;height:48px;display:block;margin:auto;">
+                                </td></tr>
+                                <tr><td style="border-top:1px solid #eaeaea;"></td></tr>
+                                <tr><td style="padding:30px 40px;text-align:left;font-size:15px;line-height:1.6;color:#101010;">
+                                    <h3 style="margin:0 0 15px;font-size:20px;font-weight:500;">Purchase Confirmation</h3>
+                                    <p>Hello <b>' . htmlspecialchars($toName) . '</b>,</p>
+                                    <p>Thank you for your purchase! Here are the details of your order:</p>
+                                    <table cellpadding="8" cellspacing="0" border="0" width="100%" style="border:1px solid #eaeaea;margin:20px 0;font-size:14px;">
+                                        <tr><td><b>Plan</b></td><td>' . htmlspecialchars($plan_name) . '</td></tr>
+                                        <tr><td><b>Receipt ID</b></td><td>' . htmlspecialchars($rec_id) . '</td></tr>
+                                        <tr><td><b>Duration</b></td><td>' . htmlspecialchars($duration) . '</td></tr>
+                                        <tr><td><b>Total Paid</b></td><td id="currency-symbol-display">' . htmlspecialchars($symbol) . htmlspecialchars($total_price) . '</td></tr>
+                                    </table>
+                                    <p>Your service will be activated shortly. You can check your order status anytime in your dashboard.</p>
+                                    <div style="margin:30px 0;text-align:center;">
+                                        <a href="' . htmlspecialchars($orders_link) . '" style="background:#fec700;color:#101010;text-decoration:none;
+                                            padding:12px 28px;border-radius:4px;font-weight:bold;display:inline-block;">View My Orders</a>
+                                    </div>
+                                    <p>If you have any questions, feel free to reply to this email.</p>
+                                </td></tr>
+                                <tr><td style="border-top:1px solid #eaeaea;"></td></tr>
+                                <tr><td style="padding:20px;text-align:center;font-size:12px;color:#777;">
+                                    You’re receiving this email because you made a purchase at <b>Admin Dashboard</b>.<br>
+                                    &copy; 2025 Lufera Infotech. All rights reserved.
+                                </td></tr>
+                            </table>
+                        </td></tr>
+                    </table>
+                    </body>
+                    </html>';
+                $mail->send();
+            } catch (Exception $e) {
+                error_log("Purchase email failed: " . $mail->ErrorInfo);
+            }
         } else {
             echo "<script>
                 alert('Error: " . $stmt->error . "');
@@ -84,21 +168,80 @@
         date_default_timezone_set('Asia/Kolkata');
         $msg = "$username has sent a payment request.";
 
-        $adminQuery = $conn->query("SELECT user_id FROM users WHERE role IN ('1', '2')");
+        $adminQuery = $conn->query("SELECT user_id, email, username FROM users WHERE role IN ('1', '2')");
         while ($adminRow = $adminQuery->fetch_assoc()) {
             $adminUserId = $adminRow['user_id'];
+            $adminEmail  = $adminRow['email'];
+            $adminName   = $adminRow['username'];
             $createdAt = date('Y-m-d H:i:s');
+
             $stmt = $conn->prepare("INSERT INTO notifications (user_id, message, n_photo, created_at) VALUES (?, ?, ?, ?)");
             $stmt->bind_param("ssss", $adminUserId, $msg, $photo, $createdAt);
             $stmt->execute();
-        }
-    }
 
-    // Get active symbol
-    $result = $conn->query("SELECT symbol FROM currencies WHERE is_active = 1 LIMIT 1");
-    $symbol = "$"; // default
-    if ($row = $result->fetch_assoc()) {
-        $symbol = $row['symbol'];
+            // Send email to admin/super admin
+            $mail = new PHPMailer(true);
+            try {
+                $mail->isSMTP();
+                $mail->Host       = 'smtp.gmail.com';
+                $mail->SMTPAuth   = true;
+                $mail->Username   = $_ENV['EMAIL_USERNAME'];
+                $mail->Password   = $_ENV['GMAIL_APP_PASSWORD'];
+                $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
+                $mail->Port       = 587;
+
+                $mail->setFrom($toEmail, $username); // from purchaser
+                $mail->addAddress($adminEmail, $adminName);
+
+                $mail->isHTML(true);
+                $mail->Subject = "Payment Request from $username";
+                $mail->Body = '
+                    <!DOCTYPE html>
+                    <html>
+                    <head><meta charset="UTF-8"><title>Payment Request</title></head>
+                    <body style="margin:0;padding:0;background:#f5f5f5;font-family:Roboto,Arial,sans-serif;">
+                    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background:#f5f5f5;padding:30px 0;">
+                        <tr><td align="center">
+                            <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="600" 
+                                style="background:#ffffff;border:1px solid #e0e0e0;border-radius:8px;box-shadow:0 2px 6px rgba(0,0,0,0.08);overflow:hidden;">
+                                <tr><td style="padding:20px;text-align:center;">
+                                    <img src="' . htmlspecialchars($_ENV['EMAIL_IMAGE_LINK']) . '" alt="Lufera Infotech Logo" style="width:150px;height:48px;display:block;margin:auto;">
+                                </td></tr>
+                                <tr><td style="border-top:1px solid #eaeaea;"></td></tr>
+                                <tr><td style="padding:30px 40px;text-align:left;font-size:15px;line-height:1.6;color:#101010;">
+                                    <h3 style="margin:0 0 15px;font-size:20px;font-weight:500;">Payment Request Email</h3>
+                                    <p>Hello <b>' . htmlspecialchars($adminName) . '</b>,</p>
+                                    <p>User <b>' . htmlspecialchars($username) . '</b> (' . htmlspecialchars($toEmail) . ') has sent a payment request. Order details are below:</p>
+                                    <table cellpadding="8" cellspacing="0" border="0" width="100%" style="border:1px solid #eaeaea;margin:20px 0;font-size:14px;">
+                                        <tr><td><b>Plan</b></td><td>' . htmlspecialchars($plan_name) . '</td></tr>
+                                        <tr><td><b>Receipt ID</b></td><td>' . htmlspecialchars($rec_id) . '</td></tr>
+                                        <tr><td><b>Duration</b></td><td>' . htmlspecialchars($duration) . '</td></tr>
+                                        <tr><td><b>Price</b></td><td id="currency-symbol-display">' . htmlspecialchars($symbol) . htmlspecialchars($price) . '</td></tr>
+                                        <tr><td><b>GST</b></td><td id="currency-symbol-display">' . htmlspecialchars($symbol) . htmlspecialchars($gst) . '</td></tr>
+                                        <tr><td><b>Total</b></td><td id="currency-symbol-display">' . htmlspecialchars($symbol) . htmlspecialchars($total_price) . '</td></tr>
+                                    </table>
+                                    <div style="margin:30px 0;text-align:center;">
+                                        <a href="' . htmlspecialchars($_ENV['EMAIL_COMMON_LINK']) . '/orders.php" 
+                                        style="background:#fec700;color:#101010;text-decoration:none;
+                                                padding:12px 28px;border-radius:4px;font-weight:bold;display:inline-block;">Review Payment Request</a>
+                                    </div>
+                                    <p>Thank you,<br><b>Admin Dashboard</b></p>
+                                </td></tr>
+                                <tr><td style="border-top:1px solid #eaeaea;"></td></tr>
+                                <tr><td style="padding:20px;text-align:center;font-size:12px;color:#777;">
+                                    You’re receiving this email because a user submitted a payment request.<br>
+                                    &copy; 2025 Lufera Infotech. All rights reserved.
+                                </td></tr>
+                            </table>
+                        </td></tr>
+                    </table>
+                    </body>
+                    </html>';
+                $mail->send();
+            } catch (Exception $e) {
+                error_log("Admin email failed: " . $mail->ErrorInfo);
+            }
+        }
     }
 ?>
 
@@ -202,6 +345,7 @@
 
 <div class="dashboard-main-body">
     <form method="post">
+        <input type="hidden" value="<?php echo $id; ?>" name="id">
         <input type="hidden" value="<?php echo $duration; ?>" name="duration">
         <input type="hidden" value="<?php echo $rec_id; ?>" name="rec_id">
         <input type="hidden" value="<?php echo $plan_name; ?>" name="plan_name">
@@ -335,9 +479,9 @@
                             </div>
                             <?php
                                 $sql = "SELECT * FROM bank_details LIMIT 1";
-                                $result = $conn->query($sql);
-                                if ($result->num_rows > 0) {
-                                    $row = $result->fetch_assoc();
+                                $result3 = $conn->query($sql);
+                                if ($result3->num_rows > 0) {
+                                    $row = $result3->fetch_assoc();
                                     $id = $row['id'];
                                     $bank_name = $row['bank_name'];
                                     $ac_name = $row['ac_name'];
@@ -423,7 +567,7 @@
 </div>
 
 <!-- PayPal -->
-<script src="https://www.paypal.com/sdk/js?client-id=AcXyC6yJbA3cipIidV1fFZ-cz0F99YIzjN8SV9imJSem5MTjTuqAotwcvcI1GFJL0I4axsVtLvkdpgck&currency=USD"></script>
+<script src="https://www.paypal.com/sdk/js?client-id=<?= htmlspecialchars($_ENV['PAYPAL_CLIENT_ID']) ?>&currency=USD"></script>
 
 <script>
     paypal.Buttons({
