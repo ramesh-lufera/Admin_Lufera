@@ -619,12 +619,11 @@
     }
 
     // Edit category
-    if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['edit_cat_id'], $_POST['edit_cat_name'], $_POST['edit_cat_url'], $_POST['edit_cat_module'])) {
+    if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['edit_cat_id'], $_POST['edit_cat_name'], $_POST['edit_cat_url'])) {
         $cat_id = intval($_POST['edit_cat_id']);
         $cat_name = trim($_POST['edit_cat_name']);
         $edit_cat_url = trim($_POST['edit_cat_url']);
-        $cat_module = trim($_POST['edit_cat_module']);
-    
+        
         if (!str_ends_with($edit_cat_url, '.php')) {
             $edit_cat_url .= '.php';
         }
@@ -1306,19 +1305,6 @@
                         <label for="edit_cat_url" class="form-label">URL</label>
                         <input type="text" class="form-control" name="edit_cat_url" id="edit_cat_url" required>
                     </div>
-                    <div class="mb-8">
-                        <label for="edit_cat_module" class="form-label">Module</label>
-                        <select name="edit_cat_module" class="form-control" id="edit_cat_module" required>
-                            <option value="website">Website</option>
-                            <option value="marketing">Marketing</option>
-                            <option value="visa">Visa</option>
-                            <option value="website-onboarding">Website Onboarding</option>
-                            <option value="marketing-onboarding">Marketing Onboarding</option>
-                            <option value="domain-onboarding">Domain Onboarding</option>
-                            <option value="email-onboarding">Email Onboarding</option>
-                            <option value="mobile-app-onboarding">Mobile App Onboarding</option>
-                        </select>
-                    </div>
                 </div>
                 <div class="modal-footer">
                     <input type="submit" class="btn lufera-bg" value="Update">
@@ -1447,8 +1433,7 @@ $(document).ready(function() {
     document.getElementById("edit_cat_id").value = id;
     document.getElementById("edit_cat_name").value = name;
     document.getElementById("edit_cat_url").value = url.replace(".php", "");
-    document.getElementById("edit_cat_module").value = module;
-
+    
     // Use Bootstrap's JS API to show modal
     let modal = new bootstrap.Modal(document.getElementById('edit-category-modal'));
     modal.show();

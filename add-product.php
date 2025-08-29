@@ -193,7 +193,6 @@ if ($stmt->execute()) {
             $template_product = $row['template'];
         }
         ?>
-        <p class="text-center">id <?php echo $template_product; ?></p>
 
         PHP;
         
