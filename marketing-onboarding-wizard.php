@@ -54,6 +54,7 @@
         cursor: pointer !important;
     }
 
+
     /* Remove browser defaults for consistency */
     .custom-checkbox-yellow {
         appearance: none;
@@ -118,22 +119,50 @@
         text-align: center;
     }
 
-    .marketing-header {
-        font-size: 26px !important;
-        font-weight: 700;
-        color: #212529;
-        text-align: center;
-        padding: 18px 16px 14px;
-        margin-bottom: 30px;
-        border-top: 5px solid #fec700;
-        background-color: #ffffff;
-        border-radius: 0 0 8px 8px;
+    .form-section-title {
+        font-size: 24px;
+        font-weight: 600;
+        color: #333;
+        padding: 12px 16px;
+        margin-bottom: 25px;
+        border-left: 5px solid #fec700;
+        background-color: #fffdf3;
+        border-radius: 6px;
         font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        box-shadow: 0 1px 5px rgba(0, 0, 0, 0.07);
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
     }
-
-    .w-85{
-        width:85% !important;
+    .modal {
+        position: fixed;
+        z-index: 1050;
+        top: 0; left: 0;
+        width: 100%; height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        display: none;
+        align-items: center;
+        justify-content: center;
+    }
+    .modal-content {
+        background: #fff;
+        padding: 25px 20px;
+        border-radius: 8px;
+        width: 100%;
+        max-width: 400px;
+        box-shadow: 0 5px 25px rgba(0, 0, 0, 0.2);
+        position: relative;
+    }
+    .close-btn {
+        position: absolute;
+        right: 15px;
+        top: 12px;
+        font-size: 20px;
+        cursor: pointer;
+        color: #aaa;
+    }
+    .close-btn:hover {
+        color: #000;
+    }
+    h5 {
+       font-size: 1.25rem !important;
     }
     .progress {
         height: 40px;
@@ -152,11 +181,51 @@
         height: 40px;
         font-size:20px;
     }
+    .w-85{
+        width:85% !important;
+    }
 </style>
 
 <?php
     $session_user_id = $_SESSION['user_id'];
+    $prod_id = intval($_GET['prod_id']);
+    $web_id = intval($_GET['id']);
+    
+    $get_type = "SELECT * FROM websites where id = $web_id";
+    $type_result = $conn->query($get_type);
+    $row_type = $type_result->fetch_assoc();
+    $type = $row_type['type'];
+    
+    if($type == "package"){
+        $sql = "SELECT * FROM package where id = $prod_id";
+        $result = $conn->query($sql);
+        $row = $result->fetch_assoc();
+        $template = $row['template'];     
+    }
+    elseif($type == "product"){
+        $sql = "SELECT * FROM products where id = $prod_id";
+        $result = $conn->query($sql);
+        $row = $result->fetch_assoc();
+        $template = $row['template'];   
+    }
 
+    // Fetch all past records of this user
+    $prevRecords = [];
+    $stmt = $conn->prepare("SELECT id, name FROM json WHERE user_id = ? AND template = ?");
+    $stmt->bind_param("is", $session_user_id, $template);
+    $stmt->execute();
+    $result = $stmt->get_result();
+
+    while ($row = $result->fetch_assoc()) {
+        $decoded = json_decode($row['name'], true);
+        if ($decoded && isset($decoded['business_name']['value'])) {
+            $prevRecords[] = [
+                'id' => $row['id'],
+                'data' => $decoded
+            ];
+        }
+    }
+    $stmt->close();
     // Determine if admin/dev is viewing another user's data
     $target_user_id = $session_user_id;
 
@@ -189,8 +258,8 @@
     $website_id = $_GET['id'] ?? 0;
     $website_id = intval($website_id);
 
-    $query = $conn->prepare("SELECT name FROM json WHERE website_id = ?");
-    $query->bind_param("i", $website_id);
+    $query = $conn->prepare("SELECT name FROM json WHERE user_id = ? AND website_id = ?");
+    $query->bind_param("ii", $user_id, $website_id);
     $query->execute();
     $query->store_result();
 
@@ -203,27 +272,27 @@
 
     if (isset($_POST['save'])) {
         $Business_name = $_POST['business_name'] ?? '';
-        $Industry_niche = $_POST['industry/niche'] ?? '';
+        $Industry_niche = $_POST['industry_niche'] ?? '';
         $Target_audience = $_POST['target_audience'] ?? '';
         $Unique_selling_proposition = $_POST['unique_selling_proposition'] ?? '';
         $Main_competitors = $_POST['main_competitors'] ?? '';
-        $Logo_brand_guidelines = $_POST['logo/brand_guidelines'] ?? '';
+        $Logo_brand_guidelines = $_POST['logo_brand_guidelines'] ?? '';
         $Website_url = $_POST['website_url'] ?? '';
         $Social_media_links = $_POST['social_media_links'] ?? '';
-        $Google_analytics_tag_manager_IDs = $_POST['google_analytics/tag_manager_IDs'] ?? '';
+        $Google_analytics_tag_manager_IDs = $_POST['google_analytics_tag_manager_IDs'] ?? '';
         $Other_platform_access = $_POST['other_platform_access'] ?? '';
         $Main_goals = $_POST['main_goals'] ?? '';
         $Preferred_channels = $_POST['preferred_channels'] ?? '';
         $Monthly_marketing_budget = $_POST['monthly_marketing_budget'] ?? '';
-        $Products_services_to_promote = $_POST['products/services_to_promote'] ?? '';
-        $Any_existing_offers_campaigns = $_POST['any_existing_offers/campaigns'] ?? '';
+        $Products_services_to_promote = $_POST['products_services_to_promote'] ?? '';
+        $Any_existing_offers_campaigns = $_POST['any_existing_offers_campaigns'] ?? '';
         $Content_bank = $_POST['content_bank'] ?? '';
         $Primary_point_of_contact = $_POST['primary_point_of_contact'] ?? '';
-        $Email_phone = $_POST['email&phone'] ?? '';
+        $Email_phone = $_POST['email_phone'] ?? '';
         $Preferred_communication_channel = $_POST['preferred_communication_channel'] ?? '';
         $Reporting_frequency = $_POST['reporting_frequency'] ?? '';
-        $Past_campaigns_tools_used = $_POST['past_campaigns/tools_used'] ?? '';
-        $Top_performing_content = $_POST['top-performing_content'] ?? '';
+        $Past_campaigns_tools_used = $_POST['past_campaigns_tools_used'] ?? '';
+        $Top_performing_content = $_POST['top_performing_content'] ?? '';
 
         function createField($value) {
             return [
@@ -234,44 +303,44 @@
 
         $data = json_encode([
             'business_name' => createField($Business_name),
-            'industry/niche' => createField($Industry_niche),
+            'industry_niche' => createField($Industry_niche),
             'target_audience' => createField($Target_audience),
             'unique_selling_proposition' => createField($Unique_selling_proposition),
             'main_competitors' => createField($Main_competitors),
-            'logo/brand_guidelines' => createField($Logo_brand_guidelines),
+            'logo_brand_guidelines' => createField($Logo_brand_guidelines),
             'website_url' => createField($Website_url),
             'social_media_links' => createField($Social_media_links),
-            'google_analytics/tag_manager_IDs' => createField($Google_analytics_tag_manager_IDs),
+            'google_analytics_tag_manager_IDs' => createField($Google_analytics_tag_manager_IDs),
             'other_platform_access' => createField($Other_platform_access),
             'main_goals' => createField($Main_goals),
             'preferred_channels' => createField($Preferred_channels),
             'monthly_marketing_budget' => createField($Monthly_marketing_budget),
-            'products/services_to_promote' => createField($Products_services_to_promote),
-            'any_existing_offers/campaigns' => createField($Any_existing_offers_campaigns),
+            'products_services_to_promote' => createField($Products_services_to_promote),
+            'any_existing_offers_campaigns' => createField($Any_existing_offers_campaigns),
             'content_bank' => createField($Content_bank),
             'primary_point_of_contact' => createField($Primary_point_of_contact),
-            'email&phone' => createField($Email_phone),
+            'email_phone' => createField($Email_phone),
             'preferred_communication_channel' => createField($Preferred_communication_channel),
             'reporting_frequency' => createField($Reporting_frequency),
-            'past_campaigns/tools_used' => createField($Past_campaigns_tools_used),
-            'top-performing_content' => createField($Top_performing_content),
+            'past_campaigns_tools_used' => createField($Past_campaigns_tools_used),
+            'top_performing_content' => createField($Top_performing_content),
         ]);
 
         $website_id = isset($_GET['id']) ? intval($_GET['id']) : 0;
 
-        $check = $conn->prepare("SELECT id FROM json WHERE user_id = ? AND website_id = ?");
-        $check->bind_param("ii", $user_id, $website_id);
+        $check = $conn->prepare("SELECT id FROM json WHERE user_id = ? AND website_id = ? AND template = ?");
+        $check->bind_param("iis", $user_id, $website_id, $template);
         $check->execute();
         $check->store_result();
 
         if ($check->num_rows > 0) {
-            $update = $conn->prepare("UPDATE json SET name = ? WHERE user_id = ? AND website_id = ?");
-            $update->bind_param("sii", $data, $user_id, $website_id);
+            $update = $conn->prepare("UPDATE json SET name = ? WHERE user_id = ? AND website_id = ? AND template = ?");
+            $update->bind_param("siis", $data, $user_id, $website_id, $template);
             $success = $update->execute();
             $update->close();
         } else {
-            $insert = $conn->prepare("INSERT INTO json (name, user_id, website_id) VALUES (?, ?, ?)");
-            $insert->bind_param("sii", $data, $user_id, $website_id);
+            $insert = $conn->prepare("INSERT INTO json (name, user_id, website_id, template) VALUES (?, ?, ?, ?)");
+            $insert->bind_param("siis", $data, $user_id, $website_id, $template);
             $success = $insert->execute();
             $insert->close();
         }
@@ -290,12 +359,30 @@
             </script>';
     }
 
+    if (!empty($prevRecords)): ?>
+        <div class="ms-10">
+            
+            <div class="form-check-group">
+                <?php foreach ($prevRecords as $record): ?>
+                    <div class="form-check form-check-inline">
+                        <input type="checkbox" 
+                               class="form-check-input load-record mt-4" 
+                               data-record='<?php echo json_encode($record['data']); ?>'
+                               id="rec_<?php echo $record['id']; ?>">
+                        <label for="rec_<?php echo $record['id']; ?>" class="form-check-label">
+                            <?php echo htmlspecialchars($record['data']['business_name']['value']); ?>
+                        </label>
+                    </div>
+                <?php endforeach; ?>
+            </div>
+        </div>
+    <?php endif; 
+
     function renderFieldExtended($fieldName, $savedData, $user_role, $label = '', $placeholder = '', $type = 'text', $options = []) {
         $val = $savedData[$fieldName]['value'] ?? '';
         $status = $savedData[$fieldName]['status'] ?? 'pending';
         $inputId = 'field_' . htmlspecialchars($fieldName);
         $isAdmin = in_array($user_role, [1, 2, 7]);
-        // $isReadonly = $isAdmin ? 'readonly' : '';
         $isReadonly = ($isAdmin || (!$isAdmin && ($status === 'approved' || $status === 'rejected'))) ? 'readonly' : '';
         $isDisabled = ($isAdmin || (!$isAdmin && ($status === 'approved' || $status === 'rejected'))) ? 'disabled' : '';
         $dataValue = is_array($val) ? implode(',', $val) : $val;
@@ -331,16 +418,6 @@
             echo '<textarea class="form-control w-85 ' . $styleClass . '" id="' . $inputId . '" name="' . htmlspecialchars($fieldName) . '" rows="3" placeholder="' . htmlspecialchars($placeholder) . '" ' . $isReadonly . '>' . htmlspecialchars($val) . '</textarea>';
         }
 
-        // // === SELECT (Dropdown) ===
-        // elseif ($type === 'select') {
-        //     echo '<select class="form-control w-85 ' . $styleClass . '" id="' . $inputId . '" name="' . htmlspecialchars($fieldName) . '" ' . $isDisabled . '>';
-        //     foreach ($options as $option) {
-        //         $selected = ($val == $option) ? 'selected' : '';
-        //         echo '<option value="' . htmlspecialchars($option) . '" ' . $selected . '>' . htmlspecialchars($option) . '</option>';
-        //     }
-        //     echo '</select>';
-        // }
-
         // === SELECT (Dropdown) ===
         elseif ($type === 'select') {
             echo '<select class="form-control w-85 ' . $styleClass . '" id="' . $inputId . '" name="' . htmlspecialchars($fieldName) . '" ' . $isDisabled . '>';
@@ -356,25 +433,12 @@
             echo '</select>';
         }
 
-        // // === RADIO ===
-        // elseif ($type === 'radio') {
-        //     foreach ($options as $option) {
-        //         $checked = ($val == $option) ? 'checked' : '';
-        //         echo '<div class="form-check form-check-inline">';
-        //         // echo '<input class="form-check-input" type="radio" id="' . $inputId . '_' . $option . '" name="' . htmlspecialchars($fieldName) . '" value="' . htmlspecialchars($option) . '" ' . $checked . ' ' . ($isAdmin ? 'disabled' : '') . '>';
-        //         echo '<input class="form-check-input" type="radio" id="' . $inputId . '_' . $option . '" name="' . htmlspecialchars($fieldName) . '" value="' . htmlspecialchars($option) . '" ' . $checked . ' ' . $isDisabled . '>';
-        //         echo '<label class="form-check-label" for="' . $inputId . '_' . $option . '">' . htmlspecialchars($option) . '</label>';
-        //         echo '</div>';
-        //     }
-        // }
-
         // === CHECKBOX ===
         elseif ($type === 'checkbox') {
             $valArray = is_array($val) ? $val : explode(',', str_replace(' ', '', $val));
             foreach ($options as $option) {
                 $checked = in_array($option, $valArray) ? 'checked' : '';
                 echo '<div class="form-check form-check-inline">';
-                // echo '<input class="form-check-input" type="checkbox" name="' . htmlspecialchars($fieldName) . '[]" value="' . htmlspecialchars($option) . '" ' . $checked . ' ' . ($isAdmin ? 'disabled' : '') . '>';
                 echo '<input class="form-check-input mt-4" type="checkbox" name="' . htmlspecialchars($fieldName) . '[]" value="' . htmlspecialchars($option) . '" ' . $checked . ' ' . $isDisabled . '>';
                 echo '<label class="form-check-label">' . htmlspecialchars($option) . '</label>';
                 echo '</div>';
@@ -383,7 +447,6 @@
 
         // === FILE ===
         elseif ($type === 'file') {
-            // echo '<input type="file" class="form-control ' . $styleClass . '" id="' . $inputId . '" name="' . htmlspecialchars($fieldName) . '" ' . ($isAdmin ? 'disabled' : '') . '>';
             echo '<input type="file" class="form-control w-85 ' . $styleClass . '" id="' . $inputId . '" name="' . htmlspecialchars($fieldName) . '" ' . $isDisabled . '>';
 
             if (!empty($val)) {
@@ -409,17 +472,6 @@
             echo '<button type="button" class="btn btn-danger btn-sm reject-btn" data-field="' . htmlspecialchars($fieldName) . '" title="Reject">&#10006;</button>';
             echo '</div>';
         }
-
-        // === USER Rejected Fields – Show Edit Icon ===
-        // if (!$isAdmin && $status === 'rejected') {
-        //     echo '<button type="button" class="input-group-text text-warning edit-btn ms-2" title="Edit"
-        //         data-field="' . htmlspecialchars($fieldName) . '"
-        //         data-type="' . htmlspecialchars($type) . '"
-        //         data-value="' . htmlspecialchars($dataValue) . '"
-        //         ' . $dataOptions . '>
-        //         &#9998;
-        //     </button>';
-        // }
 
         if (!$isAdmin && $status === 'rejected') {
             echo '<button type="button" class="input-group-text text-warning edit-btn ms-2" title="Edit"
@@ -456,7 +508,7 @@
         $jsonData = json_decode($row['name'], true) ?? [];
 
         if (isset($_POST['edit_file_upload']) && isset($_FILES['file'])) {
-            $uploadDir = 'uploads/';
+            $uploadDir = 'Uploads/';
             $filename = basename($_FILES['file']['name']);
             $targetPath = $uploadDir . uniqid() . '_' . $filename;
             if (move_uploaded_file($_FILES['file']['tmp_name'], $targetPath)) {
@@ -508,7 +560,7 @@
         if (!empty($_FILES['file'])) {
             $fileTmp = $_FILES['file']['tmp_name'];
             $fileName = basename($_FILES['file']['name']);
-            $uploadDir = 'uploads/';
+            $uploadDir = 'Uploads/';
             $targetPath = $uploadDir . time() . '_' . preg_replace("/[^a-zA-Z0-9.\-_]/", "", $fileName);
 
             if (!is_dir($uploadDir)) {
@@ -566,13 +618,6 @@
                                 </div>
 
                                 <form action="" method="post" id="myForm" role="form" enctype="multipart/form-data">
-                                    <!-- <?php if (in_array($user_role, [1, 2, 7])): ?>
-                                        <div class="mb-5">
-                                            <button type="button" id="bulkApproveBtn" class="btn btn-success btn-sm">Bulk Approve</button>
-                                            <button type="button" id="bulkRejectBtn" class="btn btn-danger btn-sm">Bulk Reject</button>
-                                        </div>
-                                    <?php endif; ?> -->
-
                                     <?php if (in_array($user_role, [1, 2, 7])): ?>
                                         <div class="d-flex justify-content-between align-items-center mb-3">
                                             <div class="form-check d-flex align-items-center m-0">
@@ -589,66 +634,51 @@
                                     <h5>1. Business Information</h5>
                                     <?php
                                         renderFieldExtended('business_name', $savedData, $user_role, 'Business Name', '', 'text');
-
-                                        renderFieldExtended('industry/niche', $savedData, $user_role, 'Industry / Niche', '', 'text');
-
+                                        renderFieldExtended('industry_niche', $savedData, $user_role, 'Industry / Niche', '', 'text');
                                         renderFieldExtended('target_audience', $savedData, $user_role, 'Target Audience', '', 'textarea');
-
                                         renderFieldExtended('unique_selling_proposition', $savedData, $user_role, 'Unique Selling Proposition (USP)', '', 'textarea');
-
                                         renderFieldExtended('main_competitors', $savedData, $user_role, 'Main Competitors', '', 'textarea');
                                     ?>
 
                                     <h5>2. Branding & Assets</h5>
                                     <?php
-                                        renderFieldExtended('logo/brand_guidelines', $savedData, $user_role, 'Logo / Brand Guidelines (Upload separately)', 'Describe brand colors, fonts, voice, etc.', 'textarea');
+                                        renderFieldExtended('logo_brand_guidelines', $savedData, $user_role, 'Logo / Brand Guidelines (Upload separately)', 'Describe brand colors, fonts, voice, etc.', 'textarea');
                                     ?>
 
                                     <h5>3. Digital Presence</h5>
                                     <?php
                                         renderFieldExtended('website_url', $savedData, $user_role, 'Website URL', '', 'text');
-
                                         renderFieldExtended('social_media_links', $savedData, $user_role, 'Social Media Links', '', 'textarea');
-
-                                        renderFieldExtended('google_analytics/tag_manager_IDs', $savedData, $user_role, 'Google Analytics / Tag Manager IDs', '', 'textarea');
-
+                                        renderFieldExtended('google_analytics_tag_manager_IDs', $savedData, $user_role, 'Google Analytics / Tag Manager IDs', '', 'textarea');
                                         renderFieldExtended('other_platform_access', $savedData, $user_role, 'Other Platform Access (e.g., Facebook Ads, Email Tools)', '', 'textarea');
                                     ?>
 
                                     <h5>4. Marketing Objectives</h5>
                                     <?php
                                         renderFieldExtended('main_goals', $savedData, $user_role, 'Main Goals', 'E.g., Increase traffic, generate leads, grow followers', 'textarea');
-
                                         renderFieldExtended('preferred_channels', $savedData, $user_role, 'Preferred Channels', '', 'select', ['SEO', 'Google Ads (PPC)', 'Social Media Marketing', 'Email Marketing', 'Content Marketing', 'Influencer Marketing']);
-
                                         renderFieldExtended('monthly_marketing_budget', $savedData, $user_role, 'Monthly Marketing Budget', '', 'textarea');
                                     ?>
 
                                     <h5>5. Content & Offers</h5>
                                     <?php
-                                        renderFieldExtended('products/services_to_promote', $savedData, $user_role, 'Products/Services to Promote', '', 'textarea');
-
-                                        renderFieldExtended('any_existing_offers/campaigns', $savedData, $user_role, 'Any Existing Offers / Campaigns', '', 'textarea');
-
+                                        renderFieldExtended('products_services_to_promote', $savedData, $user_role, 'Products/Services to Promote', '', 'textarea');
+                                        renderFieldExtended('any_existing_offers_campaigns', $savedData, $user_role, 'Any Existing Offers / Campaigns', '', 'textarea');
                                         renderFieldExtended('content_bank', $savedData, $user_role, 'Content Bank (Blog links, brochures, etc.)', '', 'textarea');
                                     ?>
 
                                     <h5>6. Communication & Legal</h5>
                                     <?php
                                         renderFieldExtended('primary_point_of_contact', $savedData, $user_role, 'Primary Point of Contact', '', 'text');
-
-                                        renderFieldExtended('email&phone', $savedData, $user_role, 'Email & Phone', '', 'text');
-
+                                        renderFieldExtended('email_phone', $savedData, $user_role, 'Email & Phone', '', 'text');
                                         renderFieldExtended('preferred_communication_channel', $savedData, $user_role, 'Preferred Communication Channel', '', 'select', ['Email', 'WhatsApp', 'Phone Call', 'Zoom / Meet']);
-
                                         renderFieldExtended('reporting_frequency', $savedData, $user_role, 'Reporting Frequency', '', 'select', ['Weekly', 'Bi-Weekly', 'Monthly']);
                                     ?>
                                     
                                     <h5>7. Past Marketing Data (Optional)</h5>
                                     <?php
-                                        renderFieldExtended('past_campaigns/tools_used', $savedData, $user_role, 'Past Campaigns / Tools Used', '', 'textarea');
-
-                                        renderFieldExtended('top-performing_content', $savedData, $user_role, 'Top-Performing Content (if known)', '', 'textarea');
+                                        renderFieldExtended('past_campaigns_tools_used', $savedData, $user_role, 'Past Campaigns / Tools Used', '', 'textarea');
+                                        renderFieldExtended('top_performing_content', $savedData, $user_role, 'Top-Performing Content (if known)', '', 'textarea');
                                     ?>
 
                                     <?php if (in_array($user_role, [8])): ?>
@@ -664,42 +694,6 @@
         </div>
     </div>
 </div>
-
-<style>
-    .modal {
-        position: fixed;
-        z-index: 1050;
-        top: 0; left: 0;
-        width: 100%; height: 100%;
-        background: rgba(0, 0, 0, 0.5);
-        display: none;
-        align-items: center;
-        justify-content: center;
-    }
-    .modal-content {
-        background: #fff;
-        padding: 25px 20px;
-        border-radius: 8px;
-        width: 100%;
-        max-width: 400px;
-        box-shadow: 0 5px 25px rgba(0, 0, 0, 0.2);
-        position: relative;
-    }
-    .close-btn {
-        position: absolute;
-        right: 15px;
-        top: 12px;
-        font-size: 20px;
-        cursor: pointer;
-        color: #aaa;
-    }
-    .close-btn:hover {
-        color: #000;
-    }
-    h5 {
-       font-size: 1.25rem !important;
-    }
-</style>
 
 <script>
     document.addEventListener('DOMContentLoaded', () => {
@@ -755,10 +749,6 @@
                         ${filePreview}
                         <input type="file" class="form-control" id="modalInput">`;
                 } 
-                // else {
-                //     // Default input (text, email, number etc.)
-                //     fieldContainer.innerHTML = `<input type="text" id="modalInput" class="form-control" value="${value}" />`;
-                // }
                 else if (currentType === 'select') {
                     let selectHTML = `<select id="modalInput" class="form-control">`;
                     options.forEach(opt => {
@@ -955,7 +945,6 @@
                         Swal.fire('Success', 'File updated.', 'success').then(() => location.reload());
                     },
                     error: function () {
-                        // Swal.fire('Error', 'File upload failed.', 'error');
                         Swal.fire('Success', 'File updated.', 'success').then(() => location.reload());
                     }
                 });
@@ -987,7 +976,6 @@
                 if (res === 'updated') {
                     Swal.fire('Success', 'Field updated.', 'success').then(() => location.reload());
                 } else {
-                    // Swal.fire('Error', 'Failed to update: ' + res, 'error');
                     Swal.fire('Success', 'Field updated.', 'success').then(() => location.reload());
                 }
             }).fail(function () {
@@ -997,74 +985,34 @@
     });
 </script>
 
-<!-- Progress Bar -->
-<!-- <script>
-    function updateProgressBar() {
-        let filled = 0;
-        const totalFields = 6;
-
-        const name = $('#field_name').val()?.trim();
-        if (name) filled++;
-
-        const facebookId = $('#field_facebook_id').val()?.trim();
-        if (facebookId) filled++;
-
-        const password = $('#field_password').val()?.trim();
-        if (password) filled++;
-
-        const websiteTypes = $('input[name="website_type[]"]:checked').length;
-        if (websiteTypes > 0) filled++;
-
-        const address = $('#field_address').val()?.trim();
-        if (address) filled++;
-
-        const logoInput = $('#field_logo');
-        const logoFile = logoInput[0]?.files?.length > 0;
-        const existingLogo = logoInput.closest('.form-group').find('img, a').length > 0;
-        if (logoFile || existingLogo) filled++;
-
-        const percent = Math.round((filled / totalFields) * 100);
-        $('#formProgressBar').css('width', percent + '%').text(percent + '%');
-    }
-
- 
-    $(document).ready(function () {
-    updateProgressBar();
-
-        $('#field_name, #field_facebook_id, #field_password, #field_address').on('input', updateProgressBar);
-        $('input[name="website_type[]"]').on('change', updateProgressBar);
-        $('#field_logo').on('change', updateProgressBar);
-    });
-</script> -->
-
 <script>
     const fieldNames = [
         'business_name',
-        'industry/niche',
+        'industry_niche',
         'target_audience',
         'unique_selling_proposition',
         'main_competitors',
-        'logo/brand_guidelines',
+        'logo_brand_guidelines',
         'website_url',
         'social_media_links',
-        'google_analytics/tag_manager_IDs',
+        'google_analytics_tag_manager_IDs',
         'other_platform_access',
         'main_goals',
         'preferred_channels',
         'monthly_marketing_budget',
-        'products/services_to_promote',
-        'any_existing_offers/campaigns',
+        'products_services_to_promote',
+        'any_existing_offers_campaigns',
         'content_bank',
         'primary_point_of_contact',
-        'email&phone',
+        'email_phone',
         'preferred_communication_channel',
         'reporting_frequency',
-        'past_campaigns/tools_used',
-        'top-performing_content'
+        'past_campaigns_tools_used',
+        'top_performing_content'
     ];
 
     function normalizeName(name) {
-        // Convert names like "industry/niche" to a jQuery-safe selector
+        // Convert names like "industry_niche" to a jQuery-safe selector
         return name.replace(/[\[\]\/]/g, "\\$&");
     }
 
@@ -1134,5 +1082,58 @@
         }
     });
 </script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('.load-record').forEach(cb => {
+        cb.addEventListener('change', function () {
+            const form = document.getElementById('myForm');
 
+            // Uncheck all other checkboxes
+            document.querySelectorAll('.load-record').forEach(other => {
+                if (other !== this) other.checked = false;
+            });
+
+            if (this.checked) {
+                const data = JSON.parse(this.dataset.record);
+
+                // === Fill fields ===
+                if (data.business_name?.value) document.getElementById('field_business_name').value = data.business_name.value;
+                if (data.industry_niche?.value) document.getElementById('field_industry_niche').value = data.industry_niche.value;
+                if (data.target_audience?.value) document.getElementById('field_target_audience').value = data.target_audience.value;
+                if (data.unique_selling_proposition?.value) document.getElementById('field_unique_selling_proposition').value = data.unique_selling_proposition.value;
+                if (data.main_competitors?.value) document.getElementById('field_main_competitors').value = data.main_competitors.value;
+                if (data.logo_brand_guidelines?.value) document.getElementById('field_logo_brand_guidelines').value = data.logo_brand_guidelines.value;
+                if (data.website_url?.value) document.getElementById('field_website_url').value = data.website_url.value;
+                if (data.social_media_links?.value) document.getElementById('field_social_media_links').value = data.social_media_links.value;
+                if (data.google_analytics_tag_manager_IDs?.value) document.getElementById('field_google_analytics_tag_manager_IDs').value = data.google_analytics_tag_manager_IDs.value;
+                if (data.other_platform_access?.value) document.getElementById('field_other_platform_access').value = data.other_platform_access.value;
+                if (data.main_goals?.value) document.getElementById('field_main_goals').value = data.main_goals.value;
+                if (data.preferred_channels?.value) document.getElementById('field_preferred_channels').value = data.preferred_channels.value;
+                if (data.monthly_marketing_budget?.value) document.getElementById('field_monthly_marketing_budget').value = data.monthly_marketing_budget.value;
+                if (data.products_services_to_promote?.value) document.getElementById('field_products_services_to_promote').value = data.products_services_to_promote.value;
+                if (data.any_existing_offers_campaigns?.value) document.getElementById('field_any_existing_offers_campaigns').value = data.any_existing_offers_campaigns.value;
+                if (data.content_bank?.value) document.getElementById('field_content_bank').value = data.content_bank.value;
+                if (data.primary_point_of_contact?.value) document.getElementById('field_primary_point_of_contact').value = data.primary_point_of_contact.value;
+                if (data.email_phone?.value) document.getElementById('field_email_phone').value = data.email_phone.value;
+                if (data.preferred_communication_channel?.value) document.getElementById('field_preferred_communication_channel').value = data.preferred_communication_channel.value;
+                if (data.reporting_frequency?.value) document.getElementById('field_reporting_frequency').value = data.reporting_frequency.value;
+                if (data.past_campaigns_tools_used?.value) document.getElementById('field_past_campaigns_tools_used').value = data.past_campaigns_tools_used.value;
+                if (data.top_performing_content?.value) document.getElementById('field_top_performing_content').value = data.top_performing_content.value;
+
+                // Update progress bar if exists
+                if (typeof updateProgressBar === 'function') updateProgressBar();
+
+            } else {
+                // === If unchecked → Reset the form ===
+                form.reset();
+
+                // Remove uploaded file preview if any
+                document.querySelectorAll('.record-preview').forEach(el => el.remove());
+
+                if (typeof updateProgressBar === 'function') updateProgressBar();
+            }
+        });
+    });
+});
+</script>
 <?php include './partials/layouts/layoutBottom.php' ?>
