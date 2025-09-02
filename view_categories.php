@@ -86,6 +86,7 @@
                                     websites.created_at,
                                     websites.duration,
                                     websites.product_id,
+                                    websites.type,
                                     JSON_UNQUOTE(JSON_EXTRACT(`json`.name, '$.name.value')) AS json_name
                                 FROM 
                                     users 
@@ -114,6 +115,7 @@
                                         websites.created_at,
                                         websites.duration,
                                         websites.product_id,
+                                        websites.type,
                                         JSON_UNQUOTE(JSON_EXTRACT(`json`.name, '$.name.value')) AS json_name
                                     FROM 
                                         users
@@ -538,7 +540,7 @@
                                         </div>
                                         <div class="manage-btn-wrapper">
                                         <!--<a href="$manageLink?website_id=<?php echo (int)\$site['id']; ?>" class="dashboard-btn">Manage</a>-->
-                                        <a href="$manageLink?website_id=<?php echo (int)\$site['id']; ?>&product_id=<?php echo (int)\$site['product_id']; ?>" class="dashboard-btn">Manage</a>
+                                        <a href="$manageLink?website_id=<?php echo (int)\$site['id']; ?>&product_id=<?php echo (int)\$site['product_id']; ?>&type=<?php echo \$site['type']; ?>" class="dashboard-btn">Manage</a>
 
                                         </div>
                                     </div>
@@ -1236,7 +1238,6 @@
                             <tr>
                                 <th scope="col">Category Name</th>
                                 <th scope="col">Category URL</th>
-                                <th scope="col" class="text-center">Module</th>
                                 <th scope="col" class="text-center">Action</th>
                             </tr>
                         </thead>
@@ -1246,26 +1247,6 @@
                             <tr>
                                 <td><?= htmlspecialchars($row['cat_name']) ?></td>
                                 <td><?= htmlspecialchars($row['cat_url']) ?></td>
-                                <?php
-                                // map values to their labels
-                                $modules = [
-                                    "website" => "Website",
-                                    "marketing" => "Marketing",
-                                    "visa" => "Visa",
-                                    "website-onboarding" => "Website Onboarding",
-                                    "marketing-onboarding" => "Marketing Onboarding",
-                                    "domain-onboarding" => "Domain Onboarding",
-                                    "email-onboarding" => "Email Onboarding",
-                                    "mobile-app-onboarding" => "Mobile App Onboarding"
-                                ];
-
-                                // get value from db
-                                $value = $row['cat_module'];
-
-                                // show label if exists, otherwise show raw value
-                                $label = isset($modules[$value]) ? $modules[$value] : $value;
-                                ?>
-                                <td class="text-center"><?= htmlspecialchars($label) ?></td>                               
                                 <td class="text-center">
                                     <a onclick="openEditModal('<?= $row['cat_id'] ?>', '<?= htmlspecialchars($row['cat_name']) ?>', '<?= htmlspecialchars($row['cat_url']) ?>', '<?= htmlspecialchars($row['cat_module']) ?>')" class="fa fa-edit fw-medium w-32-px h-32-px bg-warning-focus text-warning-main rounded-circle d-inline-flex align-items-center justify-content-center cursor-pointer">
                                     </a>

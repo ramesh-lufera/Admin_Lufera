@@ -2,7 +2,7 @@
         <?php
             $Id = $_SESSION['user_id'];
             $websiteId = isset($_GET['website_id']) ? (int)$_GET['website_id'] : 0;
-
+            $productId = isset($_GET['product_id']) ? (int)$_GET['product_id'] : 0;
             $stmt = $conn->prepare("SELECT user_id, business_name, role FROM users WHERE id = ?");
             $stmt->bind_param("i", $Id);
             $stmt->execute();
@@ -203,7 +203,7 @@
                 </div>
                 <div class="d-flex gap-2">
                 <button type="button" class="btn btn-sm btn-upgrade">Upgrade</button>
-                    <a href="./marketing-wizard.php?id=<?= $websiteId ?>"><button type="button" class="btn btn-sm btn-edit-website">Wizard</button></a>
+                    <a href="./marketing-wizard.php?id=<?= $websiteId ?>&prod_id=<?= $productId ?>"><button type="button" class="btn btn-sm btn-edit-website">Wizard</button></a>
                 </div>
             </div>
             <form method="post" autocomplete="off">

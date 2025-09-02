@@ -148,7 +148,8 @@ img {
 						<div class="action">
 							<!-- <button class="add-to-cart btn btn-default" type="button">Get Started</button> -->
               <form action="cart.php" method="POST">
-              <input type="hidden" name="id" value="<?= htmlspecialchars($id) ?>">
+                  <input type="hidden" name="type" value="product">  
+                  <input type="hidden" name="id" value="<?= htmlspecialchars($id) ?>">
                   <input type="hidden" name="plan_name" value="<?= htmlspecialchars($row['name']) ?>">
                   <input type="hidden" name="subtitle" value="<?= htmlspecialchars($row['subtitle']) ?>">
                   <input type="hidden" name="price" value="<?= htmlspecialchars($row['price']) ?>">

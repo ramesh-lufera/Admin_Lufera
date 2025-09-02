@@ -1,8 +1,6 @@
 <?php include './partials/layouts/layoutTop.php'; ?>
 
 <style>
-    
-
     .form-group {
         margin-bottom: 24px !important;
     }
@@ -190,7 +188,44 @@
 
 <?php
     $session_user_id = $_SESSION['user_id'];
+    $prod_id = intval($_GET['prod_id']);
+    $web_id = intval($_GET['id']);
+    
+    $get_type = "SELECT * FROM websites where id = $web_id";
+    $type_result = $conn->query($get_type);
+    $row_type = $type_result->fetch_assoc();
+    $type = $row_type['type'];
+    
+    if($type == "package"){
+        $sql = "SELECT * FROM package where id = $prod_id";
+        $result = $conn->query($sql);
+        $row = $result->fetch_assoc();
+        $template = $row['template'];     
+    }
+    elseif($type == "product"){
+        $sql = "SELECT * FROM products where id = $prod_id";
+        $result = $conn->query($sql);
+        $row = $result->fetch_assoc();
+        $template = $row['template'];   
+    }
 
+    // Fetch all past records of this user
+    $prevRecords = [];
+    $stmt = $conn->prepare("SELECT id, name FROM json WHERE user_id = ? AND template = ?");
+    $stmt->bind_param("is", $session_user_id, $template);
+    $stmt->execute();
+    $result = $stmt->get_result();
+
+    while ($row = $result->fetch_assoc()) {
+        $decoded = json_decode($row['name'], true);
+        if ($decoded && isset($decoded['bussiness_name']['value'])) { // Updated key
+            $prevRecords[] = [
+                'id' => $row['id'],
+                'data' => $decoded
+            ];
+        }
+    }
+    $stmt->close();
     // Determine if admin/dev is viewing another user's data
     $target_user_id = $session_user_id;
 
@@ -223,8 +258,8 @@
     $website_id = $_GET['id'] ?? 0;
     $website_id = intval($website_id);
 
-    $query = $conn->prepare("SELECT name FROM json WHERE website_id = ?");
-    $query->bind_param("i", $website_id);
+    $query = $conn->prepare("SELECT name FROM json WHERE user_id = ? AND website_id = ?");
+    $query->bind_param("ii", $user_id, $website_id);
     $query->execute();
     $query->store_result();
 
@@ -236,9 +271,9 @@
     $query->close();
 
     if (isset($_POST['save'])) {
-        $bussiness_name = $_POST['bussiness_name'] ?? '';
+        $bussiness_name = $_POST['bussiness_name'] ?? ''; // Updated key
         $industry_niche = $_POST['industry_niche'] ?? '';
-        $describe_bussiness = $_POST['describe_bussiness'] ?? '';
+        $business_description = $_POST['business_description'] ?? ''; // Updated key
         $target_audience = $_POST['target_audience'] ?? '';
 
         $existing_website = $_POST['existing_website'] ?? '';
@@ -273,13 +308,13 @@
         }
         
         $data = json_encode([
-            'bussiness_name' => createField($bussiness_name),
+            'bussiness_name' => createField($bussiness_name), // Updated key
             'industry_niche' => createField($industry_niche),
-            'describe_bussiness' => createField($describe_bussiness),
+            'business_description' => createField($business_description), // Updated key
             'target_audience' => createField($target_audience),
 
             'existing_website' => createField($existing_website),
-            'website_purpose' => createField($website_purpose),
+            'website_purpose' => createField(str_replace(' \/ ', '/', $website_purpose)), // Clean value
             'top_goals' => createField($top_goals),
 
             'has_logo' => createField($has_logo),
@@ -305,19 +340,19 @@
 
         $website_id = isset($_GET['id']) ? intval($_GET['id']) : 0;
 
-        $check = $conn->prepare("SELECT id FROM json WHERE user_id = ? AND website_id = ?");
-        $check->bind_param("ii", $user_id, $website_id);
+        $check = $conn->prepare("SELECT id FROM json WHERE user_id = ? AND website_id = ? AND template = ?");
+        $check->bind_param("iis", $user_id, $website_id, $template);
         $check->execute();
         $check->store_result();
 
         if ($check->num_rows > 0) {
-            $update = $conn->prepare("UPDATE json SET name = ? WHERE user_id = ? AND website_id = ?");
-            $update->bind_param("sii", $data, $user_id, $website_id);
+            $update = $conn->prepare("UPDATE json SET name = ? WHERE user_id = ? AND website_id = ? AND template = ?");
+            $update->bind_param("siis", $data, $user_id, $website_id, $template);
             $success = $update->execute();
             $update->close();
         } else {
-            $insert = $conn->prepare("INSERT INTO json (name, user_id, website_id) VALUES (?, ?, ?)");
-            $insert->bind_param("sii", $data, $user_id, $website_id);
+            $insert = $conn->prepare("INSERT INTO json (name, user_id, website_id, template) VALUES (?, ?, ?, ?)");
+            $insert->bind_param("siis", $data, $user_id, $website_id, $template);
             $success = $insert->execute();
             $insert->close();
         }
@@ -331,18 +366,34 @@
                     title: "Success!",
                     text: "Data saved successfully!"
                 }).then(() => {
-                    // window.location.href = "website-wizard.php";
                     window.history.back();
                 });
             </script>';
     }
+
+    if (!empty($prevRecords)): ?>
+        <div class="ms-10">
+            <div class="form-check-group">
+                <?php foreach ($prevRecords as $record): ?>
+                    <div class="form-check form-check-inline">
+                        <input type="checkbox" 
+                               class="form-check-input load-record mt-4" 
+                               data-record='<?php echo json_encode($record['data']); ?>'
+                               id="rec_<?php echo $record['id']; ?>">
+                        <label for="rec_<?php echo $record['id']; ?>" class="form-check-label">
+                            <?php echo htmlspecialchars($record['data']['bussiness_name']['value']); ?>
+                        </label>
+                    </div>
+                <?php endforeach; ?>
+            </div>
+        </div>
+    <?php endif; 
 
     function renderFieldExtended($fieldName, $savedData, $user_role, $label = '', $placeholder = '', $type = 'text', $options = []) {
         $val = $savedData[$fieldName]['value'] ?? '';
         $status = $savedData[$fieldName]['status'] ?? 'pending';
         $inputId = 'field_' . htmlspecialchars($fieldName);
         $isAdmin = in_array($user_role, [1, 2, 7]);
-        // $isReadonly = $isAdmin ? 'readonly' : '';
         $isReadonly = ($isAdmin || (!$isAdmin && ($status === 'approved' || $status === 'rejected'))) ? 'readonly' : '';
         $isDisabled = ($isAdmin || (!$isAdmin && ($status === 'approved' || $status === 'rejected'))) ? 'disabled' : '';
         $dataValue = is_array($val) ? implode(',', $val) : $val;
@@ -370,12 +421,12 @@
 
         // === TEXT / EMAIL ===
         if ($type === 'text' || $type === 'email') {
-            echo '<input type="' . $type . '" class="form-control  w-85 ' . $styleClass . '" id="' . $inputId . '" name="' . htmlspecialchars($fieldName) . '" placeholder="' . htmlspecialchars($placeholder) . '" value="' . htmlspecialchars($val) . '" ' . $isReadonly . '>';
+            echo '<input type="' . $type . '" class="form-control w-85 ' . $styleClass . '" id="' . $inputId . '" name="' . htmlspecialchars($fieldName) . '" placeholder="' . htmlspecialchars($placeholder) . '" value="' . htmlspecialchars($val) . '" ' . $isReadonly . '>';
         }
 
         // === TEXTAREA ===
         elseif ($type === 'textarea') {           
-            echo '<textarea class="form-control  w-85 ' . $styleClass . '" id="' . $inputId . '" name="' . htmlspecialchars($fieldName) . '" rows="3" placeholder="' . htmlspecialchars($placeholder) . '" ' . $isReadonly . '>' . htmlspecialchars($val) . '</textarea>';
+            echo '<textarea class="form-control w-85 ' . $styleClass . '" id="' . $inputId . '" name="' . htmlspecialchars($fieldName) . '" rows="3" placeholder="' . htmlspecialchars($placeholder) . '" ' . $isReadonly . '>' . htmlspecialchars($val) . '</textarea>';
         }
 
         // === RADIO ===
@@ -383,7 +434,6 @@
             foreach ($options as $option) {
                 $checked = ($val == $option) ? 'checked' : '';
                 echo '<div class="form-check form-check-inline">';
-                // echo '<input class="form-check-input" type="radio" id="' . $inputId . '_' . $option . '" name="' . htmlspecialchars($fieldName) . '" value="' . htmlspecialchars($option) . '" ' . $checked . ' ' . ($isAdmin ? 'disabled' : '') . '>';
                 echo '<input class="form-check-input mt-4" type="radio" id="' . $inputId . '_' . $option . '" name="' . htmlspecialchars($fieldName) . '" value="' . htmlspecialchars($option) . '" ' . $checked . ' ' . $isDisabled . '>';
                 echo '<label class="form-check-label" for="' . $inputId . '_' . $option . '">' . htmlspecialchars($option) . '</label>';
                 echo '</div>';
@@ -396,7 +446,6 @@
             foreach ($options as $option) {
                 $checked = in_array($option, $valArray) ? 'checked' : '';
                 echo '<div class="form-check form-check-inline">';
-                // echo '<input class="form-check-input" type="checkbox" name="' . htmlspecialchars($fieldName) . '[]" value="' . htmlspecialchars($option) . '" ' . $checked . ' ' . ($isAdmin ? 'disabled' : '') . '>';
                 echo '<input class="form-check-input mt-4" type="checkbox" name="' . htmlspecialchars($fieldName) . '[]" value="' . htmlspecialchars($option) . '" ' . $checked . ' ' . $isDisabled . '>';
                 echo '<label class="form-check-label">' . htmlspecialchars($option) . '</label>';
                 echo '</div>';
@@ -405,8 +454,7 @@
 
         // === FILE ===
         elseif ($type === 'file') {
-            // echo '<input type="file" class="form-control ' . $styleClass . '" id="' . $inputId . '" name="' . htmlspecialchars($fieldName) . '" ' . ($isAdmin ? 'disabled' : '') . '>';
-            echo '<input type="file" class="form-control  w-85 ' . $styleClass . '" id="' . $inputId . '" name="' . htmlspecialchars($fieldName) . '" ' . $isDisabled . '>';
+            echo '<input type="file" class="form-control w-85 ' . $styleClass . '" id="' . $inputId . '" name="' . htmlspecialchars($fieldName) . '" ' . $isDisabled . '>';
 
             if (!empty($val)) {
                 echo '<div class="mt-3">';
@@ -423,8 +471,8 @@
         }
 
         // === DATE ===
-         elseif ($type === 'date') {
-            echo '<input type="' . $type . '" class="form-control  w-85 ' . $styleClass . '" id="' . $inputId . '" name="' . htmlspecialchars($fieldName) . '" placeholder="' . htmlspecialchars($placeholder) . '" value="' . htmlspecialchars($val) . '" ' . $isReadonly . '>';
+        elseif ($type === 'date') {
+            echo '<input type="' . $type . '" class="form-control w-85 ' . $styleClass . '" id="' . $inputId . '" name="' . htmlspecialchars($fieldName) . '" placeholder="' . htmlspecialchars($placeholder) . '" value="' . htmlspecialchars($val) . '" ' . $isReadonly . '>';
         }
     
         // === SELECT ===
@@ -484,7 +532,7 @@
         $jsonData = json_decode($row['name'], true) ?? [];
 
         if (isset($_POST['edit_file_upload']) && isset($_FILES['file'])) {
-            $uploadDir = 'uploads/';
+            $uploadDir = 'Uploads/';
             $filename = basename($_FILES['file']['name']);
             $targetPath = $uploadDir . uniqid() . '_' . $filename;
             if (move_uploaded_file($_FILES['file']['tmp_name'], $targetPath)) {
@@ -536,7 +584,7 @@
         if (!empty($_FILES['file'])) {
             $fileTmp = $_FILES['file']['tmp_name'];
             $fileName = basename($_FILES['file']['name']);
-            $uploadDir = 'uploads/';
+            $uploadDir = 'Uploads/';
             $targetPath = $uploadDir . time() . '_' . preg_replace("/[^a-zA-Z0-9.\-_]/", "", $fileName);
 
             if (!is_dir($uploadDir)) {
@@ -572,8 +620,7 @@
 
 <div class="dashboard-main-body">
     <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-24">
-        <h6 class="fw-semibold mb-0">Web Development Client Onboarding Form
-        </h6>
+        <h6 class="fw-semibold mb-0">Web Development Client Onboarding Form</h6>
     </div>
 
     <div class="card h-100 p-0 radius-12 overflow-hidden">               
@@ -584,7 +631,7 @@
                     <div class="row no-gutters">
                         <div class="col-lg-12">
                             <div class="form-wizard">
-                            <!-- Progress Bar -->   
+                                <!-- Progress Bar -->   
                                 <div class="progress mb-20">
                                     <div class="progress-bar progress-bar-striped progress-bar-animated bg-warning"
                                         role="progressbar"
@@ -595,13 +642,6 @@
                                 </div>
 
                                 <form action="" method="post" id="myForm" role="form" enctype="multipart/form-data">
-                                    <!-- <?php if (in_array($user_role, [1, 2, 7])): ?>
-                                        <div class="mb-5">
-                                            <button type="button" id="bulkApproveBtn" class="btn btn-success btn-sm">Bulk Approve</button>
-                                            <button type="button" id="bulkRejectBtn" class="btn btn-danger btn-sm">Bulk Reject</button>
-                                        </div>
-                                    <?php endif; ?> -->
-
                                     <?php if (in_array($user_role, [1, 2, 7])): ?>
                                         <div class="d-flex justify-content-between align-items-center mb-3">
                                             <div class="form-check d-flex align-items-center m-0">
@@ -615,63 +655,50 @@
                                         </div>
                                     <?php endif; ?>
                                     
-                                        <h5>1. Business Information</h5>
-                                        <?php
-                                        
-                                            renderFieldExtended('bussiness_name', $savedData, $user_role, 'Business Name', '', 'text');
-
-                                            renderFieldExtended('industry_niche', $savedData, $user_role, 'Industry / Niche', '', 'text');
-
-                                            renderFieldExtended('describe_bussiness', $savedData, $user_role, 'Describe Your Business', '', 'textarea');
-
-                                            renderFieldExtended('target_audience', $savedData, $user_role, 'Target Audience', '', 'textarea');
-
-                                        ?>
-                                        <h5>2. Website Objectives</h5>
-                                        <?php
-                                            renderFieldExtended('website_purpose',$savedData, $user_role, 'Primary Purpose of Website', '', 'select', ['Informational / Brochure Site', 'ecommerce', 'portfolio', 'Booking/Appointment', 'Custom Functionality']);
-                                            
-                                            renderFieldExtended('top_goals', $savedData, $user_role, 'Top 3 Goals for Website', '', 'textarea');
-
-                                            renderFieldExtended('existing_website', $savedData, $user_role, 'Do you have an existing website?', '', 'text');
-
-                                        ?> 
-                                        <h5>3. Design & Branding</h5>
-                                        <?php
-                                            renderFieldExtended('has_logo', $savedData, $user_role, 'Do you have a logo?', '', 'select', ['yes', 'no']);
-                                            renderFieldExtended('has_branding', $savedData, $user_role, 'Do you have brand colors / guidelines?', '', 'select', ['yes', 'no']);
-                                            renderFieldExtended('reference_websites', $savedData, $user_role, 'Reference Websites You Like', 'Add links and what you like about them', 'textarea');
-                                        ?>
-
-                                        <h5>4. Content</h5>
-                                        <?php
-                                            renderFieldExtended('content_ready', $savedData, $user_role, 'Do you have content ready? (Text, images, videos)', '', 'select', ['yes', 'no', 'partially']);
-                                            renderFieldExtended('page_count', $savedData, $user_role, 'How many pages do you expect?', 'E.g., Home, About, Services, Contact, Blog', 'text');
-                                            renderFieldExtended('features', $savedData, $user_role, 'Special Features Needed', 'E.g., Blog, Contact Form, Chat, Member Login, Payment Gateway', 'textarea');
-                                        ?>
-
-                                        <h5>5. Technical & Access</h5>
-                                        <?php
-                                            renderFieldExtended('has_domain', $savedData, $user_role, 'Do you already have a domain?', '', 'select', ['yes', 'no']);
-                                            renderFieldExtended('domain_name', $savedData, $user_role, 'Domain Name (if any)', '', 'text');
-                                            renderFieldExtended('has_hosting', $savedData, $user_role, 'Do you have hosting?', '', 'select', ['yes', 'no']);
-                                            renderFieldExtended('platform_preference', $savedData, $user_role, 'Any specific platform preference?', '', 'select', ['wordpress', 'shopify', 'custom', 'not_sure']);
-                                        ?>
-
-                                        <h5>6. Timeline & Budget</h5>
-                                        <?php
-                                            renderFieldExtended('launch_date', $savedData, $user_role, 'Expected Launch Date', '', 'date'); // You can use 'date' if needed, but HTML5 date input has limitations
-                                            renderFieldExtended('budget_range', $savedData, $user_role, 'Budget Range', '', 'text');
-                                        ?>
-
-                                        <h5>7. Contact & Communication</h5>
-                                        <?php
-                                            renderFieldExtended('contact_name', $savedData, $user_role, 'Point of Contact Name', '', 'text');
-                                            renderFieldExtended('contact_info', $savedData, $user_role, 'Email & Phone', '', 'text');
-                                            renderFieldExtended('communication_method', $savedData, $user_role, 'Preferred Communication Method', '', 'select', ['email', 'whatsapp', 'phone', 'zoom']);
-                                        ?>
- 
-                                        <?php if (in_array($user_role, [8])): ?>
+                                    <h5>1. Business Information</h5>
+                                    <?php
+                                        renderFieldExtended('bussiness_name', $savedData, $user_role, 'Business Name', '', 'text');
+                                        renderFieldExtended('industry_niche', $savedData, $user_role, 'Industry / Niche', '', 'text');
+                                        renderFieldExtended('business_description', $savedData, $user_role, 'Describe Your Business', '', 'textarea');
+                                        renderFieldExtended('target_audience', $savedData, $user_role, 'Target Audience', '', 'textarea');
+                                    ?>
+                                    <h5>2. Website Objectives</h5>
+                                    <?php
+                                        renderFieldExtended('website_purpose', $savedData, $user_role, 'Primary Purpose of Website', '', 'select', ['Informational/Brochure Site', 'ecommerce', 'portfolio', 'Booking/Appointment', 'Custom Functionality']);
+                                        renderFieldExtended('top_goals', $savedData, $user_role, 'Top 3 Goals for Website', '', 'textarea');
+                                        renderFieldExtended('existing_website', $savedData, $user_role, 'Do you have an existing website?', '', 'text');
+                                    ?> 
+                                    <h5>3. Design & Branding</h5>
+                                    <?php
+                                        renderFieldExtended('has_logo', $savedData, $user_role, 'Do you have a logo?', '', 'select', ['yes', 'no']);
+                                        renderFieldExtended('has_branding', $savedData, $user_role, 'Do you have brand colors / guidelines?', '', 'select', ['yes', 'no']);
+                                        renderFieldExtended('reference_websites', $savedData, $user_role, 'Reference Websites You Like', 'Add links and what you like about them', 'textarea');
+                                    ?>
+                                    <h5>4. Content</h5>
+                                    <?php
+                                        renderFieldExtended('content_ready', $savedData, $user_role, 'Do you have content ready? (Text, images, videos)', '', 'select', ['yes', 'no', 'partially']);
+                                        renderFieldExtended('page_count', $savedData, $user_role, 'How many pages do you expect?', 'E.g., Home, About, Services, Contact, Blog', 'text');
+                                        renderFieldExtended('features', $savedData, $user_role, 'Special Features Needed', 'E.g., Blog, Contact Form, Chat, Member Login, Payment Gateway', 'textarea');
+                                    ?>
+                                    <h5>5. Technical & Access</h5>
+                                    <?php
+                                        renderFieldExtended('has_domain', $savedData, $user_role, 'Do you already have a domain?', '', 'select', ['yes', 'no']);
+                                        renderFieldExtended('domain_name', $savedData, $user_role, 'Domain Name (if any)', '', 'text');
+                                        renderFieldExtended('has_hosting', $savedData, $user_role, 'Do you have hosting?', '', 'select', ['yes', 'no']);
+                                        renderFieldExtended('platform_preference', $savedData, $user_role, 'Any specific platform preference?', '', 'select', ['wordpress', 'shopify', 'custom', 'not_sure']);
+                                    ?>
+                                    <h5>6. Timeline & Budget</h5>
+                                    <?php
+                                        renderFieldExtended('launch_date', $savedData, $user_role, 'Expected Launch Date', '', 'date');
+                                        renderFieldExtended('budget_range', $savedData, $user_role, 'Budget Range', '', 'text');
+                                    ?>
+                                    <h5>7. Contact & Communication</h5>
+                                    <?php
+                                        renderFieldExtended('contact_name', $savedData, $user_role, 'Point of Contact Name', '', 'text');
+                                        renderFieldExtended('contact_info', $savedData, $user_role, 'Email & Phone', '', 'text');
+                                        renderFieldExtended('communication_method', $savedData, $user_role, 'Preferred Communication Method', '', 'select', ['email', 'whatsapp', 'phone', 'zoom']);
+                                    ?>
+                                    <?php if (in_array($user_role, [8])): ?>
                                         <input type="submit" name="save" class="lufera-bg bg-hover-warning-400 text-white text-md px-56 py-11 radius-8 m-auto d-block" value="Save" >
                                     <?php endif; ?>
                                 </form>
@@ -748,11 +775,9 @@
                     fieldContainer.innerHTML = selectHTML;
                 } 
                 else if (currentType === 'date') {
-                    // Default input (text, email, number etc.)
                     fieldContainer.innerHTML = `<input type="date" id="modalInput" class="form-control" value="${value}" />`;
                 }
                 else {
-                    // Default input (text, email, number etc.)
                     fieldContainer.innerHTML = `<input type="text" id="modalInput" class="form-control" value="${value}" />`;
                 }
 
@@ -939,7 +964,6 @@
                         Swal.fire('Success', 'File updated.', 'success').then(() => location.reload());
                     },
                     error: function () {
-                        // Swal.fire('Error', 'File upload failed.', 'error');
                         Swal.fire('Success', 'File updated.', 'success').then(() => location.reload());
                     }
                 });
@@ -971,7 +995,6 @@
                 if (res === 'updated') {
                     Swal.fire('Success', 'Field updated.', 'success').then(() => location.reload());
                 } else {
-                    // Swal.fire('Error', 'Failed to update: ' + res, 'error');
                     Swal.fire('Success', 'Field updated.', 'success').then(() => location.reload());
                 }
             }).fail(function () {
@@ -981,7 +1004,6 @@
     });
 </script>
 
-<!-- Progress bar -->
 <script>
     function updateProgressBar() {
         let filled = 0;
@@ -993,8 +1015,8 @@
         const industry_niche = $('#field_industry_niche').val()?.trim();
         if (industry_niche) filled++;
 
-        const describe_bussiness = $('#field_describe_bussiness').val()?.trim();
-        if (describe_bussiness) filled++;
+        const business_description = $('#field_business_description').val()?.trim();
+        if (business_description) filled++;
 
         const target_audience = $('#field_target_audience').val()?.trim();
         if (target_audience) filled++;
@@ -1058,16 +1080,11 @@
     }
  
     $(document).ready(function () {
-    // Initial progress update
-    updateProgressBar();
-
-    // Input and textarea fields (text, date, etc.) — use 'input'
-    $('#field_bussiness_name, #field_industry_niche, #field_existing_website, #field_describe_bussiness, #field_top_goals, #field_target_audience, #field_reference_websites, #field_page_count, #field_features, #field_domain_name, #field_budget_range, #field_contact_name, #field_contact_info')
-        .on('input', updateProgressBar);
-
-    // Select dropdown fields — use 'change'
-    $('#field_website_purpose, #field_has_logo, #field_has_branding, #field_content_ready, #field_has_domain, #field_has_hosting, #field_platform_preference, #field_launch_date, #field_communication_method')
-        .on('change', updateProgressBar);
+        updateProgressBar();
+        $('#field_bussiness_name, #field_industry_niche, #field_existing_website, #field_business_description, #field_top_goals, #field_target_audience, #field_reference_websites, #field_page_count, #field_features, #field_domain_name, #field_budget_range, #field_contact_name, #field_contact_info')
+            .on('input', updateProgressBar);
+        $('#field_website_purpose, #field_has_logo, #field_has_branding, #field_content_ready, #field_has_domain, #field_has_hosting, #field_platform_preference, #field_launch_date, #field_communication_method')
+            .on('change', updateProgressBar);
     });
 </script>
 
@@ -1080,7 +1097,6 @@
                 checkboxes.forEach(cb => cb.checked = selectAllCheckbox.checked);
             });
 
-            // Optional: If all are manually selected/deselected, update the "Select All" checkbox
             document.querySelectorAll('.bulk-approve-checkbox').forEach(cb => {
                 cb.addEventListener('change', function () {
                     const allChecked = document.querySelectorAll('.bulk-approve-checkbox:checked').length === document.querySelectorAll('.bulk-approve-checkbox').length;
@@ -1090,5 +1106,75 @@
         }
     });
 </script>
-
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('.load-record').forEach(cb => {
+        cb.addEventListener('change', function () {
+            const form = document.getElementById('myForm');
+            if (this.checked) {
+                const data = JSON.parse(this.dataset.record);
+                if (data.bussiness_name?.value) document.getElementById('field_bussiness_name').value = data.bussiness_name.value;
+                if (data.industry_niche?.value) document.getElementById('field_industry_niche').value = data.industry_niche.value;
+                if (data.business_description?.value) document.getElementById('field_business_description').value = data.business_description.value;
+                if (data.target_audience?.value) document.getElementById('field_target_audience').value = data.target_audience.value;
+                if (data.website_purpose?.value) {
+                    document.querySelectorAll('select[name="website_purpose"] option').forEach(opt => {
+                        opt.selected = (opt.value === data.website_purpose.value);
+                    });
+                }
+                if (data.top_goals?.value) document.getElementById('field_top_goals').value = data.top_goals.value;
+                if (data.existing_website?.value) document.getElementById('field_existing_website').value = data.existing_website.value;
+                if (data.has_logo?.value) {
+                    document.querySelectorAll('select[name="has_logo"] option').forEach(opt => {
+                        opt.selected = (opt.value === data.has_logo.value);
+                    });
+                }
+                if (data.has_branding?.value) {
+                    document.querySelectorAll('select[name="has_branding"] option').forEach(opt => {
+                        opt.selected = (opt.value === data.has_branding.value);
+                    });
+                }
+                if (data.reference_websites?.value) document.getElementById('field_reference_websites').value = data.reference_websites.value;
+                if (data.content_ready?.value) {
+                    document.querySelectorAll('select[name="content_ready"] option').forEach(opt => {
+                        opt.selected = (opt.value === data.content_ready.value);
+                    });
+                }
+                if (data.page_count?.value) document.getElementById('field_page_count').value = data.page_count.value;
+                if (data.features?.value) document.getElementById('field_features').value = data.features.value;
+                if (data.has_domain?.value) {
+                    document.querySelectorAll('select[name="has_domain"] option').forEach(opt => {
+                        opt.selected = (opt.value === data.has_domain.value);
+                    });
+                }
+                if (data.domain_name?.value) document.getElementById('field_domain_name').value = data.domain_name.value;
+                if (data.has_hosting?.value) {
+                    document.querySelectorAll('select[name="has_hosting"] option').forEach(opt => {
+                        opt.selected = (opt.value === data.has_hosting.value);
+                    });
+                }
+                if (data.platform_preference?.value) {
+                    document.querySelectorAll('select[name="platform_preference"] option').forEach(opt => {
+                        opt.selected = (opt.value === data.platform_preference.value);
+                    });
+                }
+                if (data.launch_date?.value) document.getElementById('field_launch_date').value = data.launch_date.value;
+                if (data.budget_range?.value) document.getElementById('field_budget_range').value = data.budget_range.value;
+                if (data.contact_name?.value) document.getElementById('field_contact_name').value = data.contact_name.value;
+                if (data.contact_info?.value) document.getElementById('field_contact_info').value = data.contact_info.value;
+                if (data.communication_method?.value) {
+                    document.querySelectorAll('select[name="communication_method"] option').forEach(opt => {
+                        opt.selected = (opt.value === data.communication_method.value);
+                    });
+                }
+                if (typeof updateProgressBar === 'function') updateProgressBar();
+            } else {
+                form.reset();
+                document.querySelectorAll('.record-preview').forEach(el => el.remove());
+                if (typeof updateProgressBar === 'function') updateProgressBar();
+            }
+        });
+    });
+});
+</script>
 <?php include './partials/layouts/layoutBottom.php'; ?>

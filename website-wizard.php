@@ -1,8 +1,6 @@
 <?php include './partials/layouts/layoutTop.php'; ?>
 
 <style>
-    
-
     .form-group {
         margin-bottom: 24px !important;
     }
@@ -190,6 +188,44 @@
 
 <?php
     $session_user_id = $_SESSION['user_id'];
+    $prod_id = intval($_GET['prod_id']);
+    $web_id = intval($_GET['id']);
+    
+    $get_type = "SELECT * FROM websites where id = $web_id";
+    $type_result = $conn->query($get_type);
+    $row_type = $type_result->fetch_assoc();
+    $type = $row_type['type'];
+    
+    if($type == "package"){
+        $sql = "SELECT * FROM package where id = $prod_id";
+        $result = $conn->query($sql);
+        $row = $result->fetch_assoc();
+        $template = $row['template'];     
+    }
+    elseif($type == "product"){
+        $sql = "SELECT * FROM products where id = $prod_id";
+        $result = $conn->query($sql);
+        $row = $result->fetch_assoc();
+        $template = $row['template'];   
+    }
+
+    // Fetch all past records of this user
+    $prevRecords = [];
+    $stmt = $conn->prepare("SELECT id, name FROM json WHERE user_id = ? AND template = ?");
+    $stmt->bind_param("is", $session_user_id, $template);
+    $stmt->execute();
+    $result = $stmt->get_result();
+
+    while ($row = $result->fetch_assoc()) {
+        $decoded = json_decode($row['name'], true);
+        if ($decoded && isset($decoded['name']['value'])) {
+            $prevRecords[] = [
+                'id' => $row['id'],
+                'data' => $decoded
+            ];
+        }
+    }
+    $stmt->close();
 
     // Determine if admin/dev is viewing another user's data
     $target_user_id = $session_user_id;
@@ -223,8 +259,8 @@
     $website_id = $_GET['id'] ?? 0;
     $website_id = intval($website_id);
 
-    $query = $conn->prepare("SELECT name FROM json WHERE website_id = ?");
-    $query->bind_param("i", $website_id);
+    $query = $conn->prepare("SELECT name FROM json WHERE user_id = ? AND website_id = ?");
+    $query->bind_param("ii", $user_id, $website_id);
     $query->execute();
     $query->store_result();
 
@@ -232,7 +268,7 @@
         $query->bind_result($jsonData);
         $query->fetch();
         $savedData = json_decode($jsonData, true);
-    }
+    } 
     $query->close();
 
     if (isset($_POST['save'])) {
@@ -243,14 +279,13 @@
         $address = $_POST['address'] ?? '';
         $logo = $_FILES['logo']['name'] ?? '';
 
-        $finalLogoPath = '';
+        $finalLogoPath = $_POST['logo_existing'] ?? ''; // keep old if no new upload
 
         if (!empty($_FILES['logo']['tmp_name']) && is_uploaded_file($_FILES['logo']['tmp_name'])) {
             $uploadDir = 'uploads/';
             if (!is_dir($uploadDir)) {
                 mkdir($uploadDir, 0777, true);
             }
-
             $uniqueName = uniqid() . '-' . basename($_FILES['logo']['name']);
             $finalLogoPath = $uploadDir . $uniqueName;
             move_uploaded_file($_FILES['logo']['tmp_name'], $finalLogoPath);
@@ -274,19 +309,19 @@
 
         $website_id = isset($_GET['id']) ? intval($_GET['id']) : 0;
 
-        $check = $conn->prepare("SELECT id FROM json WHERE user_id = ? AND website_id = ?");
-        $check->bind_param("ii", $user_id, $website_id);
+        $check = $conn->prepare("SELECT id FROM json WHERE user_id = ? AND website_id = ? AND template = ?");
+        $check->bind_param("iis", $user_id, $website_id, $template);
         $check->execute();
         $check->store_result();
 
         if ($check->num_rows > 0) {
-            $update = $conn->prepare("UPDATE json SET name = ? WHERE user_id = ? AND website_id = ?");
-            $update->bind_param("sii", $data, $user_id, $website_id);
+            $update = $conn->prepare("UPDATE json SET name = ? WHERE user_id = ? AND website_id = ? AND template = ?");
+            $update->bind_param("siis", $data, $user_id, $website_id, $template);
             $success = $update->execute();
             $update->close();
         } else {
-            $insert = $conn->prepare("INSERT INTO json (name, user_id, website_id) VALUES (?, ?, ?)");
-            $insert->bind_param("sii", $data, $user_id, $website_id);
+            $insert = $conn->prepare("INSERT INTO json (name, user_id, website_id, template) VALUES (?, ?, ?, ?)");
+            $insert->bind_param("siis", $data, $user_id, $website_id, $template);
             $success = $insert->execute();
             $insert->close();
         }
@@ -305,7 +340,25 @@
                 });
             </script>';
     }
-
+   if (!empty($prevRecords)): ?>
+        <div class="ms-10">
+            
+            <div class="form-check-group">
+                <?php foreach ($prevRecords as $record): ?>
+                    <div class="form-check form-check-inline">
+                        <input type="checkbox" 
+                               class="form-check-input load-record mt-4" 
+                               data-record='<?php echo json_encode($record['data']); ?>'
+                               id="rec_<?php echo $record['id']; ?>">
+                        <label for="rec_<?php echo $record['id']; ?>" class="form-check-label">
+                            <?php echo htmlspecialchars($record['data']['name']['value']); ?>
+                        </label>
+                    </div>
+                <?php endforeach; ?>
+            </div>
+        </div>
+    <?php endif; 
+    
     function renderFieldExtended($fieldName, $savedData, $user_role, $label = '', $placeholder = '', $type = 'text', $options = []) {
         $val = $savedData[$fieldName]['value'] ?? '';
         $status = $savedData[$fieldName]['status'] ?? 'pending';
@@ -339,7 +392,7 @@
 
         // === TEXT / EMAIL ===
         if ($type === 'text' || $type === 'email') {
-            echo '<input type="' . $type . '" class="form-control  w-85 ' . $styleClass . '" id="' . $inputId . '" name="' . htmlspecialchars($fieldName) . '" placeholder="' . htmlspecialchars($placeholder) . '" value="' . htmlspecialchars($val) . '" ' . $isReadonly . '>';
+            echo '<input type="' . $type . '" class="form-control  w-85 ' . $styleClass . '" id="' . $inputId . '" name="' . htmlspecialchars($fieldName) . '" placeholder="' . htmlspecialchars($placeholder) . '" value="' . htmlspecialchars($val) . '" ' . $isReadonly . ' required>';
         }
 
         // === TEXTAREA ===
@@ -375,8 +428,10 @@
         // === FILE ===
         elseif ($type === 'file') {
             // echo '<input type="file" class="form-control ' . $styleClass . '" id="' . $inputId . '" name="' . htmlspecialchars($fieldName) . '" ' . ($isAdmin ? 'disabled' : '') . '>';
-            echo '<input type="file" class="form-control  w-85 ' . $styleClass . '" id="' . $inputId . '" name="' . htmlspecialchars($fieldName) . '" ' . $isDisabled . '>';
-
+            echo '<input type="file" class="form-control w-85 ' . $styleClass . '" id="' . $inputId . '" name="' . htmlspecialchars($fieldName) . '" ' . $isDisabled . '>';
+            // hidden input to store old path
+            echo '<input type="hidden" name="' . htmlspecialchars($fieldName) . '_existing" value="' . htmlspecialchars($val) . '">';
+            
             if (!empty($val)) {
                 echo '<div class="mt-3">';
                 echo '<label class="d-block fw-bold">Uploaded File:</label>';
@@ -935,6 +990,83 @@
             });
         }
     });
+</script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('.load-record').forEach(cb => {
+        cb.addEventListener('change', function () {
+            const form = document.getElementById('myForm');
+
+            // Uncheck all other checkboxes
+            document.querySelectorAll('.load-record').forEach(other => {
+                if (other !== this) other.checked = false;
+            });
+
+            if (this.checked) {
+                const data = JSON.parse(this.dataset.record);
+
+                // === Fill fields ===
+                if (data.name?.value) document.getElementById('field_name').value = data.name.value;
+                if (data.email?.value) document.getElementById('field_email').value = data.email.value;
+                if (data.address?.value) document.getElementById('field_address').value = data.address.value;
+
+                // Radio
+                if (data.has_phone?.value) {
+                    document.querySelectorAll('input[name="has_phone"]').forEach(r => {
+                        r.checked = (r.value === data.has_phone.value);
+                    });
+                }
+
+                // Checkbox (website_name)
+                if (data.website_name?.value) {
+                    document.querySelectorAll('input[name="website_name[]"]').forEach(chk => {
+                        chk.checked = data.website_name.value.includes(chk.value);
+                    });
+                }
+
+                // File (preview logo from record only)
+                const logoInput = document.getElementById('field_logo');
+                const logoGroup = logoInput.closest('.form-group');
+
+                // remove all old previews
+                logoGroup.querySelectorAll('.record-preview').forEach(el => el.remove());
+
+                // ✅ clear the file input itself (removes the old filename shown next to input)
+                logoInput.value = "";
+
+                // if record has logo value, show only that one
+                if (data.logo?.value) {
+                    const val = data.logo.value;
+                    const ext = val.split('.').pop().toLowerCase();
+
+                    let previewHtml = '';
+                    if (['jpg','jpeg','png','gif','webp'].includes(ext)) {
+                        previewHtml = `<img src="${val}" class="record-preview mt-2" style="max-height:120px;">`;
+                    } else {
+                        previewHtml = `<a href="${val}" target="_blank" class="record-preview d-block mt-2">${val}</a>`;
+                    }
+
+                    logoGroup.insertAdjacentHTML('beforeend', previewHtml);
+
+                    // update hidden input so PHP knows what to keep
+                    const hiddenLogo = document.querySelector('input[name="logo_existing"]');
+                    if (hiddenLogo) hiddenLogo.value = val;
+                }
+                // Update progress bar if exists
+                if (typeof updateProgressBar === 'function') updateProgressBar();
+
+            } else {
+                // === If unchecked → Reset the form ===
+                form.reset();
+
+                // Remove uploaded file preview if any
+                document.querySelectorAll('.record-preview').forEach(el => el.remove());
+
+                if (typeof updateProgressBar === 'function') updateProgressBar();
+            }
+        });
+    });
+});
 </script>
 
 <?php include './partials/layouts/layoutBottom.php'; ?>
