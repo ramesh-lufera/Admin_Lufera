@@ -1,12 +1,12 @@
 <?php include './partials/layouts/layoutTop.php';
       
-      use PHPMailer\PHPMailer\PHPMailer;
-      use PHPMailer\PHPMailer\Exception;
+    use PHPMailer\PHPMailer\PHPMailer;
+    use PHPMailer\PHPMailer\Exception;
 
-      require_once 'vendor/autoload.php';
+    require_once 'vendor/autoload.php';
 
-      $dotenv = Dotenv\Dotenv::createImmutable(__DIR__);
-      $dotenv->load();
+    $dotenv = Dotenv\Dotenv::createImmutable(__DIR__);
+    $dotenv->load();
 ?>
 
 <?php
@@ -23,6 +23,7 @@
 
     if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $id = $_POST['id'];
+        $type = $_POST['type'];
         $plan_name = $_POST['plan_name'];
         $price = $_POST['price'];
         $duration = $_POST['duration'];
@@ -45,6 +46,7 @@
 
     if (isset($_POST['save'])) {
         $product_id = $_POST['id'];
+        $type = $_POST['type'];
         $pay_method = $_POST['pay_method'];
         $rec_id = $_POST['rec_id'];
         $plan_name = $_POST['plan_name'];
@@ -75,23 +77,28 @@
             $domain = "N/A";
 
             // Insert new website record
-            $siteInsert = "INSERT INTO websites (user_id, domain, plan, duration, status, cat_id, invoice_id, product_id) 
-                        VALUES ('$client_id', '$domain', '$plan_name', '$duration', 'Pending', '$cat_id', '$rec_id', '$product_id')";
+            $siteInsert = "INSERT INTO websites (user_id, domain, plan, duration, status, cat_id, invoice_id, product_id, type) 
+                        VALUES ('$client_id', '$domain', '$plan_name', '$duration', 'Pending', '$cat_id', '$rec_id', '$product_id', '$type')";
             mysqli_query($conn, $siteInsert);
 
+            // Show loader immediately
             echo "
             <script>
                 Swal.fire({
-                    title: 'Success!',
-                    text: 'Purchased Successfully.',
-                    confirmButtonText: 'OK',
-                    allowOutsideClick: false
-                }).then((result) => {
-                    if (result.isConfirmed) {
-                        window.location.href = 'orders.php';
+                    title: 'Processing...',
+                    text: 'Please wait while we finalize your purchase.',
+                    allowOutsideClick: false,
+                    didOpen: () => {
+                        Swal.showLoading();
+                        const spinner = document.querySelector('.swal2-loader');
+                        if (spinner) {
+                            spinner.style.borderColor = '#fec700 transparent #fec700 transparent';
+                        }
                     }
                 });
             </script>";
+            // flush response so browser shows the loader instantly
+            ob_flush(); flush();
 
             $orders_link = rtrim($_ENV['EMAIL_COMMON_LINK'], '/') . '/orders.php';
 
@@ -155,6 +162,20 @@
             } catch (Exception $e) {
                 error_log("Purchase email failed: " . $mail->ErrorInfo);
             }
+
+            echo "
+            <script>
+                Swal.fire({
+                    title: 'Success!',
+                    text: 'Purchased Successfully.',
+                    confirmButtonText: 'OK',
+                    allowOutsideClick: false
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        window.location.href = 'orders.php';
+                    }
+                });
+            </script>";
         } else {
             echo "<script>
                 alert('Error: " . $stmt->error . "');
@@ -346,6 +367,7 @@
 <div class="dashboard-main-body">
     <form method="post">
         <input type="hidden" value="<?php echo $id; ?>" name="id">
+        <input type="hidden" value="<?php echo $type; ?>" name="type">
         <input type="hidden" value="<?php echo $duration; ?>" name="duration">
         <input type="hidden" value="<?php echo $rec_id; ?>" name="rec_id">
         <input type="hidden" value="<?php echo $plan_name; ?>" name="plan_name">
