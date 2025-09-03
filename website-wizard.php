@@ -1050,7 +1050,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
                 // === Fill fields ===
                 if (data.name?.value) document.getElementById('field_name').value = data.name.value;
-                if (data.passport_no?.value) document.getElementById('field_passport_no').value = data.passport_no.value;
+                if (data.email?.value) document.getElementById('field_email').value = data.email.value;
                 if (data.address?.value) document.getElementById('field_address').value = data.address.value;
 
                 // Radio

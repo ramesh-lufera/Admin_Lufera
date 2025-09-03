@@ -1111,6 +1111,10 @@ document.addEventListener('DOMContentLoaded', function () {
     document.querySelectorAll('.load-record').forEach(cb => {
         cb.addEventListener('change', function () {
             const form = document.getElementById('myForm');
+            // Uncheck all other checkboxes
+            document.querySelectorAll('.load-record').forEach(other => {
+                if (other !== this) other.checked = false;
+            });
             if (this.checked) {
                 const data = JSON.parse(this.dataset.record);
                 if (data.bussiness_name?.value) document.getElementById('field_bussiness_name').value = data.bussiness_name.value;
