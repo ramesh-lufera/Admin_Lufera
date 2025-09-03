@@ -18,6 +18,22 @@
     } else {
         echo "";
     }
+
+    $package_url = $_GET['package'];
+    // Use prepared statements to avoid SQL injection
+    $stmt = $conn->prepare("SELECT cat_name, cat_id FROM categories WHERE cat_name = ?");
+    $stmt->bind_param("s", $package_url); // "s" = string
+    $stmt->execute();
+    $result = $stmt->get_result();
+    if ($row = $result->fetch_assoc()) {
+        $cat_id = $row['cat_id'];
+        $cat_name = $row['cat_name'];
+        //echo $cat_id;
+    } else {
+        echo "No category found.";
+    }
+    $stmt->close();
+
 ?>
 <link rel="stylesheet" href="assets/css/style.css">
 <link rel="stylesheet" href="assets/css/lib/bootstrap.min.css">
@@ -38,7 +54,7 @@
 
 
     // Fetch packages by category and group by duration
-    $stmt = $conn->prepare("SELECT * FROM package WHERE is_deleted = 0 AND is_active = 1");
+    $stmt = $conn->prepare("SELECT * FROM package WHERE cat_id = $cat_id AND is_deleted = 0 AND is_active = 1");
     //$stmt->bind_param("i", $product_category);
     $stmt->execute();
     $result = $stmt->get_result();
@@ -68,14 +84,19 @@
 ?>
 
 <div class="dashboard-main-body">
-    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-24">
-        <h6 class="fw-semibold mb-0 text-capitalize">
-            <?= $hasPackages ? 'Packages' : 'Packages (or) Products'; ?>
-        </h6>
-    </div>
+<?php
+        if($package_url == "website"){
+        ?>
+            <h5 class="text-center fw-bold">Our Flexible Pricing Packages </h5>
+            <?php }
+        elseif($package_url == "marketing"){ ?>
+            <h5 class="text-center fw-bold">Flexible Digital Marketing Packages </h5>
+            <?php } 
+        elseif(urldecode($package_url) == "Customized Apps") { ?>
+            <h5 class="text-center fw-bold">Custom Web-Based Application Development </h5>
+            <?php } ?>
 
-    
-            <div class="row justify-content-center">
+         <div class="row justify-content-center">
                 <div class="col-xxl-10">
 
                 <?php if (!empty($packages)): ?>
@@ -105,7 +126,7 @@
                                 tabindex="0">
                                 <div class="row gy-4">
                                     <?php foreach ($packages[$duration] as $package): ?>
-                                        <div class="col-xxl-4 col-sm-6">
+                                        <div class="col-xxl-3 col-sm-6">
                                             <div class="pricing-plan position-relative radius-24 overflow-hidden border">
                                             <!-- <h6><?= htmlspecialchars($package['package_name']) ?></h6>     -->
                                             <!-- <span class="fw-medium text-md text-secondary-light"><?= htmlspecialchars($package['plan_type']) ?></span> -->
@@ -115,12 +136,16 @@
                                                 <?php endif; ?> 
                                                 <p class="mb-0 lufera-color"><?= htmlspecialchars($package['title']) ?></p>
                                                 <p class=" mb-0 text-secondary-light mb-28"><?= htmlspecialchars($package['subtitle']) ?></p>
-                                                <h3 class="mb-24" id="currency-symbol-display"><?= htmlspecialchars($symbol) ?><?= htmlspecialchars($package['price']) ?>
-                                                    <span class="fw-medium text-md text-secondary-light">/<?= htmlspecialchars($package['duration']) ?></span> 
-                                                </h3>
+                                                <h4 class="mb-24" id="currency-symbol-display">
+                                                    <?= htmlspecialchars($symbol) ?>
+                                                    <?= number_format((float)$package['price'], 0, '.', ',') ?>
+                                                    <span class="fw-medium text-md text-secondary-light">/
+                                                        <?= htmlspecialchars($package['duration']) ?>
+                                                    </span>
+                                                </h4>
                                                 <span class="mb-20 fw-medium"><?= htmlspecialchars($package['description']) ?></span>
 
-                                                <ul>
+                                                <ul style="min-height:240px">
                                                     <?php
                                                     $package_id = $package['id'];
                                                     $feature_sql = "SELECT feature FROM features WHERE package_id = $package_id";
@@ -137,7 +162,7 @@
                                                     <?php endwhile; endif; ?>
                                                 </ul>
 
-                                                <!-- <form action="cart.php" method="POST">
+                                                <form action="cart.php" method="POST">
                                                     <input type="hidden" name="plan_name" value="<?= htmlspecialchars($package['package_name']) ?>">
                                                     <input type="hidden" name="title" value="<?= htmlspecialchars($package['title']) ?>">
                                                     <input type="hidden" name="subtitle" value="<?= htmlspecialchars($package['subtitle']) ?>">
@@ -145,7 +170,7 @@
                                                     <input type="hidden" name="duration" value="<?= htmlspecialchars($package['duration']) ?>">
                                                     <input type="hidden" name="created_on" value="<?= date("Y-m-d") ?>">
                                                     <button type="submit" class="lufera-bg text-center text-white text-sm btn-sm px-12 py-10 w-100 radius-8 mt-28" <?php echo !$isActive ? 'disabled' : ''; ?>>Get started</button>
-                                                </form> -->
+                                                </form>
                                                 
                                             </div>
                                         </div>

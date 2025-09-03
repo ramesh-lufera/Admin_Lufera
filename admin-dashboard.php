@@ -149,10 +149,10 @@
                                 <h4 class="mb-16 text-white" style="color: black !important">Discover Our Lufera Marketplace</h4>
                                 <p class="text-white text-md" style="color: black !important">Your one-stop destination for unique products and unbeatable deals.
                                 Browse a vibrant marketplace filled with trusted sellers and handpicked selections—all in one place.</p>
-                                <div class="d-flex align-items-center flex-wrap mt-24 gap-16">
+                                <!-- <div class="d-flex align-items-center flex-wrap mt-24 gap-16">
                                     <a href="#" class="btn rounded-pill border br-white text-white radius-8 px-32 py-11 hover-bg-white text-hover-neutral-900" style="color: black !important">Explore</a>
                                     <a href="#" class="btn rounded-pill btn-primary-600 radius-8 px-28 py-11" style="background-color: #fec700 !important; border-color: #101010 !important">Create Now</a>
-                                </div>
+                                </div> -->
                             </div>
                         </div>
                     </div>

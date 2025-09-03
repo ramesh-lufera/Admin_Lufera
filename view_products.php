@@ -80,11 +80,11 @@
                                     </button>
                                 </td>
                                 <td class="text-center">
-                                    <a href="edit-product.php?id=<?= $row['id'] ?>" class="w-32-px h-32-px bg-warning-focus text-warning-main rounded-circle d-inline-flex align-items-center justify-content-center">
-                                        <iconify-icon icon="lucide:edit"></iconify-icon>
+                                    <a href="edit-product.php?id=<?= $row['id'] ?>" class="fa fa-edit w-40-px h-40-px bg-warning-focus text-warning-main rounded-circle d-inline-flex align-items-center justify-content-center">
+                                        
                                     </a>
-                                    <a data-id="<?= $row['id'] ?>" class="delete-product w-32-px h-32-px bg-danger-focus text-danger-main rounded-circle d-inline-flex align-items-center justify-content-center cursor-pointer">
-                                        <iconify-icon icon="mingcute:delete-2-line"></iconify-icon>
+                                    <a data-id="<?= $row['id'] ?>" class="fa fa-trash-alt delete-product w-40-px h-40-px bg-danger-focus text-danger-main rounded-circle d-inline-flex align-items-center justify-content-center cursor-pointer">
+                                        
                                     </a>
                                 </td>
                             </tr>

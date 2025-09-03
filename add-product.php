@@ -290,11 +290,12 @@ if ($stmt->execute()) {
                                 </div>
                             </div>
                         </div>
+                        
                         <div class="form-group mb-2">
                             <label class="form-label">Duration <span class="text-danger-600">*</span></label>
                             <div class="d-flex gap-2">
-                                <input type="number" name="duration_value" class="form-control radius-8" required min="1" style="width: 60%;">
-                                <select name="duration_unit" class="form-control radius-8" required style="width: 40%;">
+                                <input type="number" id="duration_value" name="duration_value" class="form-control radius-8" required min="1" style="width: 60%;">
+                                <select id="duration_unit" name="duration_unit" class="form-control radius-8" required style="width: 40%;">
                                     <option value="days">Days</option>
                                     <option value="months">Months</option>
                                     <option value="years">Years</option>
@@ -332,6 +333,38 @@ if ($stmt->execute()) {
         </div>
     </div>
 </div>
+<script>
+const durationValue = document.getElementById('duration_value');
+const durationUnit = document.getElementById('duration_unit');
+
+// Options with singular/plural forms
+const units = {
+  singular: ["Day", "Month", "Year", "Hour"],
+  plural: ["Days", "Months", "Years", "Hours"],
+  values: ["days", "months", "years", "hours"] // keep values consistent for backend
+};
+
+// Function to update options
+function updateDurationOptions() {
+  const isSingular = durationValue.value == 1;
+  durationUnit.innerHTML = ""; // clear existing options
+
+  const list = isSingular ? units.singular : units.plural;
+  list.forEach((label, index) => {
+    const opt = document.createElement("option");
+    opt.value = units.values[index]; // keep backend value constant
+    opt.textContent = label;
+    durationUnit.appendChild(opt);
+  });
+}
+
+// Initial load
+updateDurationOptions();
+
+// Update on input change
+durationValue.addEventListener("input", updateDurationOptions);
+</script>
+
 <script>
 const fileInput = document.getElementById('file-input');
 const preview = document.getElementById('preview');

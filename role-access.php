@@ -56,18 +56,18 @@
                                         <div class="d-flex align-items-center gap-10 justify-content-center">
                                             <button 
                                                 type="button" 
-                                                class="edit-role-btn bg-success-focus text-success-600 bg-hover-success-200 fw-medium w-40-px h-40-px d-flex justify-content-center align-items-center rounded-circle"
+                                                class="fa fa-edit edit-role-btn bg-success-focus text-success-600 bg-hover-success-200 fw-medium w-40-px h-40-px d-flex justify-content-center align-items-center rounded-circle"
                                                 data-id="<?= $row['id'] ?>"
                                                 data-name="<?= htmlspecialchars($row['name']) ?>"
                                                 data-description="<?= htmlspecialchars($row['description']) ?>"
                                                 data-status="<?= $row['isActive'] ?>"
                                                 data-bs-toggle="modal" 
                                                 data-bs-target="#exampleModal">
-                                                <iconify-icon icon="lucide:edit" class="menu-icon"></iconify-icon>
+                                                
                                             </button>
 
-                                            <button type="button" class="remove-item-btn bg-danger-focus bg-hover-danger-200 text-danger-600 fw-medium w-40-px h-40-px d-flex justify-content-center align-items-center rounded-circle" data-id="<?= $row['id'] ?>">
-                                                <iconify-icon icon="fluent:delete-24-regular"></iconify-icon>
+                                            <button type="button" class="fa fa-trash-alt remove-item-btn bg-danger-focus bg-hover-danger-200 text-danger-600 fw-medium w-40-px h-40-px d-flex justify-content-center align-items-center rounded-circle" data-id="<?= $row['id'] ?>">
+                                                
                                             </button>
 
                                         </div>

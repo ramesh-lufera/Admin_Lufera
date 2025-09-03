@@ -1,5 +1,4 @@
 <?php include './partials/layouts/layoutTop.php'; ?>
-
 <style>
     .form-group {
         margin-bottom: 24px !important;
@@ -170,10 +169,46 @@
         margin-bottom: 6px;
     }
 </style>
-
 <?php
     $session_user_id = $_SESSION['user_id'];
+    $prod_id = intval($_GET['prod_id']);
+    $web_id = intval($_GET['id']);
+    
+    $get_type = "SELECT * FROM websites where id = $web_id";
+    $type_result = $conn->query($get_type);
+    $row_type = $type_result->fetch_assoc();
+    $type = $row_type['type'];
+    
+    if($type == "package"){
+        $sql = "SELECT * FROM package where id = $prod_id";
+        $result = $conn->query($sql);
+        $row = $result->fetch_assoc();
+        $template = $row['template'];     
+    }
+    elseif($type == "product"){
+        $sql = "SELECT * FROM products where id = $prod_id";
+        $result = $conn->query($sql);
+        $row = $result->fetch_assoc();
+        $template = $row['template'];   
+    }
 
+    // Fetch all past records of this user
+    $prevRecords = [];
+    $stmt = $conn->prepare("SELECT id, name FROM json WHERE user_id = ? AND template = ?");
+    $stmt->bind_param("is", $session_user_id, $template);
+    $stmt->execute();
+    $result = $stmt->get_result();
+
+    while ($row = $result->fetch_assoc()) {
+        $decoded = json_decode($row['name'], true);
+        if ($decoded && isset($decoded['full_name']['value'])) {
+            $prevRecords[] = [
+                'id' => $row['id'],
+                'data' => $decoded
+            ];
+        }
+    }
+    $stmt->close();
     // Determine if admin/dev is viewing another user's data
     $target_user_id = $session_user_id;
 
@@ -350,19 +385,19 @@
 
         $website_id = isset($_GET['id']) ? intval($_GET['id']) : 0;
 
-        $check = $conn->prepare("SELECT id FROM json WHERE user_id = ? AND website_id = ?");
-        $check->bind_param("ii", $user_id, $website_id);
+        $check = $conn->prepare("SELECT id FROM json WHERE user_id = ? AND website_id = ? AND template = ?");
+        $check->bind_param("iis", $user_id, $website_id, $template);
         $check->execute();
         $check->store_result();
 
         if ($check->num_rows > 0) {
-            $update = $conn->prepare("UPDATE json SET name = ? WHERE user_id = ? AND website_id = ?");
-            $update->bind_param("sii", $data, $user_id, $website_id);
+            $update = $conn->prepare("UPDATE json SET name = ? WHERE user_id = ? AND website_id = ? AND template = ?");
+            $update->bind_param("siis", $data, $user_id, $website_id, $template);
             $success = $update->execute();
             $update->close();
         } else {
-            $insert = $conn->prepare("INSERT INTO json (name, user_id, website_id) VALUES (?, ?, ?)");
-            $insert->bind_param("sii", $data, $user_id, $website_id);
+            $insert = $conn->prepare("INSERT INTO json (name, user_id, website_id, template) VALUES (?, ?, ?, ?)");
+            $insert->bind_param("siis", $data, $user_id, $website_id, $template);
             $success = $insert->execute();
             $insert->close();
         }
@@ -380,7 +415,24 @@
                 });
             </script>';
     }
-
+    if (!empty($prevRecords)): ?>
+        <div class="ms-10">
+            
+            <div class="form-check-group">
+                <?php foreach ($prevRecords as $record): ?>
+                    <div class="form-check form-check-inline">
+                        <input type="checkbox" 
+                               class="form-check-input load-record mt-4" 
+                               data-record='<?php echo json_encode($record['data']); ?>'
+                               id="rec_<?php echo $record['id']; ?>">
+                        <label for="rec_<?php echo $record['id']; ?>" class="form-check-label">
+                            <?php echo htmlspecialchars($record['data']['full_name']['value']); ?>
+                        </label>
+                    </div>
+                <?php endforeach; ?>
+            </div>
+        </div>
+    <?php endif; 
     function renderFieldExtended($fieldName, $savedData, $user_role, $label = '', $placeholder = '', $type = 'text', $options = []) {
         $val = $savedData[$fieldName]['value'] ?? '';
         $status = $savedData[$fieldName]['status'] ?? 'pending';
@@ -736,7 +788,7 @@
                                     ?>
 
                                     <!-- Admin Contact -->
-                                    <h6>Administrative Contact<div style="float:right;"><input type="checkbox" class="form-check-input mt-4" name="admin_same"> Copy if same as Registrant</div></h6>
+                                    <div class="d-flex justify-content-between"><h6>Administrative Contact</h6> <span><input type="checkbox" class="form-check-input mt-4" name="admin_same"> Copy if same as Registrant</span></div>
                                     <?php
                                         renderFieldExtended('admin_first_name', $savedData, $user_role, 'First Name', '', 'text');
                                         renderFieldExtended('admin_last_name', $savedData, $user_role, 'Last Name', '', 'text');
@@ -752,7 +804,7 @@
                                     ?>
 
                                     <!-- Tech Contact -->
-                                    <h6>Technical Contact<div style="float:right;"><input type="checkbox" class="form-check-input mt-4" name="tech_same"> Copy if same as Registrant</div></h6>
+                                    <div class="d-flex justify-content-between"><h6>Technical Contact</h6> <span><input type="checkbox" class="form-check-input mt-4" name="tech_same"> Copy if same as Registrant</span></div>
                                     <?php
                                         renderFieldExtended('tech_first_name', $savedData, $user_role, 'First Name', '', 'text');
                                         renderFieldExtended('tech_last_name', $savedData, $user_role, 'Last Name', '', 'text');
@@ -768,7 +820,7 @@
                                     ?>
 
                                     <!-- Billing Contact -->
-                                    <h6>Billing Contact<div style="float:right;"><input type="checkbox" class="form-check-input mt-4" name="billing_same"> Copy if same as Registrant</div></h6>
+                                    <div class="d-flex justify-content-between"><h6>Billing Contact</h6> <span><input type="checkbox" class="form-check-input mt-4" name="billing_same"> Copy if same as Registrant</span></div>
                                     <?php
                                         renderFieldExtended('bill_first_name', $savedData, $user_role, 'First Name', '', 'text');
                                         renderFieldExtended('bill_last_name', $savedData, $user_role, 'Last Name', '', 'text');
@@ -1243,32 +1295,75 @@
 
 <script>
     $(document).ready(function () {
-        function copyRegistrantTo(prefix) {
-            const fields = ['first_name', 'last_name', 'email', 'company', 'address', 'city', 'state', 'country', 'zip', 'phone_code', 'phone'];
-            fields.forEach(function(field) {
-                const regVal = $(`[name="reg_${field}"]`).val();
-                $(`[name="${prefix}_${field}"]`).val(regVal).trigger('input');
-            });
-        }
+    // Object to store original values for each section
+    const originalValues = {
+        admin: {},
+        tech: {},
+        bill: {}
+    };
 
-        $('input[name="admin_same"]').on('change', function () {
-            if ($(this).is(':checked')) {
-                copyRegistrantTo('admin');
-            }
+    // Function to save original values for a section
+    function saveOriginalValues(prefix) {
+        const fields = ['first_name', 'last_name', 'email', 'company', 'address', 'city', 'state', 'country', 'zip', 'phone_code', 'phone'];
+        originalValues[prefix] = {};
+        fields.forEach(field => {
+            const $input = $(`[name="${prefix}_${field}"]`);
+            originalValues[prefix][field] = $input.val() || '';
         });
+    }
 
-        $('input[name="tech_same"]').on('change', function () {
-            if ($(this).is(':checked')) {
-                copyRegistrantTo('tech');
-            }
+    // Function to copy Registrant values to a section
+    function copyRegistrantTo(prefix) {
+        const fields = ['first_name', 'last_name', 'email', 'company', 'address', 'city', 'state', 'country', 'zip', 'phone_code', 'phone'];
+        fields.forEach(field => {
+            const regVal = $(`[name="reg_${field}"]`).val();
+            $(`[name="${prefix}_${field}"]`).val(regVal).trigger('input');
         });
+    }
 
-        $('input[name="billing_same"]').on('change', function () {
-            if ($(this).is(':checked')) {
-                copyRegistrantTo('bill');
-            }
+    // Function to restore original values for a section
+    function restoreOriginalValues(prefix) {
+        const fields = ['first_name', 'last_name', 'email', 'company', 'address', 'city', 'state', 'country', 'zip', 'phone_code', 'phone'];
+        fields.forEach(field => {
+            $(`[name="${prefix}_${field}"]`).val(originalValues[prefix][field] || '').trigger('input');
         });
+    }
+
+    // Initialize original values for all sections on page load
+    ['admin', 'tech', 'bill'].forEach(prefix => {
+        saveOriginalValues(prefix);
     });
+
+    // Handle Admin Contact checkbox
+    $('input[name="admin_same"]').on('change', function () {
+        if ($(this).is(':checked')) {
+            saveOriginalValues('admin'); // Save current values before overwriting
+            copyRegistrantTo('admin');
+        } else {
+            restoreOriginalValues('admin');
+        }
+    });
+
+    // Handle Tech Contact checkbox
+    $('input[name="tech_same"]').on('change', function () {
+        if ($(this).is(':checked')) {
+            saveOriginalValues('tech'); // Save current values before overwriting
+            copyRegistrantTo('tech');
+        } else {
+            restoreOriginalValues('tech');
+        }
+    });
+
+    // Handle Billing Contact checkbox
+    $('input[name="billing_same"]').on('change', function () {
+        if ($(this).is(':checked')) {
+            saveOriginalValues('bill'); // Save current values before overwriting
+            copyRegistrantTo('bill');
+        } else {
+            restoreOriginalValues('bill');
+        }
+    });
+});
 </script>
 
 <script>
@@ -1290,5 +1385,69 @@
         }
     });
 </script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('.load-record').forEach(cb => {
+        cb.addEventListener('change', function () {
+            const form = document.getElementById('myForm');
 
+            // Uncheck all other checkboxes
+            document.querySelectorAll('.load-record').forEach(other => {
+                if (other !== this) other.checked = false;
+            });
+
+            if (this.checked) {
+                const data = JSON.parse(this.dataset.record);
+
+                // List of all fields to populate
+                const fields = [
+                    'full_name', 'email', 'phone', 'domain_name', 'registered', 'registrar',
+                    'transfer_assistance', 'expected_price', 'listed_elsewhere', 'listing_platforms',
+                    'sale_type', 'domain_niche', 'additional_assets', 'communication_mode',
+                    'additional_notes', 'reg_first_name', 'reg_last_name', 'reg_email',
+                    'reg_company', 'reg_address', 'reg_city', 'reg_state', 'reg_country',
+                    'reg_zip', 'reg_phone_code', 'reg_phone', 'admin_first_name',
+                    'admin_last_name', 'admin_email', 'admin_company', 'admin_address',
+                    'admin_city', 'admin_state', 'admin_country', 'admin_zip',
+                    'admin_phone_code', 'admin_phone', 'tech_first_name', 'tech_last_name',
+                    'tech_email', 'tech_company', 'tech_address', 'tech_city', 'tech_state',
+                    'tech_country', 'tech_zip', 'tech_phone_code', 'tech_phone',
+                    'bill_first_name', 'bill_last_name', 'bill_email', 'bill_company',
+                    'bill_address', 'bill_city', 'bill_state', 'bill_country', 'bill_zip',
+                    'bill_phone_code', 'bill_phone'
+                ];
+
+                // Populate text, email, textarea, and select fields
+                fields.forEach(field => {
+                    const input = document.getElementById(`field_${field}`);
+                    if (input) {
+                        const value = data[field]?.value || '';
+                        if (input.tagName.toLowerCase() === 'select') {
+                            // Handle select fields
+                            Array.from(input.options).forEach(option => {
+                                option.selected = option.value === value;
+                            });
+                        } else {
+                            // Handle text, email, textarea
+                            input.value = value;
+                        }
+                    }
+                });
+
+                // Trigger input event to update progress bar
+                if (typeof updateProgressBar === 'function') {
+                    updateProgressBar();
+                }
+
+            } else {
+                // Reset the form if unchecked
+                form.reset();
+                if (typeof updateProgressBar === 'function') {
+                    updateProgressBar();
+                }
+            }
+        });
+    });
+});
+</script>
 <?php include './partials/layouts/layoutBottom.php' ?>

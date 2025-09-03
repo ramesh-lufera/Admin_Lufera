@@ -190,6 +190,7 @@
     }
 </style>
 
+
 <?php
     $session_user_id = $_SESSION['user_id'];
     $prod_id = intval($_GET['prod_id']);
@@ -262,8 +263,8 @@
     $website_id = $_GET['id'] ?? 0;
     $website_id = intval($website_id);
 
-    $query = $conn->prepare("SELECT name FROM json WHERE user_id = ? AND website_id = ?");
-    $query->bind_param("ii", $user_id, $website_id);
+    $query = $conn->prepare("SELECT name FROM json WHERE website_id = ?");
+    $query->bind_param("i", $website_id);
     $query->execute();
     $query->store_result();
 
@@ -510,6 +511,7 @@
             echo '<span class="input-group-text text-success">&#10004;</span>';
         }
 
+        echo '</div>';
         echo '</div>';
         echo '</div>';
         echo '</div>';
