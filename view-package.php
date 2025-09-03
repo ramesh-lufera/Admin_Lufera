@@ -94,9 +94,14 @@
                                                 <?php endif; ?> 
                                                 <h5 class="mb-0 lufera-color"><?= htmlspecialchars($package['title']) ?></h5>
                                                 <p class="mb-0 text-secondary-light mb-28"><?= htmlspecialchars($package['subtitle']) ?></p>
-                                                <h4 class="mb-24" id="currency-symbol-display"><?= htmlspecialchars($symbol) ?><?= htmlspecialchars($package['price']) ?>
-                                                    <span class="fw-medium text-md text-secondary-light">/<?= htmlspecialchars($package['duration']) ?></span> 
+                                                <h4 class="mb-24" id="currency-symbol-display">
+                                                    <?= htmlspecialchars($symbol) ?>
+                                                    <?= number_format((float)$package['price'], 0, '.', ',') ?>
+                                                    <span class="fw-medium text-md text-secondary-light">/
+                                                        <?= htmlspecialchars($package['duration']) ?>
+                                                    </span>
                                                 </h4>
+
                                                 <span class="mb-20 fw-medium"><?= htmlspecialchars($package['description']) ?></span>
 
                                                 <ul>

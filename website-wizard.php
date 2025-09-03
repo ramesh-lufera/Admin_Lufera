@@ -259,8 +259,8 @@
     $website_id = $_GET['id'] ?? 0;
     $website_id = intval($website_id);
 
-    $query = $conn->prepare("SELECT name FROM json WHERE user_id = ? AND website_id = ?");
-    $query->bind_param("ii", $user_id, $website_id);
+    $query = $conn->prepare("SELECT name FROM json WHERE website_id = ?");
+    $query->bind_param("i", $website_id);
     $query->execute();
     $query->store_result();
 
@@ -993,9 +993,52 @@
 </script>
 <script>
 document.addEventListener('DOMContentLoaded', function () {
+    let originalLogoState = null; // Store the original logo state
+
+    // Function to save the current logo state
+    function saveCurrentLogoState() {
+        const logoInput = document.getElementById('field_logo');
+        const logoGroup = logoInput.closest('.form-group');
+        const existingLogo = logoGroup.querySelector('img, a');
+        const hiddenLogo = document.querySelector('input[name="logo_existing"]');
+
+        originalLogoState = {
+            preview: existingLogo ? existingLogo.outerHTML : '',
+            hiddenValue: hiddenLogo ? hiddenLogo.value : ''
+        };
+    }
+
+    // Function to restore the original logo state
+    function restoreLogoState() {
+        const logoInput = document.getElementById('field_logo');
+        const logoGroup = logoInput.closest('.form-group');
+        const hiddenLogo = document.querySelector('input[name="logo_existing"]');
+
+        // Remove all previews
+        logoGroup.querySelectorAll('.record-preview, img, a').forEach(el => el.remove());
+
+        // Restore original preview if it exists
+        if (originalLogoState && originalLogoState.preview) {
+            logoGroup.insertAdjacentHTML('beforeend', originalLogoState.preview);
+        }
+
+        // Restore hidden input value
+        if (hiddenLogo && originalLogoState) {
+            hiddenLogo.value = originalLogoState.hiddenValue;
+        }
+
+        // Clear file input
+        logoInput.value = "";
+    }
+
     document.querySelectorAll('.load-record').forEach(cb => {
         cb.addEventListener('change', function () {
             const form = document.getElementById('myForm');
+
+            // Save the current logo state before any changes if not already saved
+            if (!originalLogoState) {
+                saveCurrentLogoState();
+            }
 
             // Uncheck all other checkboxes
             document.querySelectorAll('.load-record').forEach(other => {
@@ -1007,7 +1050,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
                 // === Fill fields ===
                 if (data.name?.value) document.getElementById('field_name').value = data.name.value;
-                if (data.email?.value) document.getElementById('field_email').value = data.email.value;
+                if (data.passport_no?.value) document.getElementById('field_passport_no').value = data.passport_no.value;
                 if (data.address?.value) document.getElementById('field_address').value = data.address.value;
 
                 // Radio
@@ -1028,19 +1071,19 @@ document.addEventListener('DOMContentLoaded', function () {
                 const logoInput = document.getElementById('field_logo');
                 const logoGroup = logoInput.closest('.form-group');
 
-                // remove all old previews
-                logoGroup.querySelectorAll('.record-preview').forEach(el => el.remove());
+                // Remove all previews (existing and record previews)
+                logoGroup.querySelectorAll('.record-preview, img, a').forEach(el => el.remove());
 
-                // ✅ clear the file input itself (removes the old filename shown next to input)
+                // Clear the file input
                 logoInput.value = "";
 
-                // if record has logo value, show only that one
+                // If record has logo value, show only that one
                 if (data.logo?.value) {
                     const val = data.logo.value;
                     const ext = val.split('.').pop().toLowerCase();
 
                     let previewHtml = '';
-                    if (['jpg','jpeg','png','gif','webp'].includes(ext)) {
+                    if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext)) {
                         previewHtml = `<img src="${val}" class="record-preview mt-2" style="max-height:120px;">`;
                     } else {
                         previewHtml = `<a href="${val}" target="_blank" class="record-preview d-block mt-2">${val}</a>`;
@@ -1048,10 +1091,11 @@ document.addEventListener('DOMContentLoaded', function () {
 
                     logoGroup.insertAdjacentHTML('beforeend', previewHtml);
 
-                    // update hidden input so PHP knows what to keep
+                    // Update hidden input so PHP knows what to keep
                     const hiddenLogo = document.querySelector('input[name="logo_existing"]');
                     if (hiddenLogo) hiddenLogo.value = val;
                 }
+
                 // Update progress bar if exists
                 if (typeof updateProgressBar === 'function') updateProgressBar();
 
@@ -1059,9 +1103,10 @@ document.addEventListener('DOMContentLoaded', function () {
                 // === If unchecked → Reset the form ===
                 form.reset();
 
-                // Remove uploaded file preview if any
-                document.querySelectorAll('.record-preview').forEach(el => el.remove());
+                // Restore the original logo state
+                restoreLogoState();
 
+                // Update progress bar if exists
                 if (typeof updateProgressBar === 'function') updateProgressBar();
             }
         });

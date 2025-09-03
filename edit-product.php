@@ -270,19 +270,25 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                           $duration_unit = $duration_parts[1] ?? 'days';
                         ?>
                         <div class="form-group mb-2">
-                            <label class="form-label">Duration <span class="text-danger-600">*</span></label>
-                            <div class="d-flex gap-2">
-                              <input type="number" name="duration_value" class="form-control radius-8" required min="1" style="width: 60%;" value="<?php echo htmlspecialchars($duration_value); ?>">
-                              <select name="duration_unit" class="form-control radius-8" required style="width: 40%;">
-                                  <option value="days" <?php if($duration_unit == 'days') echo 'selected'; ?>>Days</option>
-                                  <option value="months" <?php if($duration_unit == 'months') echo 'selected'; ?>>Months</option>
-                                  <option value="years" <?php if($duration_unit == 'years') echo 'selected'; ?>>Years</option>
-                                  <option value="hours" <?php if($duration_unit == 'hours') echo 'selected'; ?>>Hours</option>
-                              </select>
-                            </div>
-                            <div class="invalid-feedback">
-                                Duration is required
-                            </div>
+                          <label class="form-label">Duration <span class="text-danger-600">*</span></label>
+                          <div class="d-flex gap-2">
+                            <input 
+                              type="number" 
+                              name="duration_value" 
+                              id="duration_value"
+                              class="form-control radius-8" 
+                              required 
+                              min="1" 
+                              style="width: 60%;" 
+                              value="<?php echo htmlspecialchars($duration_value); ?>"
+                            >
+                            <select name="duration_unit" id="duration_unit" class="form-control radius-8" required style="width: 40%;">
+                              <!-- Options will be populated by JS -->
+                            </select>
+                          </div>
+                          <div class="invalid-feedback">
+                            Duration is required
+                          </div>
                         </div>
 
                         <div class="form-group mb-2">
@@ -342,6 +348,40 @@ document.querySelector('form').addEventListener('submit', function(e) {
     fileInput.setCustomValidity('');
   }
 });
+</script>
+<script>
+const durationValueInput = document.getElementById('duration_value');
+const durationUnitSelect = document.getElementById('duration_unit');
+
+// PHP value for preselection
+const selectedUnit = "<?php echo $duration_unit; ?>";
+
+function updateDurationOptions() {
+  const value = parseInt(durationValueInput.value, 10);
+  const isSingular = value === 1;
+
+  const units = isSingular 
+    ? ['day', 'month', 'year', 'hour'] 
+    : ['days', 'months', 'years', 'hours'];
+
+  durationUnitSelect.innerHTML = ''; // clear existing options
+
+  units.forEach(unit => {
+    const option = document.createElement('option');
+    option.value = unit;
+    option.textContent = unit.charAt(0).toUpperCase() + unit.slice(1);
+    if (unit === selectedUnit) {
+      option.selected = true;
+    }
+    durationUnitSelect.appendChild(option);
+  });
+}
+
+// Run once on page load
+updateDurationOptions();
+
+// Update whenever the value changes
+durationValueInput.addEventListener('input', updateDurationOptions);
 </script>
 
 <?php include './partials/layouts/layoutBottom.php' ?>

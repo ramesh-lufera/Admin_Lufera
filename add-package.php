@@ -212,7 +212,7 @@ error_reporting(E_ALL);
                                 <div class="mb-2">
                                     <label class="form-label fw-semibold text-primary-light text-sm mb-8">Features <span class="text-danger-600">*</span></label>
                                     <div id="feature-wrapper">
-                                        <div class="feature-group mb-2 d-flex gap-2">
+                                        <div class="feature-group mb-10 d-flex gap-2">
                                             <input type="text" name="features[]" class="form-control radius-8" required placeholder="Enter a feature" />
                                             <button type="button" class="btn btn-sm btn-success add-feature">+</button>
                                         </div>
@@ -245,7 +245,7 @@ error_reporting(E_ALL);
                 e.preventDefault();
 
                 const newGroup = document.createElement("div");
-                newGroup.className = "feature-group mb-2 d-flex gap-2";
+                newGroup.className = "feature-group mb-10 d-flex gap-2";
                 newGroup.innerHTML = `
                     <input type="text" name="features[]" class="form-control radius-8" required placeholder="Enter a feature" />
                     <button type="button" class="btn btn-sm btn-danger remove-feature">−</button>

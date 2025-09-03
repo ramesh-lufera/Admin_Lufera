@@ -1,155 +1,5 @@
 <?php include './partials/layouts/layoutTop.php'; ?>
 
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-
-<!-- <style>
-    /* body {
-        background: #f5f6fa !important;
-        font-family: 'Segoe UI', sans-serif !important;
-    } */
-
-    .form-wrapper {
-        width: 75% !important;
-        margin: 40px auto !important;
-        background: #fff !important;
-        padding: 40px !important;
-        border-radius: 14px !important;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08) !important;
-    }
-
-    .form-title {
-        font-size: 34px !important;
-        font-weight: 900 !important;
-        text-align: center !important;
-        text-transform: uppercase !important;
-        letter-spacing: 1.5px !important;
-        color: #fec700 !important;
-        margin-bottom: 40px !important;
-        display: flex !important;
-        justify-content: center !important;
-        align-items: center !important;
-        gap: 12px !important;
-    }
-
-    .form-icon {
-        color: #fec700 !important;
-        font-size: 32px !important;
-        line-height: 1 !important;
-    }
-
-    .card-group {
-        background: #ffffff !important;
-        padding: 30px !important;
-        margin-bottom: 30px !important;
-        border-radius: 12px !important;
-        border: 1px solid #ddd !important;
-        display: flex !important;
-        flex-direction: column !important;
-        gap: 20px !important;
-    }
-
-    .card-group h4 {
-        font-size: 22px !important;
-        font-weight: 700 !important;
-        margin-bottom: 10px !important;
-        color: #444 !important;
-        border-bottom: 2px dashed #ccc !important;
-        padding-bottom: 8px !important;
-    }
-
-    .form-group {
-        display: flex !important;
-        flex-direction: column !important;
-    }
-
-    label {
-        font-weight: 600 !important;
-        color: #222 !important;
-        margin-bottom: 6px !important;
-    }
-
-    .form-control,
-    textarea,
-    input[type="file"] {
-        border-radius: 8px !important;
-        border: 1px solid #ccc !important;
-        padding: 12px 14px !important;
-        font-size: 15px !important;
-        width: 100% !important;
-    }
-
-    .form-control:focus,
-    textarea:focus {
-        border-color: #fec700 !important;
-        box-shadow: 0 0 0 3px rgba(254, 199, 0, 0.25) !important;
-        outline: none !important;
-    }
-
-    .form-check-group {
-        display: flex !important;
-        flex-wrap: wrap !important;
-        gap: 16px !important;
-        align-items: center !important;
-    }
-
-    .form-check-inline {
-        display: flex !important;
-        /* align-items: center !important; */
-        gap: 8px !important;
-        font-size: 15px !important;
-    }
-
-    .form-check-inline input[type="radio"],
-    .form-check-inline input[type="checkbox"] {
-        width: 18px !important;
-        height: 18px !important;
-        accent-color: #fec700 !important;
-        cursor: pointer !important;
-    }
-
-    .form-check-label {
-        font-weight: 500 !important;
-        color: #101010 !important;
-        cursor: pointer !important;
-    }
-
-    /* .submit-btn {
-        background-color: #fec700 !important;
-        color: #fff !important;
-        border: none !important;
-        padding: 14px 32px !important;
-        font-weight: 700 !important;
-        border-radius: 10px !important;
-        transition: all 0.3s ease !important;
-        width: 100% !important;
-    }
-
-    .submit-btn:hover {
-        background-color: #e6b800 !important;
-    } */
-
-    .uploaded-preview img {
-        max-height: 120px !important;
-        border: 1px solid #ddd !important;
-        padding: 6px !important;
-        margin-top: 10px !important;
-        border-radius: 8px !important;
-        background: #fff !important;
-    }
-
-    @media (max-width: 768px) {
-        .form-wrapper {
-            width: 90% !important;
-            padding: 25px !important;
-        }
-
-        .form-check-group {
-            flex-direction: column !important;
-            align-items: flex-start !important;
-        }
-    }
-</style> -->
-
 <style>
     .form-wrapper {
         max-width: 75% !important;
@@ -1194,9 +1044,52 @@
 </script>
 <script>
 document.addEventListener('DOMContentLoaded', function () {
+    let originalLogoState = null; // Store the original logo state
+
+    // Function to save the current logo state
+    function saveCurrentLogoState() {
+        const logoInput = document.getElementById('field_logo');
+        const logoGroup = logoInput.closest('.form-group');
+        const existingLogo = logoGroup.querySelector('img, a');
+        const hiddenLogo = document.querySelector('input[name="logo_existing"]');
+
+        originalLogoState = {
+            preview: existingLogo ? existingLogo.outerHTML : '',
+            hiddenValue: hiddenLogo ? hiddenLogo.value : ''
+        };
+    }
+
+    // Function to restore the original logo state
+    function restoreLogoState() {
+        const logoInput = document.getElementById('field_logo');
+        const logoGroup = logoInput.closest('.form-group');
+        const hiddenLogo = document.querySelector('input[name="logo_existing"]');
+
+        // Remove all previews
+        logoGroup.querySelectorAll('.record-preview, img, a').forEach(el => el.remove());
+
+        // Restore original preview if it exists
+        if (originalLogoState && originalLogoState.preview) {
+            logoGroup.insertAdjacentHTML('beforeend', originalLogoState.preview);
+        }
+
+        // Restore hidden input value
+        if (hiddenLogo && originalLogoState) {
+            hiddenLogo.value = originalLogoState.hiddenValue;
+        }
+
+        // Clear file input
+        logoInput.value = "";
+    }
+
     document.querySelectorAll('.load-record').forEach(cb => {
         cb.addEventListener('change', function () {
             const form = document.getElementById('myForm');
+
+            // Save the current logo state before any changes if not already saved
+            if (!originalLogoState) {
+                saveCurrentLogoState();
+            }
 
             // Uncheck all other checkboxes
             document.querySelectorAll('.load-record').forEach(other => {
@@ -1208,7 +1101,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
                 // === Fill fields ===
                 if (data.name?.value) document.getElementById('field_name').value = data.name.value;
-                if (data.email?.value) document.getElementById('field_passport_no').value = data.email.value;
+                if (data.passport_no?.value) document.getElementById('field_passport_no').value = data.passport_no.value;
                 if (data.address?.value) document.getElementById('field_address').value = data.address.value;
 
                 // Radio
@@ -1229,19 +1122,19 @@ document.addEventListener('DOMContentLoaded', function () {
                 const logoInput = document.getElementById('field_logo');
                 const logoGroup = logoInput.closest('.form-group');
 
-                // remove all old previews
-                logoGroup.querySelectorAll('.record-preview').forEach(el => el.remove());
+                // Remove all previews (existing and record previews)
+                logoGroup.querySelectorAll('.record-preview, img, a').forEach(el => el.remove());
 
-                // ✅ clear the file input itself (removes the old filename shown next to input)
+                // Clear the file input
                 logoInput.value = "";
 
-                // if record has logo value, show only that one
+                // If record has logo value, show only that one
                 if (data.logo?.value) {
                     const val = data.logo.value;
                     const ext = val.split('.').pop().toLowerCase();
 
                     let previewHtml = '';
-                    if (['jpg','jpeg','png','gif','webp'].includes(ext)) {
+                    if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext)) {
                         previewHtml = `<img src="${val}" class="record-preview mt-2" style="max-height:120px;">`;
                     } else {
                         previewHtml = `<a href="${val}" target="_blank" class="record-preview d-block mt-2">${val}</a>`;
@@ -1249,10 +1142,11 @@ document.addEventListener('DOMContentLoaded', function () {
 
                     logoGroup.insertAdjacentHTML('beforeend', previewHtml);
 
-                    // update hidden input so PHP knows what to keep
+                    // Update hidden input so PHP knows what to keep
                     const hiddenLogo = document.querySelector('input[name="logo_existing"]');
                     if (hiddenLogo) hiddenLogo.value = val;
                 }
+
                 // Update progress bar if exists
                 if (typeof updateProgressBar === 'function') updateProgressBar();
 
@@ -1260,9 +1154,10 @@ document.addEventListener('DOMContentLoaded', function () {
                 // === If unchecked → Reset the form ===
                 form.reset();
 
-                // Remove uploaded file preview if any
-                document.querySelectorAll('.record-preview').forEach(el => el.remove());
+                // Restore the original logo state
+                restoreLogoState();
 
+                // Update progress bar if exists
                 if (typeof updateProgressBar === 'function') updateProgressBar();
             }
         });
