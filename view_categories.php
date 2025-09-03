@@ -71,8 +71,7 @@
                             \$category = "select * from categories where cat_id = \$cat_id";
                             \$cat_query = \$conn ->query(\$category);
                             \$cat_row = \$cat_query ->fetch_assoc();
-                            \$cat_module = \$cat_row['cat_module'];
-
+                            
                             if (\$role == '1' || \$role == '2' || \$role == '7') {
                             \$sql = "
                                 SELECT 
@@ -635,8 +634,8 @@
         $file_path = realpath(__DIR__) . '/' . $editcatSlug;
 
 
-        $stmt = $conn->prepare("UPDATE categories SET cat_name = ?, cat_url = ?, cat_module = ? WHERE cat_id = ?");
-        $stmt->bind_param("sssi", $cat_name, $editcatSlug, $cat_module, $cat_id);
+        $stmt = $conn->prepare("UPDATE categories SET cat_name = ?, cat_url = ? WHERE cat_id = ?");
+        $stmt->bind_param("ssi", $cat_name, $editcatSlug, $cat_id);
         $stmt->execute();
 
         $editcatSlug1 = pathinfo($editcatSlug, PATHINFO_FILENAME);
@@ -1248,7 +1247,7 @@
                                 <td><?= htmlspecialchars($row['cat_name']) ?></td>
                                 <td><?= htmlspecialchars($row['cat_url']) ?></td>
                                 <td class="text-center">
-                                    <a onclick="openEditModal('<?= $row['cat_id'] ?>', '<?= htmlspecialchars($row['cat_name']) ?>', '<?= htmlspecialchars($row['cat_url']) ?>', '<?= htmlspecialchars($row['cat_module']) ?>')" class="fa fa-edit fw-medium w-32-px h-32-px bg-warning-focus text-warning-main rounded-circle d-inline-flex align-items-center justify-content-center cursor-pointer">
+                                    <a onclick="openEditModal('<?= $row['cat_id'] ?>', '<?= htmlspecialchars($row['cat_name']) ?>', '<?= htmlspecialchars($row['cat_url']) ?>')" class="fa fa-edit fw-medium w-32-px h-32-px bg-warning-focus text-warning-main rounded-circle d-inline-flex align-items-center justify-content-center cursor-pointer">
                                     </a>
                                     <form method="post" class="delete-form d-inline">
                                     <input type="hidden" name="delete_cat_id" value="<?= $row['cat_id'] ?>">
@@ -1410,7 +1409,7 @@ $(document).ready(function() {
 });
 </script>
 <script>
-    function openEditModal(id, name, url, module) {
+    function openEditModal(id, name, url) {
     document.getElementById("edit_cat_id").value = id;
     document.getElementById("edit_cat_name").value = name;
     document.getElementById("edit_cat_url").value = url.replace(".php", "");
