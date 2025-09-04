@@ -1450,4 +1450,14 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 });
 </script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const form = document.getElementById('myForm');
+    if (form) {
+        form.addEventListener('submit', function () {
+            document.querySelectorAll('.load-record').forEach(cb => cb.checked = false);
+        });
+    }
+});
+</script>
 <?php include './partials/layouts/layoutBottom.php' ?>
