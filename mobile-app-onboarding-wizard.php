@@ -273,14 +273,14 @@
         $query->fetch();
         $savedData = json_decode($jsonData, true);
         // Rename key example: company_name to company_name
-        if (isset($savedData['company_name'])) {
-            $savedData['company_name'] = $savedData['company_name'];
-            unset($savedData['company_name']);
-        }
+        // if (isset($savedData['company_name'])) {
+        //     $savedData['company_name'] = $savedData['company_name'];
+        //     unset($savedData['company_name']);
+        // }
         // Update value example: app_name
-        if (isset($savedData['app_name'])) {
-            $savedData['app_name']['value'] = 'MyNewApp';
-        }
+        // if (isset($savedData['app_name'])) {
+        //     $savedData['app_name']['value'] = 'MyNewApp';
+        // }
     }
     $query->close();
 
@@ -291,7 +291,7 @@
         $phone = $_POST['phone'] ?? '';
         $website = $_POST['website'] ?? '';
     
-        $app_name = $_POST['app_name'] ?? 'MyNewApp'; // Default to new value
+        $app_name = $_POST['app_name'] ?? ''; // Default to new value
         $platform = $_POST['platform'] ?? '';
         $app_description = $_POST['app_description'] ?? '';
         $core_features = $_POST['core_features'] ?? '';
@@ -468,9 +468,10 @@
             }
         } elseif ($type === 'file') {
             echo '<input type="file" class="form-control w-100 ' . $styleClass . '" id="' . $inputId . '" name="' . htmlspecialchars($fieldName) . '" ' . $isDisabled . '>';
+            echo '<input type="hidden" name="' . htmlspecialchars($fieldName) . '_existing" value="' . htmlspecialchars($val) . '">';
             if (!empty($val)) {
-                echo '<input type="hidden" name="' . htmlspecialchars($fieldName) . '_existing" value="' . htmlspecialchars($val) . '">';
-                echo '<div class="mt-3">';
+                
+                echo '<div class="mt-3 file-preview">';
                 echo '<label class="d-block fw-bold">Uploaded File:</label>';
                 $ext = strtolower(pathinfo($val, PATHINFO_EXTENSION));
                 if (in_array($ext, ['jpg', 'jpeg', 'png', 'webp', 'gif'])) {
@@ -990,7 +991,7 @@
 <script>
     function updateProgressBar() {
         let filled = 0;
-        const totalFields = 23;
+        const totalFields = 24;
 
         if ($('#field_company_name').val()?.trim()) filled++; // Updated field
         if ($('#field_contact_person').val()?.trim()) filled++;
@@ -1003,7 +1004,7 @@
         if ($('#field_core_features').val()?.trim()) filled++;
         if ($('#field_logo_provided').val()?.trim()) filled++;
         if ($('#field_color_style').val()?.trim()) filled++;
-        if ($('#field_screenshots').val()) filled++;
+        if ($('#field_screenshots').val()?.trim() || $('input[name="screenshots_existing"]').val()?.trim()) filled++;
         if ($('#field_user_login').val()?.trim()) filled++;
         if ($('#field_backend_details').val()?.trim()) filled++;
         if ($('#field_push_notifications').val()?.trim()) filled++;
@@ -1098,6 +1099,7 @@
                 if (this.checked) {
                     const data = JSON.parse(this.dataset.record);
                     if (data.company_name?.value) document.getElementById('field_company_name').value = data.company_name.value;
+                    if (data.contact_person?.value) document.getElementById('field_contact_person').value = data.contact_person.value;
                     if (data.email?.value) document.getElementById('field_email').value = data.email.value;
                     if (data.phone?.value) document.getElementById('field_phone').value = data.phone.value;
                     if (data.website?.value) document.getElementById('field_website').value = data.website.value;
@@ -1110,7 +1112,7 @@
                     if (data.screenshots?.value) {
                         const logoInput = document.getElementById('field_screenshots');
                         const logoGroup = logoInput.closest('.form-group');
-                        logoGroup.querySelectorAll('.record-preview').forEach(el => el.remove());
+                        logoGroup.querySelectorAll('.file-preview, .record-preview').forEach(el => el.remove());
                         logoInput.value = "";
                         const val = data.screenshots.value;
                         const ext = val.split('.').pop().toLowerCase();
@@ -1146,5 +1148,15 @@
             });
         });
     });
+</script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const form = document.getElementById('myForm');
+    if (form) {
+        form.addEventListener('submit', function () {
+            document.querySelectorAll('.load-record').forEach(cb => cb.checked = false);
+        });
+    }
+});
 </script>
 <?php include './partials/layouts/layoutBottom.php'; ?>
