@@ -684,7 +684,8 @@ th {
 }
 
 .text-primary-600 {
-  color: var(--primary-600) !important;
+  /* color: var(--primary-600) !important; */
+  color: #fec700 !important;
 }
 
 .text-primary-700 {

@@ -19,7 +19,7 @@
         $type = $_POST['type'];
         $id = $_POST['id'];
         $plan_name = $_POST['plan_name'];
-        $title = $_POST['title'];
+        // $title = $_POST['title'];
         $subtitle = $_POST['subtitle'];
         $price = $_POST['price'];
         $duration = $_POST['duration'];
@@ -47,7 +47,6 @@
             <div class="col-xxl-6 col-sm-6">
                 <div class="card h-100 radius-12">
                 <div class="card-header py-10 border-none" style="box-shadow: 0px 3px 3px 0px lightgray">
-                    <h6 class="mb-0"><?php echo $title; ?></h6>
                     <p class="mb-0"><?php echo $subtitle; ?></p>
                 </div>
                     <div class="card-body p-16">
