@@ -1,5 +1,4 @@
 <?php include './partials/layouts/layoutTop.php'; ?>
-
 <style>
     .form-group {
         margin-bottom: 24px !important;
@@ -189,8 +188,6 @@
         height:45px;
     }
 </style>
-
-
 <?php
     $session_user_id = $_SESSION['user_id'];
     $prod_id = intval($_GET['prod_id']);
@@ -223,7 +220,7 @@
 
     while ($row = $result->fetch_assoc()) {
         $decoded = json_decode($row['name'], true);
-        if ($decoded && isset($decoded['company_name']['value'])) { // Updated key from company_name to company_name
+        if ($decoded && isset($decoded['company_name']['value'])) {
             $prevRecords[] = [
                 'id' => $row['id'],
                 'data' => $decoded
@@ -272,26 +269,17 @@
         $query->bind_result($jsonData);
         $query->fetch();
         $savedData = json_decode($jsonData, true);
-        // Rename key example: company_name to company_name
-        // if (isset($savedData['company_name'])) {
-        //     $savedData['company_name'] = $savedData['company_name'];
-        //     unset($savedData['company_name']);
-        // }
-        // Update value example: app_name
-        // if (isset($savedData['app_name'])) {
-        //     $savedData['app_name']['value'] = 'MyNewApp';
-        // }
     }
     $query->close();
 
     if (isset($_POST['save'])) {
-        $company_name = $_POST['company_name'] ?? ''; // Updated to company_name
+        $company_name = $_POST['company_name'] ?? '';
         $contact_person = $_POST['contact_person'] ?? '';
         $email = $_POST['email'] ?? '';
         $phone = $_POST['phone'] ?? '';
         $website = $_POST['website'] ?? '';
     
-        $app_name = $_POST['app_name'] ?? ''; // Default to new value
+        $app_name = $_POST['app_name'] ?? '';
         $platform = $_POST['platform'] ?? '';
         $app_description = $_POST['app_description'] ?? '';
         $core_features = $_POST['core_features'] ?? '';
@@ -319,7 +307,7 @@
     
         // Handle file upload for screenshots
         if (!empty($_FILES['screenshots']['name'])) {
-            $uploadDir = 'uploads/';
+            $uploadDir = 'Uploads/';
             if (!is_dir($uploadDir)) {
                 mkdir($uploadDir, 0777, true);
             }
@@ -340,7 +328,7 @@
         }
     
         $data = json_encode([
-            'company_name' => createField($company_name), // Updated key
+            'company_name' => createField($company_name),
             'contact_person' => createField($contact_person),
             'email' => createField($email),
             'phone' => createField($phone),
@@ -469,8 +457,7 @@
         } elseif ($type === 'file') {
             echo '<input type="file" class="form-control w-100 ' . $styleClass . '" id="' . $inputId . '" name="' . htmlspecialchars($fieldName) . '" ' . $isDisabled . '>';
             echo '<input type="hidden" name="' . htmlspecialchars($fieldName) . '_existing" value="' . htmlspecialchars($val) . '">';
-            if (!empty($val)) {
-                
+            if (($val)) {
                 echo '<div class="mt-3 file-preview">';
                 echo '<label class="d-block fw-bold">Uploaded File:</label>';
                 $ext = strtolower(pathinfo($val, PATHINFO_EXTENSION));
@@ -651,7 +638,7 @@
 
                                     <h5>1. Client & Business Info</h5>
                                     <?php
-                                    renderFieldExtended('company_name', $savedData, $user_role, 'Business Name', '', 'text'); // Updated label
+                                    renderFieldExtended('company_name', $savedData, $user_role, 'Business Name', '', 'text');
                                     renderFieldExtended('contact_person', $savedData, $user_role, 'Contact Person', '', 'text');
                                     renderFieldExtended('email', $savedData, $user_role, 'Email', '', 'email');
                                     renderFieldExtended('phone', $savedData, $user_role, 'Phone', '', 'text');
@@ -719,124 +706,6 @@
     </div>
 </div>
 
-<script>
-    document.addEventListener('DOMContentLoaded', () => {
-        let currentField = '';
-        let currentType = 'text';
-        const modal = document.getElementById('editModal');
-        const fieldContainer = document.getElementById('editFieldContainer');
-        const saveBtn = document.getElementById('saveEditBtn');
-        const closeBtn = document.querySelector('.close-btn');
-
-        document.querySelectorAll('.edit-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                currentField = btn.dataset.field;
-                currentType = btn.dataset.type || 'text';
-                const value = btn.dataset.value || '';
-                const options = btn.dataset.options ? btn.dataset.options.split(',') : [];
-
-                fieldContainer.innerHTML = '';
-
-                if (currentType === 'textarea') {
-                    fieldContainer.innerHTML = `<textarea id="modalInput" class="form-control" rows="4">${value}</textarea>`;
-                } else if (currentType === 'radio') {
-                    options.forEach(opt => {
-                        const checked = opt.trim() === value ? 'checked' : '';
-                        fieldContainer.innerHTML += `
-                            <div class="form-check">
-                                <input class="form-check-input mt-4" type="radio" name="modalInput" value="${opt.trim()}" ${checked}>
-                                <label class="form-check-label">${opt.trim()}</label>
-                            </div>`;
-                    });
-                } else if (currentType === 'checkbox') {
-                    const selected = value.split(',').map(v => v.trim());
-                    options.forEach(opt => {
-                        const checked = selected.includes(opt.trim()) ? 'checked' : '';
-                        fieldContainer.innerHTML += `
-                            <div class="form-check">
-                                <input class="form-check-input mt-4" type="checkbox" name="modalInput" value="${opt.trim()}" ${checked}>
-                                <label class="form-check-label">${opt.trim()}</label>
-                            </div>`;
-                    });
-                } else if (currentType === 'file') {
-                    let filePreview = '';
-                    if (value) {
-                        const ext = value.split('.').pop().toLowerCase();
-                        if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext)) {
-                            filePreview = `<img src="${value}" class="img-fluid mb-2" style="max-height:150px;">`;
-                        } else {
-                            filePreview = `<p class="mb-2"><a href="${value}" target="_blank">${value}</a></p>`;
-                        }
-                    }
-                    fieldContainer.innerHTML = `
-                        ${filePreview}
-                        <input type="file" class="form-control" id="modalInput">`;
-                } else if (currentType === 'select') {
-                    let selectHTML = `<select id="modalInput" class="form-control">`;
-                    options.forEach(opt => {
-                        const selected = opt.trim() === value ? 'selected' : '';
-                        selectHTML += `<option value="${opt.trim()}" ${selected}>${opt.trim()}</option>`;
-                    });
-                    selectHTML += `</select>`;
-                    fieldContainer.innerHTML = selectHTML;
-                } else if (currentType === 'date') {
-                    fieldContainer.innerHTML = `<input type="date" id="modalInput" class="form-control" value="${value}" />`;
-                } else {
-                    fieldContainer.innerHTML = `<input type="text" id="modalInput" class="form-control" value="${value}" />`;
-                }
-
-                modal.style.display = 'flex';
-            });
-        });
-
-        saveBtn.addEventListener('click', () => {
-            const formData = new FormData();
-            formData.append('edit_field', currentField);
-
-            if (currentType === 'checkbox') {
-                const values = Array.from(document.querySelectorAll('input[name="modalInput"]:checked'))
-                    .map(el => el.value);
-                formData.append('edit_value', values.join(','));
-            } else if (currentType === 'radio') {
-                const val = document.querySelector('input[name="modalInput"]:checked')?.value || '';
-                formData.append('edit_value', val);
-            } else if (currentType === 'file') {
-                const file = document.getElementById('modalInput').files[0];
-                if (!file) {
-                    alert("Please choose a file.");
-                    return;
-                }
-                formData.append('edit_file_upload', 'true');
-                formData.append('file', file);
-            } else {
-                formData.append('edit_value', document.getElementById('modalInput').value);
-            }
-
-            fetch('', {
-                method: 'POST',
-                body: formData
-            })
-            .then(res => res.text())
-            .then(() => {
-                modal.style.display = 'none';
-                Swal.fire({
-                    icon: 'success',
-                    title: 'Updated!',
-                    text: 'Your changes have been saved.',
-                    confirmButtonColor: '#ffc107'
-                }).then(() => {
-                    location.reload();
-                });
-            });
-        });
-
-        closeBtn.addEventListener('click', () => modal.style.display = 'none');
-        window.addEventListener('click', (e) => {
-            if (e.target === modal) modal.style.display = 'none';
-        });
-    });
-</script>
-
 <div id="editModal" class="modal" style="display:none;">
     <div class="modal-content p-20 rounded" style="background:#fff; max-width:500px; margin:auto;">
         <span class="close-btn float-end" title="Close" style="cursor:pointer;">&times;</span>
@@ -847,10 +716,168 @@
 </div>
 
 <script>
+document.addEventListener('DOMContentLoaded', function () {
+    let currentField = '';
+    let currentType = 'text';
+    const modal = document.getElementById('editModal');
+    const fieldContainer = document.getElementById('editFieldContainer');
+    const saveBtn = document.getElementById('saveEditBtn');
+    const closeBtn = document.querySelector('.close-btn');
+    const form = document.getElementById('myForm');
+    const websiteId = new URLSearchParams(window.location.search).get('id');
+
+    // Store initial form values
+    const initialValues = {};
+    const fields = [
+        { id: 'company_name', type: 'text' },
+        { id: 'contact_person', type: 'text' },
+        { id: 'email', type: 'email' },
+        { id: 'phone', type: 'text' },
+        { id: 'website', type: 'url' },
+        { id: 'app_name', type: 'text' },
+        { id: 'platform', type: 'select' },
+        { id: 'app_description', type: 'textarea' },
+        { id: 'core_features', type: 'textarea' },
+        { id: 'logo_provided', type: 'select' },
+        { id: 'color_style', type: 'text' },
+        { id: 'screenshots', type: 'file' },
+        { id: 'user_login', type: 'select' },
+        { id: 'backend_details', type: 'textarea' },
+        { id: 'push_notifications', type: 'select' },
+        { id: 'payment_integration', type: 'select' },
+        { id: 'admin_panel', type: 'select' },
+        { id: 'admin_functions', type: 'textarea' },
+        { id: 'google_dev_account', type: 'select' },
+        { id: 'apple_dev_account', type: 'select' },
+        { id: 'budget', type: 'text' },
+        { id: 'launch_date', type: 'date' },
+        { id: 'timeline_constraints', type: 'textarea' },
+        { id: 'extra_notes', type: 'textarea' }
+    ];
+
+    fields.forEach(field => {
+        if (field.type === 'file') {
+            const hiddenInput = document.querySelector(`input[name="${field.id}_existing"]`);
+            initialValues[field.id] = hiddenInput ? hiddenInput.value : '';
+        } else {
+            const input = document.getElementById(`field_${field.id}`);
+            initialValues[field.id] = input ? input.value : '';
+        }
+    });
+
+    // Edit button click handler for non-admin users
+    document.querySelectorAll('.edit-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            currentField = btn.dataset.field;
+            currentType = btn.dataset.type || 'text';
+            const value = btn.dataset.value || '';
+            const options = btn.dataset.options ? btn.dataset.options.split(',') : [];
+
+            fieldContainer.innerHTML = '';
+
+            if (currentType === 'textarea') {
+                fieldContainer.innerHTML = `<textarea id="modalInput" class="form-control" rows="4">${value}</textarea>`;
+            } else if (currentType === 'radio') {
+                options.forEach(opt => {
+                    const checked = opt.trim() === value ? 'checked' : '';
+                    fieldContainer.innerHTML += `
+                        <div class="form-check">
+                            <input class="form-check-input mt-4" type="radio" name="modalInput" value="${opt.trim()}" ${checked}>
+                            <label class="form-check-label">${opt.trim()}</label>
+                        </div>`;
+                });
+            } else if (currentType === 'checkbox') {
+                const selected = value.split(',').map(v => v.trim());
+                options.forEach(opt => {
+                    const checked = selected.includes(opt.trim()) ? 'checked' : '';
+                    fieldContainer.innerHTML += `
+                        <div class="form-check">
+                            <input class="form-check-input mt-4" type="checkbox" name="modalInput" value="${opt.trim()}" ${checked}>
+                            <label class="form-check-label">${opt.trim()}</label>
+                        </div>`;
+                });
+            } else if (currentType === 'file') {
+                let filePreview = '';
+                if (value) {
+                    const ext = value.split('.').pop().toLowerCase();
+                    if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext)) {
+                        filePreview = `<img src="${value}" class="img-fluid mb-2" style="max-height:150px;">`;
+                    } else {
+                        filePreview = `<p class="mb-2"><a href="${value}" target="_blank">${value}</a></p>`;
+                    }
+                }
+                fieldContainer.innerHTML = `
+                    ${filePreview}
+                    <input type="file" class="form-control" id="modalInput">`;
+            } else if (currentType === 'select') {
+                let selectHTML = `<select id="modalInput" class="form-control">`;
+                options.forEach(opt => {
+                    const selected = opt.trim() === value ? 'selected' : '';
+                    selectHTML += `<option value="${opt.trim()}" ${selected}>${opt.trim()}</option>`;
+                });
+                selectHTML += `</select>`;
+                fieldContainer.innerHTML = selectHTML;
+            } else if (currentType === 'date') {
+                fieldContainer.innerHTML = `<input type="date" id="modalInput" class="form-control" value="${value}" />`;
+            } else {
+                fieldContainer.innerHTML = `<input type="text" id="modalInput" class="form-control" value="${value}" />`;
+            }
+
+            modal.style.display = 'flex';
+        });
+    });
+
+    // Save button for modal
+    saveBtn.addEventListener('click', () => {
+        const formData = new FormData();
+        formData.append('edit_field', currentField);
+
+        if (currentType === 'checkbox') {
+            const values = Array.from(document.querySelectorAll('input[name="modalInput"]:checked'))
+                .map(el => el.value);
+            formData.append('edit_value', values.join(','));
+        } else if (currentType === 'radio') {
+            const val = document.querySelector('input[name="modalInput"]:checked')?.value || '';
+            formData.append('edit_value', val);
+        } else if (currentType === 'file') {
+            const file = document.getElementById('modalInput').files[0];
+            if (!file) {
+                alert("Please choose a file.");
+                return;
+            }
+            formData.append('edit_file_upload', 'true');
+            formData.append('file', file);
+        } else {
+            formData.append('edit_value', document.getElementById('modalInput').value);
+        }
+
+        fetch('', {
+            method: 'POST',
+            body: formData
+        })
+        .then(res => res.text())
+        .then(() => {
+            modal.style.display = 'none';
+            Swal.fire({
+                icon: 'success',
+                title: 'Updated!',
+                text: 'Your changes have been saved.',
+                confirmButtonColor: '#ffc107'
+            }).then(() => {
+                location.reload();
+            });
+        });
+    });
+
+    closeBtn.addEventListener('click', () => modal.style.display = 'none');
+    window.addEventListener('click', (e) => {
+        if (e.target === modal) modal.style.display = 'none';
+    });
+
+    // Approve/Reject button handlers
     jQuery('.approve-btn, .reject-btn').click(function () {
         const field = jQuery(this).data('field');
         const status = jQuery(this).hasClass('approve-btn') ? 'approved' : 'rejected';
-        const websiteId = new URLSearchParams(window.location.search).get('id');
 
         jQuery.ajax({
             url: 'json_status_update.php?id=' + websiteId,
@@ -864,29 +891,12 @@
             }
         });
     });
-</script>
 
-<script>
-    $(document).ready(function () {
-        const websiteId = new URLSearchParams(window.location.search).get('id');
-
-        $('.approve-btn, .reject-btn').click(function () {
-            const field = $(this).data('field');
-            const status = $(this).hasClass('approve-btn') ? 'approved' : 'rejected';
-
-            $.post('json_status_update.php?id=' + websiteId, {
-                fields: [field],
-                status: status
-            }, function () {
-                Swal.fire('Success', 'Field updated.', 'success').then(() => location.reload());
-            }).fail(function () {
-                Swal.fire('Error', 'Could not update field.', 'error');
-            });
-        });
-
+    // Bulk approve/reject
+    jQuery(document).ready(function () {
         function bulkUpdate(status) {
-            const fields = $('.bulk-approve-checkbox:checked').map(function () {
-                return $(this).val();
+            const fields = jQuery('.bulk-approve-checkbox:checked').map(function () {
+                return jQuery(this).val();
             }).get();
 
             if (fields.length === 0) {
@@ -894,7 +904,7 @@
                 return;
             }
 
-            $.post('json_status_update.php?id=' + websiteId, {
+            jQuery.post('json_status_update.php?id=' + websiteId, {
                 fields: fields,
                 status: status
             }, function () {
@@ -904,35 +914,30 @@
             });
         }
 
-        $('#bulkApproveBtn').click(function () {
+        jQuery('#bulkApproveBtn').click(function () {
             bulkUpdate('approved');
         });
 
-        $('#bulkRejectBtn').click(function () {
+        jQuery('#bulkRejectBtn').click(function () {
             bulkUpdate('rejected');
         });
-    });
-</script>
 
-<script>
-    $(document).ready(function () {
-        const websiteId = new URLSearchParams(window.location.search).get('id');
-
-        $('.edit-icon').click(function () {
-            const field = $(this).data('field');
-            const input = $('#field_' + field);
+        // Edit/Update icons for admin
+        jQuery('.edit-icon').click(function () {
+            const field = jQuery(this).data('field');
+            const input = jQuery('#field_' + field);
             const inputType = input.attr('type');
             input.prop('readonly', false).focus();
-            $('input[type="radio"][name="' + field + '"]').prop('disabled', false);
-            $('input[type="checkbox"][name="' + field + '[]"]').prop('disabled', false);
+            jQuery('input[type="radio"][name="' + field + '"]').prop('disabled', false);
+            jQuery('input[type="checkbox"][name="' + field + '[]"]').prop('disabled', false);
             input.prop('disabled', false);
-            $('.update-icon[data-field="' + field + '"]').removeClass('d-none');
-            $(this).addClass('d-none');
+            jQuery('.update-icon[data-field="' + field + '"]').removeClass('d-none');
+            jQuery(this).addClass('d-none');
         });
 
-        $('.update-icon').click(function () {
-            const field = $(this).data('field');
-            const input = $('#field_' + field);
+        jQuery('.update-icon').click(function () {
+            const field = jQuery(this).data('field');
+            const input = jQuery('#field_' + field);
             const inputType = input.attr('type');
             let value;
 
@@ -943,7 +948,7 @@
                 formData.append('field', field);
                 formData.append('file', file);
 
-                $.ajax({
+                jQuery.ajax({
                     type: 'POST',
                     url: '',
                     data: formData,
@@ -953,25 +958,25 @@
                         Swal.fire('Success', 'File updated.', 'success').then(() => location.reload());
                     },
                     error: function () {
-                        Swal.fire('Success', 'File updated.', 'success').then(() => location.reload());
+                        Swal.fire('Error', 'File update failed.', 'error');
                     }
                 });
                 return;
             }
 
-            if (input.length === 0 && $('input[name="' + field + '[]"]').length > 0) {
+            if (input.length === 0 && jQuery('input[name="' + field + '[]"]').length > 0) {
                 let selected = [];
-                $('input[name="' + field + '[]"]:checked').each(function () {
-                    selected.push($(this).val());
+                jQuery('input[name="' + field + '[]"]:checked').each(function () {
+                    selected.push(jQuery(this).val());
                 });
                 value = selected.join(',');
-            } else if ($('input[name="' + field + '"]:checked').length > 0) {
-                value = $('input[name="' + field + '"]:checked').val();
+            } else if (jQuery('input[name="' + field + '"]:checked').length > 0) {
+                value = jQuery('input[name="' + field + '"]:checked').val();
             } else {
                 value = input.val();
             }
 
-            $.post('', {
+            jQuery.post('', {
                 inline_update: true,
                 field: field,
                 value: value
@@ -979,184 +984,197 @@
                 if (res === 'updated') {
                     Swal.fire('Success', 'Field updated.', 'success').then(() => location.reload());
                 } else {
-                    Swal.fire('Success', 'Field updated.', 'success').then(() => location.reload());
+                    Swal.fire('Error', 'Field update failed.', 'error');
                 }
             }).fail(function () {
                 Swal.fire('Error', 'Server error occurred.', 'error');
             });
         });
     });
-</script>
 
-<script>
+    // Progress bar update
     function updateProgressBar() {
         let filled = 0;
         const totalFields = 24;
 
-        if ($('#field_company_name').val()?.trim()) filled++; // Updated field
-        if ($('#field_contact_person').val()?.trim()) filled++;
-        if ($('#field_email').val()?.trim()) filled++;
-        if ($('#field_phone').val()?.trim()) filled++;
-        if ($('#field_website').val()?.trim()) filled++;
-        if ($('#field_app_name').val()?.trim()) filled++;
-        if ($('#field_platform').val()?.trim()) filled++;
-        if ($('#field_app_description').val()?.trim()) filled++;
-        if ($('#field_core_features').val()?.trim()) filled++;
-        if ($('#field_logo_provided').val()?.trim()) filled++;
-        if ($('#field_color_style').val()?.trim()) filled++;
-        if ($('#field_screenshots').val()?.trim() || $('input[name="screenshots_existing"]').val()?.trim()) filled++;
-        if ($('#field_user_login').val()?.trim()) filled++;
-        if ($('#field_backend_details').val()?.trim()) filled++;
-        if ($('#field_push_notifications').val()?.trim()) filled++;
-        if ($('#field_payment_integration').val()?.trim()) filled++;
-        if ($('#field_admin_panel').val()?.trim()) filled++;
-        if ($('#field_admin_functions').val()?.trim()) filled++;
-        if ($('#field_google_dev_account').val()?.trim()) filled++;
-        if ($('#field_apple_dev_account').val()?.trim()) filled++;
-        if ($('#field_budget').val()?.trim()) filled++;
-        if ($('#field_launch_date').val()?.trim()) filled++;
-        if ($('#field_timeline_constraints').val()?.trim()) filled++;
-        if ($('#field_extra_notes').val()?.trim()) filled++;
+        function isFilled(selector, isFile = false) {
+            if (isFile) {
+                const input = document.querySelector(selector);
+                const existing = document.querySelector('input[name="' + selector.replace('#field_', '') + '_existing"]');
+                return (input && input.value.trim()) || (existing && existing.value.trim());
+            }
+            const element = document.querySelector(selector);
+            return element && element.value.trim();
+        }
+
+        if (isFilled('#field_company_name')) filled++;
+        if (isFilled('#field_contact_person')) filled++;
+        if (isFilled('#field_email')) filled++;
+        if (isFilled('#field_phone')) filled++;
+        if (isFilled('#field_website')) filled++;
+        if (isFilled('#field_app_name')) filled++;
+        if (isFilled('#field_platform')) filled++;
+        if (isFilled('#field_app_description')) filled++;
+        if (isFilled('#field_core_features')) filled++;
+        if (isFilled('#field_logo_provided')) filled++;
+        if (isFilled('#field_color_style')) filled++;
+        if (isFilled('#field_screenshots', true)) filled++;
+        if (isFilled('#field_user_login')) filled++;
+        if (isFilled('#field_backend_details')) filled++;
+        if (isFilled('#field_push_notifications')) filled++;
+        if (isFilled('#field_payment_integration')) filled++;
+        if (isFilled('#field_admin_panel')) filled++;
+        if (isFilled('#field_admin_functions')) filled++;
+        if (isFilled('#field_google_dev_account')) filled++;
+        if (isFilled('#field_apple_dev_account')) filled++;
+        if (isFilled('#field_budget')) filled++;
+        if (isFilled('#field_launch_date')) filled++;
+        if (isFilled('#field_timeline_constraints')) filled++;
+        if (isFilled('#field_extra_notes')) filled++;
 
         const percent = Math.round((filled / totalFields) * 100);
-        $('#formProgressBar').css('width', percent + '%').text(percent + '%');
+        const progressBar = document.getElementById('formProgressBar');
+        progressBar.style.width = percent + '%';
+        progressBar.textContent = percent + '%';
     }
 
-    $(document).ready(function () {
-        updateProgressBar();
-        $('#field_company_name, #field_contact_person, #field_email, #field_phone, #field_website, #field_app_name, #field_app_description, #field_core_features, #field_color_style, #field_backend_details, #field_admin_functions, #field_budget, #field_launch_date, #field_timeline_constraints, #field_extra_notes')
-            .on('input', updateProgressBar);
-        $('#field_platform, #field_logo_provided, #field_user_login, #field_push_notifications, #field_payment_integration, #field_admin_panel, #field_google_dev_account, #field_apple_dev_account')
-            .on('change', updateProgressBar);
-        $('#field_screenshots').on('change', updateProgressBar);
-    });
-</script>
-
-<script>
-    document.addEventListener('DOMContentLoaded', function () {
-        const selectAllCheckbox = document.getElementById('select_all_admin');
-        if (selectAllCheckbox) {
-            selectAllCheckbox.addEventListener('change', function () {
-                const checkboxes = document.querySelectorAll('.bulk-approve-checkbox');
-                checkboxes.forEach(cb => cb.checked = selectAllCheckbox.checked);
+    // Load record handler
+    document.querySelectorAll('.load-record').forEach(cb => {
+        cb.addEventListener('change', function () {
+            // Uncheck all other checkboxes
+            document.querySelectorAll('.load-record').forEach(other => {
+                if (other !== this) other.checked = false;
             });
 
-            document.querySelectorAll('.bulk-approve-checkbox').forEach(cb => {
-                cb.addEventListener('change', function () {
-                    const allChecked = document.querySelectorAll('.bulk-approve-checkbox:checked').length === document.querySelectorAll('.bulk-approve-checkbox').length;
-                    selectAllCheckbox.checked = allChecked;
-                });
-            });
-        }
-    });
-</script>
+            // Clear existing previews
+            document.querySelectorAll('.file-preview, .record-preview').forEach(el => el.remove());
 
-<script>
-    document.addEventListener('DOMContentLoaded', function () {
-        const emailField = document.getElementById('field_email');
-        const urlField = document.getElementById('field_website');
-        const form = document.getElementById('myForm');
-
-        emailField.addEventListener('invalid', function (e) {
-            e.preventDefault();
-            if (!emailField.validity.valid) {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Invalid Email',
-                    text: 'Please type a valid email address.'
-                });
-            }
-        });
-
-        urlField.addEventListener('invalid', function (e) {
-            e.preventDefault();
-            if (!urlField.validity.valid) {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Invalid URL',
-                    text: 'Please type a valid website URL (e.g. https://example.com).'
-                });
-            }
-        });
-
-        form.addEventListener('submit', function (e) {
-            if (!emailField.checkValidity() || !urlField.checkValidity()) {
-                e.preventDefault();
-            }
-        });
-    });
-</script>
-
-<script>
-    document.addEventListener('DOMContentLoaded', function () {
-        document.querySelectorAll('.load-record').forEach(cb => {
-            cb.addEventListener('change', function () {
-                const form = document.getElementById('myForm');
-                document.querySelectorAll('.load-record').forEach(other => {
-                    if (other !== this) other.checked = false;
-                });
-
-                if (this.checked) {
+            if (this.checked) {
+                try {
                     const data = JSON.parse(this.dataset.record);
-                    if (data.company_name?.value) document.getElementById('field_company_name').value = data.company_name.value;
-                    if (data.contact_person?.value) document.getElementById('field_contact_person').value = data.contact_person.value;
-                    if (data.email?.value) document.getElementById('field_email').value = data.email.value;
-                    if (data.phone?.value) document.getElementById('field_phone').value = data.phone.value;
-                    if (data.website?.value) document.getElementById('field_website').value = data.website.value;
-                    if (data.app_name?.value) document.getElementById('field_app_name').value = data.app_name.value;
-                    if (data.platform?.value) document.getElementById('field_platform').value = data.platform.value;
-                    if (data.app_description?.value) document.getElementById('field_app_description').value = data.app_description.value;
-                    if (data.core_features?.value) document.getElementById('field_core_features').value = data.core_features.value;
-                    if (data.logo_provided?.value) document.getElementById('field_logo_provided').value = data.logo_provided.value;
-                    if (data.color_style?.value) document.getElementById('field_color_style').value = data.color_style.value;
-                    if (data.screenshots?.value) {
+                    fields.forEach(field => {
+                        const input = document.getElementById(`field_${field.id}`);
+                        const value = data[field.id]?.value || '';
+
+                        if (field.type !== 'file' && input) {
+                            input.value = value;
+                        } else if (field.id === 'screenshots' && value) {
+                            const logoInput = document.getElementById('field_screenshots');
+                            const logoGroup = logoInput.closest('.form-group');
+                            logoGroup.querySelectorAll('.file-preview, .record-preview').forEach(el => el.remove());
+                            logoInput.value = ''; // Clear file input
+                            const ext = value.split('.').pop().toLowerCase();
+                            let previewHtml = '';
+                            if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext)) {
+                                previewHtml = `<div class="record-preview mt-3"><label class="d-block fw-bold">Uploaded File:</label><img src="${value}" alt="File" style="max-height:120px; border:1px solid #ccc; padding:6px;"></div>`;
+                            } else {
+                                previewHtml = `<div class="record-preview mt-3"><label class="d-block fw-bold">Uploaded File:</label><a href="${value}" target="_blank">${value}</a></div>`;
+                            }
+                            logoGroup.insertAdjacentHTML('beforeend', previewHtml);
+                            const hiddenLogo = document.querySelector('input[name="screenshots_existing"]');
+                            if (hiddenLogo) hiddenLogo.value = value;
+                        }
+                    });
+                } catch (e) {
+                    console.error('Error parsing JSON:', e);
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: 'Failed to load record data. Please try again.'
+                    });
+                }
+            } else {
+                // Restore initial values
+                fields.forEach(field => {
+                    const input = document.getElementById(`field_${field.id}`);
+                    const value = initialValues[field.id] || '';
+
+                    if (field.type !== 'file' && input) {
+                        input.value = value;
+                    } else if (field.id === 'screenshots') {
                         const logoInput = document.getElementById('field_screenshots');
                         const logoGroup = logoInput.closest('.form-group');
                         logoGroup.querySelectorAll('.file-preview, .record-preview').forEach(el => el.remove());
-                        logoInput.value = "";
-                        const val = data.screenshots.value;
-                        const ext = val.split('.').pop().toLowerCase();
-                        let previewHtml = '';
-                        if (['jpg','jpeg','png','gif','webp'].includes(ext)) {
-                            previewHtml = `<img src="${val}" class="record-preview mt-2" style="max-height:120px;">`;
-                        } else {
-                            previewHtml = `<a href="${val}" target="_blank" class="record-preview d-block mt-2">${val}</a>`;
-                        }
-                        logoGroup.insertAdjacentHTML('beforeend', previewHtml);
+                        logoInput.value = ''; // Clear file input
                         const hiddenLogo = document.querySelector('input[name="screenshots_existing"]');
-                        if (hiddenLogo) hiddenLogo.value = val;
+                        if (hiddenLogo) hiddenLogo.value = value;
+                        if (value) {
+                            const ext = value.split('.').pop().toLowerCase();
+                            let previewHtml = '';
+                            if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext)) {
+                                previewHtml = `<div class="file-preview mt-3"><label class="d-block fw-bold">Uploaded File:</label><img src="${value}" alt="File" style="max-height:120px; border:1px solid #ccc; padding:6px;"></div>`;
+                            } else {
+                                previewHtml = `<div class="file-preview mt-3"><label class="d-block fw-bold">Uploaded File:</label><a href="${value}" target="_blank">${value}</a></div>`;
+                            }
+                            logoGroup.insertAdjacentHTML('beforeend', previewHtml);
+                        }
                     }
-                    if (data.user_login?.value) document.getElementById('field_user_login').value = data.user_login.value;
-                    if (data.backend_details?.value) document.getElementById('field_backend_details').value = data.backend_details.value;
-                    if (data.push_notifications?.value) document.getElementById('field_push_notifications').value = data.push_notifications.value;
-                    if (data.payment_integration?.value) document.getElementById('field_payment_integration').value = data.payment_integration.value;
-                    if (data.admin_panel?.value) document.getElementById('field_admin_panel').value = data.admin_panel.value;
-                    if (data.admin_functions?.value) document.getElementById('field_admin_functions').value = data.admin_functions.value;
-                    if (data.google_dev_account?.value) document.getElementById('field_google_dev_account').value = data.google_dev_account.value;
-                    if (data.apple_dev_account?.value) document.getElementById('field_apple_dev_account').value = data.apple_dev_account.value;
-                    if (data.budget?.value) document.getElementById('field_budget').value = data.budget.value;
-                    if (data.launch_date?.value) document.getElementById('field_launch_date').value = data.launch_date.value;
-                    if (data.timeline_constraints?.value) document.getElementById('field_timeline_constraints').value = data.timeline_constraints.value;
-                    if (data.extra_notes?.value) document.getElementById('field_extra_notes').value = data.extra_notes.value;
+                });
+            }
 
-                    if (typeof updateProgressBar === 'function') updateProgressBar();
-                } else {
-                    form.reset();
-                    document.querySelectorAll('.record-preview').forEach(el => el.remove());
-                    if (typeof updateProgressBar === 'function') updateProgressBar();
-                }
-            });
+            updateProgressBar();
         });
     });
-</script>
-<script>
-document.addEventListener('DOMContentLoaded', function () {
-    const form = document.getElementById('myForm');
-    if (form) {
-        form.addEventListener('submit', function () {
-            document.querySelectorAll('.load-record').forEach(cb => cb.checked = false);
+
+    // Select all checkbox handler
+    const selectAllCheckbox = document.getElementById('select_all_admin');
+    if (selectAllCheckbox) {
+        selectAllCheckbox.addEventListener('change', function () {
+            const checkboxes = document.querySelectorAll('.bulk-approve-checkbox');
+            checkboxes.forEach(cb => cb.checked = selectAllCheckbox.checked);
+        });
+
+        document.querySelectorAll('.bulk-approve-checkbox').forEach(cb => {
+            cb.addEventListener('change', function () {
+                const allChecked = document.querySelectorAll('.bulk-approve-checkbox:checked').length === document.querySelectorAll('.bulk-approve-checkbox').length;
+                selectAllCheckbox.checked = allChecked;
+            });
         });
     }
+
+    // Form validation
+    const emailField = document.getElementById('field_email');
+    const urlField = document.getElementById('field_website');
+
+    emailField.addEventListener('invalid', function (e) {
+        e.preventDefault();
+        if (!emailField.validity.valid) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Invalid Email',
+                text: 'Please type a valid email address.'
+            });
+        }
+    });
+
+    urlField.addEventListener('invalid', function (e) {
+        e.preventDefault();
+        if (!urlField.validity.valid) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Invalid URL',
+                text: 'Please type a valid website URL (e.g. https://example.com).'
+            });
+        }
+    });
+
+    form.addEventListener('submit', function (e) {
+        if (!emailField.checkValidity() || !urlField.checkValidity()) {
+            e.preventDefault();
+        }
+        document.querySelectorAll('.load-record').forEach(cb => cb.checked = false);
+    });
+
+    // Update progress bar on input changes
+    document.querySelectorAll('#field_company_name, #field_contact_person, #field_email, #field_phone, #field_website, #field_app_name, #field_app_description, #field_core_features, #field_color_style, #field_backend_details, #field_admin_functions, #field_budget, #field_launch_date, #field_timeline_constraints, #field_extra_notes')
+        .forEach(el => el.addEventListener('input', updateProgressBar));
+    document.querySelectorAll('#field_platform, #field_logo_provided, #field_user_login, #field_push_notifications, #field_payment_integration, #field_admin_panel, #field_google_dev_account, #field_apple_dev_account')
+        .forEach(el => el.addEventListener('change', updateProgressBar));
+    document.querySelector('#field_screenshots').addEventListener('change', updateProgressBar);
+
+    // Initial progress bar update
+    updateProgressBar();
 });
 </script>
+
 <?php include './partials/layouts/layoutBottom.php'; ?>
