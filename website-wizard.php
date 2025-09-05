@@ -340,24 +340,31 @@
                 });
             </script>';
     }
-   if (!empty($prevRecords)): ?>
-        <div class="ms-10">
-            
-            <div class="form-check-group">
-                <?php foreach ($prevRecords as $record): ?>
-                    <div class="form-check form-check-inline">
-                        <input type="checkbox" 
-                               class="form-check-input load-record mt-4" 
-                               data-record='<?php echo json_encode($record['data']); ?>'
-                               id="rec_<?php echo $record['id']; ?>">
-                        <label for="rec_<?php echo $record['id']; ?>" class="form-check-label">
-                            <?php echo htmlspecialchars($record['data']['name']['value']); ?>
-                        </label>
-                    </div>
-                <?php endforeach; ?>
+
+    if (!empty($prevRecords)): ?>
+        <div class="d-flex justify-content-center justify-content-md-end mt-3 me-md-5" style="margin-bottom:0;">
+            <div class="p-3 rounded shadow-sm w-100 w-md-40" 
+                style="font-size: 0.85rem; background-color: #fffbea; max-width: 600px; text-align:left;">
+                <h6 class="fw-bold text-dark mb-3" style="font-size: 0.9rem;">
+                    Fill Values From Previous Wizards
+                </h6>
+                <div class="d-flex flex-wrap gap-3">
+                    <?php foreach ($prevRecords as $record): ?>
+                        <div class="form-check form-check-inline">
+                            <input type="checkbox" 
+                                class="form-check-input load-record" 
+                                style="transform: scale(1.1);" 
+                                data-record='<?php echo json_encode($record['data']); ?>'
+                                id="rec_<?php echo $record['id']; ?>">
+                            <label for="rec_<?php echo $record['id']; ?>" class="form-check-label ms-1" style="font-size: 0.9rem;">
+                                <?php echo htmlspecialchars($record['data']['name']['value']); ?>
+                            </label>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
             </div>
         </div>
-    <?php endif; 
+    <?php endif;
     
     function renderFieldExtended($fieldName, $savedData, $user_role, $label = '', $placeholder = '', $type = 'text', $options = []) {
         $val = $savedData[$fieldName]['value'] ?? '';
@@ -602,13 +609,6 @@
                                 </div>
 
                                 <form action="" method="post" id="myForm" role="form" enctype="multipart/form-data">
-                                    <!-- <?php if (in_array($user_role, [1, 2, 7])): ?>
-                                        <div class="mb-5">
-                                            <button type="button" id="bulkApproveBtn" class="btn btn-success btn-sm">Bulk Approve</button>
-                                            <button type="button" id="bulkRejectBtn" class="btn btn-danger btn-sm">Bulk Reject</button>
-                                        </div>
-                                    <?php endif; ?> -->
-
                                     <?php if (in_array($user_role, [1, 2, 7])): ?>
                                         <div class="d-flex justify-content-between align-items-center mb-3">
                                             <div class="form-check d-flex align-items-center m-0">
@@ -636,8 +636,8 @@
                                             renderFieldExtended('logo', $savedData, $user_role, 'Logo', '', 'file');
                                         ?>
                                         <?php if (in_array($user_role, [8])): ?>
-                                        <input type="submit" name="save" class="lufera-bg bg-hover-warning-400 text-white text-md px-56 py-11 radius-8 m-auto d-block" value="Save" >
-                                    <?php endif; ?>
+                                            <input type="submit" name="save" class="lufera-bg bg-hover-warning-400 text-white text-md px-56 py-11 radius-8 m-auto d-block" value="Save" >
+                                        <?php endif; ?>
                                 </form>
                             </div>
                         </div>
