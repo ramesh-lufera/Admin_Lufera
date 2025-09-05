@@ -246,7 +246,7 @@
                 <div class="d-flex justify-content-between my-3">
                     <span>Access your Marketing at</span>
                     <?php if ($role == '1' || $role == '2'): ?>
-                        <input type="text" class="border" name="access_your_marketing_at" value="<?= htmlspecialchars($Access_your_marketing_at) ?>">
+                        <input type="text" class="border" name="access_your_marketing_at" value="<?= htmlspecialchars($Access_your_marketing_at ?? '') ?>">
                     <?php else: ?>
                         <?php if (!empty($Access_your_marketing_at)): ?>
                             <span><?= htmlspecialchars($Access_your_marketing_at) ?></span>
@@ -259,7 +259,7 @@
                 <div class="d-flex justify-content-between my-3">
                     <span>Access your Marketing with www</span>
                     <?php if ($role == '1' || $role == '2'): ?>
-                        <input type="text" class="border" name="access_your_marketing_with_www" value="<?= htmlspecialchars($Access_your_marketing_with_www) ?>">
+                        <input type="text" class="border" name="access_your_marketing_with_www" value="<?= htmlspecialchars($Access_your_marketing_with_www ?? '') ?>">
                     <?php else: ?>
                         <?php if (!empty($Access_your_marketing_with_www)): ?>
                             <span><?= htmlspecialchars($Access_your_marketing_with_www) ?></span>
@@ -273,7 +273,7 @@
                 <div class="d-flex justify-content-between my-3">
                     <span>Marketing IP address</span>
                     <?php if ($role == '1' || $role == '2'): ?>
-                        <input type="text" class="border" name="marketing_ip_address" value="<?= htmlspecialchars($Marketing_ip_address) ?>">
+                        <input type="text" class="border" name="marketing_ip_address" value="<?= htmlspecialchars($Marketing_ip_address ?? '') ?>">
                     <?php else: ?>
                         <?php if (!empty($Marketing_ip_address)): ?>
                             <span><?= htmlspecialchars($Marketing_ip_address) ?></span>
@@ -295,7 +295,7 @@
                 <div class="d-flex justify-content-between my-3">
                 <span>Nameserver 1</span>
                     <?php if ($role == '1' || $role == '2'): ?>
-                        <input type="text" class="border" name="nameserver_1" value="<?= htmlspecialchars($Nameserver_1) ?>">
+                        <input type="text" class="border" name="nameserver_1" value="<?= htmlspecialchars($Nameserver_1 ?? '') ?>">
                     <?php else: ?>
                         <?php if (!empty($Nameserver_1)): ?>
                             <span><?= htmlspecialchars($Nameserver_1) ?></span>
@@ -308,7 +308,7 @@
                 <div class="d-flex justify-content-between my-3">
                     <span>Nameserver 2</span>
                     <?php if ($role == '1' || $role == '2'): ?>
-                        <input type="text" class="border" name="nameserver_2" value="<?= htmlspecialchars($Nameserver_2) ?>">
+                        <input type="text" class="border" name="nameserver_2" value="<?= htmlspecialchars($Nameserver_2 ?? '') ?>">
                     <?php else: ?>
                         <?php if (!empty($Nameserver_2)): ?>
                             <span><?= htmlspecialchars($Nameserver_2) ?></span>

@@ -241,7 +241,7 @@
                     <div class="d-flex justify-content-between my-3">
                         <span>Facebook ID</span>
                         <?php if ($role == '1' || $role == '2'): ?>
-                            <input type="text" class="border" name="facebook_id" value="<?= htmlspecialchars($facebook_id) ?>">
+                            <input type="text" class="border" name="facebook_id" value="<?= htmlspecialchars($facebook_id ?? '') ?>">
                         <?php else: ?>
                             <?php if (!empty($facebook_id)): ?>
                                 <span><?= htmlspecialchars($facebook_id) ?></span>
@@ -254,7 +254,7 @@
                     <div class="d-flex justify-content-between my-3">
                         <span>Password</span>
                         <?php if ($role == '1' || $role == '2'): ?>
-                            <input type="text" class="border" name="password_1" value="<?= htmlspecialchars($password_1) ?>">
+                            <input type="text" class="border" name="password_1" value="<?= htmlspecialchars($password_1 ?? '') ?>">
                         <?php else: ?>
                             <?php if (!empty($password_1)): ?>
                                 <span><?= htmlspecialchars($password_1) ?></span>
@@ -267,7 +267,7 @@
                     <div class="d-flex justify-content-between my-3">
                         <span>Insta ID</span>
                         <?php if ($role == '1' || $role == '2'): ?>
-                            <input type="text" class="border" name="insta_id" value="<?= htmlspecialchars($insta_id) ?>">
+                            <input type="text" class="border" name="insta_id" value="<?= htmlspecialchars($insta_id ?? '') ?>">
                         <?php else: ?>
                             <?php if (!empty($insta_id)): ?>
                                 <span><?= htmlspecialchars($insta_id) ?></span>
@@ -280,7 +280,7 @@
                     <div class="d-flex justify-content-between my-3">
                         <span>Password</span>
                         <?php if ($role == '1' || $role == '2'): ?>
-                            <input type="text" class="border" name="password_2" value="<?= htmlspecialchars($password_2) ?>">
+                            <input type="text" class="border" name="password_2" value="<?= htmlspecialchars($password_2 ?? '') ?>">
                         <?php else: ?>
                             <?php if (!empty($password_2)): ?>
                                 <span><?= htmlspecialchars($password_2) ?></span>

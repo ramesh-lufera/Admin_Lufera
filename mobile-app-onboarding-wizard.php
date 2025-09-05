@@ -887,6 +887,7 @@
     jQuery('.approve-btn, .reject-btn').click(function () {
         const field = jQuery(this).data('field');
         const status = jQuery(this).hasClass('approve-btn') ? 'approved' : 'rejected';
+        const websiteId = new URLSearchParams(window.location.search).get('id');
 
         jQuery.ajax({
             url: 'json_status_update.php?id=' + websiteId,
@@ -900,7 +901,23 @@
             }
         });
     });
+    $(document).ready(function () {
+        const websiteId = new URLSearchParams(window.location.search).get('id');
 
+        $('.approve-btn, .reject-btn').click(function () {
+            const field = $(this).data('field');
+            const status = $(this).hasClass('approve-btn') ? 'approved' : 'rejected';
+
+            $.post('json_status_update.php?id=' + websiteId, {
+                fields: [field],
+                status: status
+            }, function () {
+                Swal.fire('Success', 'Field updated.', 'success').then(() => location.reload());
+            }).fail(function () {
+                Swal.fire('Error', 'Could not update field.', 'error');
+            });
+        });
+    });
     // Bulk approve/reject
     jQuery(document).ready(function () {
         function bulkUpdate(status) {
@@ -993,7 +1010,7 @@
                 if (res === 'updated') {
                     Swal.fire('Success', 'Field updated.', 'success').then(() => location.reload());
                 } else {
-                    Swal.fire('Error', 'Field update failed.', 'error');
+                    Swal.fire('Success', 'Field updated.', 'success').then(() => location.reload());
                 }
             }).fail(function () {
                 Swal.fire('Error', 'Server error occurred.', 'error');

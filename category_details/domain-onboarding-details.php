@@ -244,7 +244,7 @@
                 <div class="d-flex justify-content-between my-3">
                     <span>Access your Website at</span>
                     <?php if ($role == '1' || $role == '2'): ?>
-                        <input type="text" class="border" name="access1" value="<?= htmlspecialchars($access1) ?>">
+                        <input type="text" class="border" name="access1" value="<?= htmlspecialchars($access1 ?? '') ?>">
                     <?php else: ?>
                         <?php if (!empty($access1)): ?>
                             <span><?= htmlspecialchars($access1) ?></span>
@@ -257,7 +257,7 @@
                 <div class="d-flex justify-content-between my-3">
                     <span>Access your Website with www</span>
                     <?php if ($role == '1' || $role == '2'): ?>
-                        <input type="text" class="border" name="access_www" value="<?= htmlspecialchars($access_www) ?>">
+                        <input type="text" class="border" name="access_www" value="<?= htmlspecialchars($access_www ?? '') ?>">
                     <?php else: ?>
                         <?php if (!empty($access_www)): ?>
                             <span><?= htmlspecialchars($access_www) ?></span>
@@ -293,7 +293,7 @@
                 <div class="d-flex justify-content-between my-3">
                 <span>Nameserver 1</span>
                     <?php if ($role == '1' || $role == '2'): ?>
-                        <input type="text" class="border" name="nameserver1" value="<?= htmlspecialchars($nameserver1) ?>">
+                        <input type="text" class="border" name="nameserver1" value="<?= htmlspecialchars($nameserver1 ?? '') ?>">
                     <?php else: ?>
                         <?php if (!empty($nameserver1)): ?>
                             <span><?= htmlspecialchars($nameserver1) ?></span>
@@ -306,7 +306,7 @@
                 <div class="d-flex justify-content-between my-3">
                     <span>Nameserver 2</span>
                     <?php if ($role == '1' || $role == '2'): ?>
-                        <input type="text" class="border" name="nameserver2" value="<?= htmlspecialchars($nameserver2) ?>">
+                        <input type="text" class="border" name="nameserver2" value="<?= htmlspecialchars($nameserver2 ?? '') ?>">
                     <?php else: ?>
                         <?php if (!empty($nameserver2)): ?>
                             <span><?= htmlspecialchars($nameserver2) ?></span>
