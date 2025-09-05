@@ -28,7 +28,7 @@
         $price = $_POST['price'];
         $duration = $_POST['duration'];
         $total_price = $_POST['total_price'];
-        $rec_id = $_POST['receipt_id'];
+        $receipt_id = $_POST['receipt_id'];
 
         // $gst = $price * 0.18; // 10% GST
         // $total_price = $price + $gst;
@@ -48,7 +48,7 @@
         $product_id = $_POST['id'];
         $type = $_POST['type'];
         $pay_method = $_POST['pay_method'];
-        $rec_id = $_POST['rec_id'];
+        $receipt_id = $_POST['receipt_id'];
         $plan_name = $_POST['plan_name'];
         $duration = $_POST['duration'];
         $total_price = $_POST['total_price'];
@@ -68,7 +68,7 @@
         $toName    = $row['username'];
  
         $sql = "INSERT INTO orders (user_id, invoice_id, plan, duration, amount, gst, price, status, payment_method, discount, payment_made, created_on, subtotal, balance_due) VALUES 
-                ('$client_id', '$rec_id', '$plan_name', '$duration' ,'$total_price', '$gst', '$price', 'Pending', '$pay_method', '$discount', '$payment_made', '$created_at', '$total_price', '$total_price')";
+                ('$client_id', '$receipt_id', '$plan_name', '$duration' ,'$total_price', '$gst', '$price', 'Pending', '$pay_method', '$discount', '$payment_made', '$created_at', '$total_price', '$total_price')";
 
         if (mysqli_query($conn, $sql)) {
             // Generate a domain from the username
@@ -78,7 +78,7 @@
 
             // Insert new website record
             $siteInsert = "INSERT INTO websites (user_id, domain, plan, duration, status, cat_id, invoice_id, product_id, type) 
-                        VALUES ('$client_id', '$domain', '$plan_name', '$duration', 'Pending', '$cat_id', '$rec_id', '$product_id', '$type')";
+                        VALUES ('$client_id', '$domain', '$plan_name', '$duration', 'Pending', '$cat_id', '$receipt_id', '$product_id', '$type')";
             mysqli_query($conn, $siteInsert);
 
             // Show loader immediately
@@ -117,7 +117,7 @@
                 $mail->addAddress($toEmail, $toName);
 
                 $mail->isHTML(true);
-                $mail->Subject = "Purchase Confirmation - Order #$rec_id";
+                $mail->Subject = "Purchase Confirmation - Order #$receipt_id";
                 $mail->Body = '
                     <!DOCTYPE html>
                     <html>
@@ -137,7 +137,7 @@
                                     <p>Thank you for your purchase! Here are the details of your order:</p>
                                     <table cellpadding="8" cellspacing="0" border="0" width="100%" style="border:1px solid #eaeaea;margin:20px 0;font-size:14px;">
                                         <tr><td><b>Plan</b></td><td>' . htmlspecialchars($plan_name) . '</td></tr>
-                                        <tr><td><b>Receipt ID</b></td><td>' . htmlspecialchars($rec_id) . '</td></tr>
+                                        <tr><td><b>Receipt ID</b></td><td>' . htmlspecialchars($receipt_id) . '</td></tr>
                                         <tr><td><b>Duration</b></td><td>' . htmlspecialchars($duration) . '</td></tr>
                                         <tr><td><b>Total Paid</b></td><td id="currency-symbol-display">' . htmlspecialchars($symbol) . htmlspecialchars($total_price) . '</td></tr>
                                     </table>
@@ -235,7 +235,7 @@
                                     <p>User <b>' . htmlspecialchars($username) . '</b> (' . htmlspecialchars($toEmail) . ') has sent a payment request. Order details are below:</p>
                                     <table cellpadding="8" cellspacing="0" border="0" width="100%" style="border:1px solid #eaeaea;margin:20px 0;font-size:14px;">
                                         <tr><td><b>Plan</b></td><td>' . htmlspecialchars($plan_name) . '</td></tr>
-                                        <tr><td><b>Receipt ID</b></td><td>' . htmlspecialchars($rec_id) . '</td></tr>
+                                        <tr><td><b>Receipt ID</b></td><td>' . htmlspecialchars($receipt_id) . '</td></tr>
                                         <tr><td><b>Duration</b></td><td>' . htmlspecialchars($duration) . '</td></tr>
                                         <tr><td><b>Price</b></td><td id="currency-symbol-display">' . htmlspecialchars($symbol) . htmlspecialchars($price) . '</td></tr>
                                         <tr><td><b>GST</b></td><td id="currency-symbol-display">' . htmlspecialchars($symbol) . htmlspecialchars($gst) . '</td></tr>
@@ -369,11 +369,13 @@
         <input type="hidden" value="<?php echo $id; ?>" name="id">
         <input type="hidden" value="<?php echo $type; ?>" name="type">
         <input type="hidden" value="<?php echo $duration; ?>" name="duration">
-        <input type="hidden" value="<?php echo $rec_id; ?>" name="rec_id">
+        <input type="hidden" value="<?php echo $receipt_id; ?>" name="receipt_id">
         <input type="hidden" value="<?php echo $plan_name; ?>" name="plan_name">
         <input type="hidden" value="<?php echo $price; ?>" name="price">
         <input type="hidden" value="<?php echo $gst; ?>" name="gst">
         <input type="hidden" value="<?php echo $total_price; ?>" name="total_price">
+        <input type="hidden" value="<?php echo $created_on; ?>" name="created_on">
+
         <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-24">
             <h6 class="fw-semibold mb-0">Your Cart</h6>
             <button type="submit" name="save" id="continuePayBtn" class="lufera-bg text-center btn-sm px-12 py-10 float-end" style="width:150px; border: 1px solid #000" value="Submit">Continue to Pay</button>
@@ -387,7 +389,7 @@
                         <div class="card-header py-10 border-none card-shadow">
                             <div class="d-flex justify-content-between align-items-center">
                                 <h6 class="mb-0"><?php echo $plan_name; ?></h6>
-                                <span class="text-muted small">Receipt ID: <?php echo $rec_id; ?></span>
+                                <span class="text-muted small">Receipt ID: <?php echo $receipt_id; ?></span>
                             </div>
                             <p class="mb-0">Perfect plan to get started for your own Website</p>
                         </div>
