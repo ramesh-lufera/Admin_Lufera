@@ -353,10 +353,6 @@
                             text-decoration: none;
                             }
 
-                            .pagination a:hover {
-                            background-color: #222;
-                            }
-
                             .status-active {
                             border-left: 5px solid var(--yellow);
                             /* border-left: 5px solid #4caf50; Green */
@@ -514,22 +510,7 @@
                                             <span style="visibility:hidden"><?php echo htmlspecialchars(\$site['user_id']); ?></span>
                                             </h6>
                                         </div>
-                                        <!-- Website (no link, color applied only to domain text) -->
-                                         <?php if (\$cat_module == "website"): ?> 
-                                        <div class="site-info-meta">
-                                            $pageTitle: 
-                                            <span class="<?php echo \$domainColorClass; ?>">
-                                                <?php echo htmlspecialchars(\$site['access_www']); ?>
-                                            </span>
-                                        </div>
-                                        <?php elseif (\$cat_module == "visa"): ?> 
-                                        <div class="site-info-meta">
-                                            Name: 
-                                            <span class="<?php echo \$domainColorClass; ?>">
-                                                <?php echo htmlspecialchars(\$site['json_name']); ?>
-                                            </span>
-                                        </div>
-                                        <?php endif; ?>
+                                        
                                         <div class="site-info-meta">
                                             Expires:
                                             <span style="color: <?php echo \$color; ?>;">
@@ -928,10 +909,6 @@
                         color: var(--black);
                         border-radius: 5px;
                         text-decoration: none;
-                        }
-
-                        .pagination a:hover {
-                        background-color: #222;
                         }
 
                         .status-active {
