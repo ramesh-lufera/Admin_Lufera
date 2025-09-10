@@ -67,7 +67,7 @@
                         ini_set('display_errors', 1);
                         ini_set('display_startup_errors', 1);
                         error_reporting(E_ALL);
-
+                        \$addons_query = \$conn->query("SELECT id, name FROM `add-on-service`");
                         if (\$_SERVER['REQUEST_METHOD'] == 'POST') {
                             \$package_name = \$_POST['package_name'];                           
                             \$title = \$_POST['title'];
@@ -76,7 +76,7 @@
                             \$description = \$_POST['description'];
                             \$features = \$_POST['features'];
                             \$created_at = date("Y-m-d H:i:s");
-
+                            \$addons = isset(\$_POST['addons']) && is_array(\$_POST['addons']) ? implode(',', \$_POST['addons']) : '';
                             \$duration_value = isset(\$_POST['duration_value']) ? intval(\$_POST['duration_value']) : 0;
                             \$duration_unit = isset(\$_POST['duration_unit']) ? \$_POST['duration_unit'] : '';
 
@@ -90,8 +90,8 @@
                             \$cat_id = $product_category;
                             \$template = "$template";
 
-                            \$stmt = \$conn->prepare("INSERT INTO package (package_name, title, subtitle, price, description, duration, cat_id, created_at, template) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
-                            \$stmt->bind_param("ssssssiss", \$package_name, \$title, \$subtitle, \$price, \$description, \$duration, \$cat_id, \$created_at, \$template);
+                            \$stmt = \$conn->prepare("INSERT INTO package (package_name, title, subtitle, price, description, duration, cat_id, created_at, template, addon_service) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                            \$stmt->bind_param("ssssssisss", \$package_name, \$title, \$subtitle, \$price, \$description, \$duration, \$cat_id, \$created_at, \$template, \$addons);
 
                             if (\$stmt->execute()) {
                                 \$package_id = \$conn->insert_id;
@@ -245,7 +245,27 @@
                                                     At least one feature is required.
                                                 </div>
                                             </div>
+                                            <div class="mb-2">
+                                                <label for="name" class="form-label fw-semibold text-primary-light text-sm mb-8">Add-on Service <span class="text-danger-600">*</span></label>
+                                                <div class="d-flex flex-wrap gap-3 mb-3">
+                                                    <?php if (\$addons_query && \$addons_query->num_rows > 0): ?>
+                                                        <?php while(\$addon = \$addons_query->fetch_assoc()): ?>
+                                                        <div class="d-flex align-items-center gap-10 fw-medium text-lg">
+                                                            <div class="form-check style-check d-flex align-items-center">
+                                                                <input class="form-check-input" type="checkbox" name="addons[]" value="<?php echo \$addon['id']; ?>" id="addon_<?php echo \$addon['id']; ?>">
+                                                            </div>
+                                                            <label class="form-label fw-semibold text-md text-primary-light mb-0" for="addon_<?php echo \$addon['id']; ?>">
+                                                                <?php echo htmlspecialchars(\$addon['name']); ?>
+                                                            </label>
+                                                        </div>
 
+                                                        
+                                                        <?php endwhile; ?>
+                                                    <?php else: ?>
+                                                        <p>No add-on services available.</p>
+                                                    <?php endif; ?>
+                                                </div>
+                                            </div>
                                             <div class="d-flex align-items-center justify-content-center gap-3">
                                                 <button type="button" class="border border-danger-600 bg-hover-danger-200 text-danger-600 text-md px-56 py-11 radius-8">
                                                     Cancel
@@ -517,6 +537,9 @@
                         </li>
                         <li>
                             <a href="view_products.php"><i class="ri-circle-fill circle-icon text-warning-600 w-auto"></i> Products</a>
+                        </li>
+                        <li>
+                            <a href="add-on-service.php"><i class="ri-circle-fill circle-icon text-warning-600 w-auto"></i> Add on Services</a>
                         </li>
                         <li>
                             <a href="company.php"><i class="ri-circle-fill circle-icon text-warning-600 w-auto"></i> Company</a>

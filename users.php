@@ -40,7 +40,7 @@ WHERE
                             <th scope="col">First Name</th>
                             <th scope="col">Last Name</th>
                             <th scope="col">Email</th>
-                            <th scope="col">Phone</th>
+                            <!-- <th scope="col">Phone</th> -->
                             <th scope="col">Role</th>
                             <th scope="col" class="text-center">Action</th>
                         </tr>
@@ -57,8 +57,6 @@ WHERE
                                     <td>' . htmlspecialchars($row['last_name']) . '</td>
 
                                     <td><span class="text-md mb-0 fw-normal text-secondary-light">' . htmlspecialchars($row['email']) . '</span></td>
-
-                                    <td>' . htmlspecialchars($row['phone']) . '</td>
 
                                     <td>' . htmlspecialchars($row['role_name']) . '
                                         <button 
