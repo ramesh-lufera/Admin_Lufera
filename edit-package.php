@@ -72,6 +72,15 @@ $features = [];
 while ($row = $featuresResult->fetch_assoc()) {
     $features[] = $row['feature'];
 }
+// Fetch all available add-on services
+$servicesQuery = $conn->query("SELECT id, name FROM `add-on-service` ORDER BY name ASC");
+$allServices = [];
+while ($row = $servicesQuery->fetch_assoc()) {
+    $allServices[] = $row;
+}
+
+// Existing package selected services
+$selectedServices = !empty($package['addon_service']) ? explode(',', $package['addon_service']) : [];
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $package_name = $_POST['package_name'];
@@ -85,9 +94,12 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $duration_value = isset($_POST['duration_value']) ? intval($_POST['duration_value']) : 0;
     $duration_unit = isset($_POST['duration_unit']) ? $_POST['duration_unit'] : '';
     $duration = $duration_value . ' ' . $duration_unit;
+    $addon_service = isset($_POST['addon_service']) ? implode(',', $_POST['addon_service']) : '';
 
-    $stmt = $conn->prepare("UPDATE package SET package_name=?, title=?, subtitle=?, price=?, description=?, duration=?, cat_id=?, created_at=? WHERE id=?");
-    $stmt->bind_param("ssssssisi", $package_name, $title, $subtitle, $price, $description, $duration, $cat_id, $updated_at, $package_id);
+    // $stmt = $conn->prepare("UPDATE package SET package_name=?, title=?, subtitle=?, price=?, description=?, duration=?, cat_id=?, created_at=? WHERE id=?");
+    // $stmt->bind_param("ssssssisi", $package_name, $title, $subtitle, $price, $description, $duration, $cat_id, $updated_at, $package_id);
+    $stmt = $conn->prepare("UPDATE package SET package_name=?, title=?, subtitle=?, price=?, description=?, duration=?, cat_id=?, created_at=?, addon_service=? WHERE id=?");
+    $stmt->bind_param("ssssssissi", $package_name, $title, $subtitle, $price, $description, $duration, $cat_id, $updated_at, $addon_service, $package_id);
 
     if ($stmt->execute()) {
         $stmt->close();
@@ -258,6 +270,29 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                 At least one feature is required.
                             </div>
                         </div>
+                        <div class="mb-2">
+                            <label class="form-label fw-semibold text-primary-light text-sm mb-8">
+                                Add-on Services
+                            </label>
+                            <div class="d-flex flex-wrap gap-3">
+                                <?php foreach ($allServices as $service) { ?>
+                                    <div class="d-flex align-items-center gap-10 fw-medium text-lg">
+                                        <div class="form-check style-check d-flex align-items-center">
+                                            <input class="form-check-input" 
+                                                type="checkbox" 
+                                                name="addon_service[]" 
+                                                value="<?php echo $service['id']; ?>" 
+                                                id="service_<?php echo $service['id']; ?>"
+                                                <?php echo in_array($service['id'], $selectedServices) ? 'checked' : ''; ?>>
+                                            <label class="form-check-label" for="service_<?php echo $service['id']; ?>">
+                                                <?php echo htmlspecialchars($service['name']); ?>
+                                            </label>
+                                        </div>
+                                    </div>
+                                <?php } ?>
+                            </div>
+                        </div>
+
 
                         <div class="d-flex align-items-center justify-content-center gap-3">
                             <button type="button" class="border border-danger-600 bg-hover-danger-200 text-danger-600 text-md px-56 py-11 radius-8">

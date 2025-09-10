@@ -39,7 +39,7 @@
                                 <tr>
                                     <td><?php echo $row['name']; ?></td>
                                     <td>
-                                        <p class="max-w-500-px"><?php echo $row['description']; ?></p>
+                                        <?php echo $row['description']; ?>
                                     </td>
                                     <td class="text-center">
                                         <?php 

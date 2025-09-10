@@ -48,43 +48,7 @@ ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
 
-    // if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-    //     $plan_type = $_POST['plan_type'];
-    //     $title = $_POST['title'];
-    //     $subtitle = $_POST['subtitle'];
-    //     $price = $_POST['price'];
-    //     $description = $_POST['description'];
-    //     $duration = $_POST['duration'];
-        
-    //     $created_at = date("Y-m-d H:i:s");
-        
-        
-    //     $stmt = $conn->prepare("INSERT INTO package (plan_type, title, subtitle, price, description, duration, created_at ) VALUES (?, ?, ?, ?, ?, ?, ?)");
-    //     $stmt->bind_param("sssssss", $plan_type, $title, $subtitle, $price, $description,$duration, $created_at);
-            
-    //     if ($stmt->execute()) {
-    //         echo "
-    //         <script>
-    //             Swal.fire({
-    //                 title: 'Success!',
-    //                 text: 'Package created successfully.',
-    //                 confirmButtonText: 'OK'
-    //             }).then((result) => {
-    //                 if (result.isConfirmed) {
-    //                     window.location.href = 'add-website.php';
-    //                 }
-    //             });
-    //         </script>";
-    //     } else {
-    //         echo "<script>
-    //             alert('Error: " . $stmt->error . "');
-    //             window.history.back();
-    //         </script>";
-    //     }
-
-    //     $stmt->close();
-        
-    // }
+$addons_query = $conn->query("SELECT id, name FROM `add-on-service`");
 
     if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         // Existing package fields
@@ -94,11 +58,12 @@ error_reporting(E_ALL);
         $price = $_POST['price'];
         $description = $_POST['description'];
         $duration = $_POST['duration'];
+        $addons = isset($_POST['addons']) && is_array($_POST['addons']) ? implode(',', $_POST['addons']) : '';
         $features = $_POST['features']; // Array of features
         $created_at = date("Y-m-d H:i:s");
 
-        $stmt = $conn->prepare("INSERT INTO package (plan_type, title, subtitle, price, description, duration, cat_id, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
-        $stmt->bind_param("ssssssis", $plan_type, $title, $subtitle, $price, $description, $duration, $category_id, $created_at);
+        $stmt = $conn->prepare("INSERT INTO package (plan_type, title, subtitle, price, description, duration, cat_id, `add-on-service`, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
+        $stmt->bind_param("ssssssiss", $plan_type, $title, $subtitle, $price, $description, $duration, $category_id, $addons, $created_at);
     
         if ($stmt->execute()) {
             $package_id = $conn->insert_id;
@@ -210,7 +175,7 @@ error_reporting(E_ALL);
                                     </div>
                                 </div>
                                 <div class="mb-2">
-                                    <label class="form-label fw-semibold text-primary-light text-sm mb-8">Features <span class="text-danger-600">*</span></label>
+                                    <label class="form-label fw-semibold text-primary-light text-sm mb-8">Featuressss <span class="text-danger-600">*</span></label>
                                     <div id="feature-wrapper">
                                         <div class="feature-group mb-10 d-flex gap-2">
                                             <input type="text" name="features[]" class="form-control radius-8" required placeholder="Enter a feature" />
@@ -221,7 +186,23 @@ error_reporting(E_ALL);
                                         At least one feature is required.
                                     </div>
                                 </div>
-
+                                <div class="mb-2">
+                                    <label for="name" class="form-label fw-semibold text-primary-light text-sm mb-8">Add-on Service <span class="text-danger-600">*</span></label>
+                                    <div class="mb-3">
+                                        <?php if ($addons_query && $addons_query->num_rows > 0): ?>
+                                            <?php while($addon = $addons_query->fetch_assoc()): ?>
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" name="addons[]" value="<?php echo $addon['id']; ?>" id="addon_<?php echo $addon['id']; ?>">
+                                                <label class="form-check-label" for="addon_<?php echo $addon['id']; ?>">
+                                                    <?php echo htmlspecialchars($addon['name']); ?>
+                                                </label>
+                                            </div>
+                                            <?php endwhile; ?>
+                                        <?php else: ?>
+                                            <p>No add-on services available.</p>
+                                        <?php endif; ?>
+                                    </div>
+                                </div>
                                 <div class="d-flex align-items-center justify-content-center gap-3">
                                     <button type="button" class="border border-danger-600 bg-hover-danger-200 text-danger-600 text-md px-56 py-11 radius-8">
                                         Cancel

@@ -27,8 +27,9 @@
         $gst = $price * 0.18; // 10% GST
         $total_price = $price + $gst;
         $auto_id = rand(10000000, 99999999);
+        $get_addon = $_POST['addon_service'];
     }
-
+    echo $get_addon;
     // Get active symbol
     $result = $conn->query("SELECT symbol FROM currencies WHERE is_active = 1 LIMIT 1");
     $symbol = "$"; // default
@@ -41,6 +42,7 @@
     <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-24">
         <h6 class="fw-semibold mb-0"><?php echo $plan_name; ?></h6>
     </div>
+    
 
     <div class="mb-40">
         <div class="row gy-4">
@@ -114,7 +116,8 @@
                                 </tr>
                                 <tr>
                                     <td class="border-0">Estimated Total</td>
-                                    <td class="border-0 text-end" id="currency-symbol-display"><?= htmlspecialchars($symbol) ?><?php echo $total_price; ?></td>
+                                    <!-- <td class="border-0 text-end" id="currency-symbol-display"><?= htmlspecialchars($symbol) ?><?php echo $total_price; ?></td> -->
+                                    <td class="border-0 text-end" id="estimated-total"><?= htmlspecialchars($symbol) ?><?php echo $total_price; ?></td>
                                 </tr>
                             </tbody>
                         </table>
@@ -123,6 +126,49 @@
             </div>
         </div>
     </div>
+
+    <?php
+    // Fetch addon services for this package
+    if (!empty($get_addon)) {
+        $addon_ids = explode(",", $get_addon);
+        $ids_str = implode(",", array_map('intval', $addon_ids));
+        $sql_addons = "SELECT id, name, cost FROM `add-on-service` WHERE id IN ($ids_str)";
+        $result_addons = $conn->query($sql_addons);
+        while ($addon = $result_addons->fetch_assoc()) {
+            $addon_services[] = $addon;
+        }
+    }
+?>
+<!-- Add-on Services Section -->
+<?php if (!empty($addon_services)) { ?>
+<div class="mb-40">
+    <div class="card radius-12">
+        <div class="card-header py-10 border-none" style="box-shadow: 0px 3px 3px 0px lightgray">
+            <h6 class="mb-0">Available Add-On Services</h6>
+        </div>
+        <div class="card-body p-16">
+            <div class="d-flex flex-column gap-3">
+                <?php foreach ($addon_services as $addon) { ?>
+                    <div class="form-check">
+                        <input type="checkbox"
+                               class="form-check-input addon-checkbox m-1"
+                               id="addon-<?= $addon['id']; ?>"
+                               data-cost="<?= $addon['cost']; ?>"
+                               name="addon_services[]"
+                               value="<?= $addon['id']; ?>">
+                        <label class="form-check-label" for="addon-<?= $addon['id']; ?>">
+                            <?= htmlspecialchars($addon['name']); ?> 
+                            <span class="text-muted">(<?= htmlspecialchars($symbol) . $addon['cost']; ?>)</span>
+                        </label>
+                    </div>
+                <?php } ?>
+            </div>
+        </div>
+    </div>
+</div>
+<?php } ?>
+
+
     <?php
         $user_id = $_SESSION['user_id'];
         $sql = "SELECT * FROM `users` WHERE id = $user_id";
@@ -247,6 +293,25 @@
     </div>
             
 </div>
+
+<script>
+$(document).ready(function(){
+    let baseTotal = <?= $total_price; ?>;
+    
+    function recalcTotal() {
+        let addonTotal = 0;
+        $('.addon-checkbox:checked').each(function(){
+            addonTotal += parseFloat($(this).data('cost'));
+        });
+        let newTotal = baseTotal + addonTotal;
+        $('#estimated-total').text("<?= htmlspecialchars($symbol) ?>" + newTotal.toFixed(2));
+        $('input[name="total_price"]').val(newTotal); // update hidden field in form
+    }
+
+    $('.addon-checkbox').on('change', recalcTotal);
+});
+</script>
+
 <script>
     $('#updateForm').submit(function(e) {
     e.preventDefault();
@@ -257,14 +322,11 @@
         data: $(this).serialize(),
         success: function(response) {
             $('#result').html(response);
-            loadUserData(); // Reload user data after update
         },
         error: function(xhr) {
             $('#result').html("Error updating data.");
         }
     });
 });
-
-loadUserData();
 </script>
 <?php include './partials/layouts/layoutBottom.php' ?>
