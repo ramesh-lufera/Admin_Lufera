@@ -68,6 +68,7 @@
                         ini_set('display_startup_errors', 1);
                         error_reporting(E_ALL);
                         \$addons_query = \$conn->query("SELECT id, name FROM `add-on-service`");
+                        \$packages_list = \$conn->query("SELECT * FROM package");
                         if (\$_SERVER['REQUEST_METHOD'] == 'POST') {
                             \$package_name = \$_POST['package_name'];                           
                             \$title = \$_POST['title'];
@@ -77,6 +78,7 @@
                             \$features = \$_POST['features'];
                             \$created_at = date("Y-m-d H:i:s");
                             \$addons = isset(\$_POST['addons']) && is_array(\$_POST['addons']) ? implode(',', \$_POST['addons']) : '';
+                            \$addon_package = isset(\$_POST['packages']) && is_array(\$_POST['packages']) ? implode(',', \$_POST['packages']) : '';
                             \$duration_value = isset(\$_POST['duration_value']) ? intval(\$_POST['duration_value']) : 0;
                             \$duration_unit = isset(\$_POST['duration_unit']) ? \$_POST['duration_unit'] : '';
 
@@ -90,8 +92,8 @@
                             \$cat_id = $product_category;
                             \$template = "$template";
 
-                            \$stmt = \$conn->prepare("INSERT INTO package (package_name, title, subtitle, price, description, duration, cat_id, created_at, template, addon_service) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-                            \$stmt->bind_param("ssssssisss", \$package_name, \$title, \$subtitle, \$price, \$description, \$duration, \$cat_id, \$created_at, \$template, \$addons);
+                            \$stmt = \$conn->prepare("INSERT INTO package (package_name, title, subtitle, price, description, duration, cat_id, created_at, template, addon_service, addon_package) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                            \$stmt->bind_param("ssssssissss", \$package_name, \$title, \$subtitle, \$price, \$description, \$duration, \$cat_id, \$created_at, \$template, \$addons, \$addon_package);
 
                             if (\$stmt->execute()) {
                                 \$package_id = \$conn->insert_id;
@@ -246,6 +248,25 @@
                                                 </div>
                                             </div>
                                             <div class="mb-2">
+                                                <label for="name" class="form-label fw-semibold text-primary-light text-sm mb-8">Packages <span class="text-danger-600">*</span></label>
+                                                <div class="d-flex flex-wrap gap-3 mb-3">
+                                                    <?php if (\$packages_list && \$packages_list->num_rows > 0): ?>
+                                                        <?php while(\$package = \$packages_list->fetch_assoc()): ?>
+                                                        <div class="d-flex align-items-center gap-10 fw-medium text-lg">
+                                                            <div class="form-check style-check d-flex align-items-center">
+                                                                <input class="form-check-input" type="checkbox" name="packages[]" value="<?php echo \$package['id']; ?>" id="package_<?php echo \$package['id']; ?>">
+                                                            </div>
+                                                            <label class="form-label fw-semibold text-md text-primary-light mb-0"">
+                                                                <?php echo htmlspecialchars(\$package['package_name']); ?>
+                                                            </label>
+                                                        </div>
+                                                        <?php endwhile; ?>
+                                                    <?php else: ?>
+                                                        <p>No add-on services available.</p>
+                                                    <?php endif; ?>
+                                                </div>
+                                            </div>
+                                            <div class="mb-2">
                                                 <label for="name" class="form-label fw-semibold text-primary-light text-sm mb-8">Add-on Service <span class="text-danger-600">*</span></label>
                                                 <div class="d-flex flex-wrap gap-3 mb-3">
                                                     <?php if (\$addons_query && \$addons_query->num_rows > 0): ?>
@@ -258,8 +279,6 @@
                                                                 <?php echo htmlspecialchars(\$addon['name']); ?>
                                                             </label>
                                                         </div>
-
-                                                        
                                                         <?php endwhile; ?>
                                                     <?php else: ?>
                                                         <p>No add-on services available.</p>
