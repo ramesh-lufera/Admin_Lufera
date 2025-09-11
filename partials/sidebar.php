@@ -67,8 +67,34 @@
                         ini_set('display_errors', 1);
                         ini_set('display_startup_errors', 1);
                         error_reporting(E_ALL);
-                        \$addons_query = \$conn->query("SELECT id, name FROM `add-on-service`");
-                        \$packages_list = \$conn->query("SELECT * FROM package");
+
+                        // Fetch packages
+                        \$packages_list = [];
+                        \$result = \$conn->query("SELECT * FROM package");
+                        if (\$result && \$result->num_rows > 0) {
+                            while (\$row = \$result->fetch_assoc()) {
+                                \$packages_list[] = \$row;
+                            }
+                        }
+
+                        // Fetch products
+                        \$products_list = [];
+                        \$result = \$conn->query("SELECT id, name FROM products");
+                        if (\$result && \$result->num_rows > 0) {
+                            while (\$row = \$result->fetch_assoc()) {
+                                \$products_list[] = \$row;
+                            }
+                        }
+
+                        // Fetch add-ons
+                        \$addons_list = [];
+                        \$result = \$conn->query("SELECT id, name FROM `add-on-service`");
+                        if (\$result && \$result->num_rows > 0) {
+                            while (\$row = \$result->fetch_assoc()) {
+                                \$addons_list[] = \$row;
+                            }
+                        }
+
                         if (\$_SERVER['REQUEST_METHOD'] == 'POST') {
                             \$package_name = \$_POST['package_name'];                           
                             \$title = \$_POST['title'];
@@ -77,8 +103,11 @@
                             \$description = \$_POST['description'];
                             \$features = \$_POST['features'];
                             \$created_at = date("Y-m-d H:i:s");
+                          
                             \$addons = isset(\$_POST['addons']) && is_array(\$_POST['addons']) ? implode(',', \$_POST['addons']) : '';
                             \$addon_package = isset(\$_POST['packages']) && is_array(\$_POST['packages']) ? implode(',', \$_POST['packages']) : '';
+                            \$addon_products = isset(\$_POST['products']) && is_array(\$_POST['products']) ? implode(',', \$_POST['products']) : '';
+
                             \$duration_value = isset(\$_POST['duration_value']) ? intval(\$_POST['duration_value']) : 0;
                             \$duration_unit = isset(\$_POST['duration_unit']) ? \$_POST['duration_unit'] : '';
 
@@ -92,8 +121,8 @@
                             \$cat_id = $product_category;
                             \$template = "$template";
 
-                            \$stmt = \$conn->prepare("INSERT INTO package (package_name, title, subtitle, price, description, duration, cat_id, created_at, template, addon_service, addon_package) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-                            \$stmt->bind_param("ssssssissss", \$package_name, \$title, \$subtitle, \$price, \$description, \$duration, \$cat_id, \$created_at, \$template, \$addons, \$addon_package);
+                            \$stmt = \$conn->prepare("INSERT INTO package (package_name, title, subtitle, price, description, duration, cat_id, created_at, template, addon_service, addon_package, addon_product) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                            \$stmt->bind_param("ssssssisssss", \$package_name, \$title, \$subtitle, \$price, \$description, \$duration, \$cat_id, \$created_at, \$template, \$addons, \$addon_package, \$addon_products);
 
                             if (\$stmt->execute()) {
                                 \$package_id = \$conn->insert_id;
@@ -247,7 +276,8 @@
                                                     At least one feature is required.
                                                 </div>
                                             </div>
-                                            <div class="mb-2">
+
+                                            <!-- <div class="mb-2">
                                                 <label for="name" class="form-label fw-semibold text-primary-light text-sm mb-8">Packages <span class="text-danger-600">*</span></label>
                                                 <div class="d-flex flex-wrap gap-3 mb-3">
                                                     <?php if (\$packages_list && \$packages_list->num_rows > 0): ?>
@@ -284,7 +314,94 @@
                                                         <p>No add-on services available.</p>
                                                     <?php endif; ?>
                                                 </div>
+                                            </div> -->
+
+                                            <!-- Add-ons Section -->
+                                            <div class="mb-2">
+                                                <label class="form-label fw-semibold">Add-Ons <span class="text-danger-600">*</span></label>
+
+                                                <!-- Master Toggles -->
+                                                <div class="d-flex flex-wrap gap-4 mb-3">
+                                                    <div class="form-check d-flex align-items-center">
+                                                        <input class="form-check-input toggle-section" type="checkbox" id="showPackages" data-target="#packagesSection">
+                                                        <label class="form-check-label ms-2 mb-0" for="showPackages">Packages</label>
+                                                    </div>
+                                                    <div class="form-check d-flex align-items-center">
+                                                        <input class="form-check-input toggle-section" type="checkbox" id="showProducts" data-target="#productsSection">
+                                                        <label class="form-check-label ms-2 mb-0" for="showProducts">Products</label>
+                                                    </div>
+                                                    <div class="form-check d-flex align-items-center">
+                                                        <input class="form-check-input toggle-section" type="checkbox" id="showAddons" data-target="#addonsSection">
+                                                        <label class="form-check-label ms-2 mb-0" for="showAddons">Add-on Services</label>
+                                                    </div>
+                                                </div>
+
+                                                <!-- Packages -->
+                                                <div id="packagesSection" class="d-none border p-3 radius-8 mb-3">
+                                                    <h6 class="fw-semibold">Available Packages</h6>
+                                                    <div class="d-flex flex-wrap gap-3">
+                                                        <?php if (!empty(\$packages_list)): ?>
+                                                            <?php foreach (\$packages_list as \$package): ?>
+                                                                <div class="form-check d-flex align-items-center me-3">
+                                                                    <input class="form-check-input" type="checkbox" name="packages[]" 
+                                                                        value="<?php echo \$package['id']; ?>" 
+                                                                        id="package_<?php echo \$package['id']; ?>">
+                                                                    <label class="form-check-label ms-2 mb-0" for="package_<?php echo \$package['id']; ?>">
+                                                                        <?php echo htmlspecialchars(\$package['package_name']); ?>
+                                                                    </label>
+                                                                </div>
+                                                            <?php endforeach; ?>
+                                                        <?php else: ?>
+                                                            <p>No packages available.</p>
+                                                        <?php endif; ?>
+                                                    </div>
+                                                </div>
+
+                                                <!-- Products -->
+                                                <div id="productsSection" class="d-none border p-3 radius-8 mb-3">
+                                                    <h6 class="fw-semibold">Available Products</h6>
+                                                    <div class="d-flex flex-wrap gap-3">
+                                                        <?php if (!empty(\$products_list)): ?>
+                                                            <?php foreach (\$products_list as \$product): ?>
+                                                                <div class="form-check d-flex align-items-center me-3">
+                                                                    <input class="form-check-input" type="checkbox" name="products[]" 
+                                                                        value="<?php echo \$product['id']; ?>" 
+                                                                        id="product_<?php echo \$product['id']; ?>">
+                                                                    <label class="form-check-label ms-2 mb-0" for="product_<?php echo \$product['id']; ?>">
+                                                                        <?php echo htmlspecialchars(\$product['name']); ?>
+                                                                    </label>
+                                                                </div>
+                                                            <?php endforeach; ?>
+                                                        <?php else: ?>
+                                                            <p>No products available.</p>
+                                                        <?php endif; ?>
+                                                    </div>
+                                                </div>
+
+                                                <!-- Add-ons -->
+                                                <div id="addonsSection" class="d-none border p-3 radius-8 mb-3">
+                                                    <h6 class="fw-semibold">Available Add-on Services</h6>
+                                                    <div class="d-flex flex-wrap gap-3">
+                                                        <?php if (!empty(\$addons_list)): ?>
+                                                            <?php foreach (\$addons_list as \$addon): ?>
+                                                                <div class="form-check d-flex align-items-center me-3">
+                                                                    <input class="form-check-input" type="checkbox" name="addons[]" 
+                                                                        value="<?php echo \$addon['id']; ?>" 
+                                                                        id="addon_<?php echo \$addon['id']; ?>">
+                                                                    <label class="form-check-label ms-2 mb-0" for="addon_<?php echo \$addon['id']; ?>">
+                                                                        <?php echo htmlspecialchars(\$addon['name']); ?>
+                                                                    </label>
+                                                                </div>
+                                                            <?php endforeach; ?>
+                                                        <?php else: ?>
+                                                            <p>No add-on services available.</p>
+                                                        <?php endif; ?>
+                                                    </div>
+                                                </div>
                                             </div>
+
+
+
                                             <div class="d-flex align-items-center justify-content-center gap-3">
                                                 <button type="button" class="border border-danger-600 bg-hover-danger-200 text-danger-600 text-md px-56 py-11 radius-8">
                                                     Cancel
@@ -300,7 +417,7 @@
                         </div>
                     </div>
                         
-                    <script>
+                    <!-- <script>
                         document.addEventListener("DOMContentLoaded", function () {
                             const featureWrapper = document.getElementById("feature-wrapper");
 
@@ -321,6 +438,44 @@
                                     e.preventDefault();
                                     e.target.parentElement.remove();
                                 }
+                            });
+                        });
+                    </script> -->
+
+                    <script>
+                        document.addEventListener("DOMContentLoaded", function () {
+                            // Add/remove features dynamically
+                            const featureWrapper = document.getElementById("feature-wrapper");
+                            featureWrapper.addEventListener("click", function (e) {
+                                if (e.target && e.target.classList.contains("add-feature")) {
+                                    e.preventDefault();
+                                    const newGroup = document.createElement("div");
+                                    newGroup.className = "feature-group mb-2 d-flex gap-2";
+                                    newGroup.innerHTML = `
+                                        <input type="text" name="features[]" class="form-control radius-8" required placeholder="Enter a feature" />
+                                        <button type="button" class="btn btn-sm btn-danger remove-feature">−</button>
+                                    `;
+                                    featureWrapper.appendChild(newGroup);
+                                }
+                                if (e.target && e.target.classList.contains("remove-feature")) {
+                                    e.preventDefault();
+                                    e.target.parentElement.remove();
+                                }
+                            });
+
+                            // Toggle sections
+                            document.querySelectorAll(".toggle-section").forEach(checkbox => {
+                                checkbox.addEventListener("change", function () {
+                                    const target = document.querySelector(this.dataset.target);
+                                    if (!target) return; // safety
+                                    if (this.checked) {
+                                        target.classList.remove("d-none");
+                                    } else {
+                                        target.classList.add("d-none");
+                                        // Optional: uncheck all children when hiding
+                                        target.querySelectorAll("input[type=checkbox]").forEach(ch => ch.checked = false);
+                                    }
+                                });
                             });
                         });
                     </script>
