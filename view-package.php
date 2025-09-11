@@ -131,6 +131,9 @@
                                                     <input type="hidden" name="duration" value="<?= htmlspecialchars($package['duration']) ?>">
                                                     <input type="hidden" name="created_on" value="<?= date("Y-m-d") ?>">
                                                     <input type="hidden" name="addon_service" value="<?= htmlspecialchars($package['addon_service']) ?>">
+                                                    <input type="hidden" name="addon_package" value="<?= htmlspecialchars($package['addon_package']) ?>">
+                                                    <input type="hidden" name="addon_product" value="<?= htmlspecialchars($package['addon_product']) ?>">
+
                                                     <button type="submit" class="lufera-bg text-center text-white text-sm btn-sm px-12 py-10 w-100 radius-8 mt-28" <?php echo !$isActive ? 'disabled' : ''; ?>>Get started</button>
                                                 </form>
                                                 

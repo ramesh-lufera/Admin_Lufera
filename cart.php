@@ -28,8 +28,14 @@
         $total_price = $price + $gst;
         $auto_id = rand(10000000, 99999999);
         $get_addon = $_POST['addon_service'];
+        $get_package = $_POST['addon_package'];
+        $get_products = $_POST['addon_product'];
+
     }
-    echo $get_addon;
+    // echo $get_addon;
+    // echo $get_package;
+    // echo $get_products;
+
     // Get active symbol
     $result = $conn->query("SELECT symbol FROM currencies WHERE is_active = 1 LIMIT 1");
     $symbol = "$"; // default
@@ -128,45 +134,221 @@
     </div>
 
     <?php
-    // Fetch addon services for this package
+    // Fetch selected add-ons for this package
+    $selected_addons = [];
     if (!empty($get_addon)) {
         $addon_ids = explode(",", $get_addon);
         $ids_str = implode(",", array_map('intval', $addon_ids));
-        $sql_addons = "SELECT id, name, cost FROM `add-on-service` WHERE id IN ($ids_str)";
+        $sql_addons = "SELECT name FROM `add-on-service` WHERE id IN ($ids_str)";
         $result_addons = $conn->query($sql_addons);
-        while ($addon = $result_addons->fetch_assoc()) {
-            $addon_services[] = $addon;
+        while ($row = $result_addons->fetch_assoc()) {
+            $selected_addons[] = $row['name'];
+        }
+    }
+
+    $selected_packages = [];
+    if (!empty($get_package)) {
+        $package_ids = explode(",", $get_package);
+        $ids_str = implode(",", array_map('intval', $package_ids));
+        $sql_packages = "SELECT package_name FROM package WHERE id IN ($ids_str)";
+        $result_packages = $conn->query($sql_packages);
+        while ($row = $result_packages->fetch_assoc()) {
+            $selected_packages[] = $row['package_name'];
+        }
+    }
+
+    $selected_products = [];
+    if (!empty($get_products)) {
+        $product_ids = explode(",", $get_products);
+        $ids_str = implode(",", array_map('intval', $product_ids));
+        $sql_products = "SELECT name FROM products WHERE id IN ($ids_str)";
+        $result_products = $conn->query($sql_products);
+        while ($row = $result_products->fetch_assoc()) {
+            $selected_products[] = $row['name'];
         }
     }
 ?>
-<!-- Add-on Services Section -->
-<?php if (!empty($addon_services)) { ?>
-<div class="mb-40">
-    <div class="card radius-12">
-        <div class="card-header py-10 border-none" style="box-shadow: 0px 3px 3px 0px lightgray">
-            <h6 class="mb-0">Available Add-On Services</h6>
-        </div>
-        <div class="card-body p-16">
-            <div class="d-flex flex-column gap-3">
-                <?php foreach ($addon_services as $addon) { ?>
-                    <div class="form-check">
-                        <input type="checkbox"
-                               class="form-check-input addon-checkbox m-1"
-                               id="addon-<?= $addon['id']; ?>"
-                               data-cost="<?= $addon['cost']; ?>"
-                               name="addon_services[]"
-                               value="<?= $addon['id']; ?>">
-                        <label class="form-check-label" for="addon-<?= $addon['id']; ?>">
-                            <?= htmlspecialchars($addon['name']); ?> 
-                            <span class="text-muted">(<?= htmlspecialchars($symbol) . $addon['cost']; ?>)</span>
-                        </label>
+
+<!-- Add-ons / Packages / Products Section -->
+<div class="row gy-4">
+    <div class="col-xxl-6 col-sm-6">
+
+        <!-- Common Title -->
+        <h6 class="mb-4">Add-Ons for this Plan:</h6>
+
+        <!-- Packages Section -->
+        <?php if(!empty($selected_packages)): ?>
+        <div class="card mb-4 shadow-sm">
+            <div class="card-header bg-light">
+                <strong>Packages</strong>
+            </div>
+            <div class="card-body">
+                <?php foreach($package_ids as $pid):
+                    $sql = "SELECT package_name, price FROM package WHERE id = $pid";
+                    $res = $conn->query($sql);
+                    $p = $res->fetch_assoc();
+                ?>
+                <div class="mb-3 border rounded p-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="mb-1"><?= htmlspecialchars($p['package_name']) ?></h6>
+                            <small>Period: <?= htmlspecialchars($duration) ?></small><br>
+                            <small>
+                                Validity:
+                                <?php
+                                    $start_date = new DateTime($created_on);
+                                    try {
+                                        $interval = DateInterval::createFromDateString($duration);
+                                        $end_date = clone $start_date;
+                                        $end_date->add($interval);
+                                        echo $start_date->format('d-m-Y') . " to " . $end_date->format('d-m-Y');
+                                    } catch (Exception $e) {
+                                        echo $start_date->format('d-m-Y') . " to (Invalid duration)";
+                                    }
+                                ?>
+                            </small>
+                        </div>
+                        <div class="text-end">
+                            <div class="mb-2"><?= $symbol . $p['price'] ?></div>
+                            <button type="button" class="btn btn-sm btn-primary lufera-bg toggle-btn add"
+                                    data-id="<?= $pid ?>" data-cost="<?= $p['price'] ?>">+ Add</button>
+                        </div>
                     </div>
-                <?php } ?>
+                </div>
+                <?php endforeach; ?>
             </div>
         </div>
+        <?php endif; ?>
+
+        <!-- Products Section -->
+        <?php if(!empty($selected_products)): ?>
+        <div class="card mb-4 shadow-sm">
+            <div class="card-header bg-light">
+                <strong>Products</strong>
+            </div>
+            <div class="card-body">
+                <?php foreach($product_ids as $pid):
+                    $sql = "SELECT name, price FROM products WHERE id = $pid";
+                    $res = $conn->query($sql);
+                    $p = $res->fetch_assoc();
+                ?>
+                <div class="mb-3 border rounded p-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="mb-1"><?= htmlspecialchars($p['name']) ?></h6>
+                            <small>Period: <?= htmlspecialchars($duration) ?></small><br>
+                            <small>
+                                Validity:
+                                <?php
+                                    $start_date = new DateTime($created_on);
+                                    try {
+                                        $interval = DateInterval::createFromDateString($duration);
+                                        $end_date = clone $start_date;
+                                        $end_date->add($interval);
+                                        echo $start_date->format('d-m-Y') . " to " . $end_date->format('d-m-Y');
+                                    } catch (Exception $e) {
+                                        echo $start_date->format('d-m-Y') . " to (Invalid duration)";
+                                    }
+                                ?>
+                            </small>
+                        </div>
+                        <div class="text-end">
+                            <div class="mb-2"><?= $symbol . $p['price'] ?></div>
+                            <button type="button" class="btn btn-sm btn-primary lufera-bg toggle-btn add"
+                                    data-id="<?= $pid ?>" data-cost="<?= $p['price'] ?>">+ Add</button>
+                        </div>
+                    </div>
+                </div>
+                <?php endforeach; ?>
+            </div>
+        </div>
+        <?php endif; ?>
+
+        <!-- Add-ons Section -->
+        <?php if(!empty($selected_addons)): ?>
+        <div class="card mb-4 shadow-sm">
+            <div class="card-header bg-light">
+                <strong>Add-on Services</strong>
+            </div>
+            <div class="card-body">
+                <?php foreach($addon_ids as $aid):
+                    $sql = "SELECT name, cost FROM `add-on-service` WHERE id = $aid";
+                    $res = $conn->query($sql);
+                    $a = $res->fetch_assoc();
+                ?>
+                <div class="mb-3 border rounded p-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="mb-1"><?= htmlspecialchars($a['name']) ?></h6>
+                            <small>Period: <?= htmlspecialchars($duration) ?></small><br>
+                            <small>
+                                Validity:
+                                <?php
+                                    $start_date = new DateTime($created_on);
+                                    try {
+                                        $interval = DateInterval::createFromDateString($duration);
+                                        $end_date = clone $start_date;
+                                        $end_date->add($interval);
+                                        echo $start_date->format('d-m-Y') . " to " . $end_date->format('d-m-Y');
+                                    } catch (Exception $e) {
+                                        echo $start_date->format('d-m-Y') . " to (Invalid duration)";
+                                    }
+                                ?>
+                            </small>
+                        </div>
+                        <div class="text-end">
+                            <div class="mb-2"><?= $symbol . $a['cost'] ?></div>
+                            <button type="button" class="btn btn-sm btn-primary lufera-bg toggle-btn add"
+                                    data-id="<?= $aid ?>" data-cost="<?= $a['cost'] ?>">+ Add</button>
+                        </div>
+                    </div>
+                </div>
+                <?php endforeach; ?>
+            </div>
+        </div>
+        <?php endif; ?>
+
     </div>
 </div>
-<?php } ?>
+
+<!-- Script -->
+<script>
+    $(document).ready(function(){
+        let basePrice = <?= $price; ?>;   // your plan base price
+        let gstRate = 0.18;               // 18% GST
+        let selectedItems = {};
+
+        function recalcTotal() {
+            let total = basePrice;
+            $.each(selectedItems, function(id, cost){
+                total += parseFloat(cost);
+            });
+            let gst = total * gstRate;
+            $('#estimated-total').text("<?= $symbol ?>" + (total + gst).toFixed(2));
+            $('#gst-display').text("<?= $symbol ?>" + gst.toFixed(2));
+            $('input[name="total_price"]').val((total + gst).toFixed(2));
+        }
+
+        $(document).on('click', '.toggle-btn', function(){
+            let id = $(this).data('id');
+            let cost = $(this).data('cost');
+
+            if($(this).hasClass('add')){
+                selectedItems[id] = cost;
+                $(this).removeClass('btn-primary add').addClass('btn-danger remove').text("Remove");
+            } else {
+                delete selectedItems[id];
+                $(this).removeClass('btn-danger remove').addClass('btn-primary add').text("+ Add");
+            }
+            recalcTotal();
+        });
+    });
+</script>
+
+
+
+
+
 
 
     <?php
@@ -186,6 +368,10 @@
         <input type="hidden" name="total_price" value="<?php echo $total_price; ?>">
         <input type="hidden" name="receipt_id" value="<?php echo $auto_id; ?>">
         <input type="hidden" name="created_on" value="<?php echo $created_on; ?>">
+        <input type="hidden" name="get_addon" id="get_addon_input" value="<?php echo $get_addon; ?>">
+        <input type="hidden" name="addon-total" id="addon-total" value="">
+        <input type="hidden" name="gst" value="<?php echo $gst; ?>">
+ 
         
         <button type="submit" class="lufera-bg text-center btn-sm px-12 py-10 float-end" style="width:150px; border: 1px solid #000">Continue</button>
     </form>
@@ -295,24 +481,42 @@
 </div>
 
 <script>
-$(document).ready(function(){
-    let baseTotal = <?= $total_price; ?>;
-    
-    function recalcTotal() {
-        let addonTotal = 0;
-        $('.addon-checkbox:checked').each(function(){
-            addonTotal += parseFloat($(this).data('cost'));
+    $(document).ready(function(){
+        let baseTotal = <?= $total_price; ?>;
+        
+        function recalcTotal() {
+            let addonTotal = 0;
+            $('.addon-checkbox:checked').each(function(){
+                addonTotal += parseFloat($(this).data('cost'));
+            });
+            $('#addon-total').val(addonTotal);
+            let newTotal = baseTotal + addonTotal;
+            $('#estimated-total').text("<?= htmlspecialchars($symbol) ?>" + newTotal.toFixed(2));
+            $('input[name="total_price"]').val(newTotal); // update hidden field in form
+        }
+
+        $('.addon-checkbox').on('change', recalcTotal);
+    });
+
+    function updateAddonField() {
+        let selectedAddons = [];
+        $('.addon-checkbox:checked').each(function() {
+            selectedAddons.push($(this).val());
         });
-        let newTotal = baseTotal + addonTotal;
-        $('#estimated-total').text("<?= htmlspecialchars($symbol) ?>" + newTotal.toFixed(2));
-        $('input[name="total_price"]').val(newTotal); // update hidden field in form
+        $('#get_addon_input').val(selectedAddons.join(',')); // update hidden field
     }
+    
+    // Trigger when checkbox changes
+    $('.addon-checkbox').on('change', function() {
+        //recalcTotal();
+        updateAddonField();
+    });
+    
+    // Also update before form submission (safety check)
+    $('form').on('submit', function() {
+        updateAddonField();
+    });
 
-    $('.addon-checkbox').on('change', recalcTotal);
-});
-</script>
-
-<script>
     $('#updateForm').submit(function(e) {
     e.preventDefault();
 
