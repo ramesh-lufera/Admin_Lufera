@@ -66,7 +66,6 @@
                         </button>
                     </div>
                 </div>
-
                 
                 <div class="card-body py-40">
                     <div class="row justify-content-center" id="invoice">
@@ -95,28 +94,26 @@
                                         <p class="text-md mb-0"><?php echo $rows['state']; ?>, <?php echo $rows['country']; ?></p>
                                     </div>
 
-                                    <div>
                                     <table class="text-sm text-secondary-light invoice_table">
-                                                <tbody>
-                                                    <tr>
-                                                        <td><b>Invoice</b></td>
-                                                        <td class="ps-8"> <?php echo $invoice_id; ?> </td>
-                                                    </tr>
-                                                    <tr>
-                                                        <td><b>Invoice Date</b></td>
-                                                        <td class="ps-8"> <?php echo date('d/m/Y', strtotime($row['created_on'])); ?></td>
-                                                    </tr>
-                                                    <tr>
-                                                        <td><b>Terms</b></td>
-                                                        <td class="ps-8"> Due on Receipt</td>
-                                                    </tr>
-                                                    <tr>
-                                                        <td><b>Due Date</b></td>
-                                                        <td class="ps-8"> <?php echo date('d/m/Y', strtotime($row['created_on'])); ?></td>
-                                                    </tr>
-                                                </tbody>
-                                            </table>
-                                    </div>
+                                        <tbody>
+                                            <tr>
+                                                <td><b>Invoice</b></td>
+                                                <td class="ps-8"> <?php echo $invoice_id; ?> </td>
+                                            </tr>
+                                            <tr>
+                                                <td><b>Invoice Date</b></td>
+                                                <td class="ps-8"> <?php echo date('d/m/Y', strtotime($row['created_on'])); ?></td>
+                                            </tr>
+                                            <tr>
+                                                <td><b>Terms</b></td>
+                                                <td class="ps-8"> Due on Receipt</td>
+                                            </tr>
+                                            <tr>
+                                                <td><b>Due Date</b></td>
+                                                <td class="ps-8"> <?php echo date('d/m/Y', strtotime($row['created_on'])); ?></td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
                                     
                                 </div>
 
@@ -145,6 +142,49 @@
                                                 </tbody>
                                             </table>
                                         </div>
+
+                                        <?php
+                                        // Add-on services table
+                                        if (!empty($row['addon_service'])) {
+                                            $addon_ids = explode(',', $row['addon_service']);
+                                            $addon_ids = array_map('intval', $addon_ids); // sanitize IDs
+
+                                            if (!empty($addon_ids)) {
+                                                $addon_id_list = implode(',', $addon_ids);
+                                                $addon_query = "SELECT name, cost FROM `add-on-service` WHERE id IN ($addon_id_list)";
+                                                $addon_result = $conn->query($addon_query);
+
+                                                if ($addon_result->num_rows > 0) {
+                                                    echo '<tr>
+                                                            <td colspan="2" class="p-0">
+                                                                <table class="invoice_table w-100">
+                                                                    <thead>
+                                                                        <tr>
+                                                                            <th class="text-start p-8">Add-on Service</th>
+                                                                        </tr>
+                                                                    </thead>
+                                                                    <tbody>';
+
+                                                    while ($addon_row = $addon_result->fetch_assoc()) {
+                                                        echo "<tr>
+                                                                <td class='pe-64 border-bottom p-8'>" . htmlspecialchars($addon_row['name']) . "</td>
+                                                                <td class='border-bottom p-8 text-end'>
+                                                                    <span class='text-primary-light' id='currency-symbol-display'>"
+                                                                    . htmlspecialchars($symbol) . " " . htmlspecialchars($addon_row['cost']) .
+                                                                    "</span>
+                                                                </td>
+                                                            </tr>";
+                                                    }
+
+                                                    echo '        </tbody>
+                                                                </table>
+                                                            </td>
+                                                        </tr>';
+                                                }
+                                            }
+                                        }
+                                        ?>
+                                        
                                         <div class="d-flex flex-wrap justify-content-end gap-3">
                                             <div>
                                                 <table class="invoice_table text-end">
@@ -200,10 +240,6 @@
                                             </div>
                                         </div>
                                     </div>
-
-                                    
-
-                                    
                                 </div>
                             </div>
                         </div>

@@ -250,9 +250,38 @@
                                 </tr>
 
                                 <tr>
-                                    <td class="border-0">Status</td>
-                                    <td class="border-0"><?php echo $row['status']; ?></td>
+                                    <td>Status</td>
+                                    <td><?php echo $row['status']; ?></td>
                                 </tr>
+                                <tr>
+                                    <td class="border-0">Add-on service</td>
+                                    <td class="border-0">
+                                        <?php
+                                            if (!empty($row['addon_service'])) {
+                                                $addon_ids = explode(',', $row['addon_service']);
+                                                $addon_ids = array_map('intval', $addon_ids); // sanitize
+
+                                                if (!empty($addon_ids)) {
+                                                    $addon_id_list = implode(',', $addon_ids);
+                                                    $addon_query = "SELECT name FROM `add-on-service` WHERE id IN ($addon_id_list)";
+                                                    $addon_result = $conn->query($addon_query);
+
+                                                    $addon_names = [];
+                                                    while ($addon_row = $addon_result->fetch_assoc()) {
+                                                        $addon_names[] = htmlspecialchars($addon_row['name']);
+                                                    }
+
+                                                    echo !empty($addon_names) ? implode(', ', $addon_names) : '—';
+                                                } else {
+                                                    echo '—';
+                                                }
+                                            } else {
+                                                echo '—';
+                                            }
+                                        ?>
+                                    </td>
+                                </tr>
+
                             </tbody>
                         </table>
                     </div>
@@ -278,9 +307,29 @@
                         <table class="w-100 plan-details-table mb-0">
                             <tbody>
                                 <tr>
-                                    <td><?php echo $row['plan']; ?> Website</td>
+                                    <td><?php echo $row['plan']; ?></td>
                                     <td class="text-end" id="currency-symbol-display"><?= htmlspecialchars($symbol) ?><?php echo $row['price']; ?></td>
                                 </tr>
+                                <?php
+                                // Fetch addon services if available
+                                if (!empty($row['addon_service'])) {
+                                    $addon_ids = explode(',', $row['addon_service']);
+                                    $addon_ids = array_map('intval', $addon_ids); // sanitize IDs
+
+                                    if (!empty($addon_ids)) {
+                                        $addon_id_list = implode(',', $addon_ids);
+                                        $addon_query = "SELECT name, cost FROM `add-on-service` WHERE id IN ($addon_id_list)";
+                                        $addon_result = $conn->query($addon_query);
+
+                                        while ($addon_row = $addon_result->fetch_assoc()) {
+                                            echo "<tr>
+                                                    <td>" . htmlspecialchars($addon_row['name']) . " (Add-on)</td>
+                                                    <td class='text-end' id='currency-symbol-display'>" . htmlspecialchars($symbol) . htmlspecialchars($addon_row['cost']) . "</td>
+                                                </tr>";
+                                        }
+                                    }
+                                }
+                                ?>
                                 <tr>
                                     <td>Tax (GST 18%)</td>
                                     <td class="text-end" id="currency-symbol-display"><?= htmlspecialchars($symbol) ?><?php echo $row['gst']; ?></td>
