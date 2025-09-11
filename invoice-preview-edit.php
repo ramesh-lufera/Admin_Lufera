@@ -173,29 +173,78 @@ input[type=number] {
                                                 </thead>
                                                 <tbody>
                                                     <tr>
-                                                        <td><input type="text" value="<?php echo $row['plan']; ?>" >  </td>
                                                         <td>
-                                                            <select class="form-control border-0 p-0" name="">
+                                                            <?php echo $row['plan']; ?>
+                                                            <!-- <input type="text" value="<?php echo $row['plan']; ?>" >   -->
+                                                        </td>
+                                                        <td>
+                                                            <?php echo $row['duration']; ?>
+                                                            <!-- <select class="form-control border-0 p-0" name="">
                                                                 <option value="<?php echo $row['duration']; ?>"><?php echo $row['duration']; ?></option>
                                                                 <option value="1 Year">1 Year</option>
                                                                 <option value="3 Years">3 Years</option>
-                                                            </select>
+                                                            </select> -->
                                                         </td>
                                                         <td>
-                                                            <select class="form-control border-0 p-0" name="payment_method">
+                                                            <?php echo $row['payment_method']; ?>
+                                                            <!-- <select class="form-control border-0 p-0" name="payment_method">
                                                                 <option value=""><?php echo $row['payment_method']; ?></option>
                                                                 <option value="Cash">Cash</option>
                                                                 <option value="Card">Card</option>
                                                                 <option value="UPI">UPI</option>
                                                                 <option value="Bank">Bank</option>
-                                                            </select>
+                                                            </select> -->
                                                         </td>
                                                         <td><?php echo $row['status']; ?> </td>
-                                                        <td class="text-end text-sm"><input type="text" value="<?php echo $row['price']; ?>" > </td>
+                                                        <td class="text-end text-sm">
+                                                            <?= htmlspecialchars($symbol) ?> <?php echo $row['price']; ?>
+                                                            <!-- <input type="text" value="<?php echo $row['price']; ?>" >  -->
+                                                        </td>
                                                     </tr>
                                                 </tbody>
                                             </table>
                                         </div>
+                                        <?php
+                                        // Add-on services table
+                                        if (!empty($row['addon_service'])) {
+                                            $addon_ids = explode(',', $row['addon_service']);
+                                            $addon_ids = array_map('intval', $addon_ids); // sanitize IDs
+
+                                            if (!empty($addon_ids)) {
+                                                $addon_id_list = implode(',', $addon_ids);
+                                                $addon_query = "SELECT name, cost FROM `add-on-service` WHERE id IN ($addon_id_list)";
+                                                $addon_result = $conn->query($addon_query);
+
+                                                if ($addon_result->num_rows > 0) {
+                                                    echo '<tr>
+                                                            <td colspan="2" class="p-0">
+                                                                <table class="invoice_table w-100">
+                                                                    <thead>
+                                                                        <tr>
+                                                                            <th class="text-start p-8">Add-on Service</th>
+                                                                        </tr>
+                                                                    </thead>
+                                                                    <tbody>';
+
+                                                    while ($addon_row = $addon_result->fetch_assoc()) {
+                                                        echo "<tr>
+                                                                <td class='pe-64 border-bottom p-8'>" . htmlspecialchars($addon_row['name']) . "</td>
+                                                                <td class='border-bottom p-8 text-end'>
+                                                                    <span class='text-primary-light' id='currency-symbol-display'>"
+                                                                    . htmlspecialchars($symbol) . " " . htmlspecialchars($addon_row['cost']) .
+                                                                    "</span>
+                                                                </td>
+                                                            </tr>";
+                                                    }
+
+                                                    echo '        </tbody>
+                                                                </table>
+                                                            </td>
+                                                        </tr>';
+                                                }
+                                            }
+                                        }
+                                        ?>
                                         <div class="d-flex flex-wrap justify-content-end gap-3">
                                             <div>
                                                 <form method="post">
@@ -228,7 +277,7 @@ input[type=number] {
                                                                 <td class="border-bottom p-8">
                                                                     <!-- <span class="text-primary-light fw-semibold">$ <?php echo $row['price']; ?></span> -->
                                                                     <!-- <span class="text-primary-light fw-semibold" id="subtotal">$ <?php echo $row['price']; ?></span> -->
-                                                                     <input type="text" readonly name="subtotal" id="subtotal" value="<?php echo $row['subtotal']; ?>" >
+                                                                    <input type="text" readonly name="subtotal" id="subtotal" value="<?= htmlspecialchars($symbol) ?> <?php echo $row['subtotal']; ?>" >
                                                                 </td>
                                                             </tr>
                                                             <tr>
@@ -236,7 +285,7 @@ input[type=number] {
                                                                 <td class="border-bottom p-8">
                                                                     <!-- <span class="text-primary-light fw-semibold">$ <?php echo $row['amount'] - $row['price']; ?></span> -->
                                                                     <!-- <span class="text-primary-light fw-semibold" id="gst">$ <?php echo $row['amount'] - $row['price']; ?></span> -->
-                                                                     <input type="text" id="gst" value="<?php echo $row['gst']; ?>" readonly name="gst">
+                                                                     <input type="text" id="gst" value="<?= htmlspecialchars($symbol) ?> <?php echo $row['gst']; ?>" readonly name="gst">
                                                                 </td>
                                                             </tr>
                                                             <tr>
@@ -246,7 +295,7 @@ input[type=number] {
                                                                 <td class="border-bottom p-8">
                                                                     <!-- <span class="text-primary-light fw-semibold">$ <?php echo $row['amount']; ?></span> -->
                                                                     <!-- <span class="text-primary-light fw-semibold" id="total">$ <?php echo $row['amount']; ?></span> -->
-                                                                    <input type="text" id="total" name="total" value="<?php echo $row['amount'] ?>" readonly >
+                                                                    <input type="text" id="total" name="total" value="<?= htmlspecialchars($symbol) ?>  <?php echo $row['amount'] ?>" readonly >
                                                                 </td>
                                                             </tr>
                                                             <tr>
@@ -292,53 +341,60 @@ input[type=number] {
 </script>
 
 <script>
-  const discountInput = document.getElementById("numericInput");
-  const paymentMadeInput = document.getElementById("numericInputs");
-  const discountTypeSelect = document.getElementById("discountType");
+const discountInput = document.getElementById("numericInput");
+const paymentMadeInput = document.getElementById("numericInputs");
+const discountTypeSelect = document.getElementById("discountType");
 
-  const price = <?php echo $row['price']; ?>;
+const price = <?php echo $row['price']; ?>;
 
-  function calculateAndUpdateInvoice() {
-    let discountValue = parseFloat(discountInput.value) || 0;
-    let paymentMade = parseFloat(paymentMadeInput.value) || 0;
-    let discountType = discountTypeSelect.value;
+function calculateAndUpdateInvoice() {
+let discountValue = parseFloat(discountInput.value) || 0;
+let paymentMade = parseFloat(paymentMadeInput.value) || 0;
+let discountType = discountTypeSelect.value;
 
-    let discountAmount = 0;
+let discountAmount = 0;
 
-    if (discountType === "%") {
-      if (discountValue > 100) discountValue = 100;
-      discountAmount = (price * discountValue) / 100;
-    } else if (discountType === "$") {
-      if (discountValue > price) discountValue = price;
-      discountAmount = discountValue;
-    }
+// ✅ Calculate only for Total
+if (discountType === "%") {
+    if (discountValue > 100) discountValue = 100;
+    discountAmount = (price * discountValue) / 100;
+} else {
+    if (discountValue > price) discountValue = price;
+    discountAmount = discountValue;
+}
 
-    const newSubtotal = price - discountAmount;
-    const gst = newSubtotal * 0.18;
-    const total = newSubtotal + gst;
-    const balance_due = total - paymentMade;
+// Subtotal should stay equal to price (no discount applied here)
+const subtotal = price;
 
-    document.getElementById("subtotal").value = newSubtotal.toFixed(2);;
-    document.getElementById("gst").value = gst.toFixed(2);;
-    document.getElementById("total").value = total.toFixed(2);;
-    document.getElementById("balance_due").value = balance_due.toFixed(2);;
-  }
+// GST calculated on original price (no discount applied here)
+const gst = subtotal * 0.18;
 
-  discountInput.addEventListener("input", function () {
-    this.value = this.value.replace(/\D/g, '');
-    calculateAndUpdateInvoice();
-  });
+// Discount applied only at Total
+const total = subtotal + gst - discountAmount;
 
-  paymentMadeInput.addEventListener("input", function () {
-    this.value = this.value.replace(/\D/g, '');
-    calculateAndUpdateInvoice();
-  });
+const balance_due = total - paymentMade;
 
-  discountTypeSelect.addEventListener("change", function () {
-    calculateAndUpdateInvoice();
-  });
+// Update fields
+document.getElementById("subtotal").value = subtotal.toFixed(2);
+document.getElementById("gst").value = gst.toFixed(2);
+document.getElementById("total").value = total.toFixed(2);
+document.getElementById("balance_due").value = balance_due.toFixed(2);
+}
+
+discountInput.addEventListener("input", function () {
+this.value = this.value.replace(/\D/g, '');
+calculateAndUpdateInvoice();
+});
+
+paymentMadeInput.addEventListener("input", function () {
+this.value = this.value.replace(/\D/g, '');
+calculateAndUpdateInvoice();
+});
+
+discountTypeSelect.addEventListener("change", function () {
+calculateAndUpdateInvoice();
+});
+
 </script>
-
-
 
 <?php include './partials/layouts/layoutBottom.php' ?>

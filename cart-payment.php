@@ -25,16 +25,33 @@
         $id = $_POST['id'];
         $type = $_POST['type'];
         $plan_name = $_POST['plan_name'];
+        $gst = $_POST['gst'];
         $price = $_POST['price'];
         $duration = $_POST['duration'];
         $total_price = $_POST['total_price'];
         $receipt_id = $_POST['receipt_id'];
-
-        // $gst = $price * 0.18; // 10% GST
-        // $total_price = $price + $gst;
-
-        $gst = $total_price - $price;
         $created_on = $_POST['created_on'];
+        $get_addon = $_POST['get_addon'];
+        $addon_total = $_POST['addon-total'];
+    }
+
+    $service_name = ""; // default
+    if (!empty($get_addon)) {
+        // Convert string like "2,4,6" into an array of integers
+        $addon_ids = array_map('intval', explode(",", $get_addon));
+        if (!empty($addon_ids)) {
+            $ids_str = implode(",", $addon_ids); // safe, integers only
+            $sql_addons = "SELECT name FROM `add-on-service` WHERE id IN ($ids_str)";
+            $result_addons = $conn->query($sql_addons);
+
+            $names = [];
+            while ($row_addon = $result_addons->fetch_assoc()) {
+                $names[] = $row_addon['name'];
+            }
+
+            // Join multiple add-on names with commas
+            $service_name = implode(", ", $names);
+        }
     }
 
     // Get active symbol
@@ -56,8 +73,10 @@
         $price = $_POST['price'];
         $gst = $_POST['gst'];
         $discount = $payment_made = "0";
-
+        $get_addon = $_POST['get_addon'];
+        $addon_total = $_POST['addon-total'];
         $user_id = $_SESSION['user_id'];
+        $subtotal = $price + $addon_total;
 
         $sql    = "SELECT user_id, email, username FROM users WHERE id = $user_id LIMIT 1";
         $result2 = mysqli_query($conn, $sql);
@@ -67,8 +86,8 @@
         $username  = $row['username'];  // purchaser username
         $toName    = $row['username'];
  
-        $sql = "INSERT INTO orders (user_id, invoice_id, plan, duration, amount, gst, price, status, payment_method, discount, payment_made, created_on, subtotal, balance_due) VALUES 
-                ('$client_id', '$receipt_id', '$plan_name', '$duration' ,'$total_price', '$gst', '$price', 'Pending', '$pay_method', '$discount', '$payment_made', '$created_at', '$total_price', '$total_price')";
+        $sql = "INSERT INTO orders (user_id, invoice_id, plan, duration, amount, gst, price, addon_price, status, payment_method, discount, payment_made, created_on, subtotal, balance_due, addon_service) VALUES 
+                ('$client_id', '$receipt_id', '$plan_name', '$duration' ,'$total_price', '$gst', '$price', '$addon_total', 'Pending', '$pay_method', '$discount', '$payment_made', '$created_at', '$subtotal', '$total_price', '$get_addon')";
 
         if (mysqli_query($conn, $sql)) {
             // Generate a domain from the username
@@ -375,7 +394,8 @@
         <input type="hidden" value="<?php echo $gst; ?>" name="gst">
         <input type="hidden" value="<?php echo $total_price; ?>" name="total_price">
         <input type="hidden" value="<?php echo $created_on; ?>" name="created_on">
-
+        <input type="hidden" value="<?php echo $get_addon; ?>" name="get_addon">
+        <input type="hidden" value="<?php echo $addon_total; ?>" name="addon-total">
         <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-24">
             <h6 class="fw-semibold mb-0">Your Cart</h6>
             <button type="submit" name="save" id="continuePayBtn" class="lufera-bg text-center btn-sm px-12 py-10 float-end" style="width:150px; border: 1px solid #000" value="Submit">Continue to Pay</button>
@@ -418,6 +438,10 @@
                                                 }
                                             ?>
                                         </td>
+                                    </tr>
+                                    <tr>
+                                        <td>Add-on service</td>
+                                        <td><?php echo !empty($service_name) ? htmlspecialchars($service_name) : 'None'; ?></td>
                                     </tr>
                                     <!-- <tr>
                                         <td class="border-0" colspan="2" id="currency-symbol-display">Renews at <?= htmlspecialchars($symbol) ?>1500/year for 3 Years
@@ -654,15 +678,13 @@
             data: $(this).serialize(),
             success: function(response) {
                 $('#result').html(response);
-                loadUserData(); // Reload user data after update
-            },
+           },
             error: function(xhr) {
                 $('#result').html("Error updating data.");
             }
         });
     });
 
-    loadUserData();
 </script>
 
 <script>
