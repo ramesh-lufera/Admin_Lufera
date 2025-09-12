@@ -76,7 +76,7 @@
         $get_addon = $_POST['get_addon'];
         $addon_total = $_POST['addon-total'];
         $user_id = $_SESSION['user_id'];
-        $subtotal = $price + $addon_total;
+        $subtotal = $total_price;
 
         $sql    = "SELECT user_id, email, username FROM users WHERE id = $user_id LIMIT 1";
         $result2 = mysqli_query($conn, $sql);
@@ -86,8 +86,8 @@
         $username  = $row['username'];  // purchaser username
         $toName    = $row['username'];
  
-        $sql = "INSERT INTO orders (user_id, invoice_id, plan, duration, amount, gst, price, addon_price, status, payment_method, discount, payment_made, created_on, subtotal, balance_due, addon_service) VALUES 
-                ('$client_id', '$receipt_id', '$plan_name', '$duration' ,'$total_price', '$gst', '$price', '$addon_total', 'Pending', '$pay_method', '$discount', '$payment_made', '$created_at', '$subtotal', '$total_price', '$get_addon')";
+        $sql = "INSERT INTO orders (user_id, invoice_id, plan, duration, amount, gst, price, addon_price, status, payment_method, discount, payment_made, created_on, subtotal, balance_due, addon_service, type) VALUES 
+                ('$client_id', '$receipt_id', '$plan_name', '$duration' ,'$total_price', '$gst', '$price', '$addon_total', 'Pending', '$pay_method', '$discount', '$payment_made', '$created_at', '$subtotal', '$total_price', '$get_addon', '$type')";
 
         if (mysqli_query($conn, $sql)) {
             // Generate a domain from the username

@@ -4,7 +4,7 @@
     .nav-link:focus, .nav-link:hover {
         color: #fdc701 !important;
     }
-    button:disabled{
+    button:disabled {
         opacity: 0.7;
     }
 </style>

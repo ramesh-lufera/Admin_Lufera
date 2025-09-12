@@ -27,14 +27,11 @@
         $gst = $price * 0.18; // 10% GST
         $total_price = $price + $gst;
         $auto_id = rand(10000000, 99999999);
+
         $get_addon = $_POST['addon_service'];
         $get_package = $_POST['addon_package'];
         $get_products = $_POST['addon_product'];
-
     }
-    // echo $get_addon;
-    // echo $get_package;
-    // echo $get_products;
 
     // Get active symbol
     $result = $conn->query("SELECT symbol FROM currencies WHERE is_active = 1 LIMIT 1");
@@ -49,7 +46,6 @@
         <h6 class="fw-semibold mb-0"><?php echo $plan_name; ?></h6>
     </div>
     
-
     <div class="mb-40">
         <div class="row gy-4">
             <div class="col-xxl-6 col-sm-6">
@@ -134,222 +130,240 @@
     </div>
 
     <?php
-    // Fetch selected add-ons for this package
-    $selected_addons = [];
-    if (!empty($get_addon)) {
-        $addon_ids = explode(",", $get_addon);
-        $ids_str = implode(",", array_map('intval', $addon_ids));
-        $sql_addons = "SELECT name FROM `add-on-service` WHERE id IN ($ids_str)";
-        $result_addons = $conn->query($sql_addons);
-        while ($row = $result_addons->fetch_assoc()) {
-            $selected_addons[] = $row['name'];
-        }
-    }
-
-    $selected_packages = [];
-    if (!empty($get_package)) {
-        $package_ids = explode(",", $get_package);
-        $ids_str = implode(",", array_map('intval', $package_ids));
-        $sql_packages = "SELECT package_name FROM package WHERE id IN ($ids_str)";
-        $result_packages = $conn->query($sql_packages);
-        while ($row = $result_packages->fetch_assoc()) {
-            $selected_packages[] = $row['package_name'];
-        }
-    }
-
-    $selected_products = [];
-    if (!empty($get_products)) {
-        $product_ids = explode(",", $get_products);
-        $ids_str = implode(",", array_map('intval', $product_ids));
-        $sql_products = "SELECT name FROM products WHERE id IN ($ids_str)";
-        $result_products = $conn->query($sql_products);
-        while ($row = $result_products->fetch_assoc()) {
-            $selected_products[] = $row['name'];
-        }
-    }
-?>
-
-<!-- Add-ons / Packages / Products Section -->
-<div class="row gy-4">
-    <div class="col-xxl-6 col-sm-6">
-
-        <!-- Common Title -->
-        <h6 class="mb-4">Add-Ons for this Plan:</h6>
-
-        <!-- Packages Section -->
-        <?php if(!empty($selected_packages)): ?>
-        <div class="card mb-4 shadow-sm">
-            <div class="card-header bg-light">
-                <strong>Packages</strong>
-            </div>
-            <div class="card-body">
-                <?php foreach($package_ids as $pid):
-                    $sql = "SELECT package_name, price FROM package WHERE id = $pid";
-                    $res = $conn->query($sql);
-                    $p = $res->fetch_assoc();
-                ?>
-                <div class="mb-3 border rounded p-3">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <h6 class="mb-1"><?= htmlspecialchars($p['package_name']) ?></h6>
-                            <small>Period: <?= htmlspecialchars($duration) ?></small><br>
-                            <small>
-                                Validity:
-                                <?php
-                                    $start_date = new DateTime($created_on);
-                                    try {
-                                        $interval = DateInterval::createFromDateString($duration);
-                                        $end_date = clone $start_date;
-                                        $end_date->add($interval);
-                                        echo $start_date->format('d-m-Y') . " to " . $end_date->format('d-m-Y');
-                                    } catch (Exception $e) {
-                                        echo $start_date->format('d-m-Y') . " to (Invalid duration)";
-                                    }
-                                ?>
-                            </small>
-                        </div>
-                        <div class="text-end">
-                            <div class="mb-2"><?= $symbol . $p['price'] ?></div>
-                            <button type="button" class="btn btn-sm btn-primary lufera-bg toggle-btn add"
-                                    data-id="<?= $pid ?>" data-cost="<?= $p['price'] ?>">+ Add</button>
-                        </div>
-                    </div>
-                </div>
-                <?php endforeach; ?>
-            </div>
-        </div>
-        <?php endif; ?>
-
-        <!-- Products Section -->
-        <?php if(!empty($selected_products)): ?>
-        <div class="card mb-4 shadow-sm">
-            <div class="card-header bg-light">
-                <strong>Products</strong>
-            </div>
-            <div class="card-body">
-                <?php foreach($product_ids as $pid):
-                    $sql = "SELECT name, price FROM products WHERE id = $pid";
-                    $res = $conn->query($sql);
-                    $p = $res->fetch_assoc();
-                ?>
-                <div class="mb-3 border rounded p-3">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <h6 class="mb-1"><?= htmlspecialchars($p['name']) ?></h6>
-                            <small>Period: <?= htmlspecialchars($duration) ?></small><br>
-                            <small>
-                                Validity:
-                                <?php
-                                    $start_date = new DateTime($created_on);
-                                    try {
-                                        $interval = DateInterval::createFromDateString($duration);
-                                        $end_date = clone $start_date;
-                                        $end_date->add($interval);
-                                        echo $start_date->format('d-m-Y') . " to " . $end_date->format('d-m-Y');
-                                    } catch (Exception $e) {
-                                        echo $start_date->format('d-m-Y') . " to (Invalid duration)";
-                                    }
-                                ?>
-                            </small>
-                        </div>
-                        <div class="text-end">
-                            <div class="mb-2"><?= $symbol . $p['price'] ?></div>
-                            <button type="button" class="btn btn-sm btn-primary lufera-bg toggle-btn add"
-                                    data-id="<?= $pid ?>" data-cost="<?= $p['price'] ?>">+ Add</button>
-                        </div>
-                    </div>
-                </div>
-                <?php endforeach; ?>
-            </div>
-        </div>
-        <?php endif; ?>
-
-        <!-- Add-ons Section -->
-        <?php if(!empty($selected_addons)): ?>
-        <div class="card mb-4 shadow-sm">
-            <div class="card-header bg-light">
-                <strong>Add-on Services</strong>
-            </div>
-            <div class="card-body">
-                <?php foreach($addon_ids as $aid):
-                    $sql = "SELECT name, cost FROM `add-on-service` WHERE id = $aid";
-                    $res = $conn->query($sql);
-                    $a = $res->fetch_assoc();
-                ?>
-                <div class="mb-3 border rounded p-3">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <h6 class="mb-1"><?= htmlspecialchars($a['name']) ?></h6>
-                            <small>Period: <?= htmlspecialchars($duration) ?></small><br>
-                            <small>
-                                Validity:
-                                <?php
-                                    $start_date = new DateTime($created_on);
-                                    try {
-                                        $interval = DateInterval::createFromDateString($duration);
-                                        $end_date = clone $start_date;
-                                        $end_date->add($interval);
-                                        echo $start_date->format('d-m-Y') . " to " . $end_date->format('d-m-Y');
-                                    } catch (Exception $e) {
-                                        echo $start_date->format('d-m-Y') . " to (Invalid duration)";
-                                    }
-                                ?>
-                            </small>
-                        </div>
-                        <div class="text-end">
-                            <div class="mb-2"><?= $symbol . $a['cost'] ?></div>
-                            <button type="button" class="btn btn-sm btn-primary lufera-bg toggle-btn add"
-                                    data-id="<?= $aid ?>" data-cost="<?= $a['cost'] ?>">+ Add</button>
-                        </div>
-                    </div>
-                </div>
-                <?php endforeach; ?>
-            </div>
-        </div>
-        <?php endif; ?>
-
-    </div>
-</div>
-
-<!-- Script -->
-<script>
-    $(document).ready(function(){
-        let basePrice = <?= $price; ?>;   // your plan base price
-        let gstRate = 0.18;               // 18% GST
-        let selectedItems = {};
-
-        function recalcTotal() {
-            let total = basePrice;
-            $.each(selectedItems, function(id, cost){
-                total += parseFloat(cost);
-            });
-            let gst = total * gstRate;
-            $('#estimated-total').text("<?= $symbol ?>" + (total + gst).toFixed(2));
-            $('#gst-display').text("<?= $symbol ?>" + gst.toFixed(2));
-            $('input[name="total_price"]').val((total + gst).toFixed(2));
-        }
-
-        $(document).on('click', '.toggle-btn', function(){
-            let id = $(this).data('id');
-            let cost = $(this).data('cost');
-
-            if($(this).hasClass('add')){
-                selectedItems[id] = cost;
-                $(this).removeClass('btn-primary add').addClass('btn-danger remove').text("Remove");
-            } else {
-                delete selectedItems[id];
-                $(this).removeClass('btn-danger remove').addClass('btn-primary add').text("+ Add");
+        // Fetch selected items
+        $selected_addons = [];
+        if (!empty($get_addon)) {
+            $addon_ids = explode(",", $get_addon);
+            $ids_str = implode(",", array_map('intval', $addon_ids));
+            $sql_addons = "SELECT id, name, cost FROM `add-on-service` WHERE id IN ($ids_str)";
+            $result_addons = $conn->query($sql_addons);
+            while ($row = $result_addons->fetch_assoc()) {
+                $selected_addons[] = $row;
             }
-            recalcTotal();
+        }
+
+        $selected_packages = [];
+        if (!empty($get_package)) {
+            $package_ids = explode(",", $get_package);
+            $ids_str = implode(",", array_map('intval', $package_ids));
+            $sql_packages = "SELECT id, package_name, price FROM package WHERE id IN ($ids_str)";
+            $result_packages = $conn->query($sql_packages);
+            while ($row = $result_packages->fetch_assoc()) {
+                $selected_packages[] = $row;
+            }
+        }
+
+        $selected_products = [];
+        if (!empty($get_products)) {
+            $product_ids = explode(",", $get_products);
+            $ids_str = implode(",", array_map('intval', $product_ids));
+            $sql_products = "SELECT id, name, price FROM products WHERE id IN ($ids_str)";
+            $result_products = $conn->query($sql_products);
+            while ($row = $result_products->fetch_assoc()) {
+                $selected_products[] = $row;
+            }
+        }
+    ?>
+    
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+
+    <!-- Add-ons / Packages / Products Section -->
+    <?php if(!empty($selected_packages) || !empty($selected_products) || !empty($selected_addons)): ?>
+    <div class="row gy-4">
+        <div class="col-xxl-6 col-sm-6">
+
+            <!-- Common Title -->
+            <h6 class="mb-3">Add-Ons for this Plan:</h6>
+
+            <!-- Packages Section -->
+            <?php if(!empty($selected_packages)): ?>
+            <div class="card mb-4 shadow-sm border-0">
+                <div class="card-header bg-white border-bottom fw-bold fs-5">
+                    <i class="bi bi-box-seam me-2 text-secondary"></i> Packages
+                </div>
+                <div class="card-body">
+                    <?php foreach($package_ids as $pid):
+                        $sql = "SELECT package_name, price FROM package WHERE id = $pid";
+                        $res = $conn->query($sql);
+                        $p = $res->fetch_assoc();
+                    ?>
+                    <div class="mb-3 border rounded p-3">
+                        <h6 class="mb-1"><?= htmlspecialchars($p['package_name']) ?></h6>
+                        <small class="d-block">Period: <?= htmlspecialchars($duration) ?></small>
+                        <small class="d-block">
+                            Validity:
+                            <?php
+                                $start_date = new DateTime($created_on);
+                                try {
+                                    $interval = DateInterval::createFromDateString($duration);
+                                    $end_date = clone $start_date;
+                                    $end_date->add($interval);
+                                    echo $start_date->format('d-m-Y') . " to " . $end_date->format('d-m-Y');
+                                } catch (Exception $e) {
+                                    echo $start_date->format('d-m-Y') . " to (Invalid duration)";
+                                }
+                            ?>
+                        </small>
+                        <div class="d-flex justify-content-between align-items-center mt-3">
+                            <div class="fw-bold text-dark">Price: <?= $symbol . $p['price'] ?></div>
+                            <button type="button" 
+                                    class="btn btn-sm fw-bold toggle-btn add"
+                                    style="background-color:#fec700; border:none;"
+                                    data-id="<?= $pid ?>" 
+                                    data-cost="<?= $p['price'] ?>"
+                                    data-name="<?= htmlspecialchars($p['package_name']) ?>">+ Add</button>
+                        </div>
+                    </div>
+                    <?php endforeach; ?>
+                </div>
+            </div>
+            <?php endif; ?>
+
+            <!-- Products Section -->
+            <?php if(!empty($selected_products)): ?>
+            <div class="card mb-4 shadow-sm border-0">
+                <div class="card-header bg-white border-bottom fw-bold fs-5">
+                    <i class="bi bi-cart-check me-2 text-secondary"></i> Products
+                </div>
+                <div class="card-body">
+                    <?php foreach($product_ids as $pid):
+                        $sql = "SELECT name, price FROM products WHERE id = $pid";
+                        $res = $conn->query($sql);
+                        $p = $res->fetch_assoc();
+                    ?>
+                    <div class="mb-3 border rounded p-3">
+                        <h6 class="mb-1"><?= htmlspecialchars($p['name']) ?></h6>
+                        <small class="d-block">Period: <?= htmlspecialchars($duration) ?></small>
+                        <small class="d-block">
+                            Validity:
+                            <?php
+                                $start_date = new DateTime($created_on);
+                                try {
+                                    $interval = DateInterval::createFromDateString($duration);
+                                    $end_date = clone $start_date;
+                                    $end_date->add($interval);
+                                    echo $start_date->format('d-m-Y') . " to " . $end_date->format('d-m-Y');
+                                } catch (Exception $e) {
+                                    echo $start_date->format('d-m-Y') . " to (Invalid duration)";
+                                }
+                            ?>
+                        </small>
+                        <div class="d-flex justify-content-between align-items-center mt-3">
+                            <div class="fw-bold text-dark">Price: <?= $symbol . $p['price'] ?></div>
+                            <button type="button" 
+                                    class="btn btn-sm fw-bold toggle-btn add"
+                                    style="background-color:#fec700; border:none;"
+                                    data-id="<?= $pid ?>" 
+                                    data-cost="<?= $p['price'] ?>"
+                                    data-name="<?= htmlspecialchars($p['name']) ?>">+ Add</button>
+                        </div>
+                    </div>
+                    <?php endforeach; ?>
+                </div>
+            </div>
+            <?php endif; ?>
+
+            <!-- Add-ons Section -->
+            <?php if(!empty($selected_addons)): ?>
+            <div class="card mb-4 shadow-sm border-0">
+                <div class="card-header bg-white border-bottom fw-bold fs-5">
+                    <i class="bi bi-plus-circle me-2 text-secondary"></i> Add-on Services
+                </div>
+                <div class="card-body">
+                    <?php foreach($addon_ids as $aid):
+                        $sql = "SELECT name, cost FROM `add-on-service` WHERE id = $aid";
+                        $res = $conn->query($sql);
+                        $a = $res->fetch_assoc();
+                    ?>
+                    <div class="mb-3 border rounded p-3">
+                        <h6 class="mb-1"><?= htmlspecialchars($a['name']) ?></h6>
+                        <small class="d-block">Period: <?= htmlspecialchars($duration) ?></small>
+                        <small class="d-block">
+                            Validity:
+                            <?php
+                                $start_date = new DateTime($created_on);
+                                try {
+                                    $interval = DateInterval::createFromDateString($duration);
+                                    $end_date = clone $start_date;
+                                    $end_date->add($interval);
+                                    echo $start_date->format('d-m-Y') . " to " . $end_date->format('d-m-Y');
+                                } catch (Exception $e) {
+                                    echo $start_date->format('d-m-Y') . " to (Invalid duration)";
+                                }
+                            ?>
+                        </small>
+                        <div class="d-flex justify-content-between align-items-center mt-3">
+                            <div class="fw-bold text-dark">Price: <?= $symbol . $a['cost'] ?></div>
+                            <button type="button" 
+                                    class="btn btn-sm fw-bold toggle-btn add"
+                                    style="background-color:#fec700; border:none;"
+                                    data-id="<?= $aid ?>" 
+                                    data-cost="<?= $a['cost'] ?>"
+                                    data-name="<?= htmlspecialchars($a['name']) ?>">+ Add</button>
+                        </div>
+                    </div>
+                    <?php endforeach; ?>
+                </div>
+            </div>
+            <?php endif; ?>
+
+            <!-- Total Row -->
+            <!-- <div class="mt-3 border-top pt-3">
+                <div class="fw-bold">GST (18%): <span id="gst-display"><?= $symbol ?>0.00</span></div>
+                <div class="fw-bold fs-5">Estimated Total: <span id="estimated-total"><?= $symbol ?><?= number_format($price, 2) ?></span></div>
+                <input type="hidden" name="total_price" value="<?= $price ?>">
+            </div> -->
+
+        </div>
+    </div>
+    <?php endif; ?>
+
+    <!-- Scripts -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script>
+        $(document).ready(function(){
+            let basePrice = <?= $price; ?>;
+            let gstRate = 0.18;
+            let selectedItems = {};
+
+            function recalcTotal() {
+                let total = basePrice;
+                $.each(selectedItems, function(id, cost){
+                    total += parseFloat(cost);
+                });
+                let gst = total * gstRate;
+                $('#estimated-total').text("<?= $symbol ?>" + (total + gst).toFixed(2));
+                $('#gst-display').text("<?= $symbol ?>" + gst.toFixed(2));
+                $('input[name="total_price"]').val((total + gst).toFixed(2));
+            }
+
+            $(document).on('click', '.toggle-btn', function(){
+                let id = $(this).data('id');
+                let cost = $(this).data('cost');
+                let name = $(this).data('name');
+
+                // if($(this).hasClass('add')){
+                //     // Add item
+                //     selectedItems[id] = cost;
+                //     $(this)
+                //         .removeClass('add')
+                //         .css({"background-color":"#dc3545","color":"#fff"})
+                //         .text("Remove");
+                //     Swal.fire({icon:"success", title: name + " added", timer:1500, showConfirmButton:false});
+                // } else {
+                //     // Remove item
+                //     delete selectedItems[id];
+                //     $(this)
+                //         .addClass('add')
+                //         .css({"background-color":"#fec700","color":"#000"})
+                //         .text("+ Add");
+                //     Swal.fire({icon:"warning", title: name + " removed", timer:1500, showConfirmButton:false});
+                // }
+                recalcTotal();
+            });
         });
-    });
-</script>
-
-
-
-
-
-
+    </script>
 
     <?php
         $user_id = $_SESSION['user_id'];
@@ -368,7 +382,7 @@
         <input type="hidden" name="total_price" value="<?php echo $total_price; ?>">
         <input type="hidden" name="receipt_id" value="<?php echo $auto_id; ?>">
         <input type="hidden" name="created_on" value="<?php echo $created_on; ?>">
-        <input type="hidden" name="get_addon" id="get_addon_input" value="<?php echo $get_addon; ?>">
+        <input type="hidden" name="get_addon" id="get_addon_input" value="">
         <input type="hidden" name="addon-total" id="addon-total" value="">
         <input type="hidden" name="gst" value="<?php echo $gst; ?>">
  
@@ -481,41 +495,153 @@
 </div>
 
 <script>
-    $(document).ready(function(){
-        let baseTotal = <?= $total_price; ?>;
-        
-        function recalcTotal() {
-            let addonTotal = 0;
-            $('.addon-checkbox:checked').each(function(){
-                addonTotal += parseFloat($(this).data('cost'));
-            });
-            $('#addon-total').val(addonTotal);
-            let newTotal = baseTotal + addonTotal;
-            $('#estimated-total').text("<?= htmlspecialchars($symbol) ?>" + newTotal.toFixed(2));
-            $('input[name="total_price"]').val(newTotal); // update hidden field in form
-        }
-
-        $('.addon-checkbox').on('change', recalcTotal);
-    });
-
-    function updateAddonField() {
-        let selectedAddons = [];
-        $('.addon-checkbox:checked').each(function() {
-            selectedAddons.push($(this).val());
-        });
-        $('#get_addon_input').val(selectedAddons.join(',')); // update hidden field
+$(function(){
+    if (typeof $ === 'undefined') {
+        console.error('jQuery not found — this script requires jQuery.');
+        return;
     }
-    
-    // Trigger when checkbox changes
-    $('.addon-checkbox').on('change', function() {
-        //recalcTotal();
-        updateAddonField();
+ 
+    const basePrice = Number(<?= json_encode(floatval($price)) ?>) || 0;
+    const gstRate = 0.18;
+    const symbol = <?= json_encode($symbol) ?>;
+ 
+    // state
+    let selectedItems = {};         // id -> cost (for total calc)
+    let selectedAddons = [];        // array of addon ids (strings)
+    let selectedPackages = [];      // array of package ids
+    let selectedProducts = [];      // array of product ids
+ 
+    // find checkout form to append hidden inputs into
+    const $checkoutForm = $('form[action="cart-payment.php"]').first();
+ 
+    function ensureHidden(name, id) {
+        if ($checkoutForm.length) {
+            if ($checkoutForm.find('#' + id).length === 0) {
+                $('<input>').attr({type: 'hidden', name: name, id: id}).appendTo($checkoutForm);
+            }
+        } else {
+            // fallback: append to body (won't be submitted unless inside form)
+            if ($('#' + id).length === 0) {
+                $('<input>').attr({type: 'hidden', name: name, id: id}).appendTo('body');
+            }
+        }
+    }
+ 
+    ensureHidden('get_addon', 'get_addon_input');
+    ensureHidden('get_package', 'get_package_input');
+    ensureHidden('get_products', 'get_products_input');
+    ensureHidden('addon-total', 'addon-total');
+ 
+    function updateHiddenInputs() {
+        $('#get_addon_input').val(selectedAddons.join(','));
+        $('#get_package_input').val(selectedPackages.join(','));
+        $('#get_products_input').val(selectedProducts.join(','));
+        // total cost of selected add-ons/packages/products (without GST)
+        $('#addon-total').val(Object.values(selectedItems).reduce((s,v)=>s+Number(v||0),0).toFixed(2));
+    }
+ 
+    function recalcTotal() {
+        const itemsTotal = Object.values(selectedItems).reduce((s,v)=>s+Number(v||0),0);
+        const subtotal = basePrice + itemsTotal;
+        const gst = subtotal * gstRate;
+        const estimated = subtotal + gst;
+ 
+        $('#estimated-total').text(symbol + estimated.toFixed(2));
+        if ($('#gst-display').length) $('#gst-display').text(symbol + gst.toFixed(2));
+        // update hidden total_price if present in form
+        $('input[name="total_price"]').val(estimated.toFixed(2));
+    }
+ 
+    // click handler for all toggle buttons (delegated)
+    $(document).on('click', '.toggle-btn', function(e){
+        e.preventDefault();
+        const $btn = $(this);
+        const id = String($btn.data('id'));
+        const cost = Number($btn.data('cost')) || 0;
+ 
+        // detect type by nearest .card .card-header text
+        const headerTxt = ($btn.closest('.card').find('.card-header').text() || '').toLowerCase();
+        let type = 'addon';
+        if (headerTxt.includes('package')) type = 'package';
+        else if (headerTxt.includes('product')) type = 'product';
+        else if (headerTxt.includes('add-on') || headerTxt.includes('add on') || headerTxt.includes('addon')) type = 'addon';
+ 
+        const isSelected = $btn.hasClass('selected');
+ 
+        if (!isSelected) {
+            // select
+            $btn.addClass('selected btn-danger').removeClass('btn-primary add').text('Remove');
+            selectedItems[id] = cost;
+            if (type === 'addon' && !selectedAddons.includes(id)) selectedAddons.push(id);
+            if (type === 'package' && !selectedPackages.includes(id)) selectedPackages.push(id);
+            if (type === 'product' && !selectedProducts.includes(id)) selectedProducts.push(id);
+        } else {
+            // deselect
+            $btn.removeClass('selected btn-danger').addClass('btn-primary add').text('+ Add');
+            delete selectedItems[id];
+            if (type === 'addon') selectedAddons = selectedAddons.filter(x => x !== id);
+            if (type === 'package') selectedPackages = selectedPackages.filter(x => x !== id);
+            if (type === 'product') selectedProducts = selectedProducts.filter(x => x !== id);
+        }
+ 
+        updateHiddenInputs();
+        recalcTotal();
     });
+ 
+    // If server-side preselected ids exist in the hidden input on page load, trigger selection
+    const preAddons = $('#get_addon_input').val() || '';
+    if (preAddons) {
+        preAddons.split(',').map(s => s.trim()).filter(Boolean).forEach(function(aid){
+            // find matching button and simulate click if not already selected
+            const $b = $('.toggle-btn').filter(function(){ return String($(this).data('id')) === String(aid); }).first();
+            if ($b.length && !$b.hasClass('selected')) {
+                $b.trigger('click');
+            }
+        });
+    }
+ 
+    // initial recalc to set totals correctly
+    recalcTotal();
+});
+</script>
+ 
+
+<script>
+    // $(document).ready(function(){
+    //     let baseTotal = <?= $total_price; ?>;
+        
+    //     function recalcTotal() {
+    //         let addonTotal = 0;
+    //         $('.addon-checkbox:checked').each(function(){
+    //             addonTotal += parseFloat($(this).data('cost'));
+    //         });
+    //         $('#addon-total').val(addonTotal);
+    //         let newTotal = baseTotal + addonTotal;
+    //         $('#estimated-total').text("<?= htmlspecialchars($symbol) ?>" + newTotal.toFixed(2));
+    //         $('input[name="total_price"]').val(newTotal); // update hidden field in form
+    //     }
+
+    //     $('.addon-checkbox').on('change', recalcTotal);
+    // });
+
+    // function updateAddonField() {
+    //     let selectedAddons = [];
+    //     $('.addon-checkbox:checked').each(function() {
+    //         selectedAddons.push($(this).val());
+    //     });
+    //     $('#get_addon_input').val(selectedAddons.join(',')); // update hidden field
+    // }
     
-    // Also update before form submission (safety check)
-    $('form').on('submit', function() {
-        updateAddonField();
-    });
+    // // Trigger when checkbox changes
+    // $('.addon-checkbox').on('change', function() {
+    //     //recalcTotal();
+    //     updateAddonField();
+    // });
+    
+    // // Also update before form submission (safety check)
+    // $('form').on('submit', function() {
+    //     updateAddonField();
+    // });
 
     $('#updateForm').submit(function(e) {
     e.preventDefault();
@@ -533,4 +659,5 @@
     });
 });
 </script>
+
 <?php include './partials/layouts/layoutBottom.php' ?>
