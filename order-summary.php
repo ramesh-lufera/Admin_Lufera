@@ -1,7 +1,20 @@
 <?php include './partials/layouts/layoutTop.php' ?>
 <?php
     $invoice_id = $_GET['id'];
-    $invoice = "select * from orders where invoice_id = $invoice_id";
+    //$invoice = "select * from orders where invoice_id = $invoice_id";
+    
+    $invoice = "
+    SELECT
+        orders.*,
+        CASE 
+            WHEN orders.type = 'package' THEN package.package_name
+            WHEN orders.type = 'product' THEN products.name
+            ELSE orders.plan
+        END AS plan_name
+        FROM orders
+        LEFT JOIN package ON (orders.type = 'package' AND orders.plan = package.id)
+        LEFT JOIN products ON (orders.type = 'product' AND orders.plan = products.id)
+    where invoice_id = $invoice_id";
     $result = $conn->query($invoice);
     $row = $result->fetch_assoc();
     $user_id = $row['user_id'];
@@ -11,11 +24,6 @@
     $session_user = "select * from users where id = $userId";
     $result2 = $conn->query($session_user);
     $row2 = $result2->fetch_assoc();
-    
-    $user = "select * from users where user_id = '$user_id'"; 
-    $results = $conn->query($user);
-    $rows = $results->fetch_assoc();
-    $user_ids = $rows['email'];
 
     if (isset($_POST['save'])) {
         $order_id = $_POST['order_id'];
@@ -86,7 +94,6 @@
             </button>
             <?php } ?>
             <button type="button" class="btn btn-sm btn-success radius-8 d-inline-flex align-items-center gap-1" data-bs-toggle="modal" data-bs-target="#Payment" id="currency-symbol-display">
-                <!-- <iconify-icon icon="lucide:dollar-sign" class="text-xl"></iconify-icon> -->
                 <?= htmlspecialchars($symbol) ?> Payment History
             </button>
             <!-- <button type="button" class="btn btn-sm btn-success radius-8 d-inline-flex align-items-center gap-1" >
@@ -222,7 +229,7 @@
                             <tbody>
                                 <tr>
                                     <td>Plan Name</td>
-                                    <td><?php echo $row['plan']; ?></td>
+                                    <td><?php echo htmlspecialchars($row['plan_name']); ?></td>
                                 </tr>
                                 <tr>
                                     <td>Plan Duration</td>
@@ -248,7 +255,6 @@
                                         ?>
                                     </td>
                                 </tr>
-
                                 <tr>
                                     <td>Status</td>
                                     <td><?php echo $row['status']; ?></td>
@@ -307,40 +313,57 @@
                         <table class="w-100 plan-details-table mb-0">
                             <tbody>
                                 <tr>
-                                    <td><?php echo $row['plan']; ?></td>
-                                    <td class="text-end" id="currency-symbol-display"><?= htmlspecialchars($symbol) ?><?php echo $row['price']; ?></td>
+                                    <td><?php echo htmlspecialchars($row['plan_name']); ?></td>
+                                    <td class="text-end" id="currency-symbol-display"><?= htmlspecialchars($symbol) ?><?= number_format($row['price'], 2) ?></td>
                                 </tr>
                                 <?php
-                                // Fetch addon services if available
-                                if (!empty($row['addon_service'])) {
-                                    $addon_ids = explode(',', $row['addon_service']);
-                                    $addon_ids = array_map('intval', $addon_ids); // sanitize IDs
+                                    // Base price (plan price)
+                                    $base_price = (float)$row['price'];
 
-                                    if (!empty($addon_ids)) {
-                                        $addon_id_list = implode(',', $addon_ids);
-                                        $addon_query = "SELECT name, cost FROM `add-on-service` WHERE id IN ($addon_id_list)";
-                                        $addon_result = $conn->query($addon_query);
+                                    // Addon cost calculation
+                                    $addon_total = 0;
+                                    if (!empty($row['addon_service'])) {
+                                        $addon_ids = explode(',', $row['addon_service']);
+                                        $addon_ids = array_map('intval', $addon_ids); // sanitize IDs
 
-                                        while ($addon_row = $addon_result->fetch_assoc()) {
-                                            echo "<tr>
-                                                    <td>" . htmlspecialchars($addon_row['name']) . " (Add-on)</td>
-                                                    <td class='text-end' id='currency-symbol-display'>" . htmlspecialchars($symbol) . htmlspecialchars($addon_row['cost']) . "</td>
-                                                </tr>";
+                                        if (!empty($addon_ids)) {
+                                            $addon_id_list = implode(',', $addon_ids);
+                                            $addon_query = "SELECT name, cost FROM `add-on-service` WHERE id IN ($addon_id_list)";
+                                            $addon_result = $conn->query($addon_query);
+
+                                            while ($addon_row = $addon_result->fetch_assoc()) {
+                                                $addon_cost = (float)$addon_row['cost'];
+                                                $addon_total += $addon_cost;
+
+                                                echo "<tr>
+                                                        <td>" . htmlspecialchars($addon_row['name']) . " (Add-on)</td>
+                                                        <td class='text-end' id='currency-symbol-display'>" . htmlspecialchars($symbol) . number_format($addon_cost, 2) . "</td>
+                                                    </tr>";
+                                            }
                                         }
                                     }
-                                }
+                                    // Subtotal before GST
+                                    $subtotal = $base_price + $addon_total;
+
+                                    // GST 18%
+                                    $gst = $subtotal * 0.18;
+
+                                    // Total amount = subtotal + GST
+                                    $grand_total = $subtotal + $gst;
                                 ?>
                                 <tr>
                                     <td>Tax (GST 18%)</td>
-                                    <td class="text-end" id="currency-symbol-display"><?= htmlspecialchars($symbol) ?><?php echo $row['gst']; ?></td>
+                                    <td class="text-end" id="currency-symbol-display"><?= htmlspecialchars($symbol) ?><?= number_format($gst, 2) ?></td>
                                 </tr>
                                 <tr>
                                     <td class="fw-bold">Payments</td>
-                                    <td class="text-end fw-bold" id="currency-symbol-display"><?= htmlspecialchars($symbol) ?><?php echo $row['payment_made']; ?></td>
+                                    <td class="text-end fw-bold" id="currency-symbol-display"><?= htmlspecialchars($symbol) ?><?= number_format($row['payment_made'], 2) ?></td>
                                 </tr>
                                 <tr>
                                     <td class="fw-bold border-0">Total Payable</td>
-                                    <td class="text-end fw-bold border-0" id="currency-symbol-display"><?= htmlspecialchars($symbol) ?><?php echo $row['balance_due']; ?></td>
+                                    <td class="text-end fw-bold border-0" id="currency-symbol-display">
+                                        <?= htmlspecialchars($symbol) ?><?= number_format($row['balance_due'], 2) ?>
+                                    </td>
                                 </tr>
                             </tbody>
                         </table>
@@ -384,6 +407,28 @@ document.addEventListener("DOMContentLoaded", function () {
             //this.value = ""; 
         }
         else {
+            errorText.classList.add("d-none");
+            submit.disabled = false;
+        }
+    });
+});
+</script>
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const amountInput = document.getElementById("numericInput");
+    const balanceDue = parseFloat(document.getElementById("balance_due").value);
+    const errorText = document.getElementById("amountError");
+    const submit = document.getElementById("submit");
+
+    amountInput.addEventListener("input", function () {
+        const enteredAmount = parseFloat(this.value);
+
+        if (!isNaN(enteredAmount) && enteredAmount > balanceDue) {
+            errorText.classList.remove("d-none");
+            submit.disabled = true;
+            //alert("Entered amount cannot be greater than Total Payable (" + balanceDue.toFixed(2) + ")");
+            //this.value = ""; // clear field
+        } else {
             errorText.classList.add("d-none");
             submit.disabled = false;
         }
