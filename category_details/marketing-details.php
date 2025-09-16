@@ -3,12 +3,12 @@
             $Id = $_SESSION['user_id'];
             $websiteId = isset($_GET['website_id']) ? (int)$_GET['website_id'] : 0;
             $productId = isset($_GET['product_id']) ? (int)$_GET['product_id'] : 0;
-            $stmt = $conn->prepare("SELECT user_id, business_name, role FROM users WHERE id = ?");
+            $stmt = $conn->prepare("SELECT id, user_id, business_name, role FROM users WHERE id = ?");
             $stmt->bind_param("i", $Id);
             $stmt->execute();
             $result = $stmt->get_result();
             $row = $result->fetch_assoc();
-            $UserId = $row['user_id']; 
+            $UserId = $row['id']; 
             $BusinessName = $row['business_name'];
             $role = $row['role'];
             $stmt->close();
@@ -18,7 +18,7 @@
                 $stmt->bind_param("i", $websiteId);
             } else {
                 $stmt = $conn->prepare("SELECT invoice_id, plan, duration, status, created_at FROM websites WHERE id = ? AND user_id = ?");
-                $stmt->bind_param("is", $websiteId, $UserId); 
+                $stmt->bind_param("ii", $websiteId, $UserId); 
             }
             $stmt->execute();
             $result = $stmt->get_result();

@@ -65,7 +65,7 @@
                             \$user = "select * from users where id = \$Id";
                             \$res = \$conn ->query(\$user);
                             \$row = \$res ->fetch_assoc();
-                            \$UserId = \$row['user_id'];
+                            \$UserId = \$row['id'];
                             \$role = \$row['role'];
 
                             \$category = "select * from categories where cat_id = \$cat_id";
@@ -75,8 +75,9 @@
                             if (\$role == '1' || \$role == '2' || \$role == '7') {
                             \$sql = "
                                 SELECT 
-                                    websites.id,
+                                    websites.id AS web_id,
                                     users.user_id,
+                                    users.id,
                                     users.business_name,
                                     websites.plan,
                                     websites.domain,
@@ -90,13 +91,13 @@
                                 FROM 
                                     users 
                                 JOIN 
-                                    websites ON users.user_id = websites.user_id
+                                    websites ON users.id = websites.user_id
                                 LEFT JOIN
                                     `json` ON `json`.website_id = websites.id
                                 WHERE 
                                     websites.cat_id = ?
                             ";
-                                                \$stmt = \$conn->prepare(\$sql);
+                            \$stmt = \$conn->prepare(\$sql);
                             if (!\$stmt) {
                                 die("Prepare failed: " . \$conn->error);
                             }
@@ -104,8 +105,9 @@
                             } else {
                                 \$sql = "
                                     SELECT 
-                                        websites.id,
+                                        websites.id AS web_id,
                                         users.user_id,
+                                        users.id,
                                         users.business_name,
                                         websites.plan,
                                         websites.domain,
@@ -119,7 +121,7 @@
                                     FROM 
                                         users
                                     JOIN 
-                                        websites ON users.user_id = websites.user_id
+                                        websites ON users.id = websites.user_id
                                     LEFT JOIN 
                                         `json` ON `json`.website_id = websites.id
                                     WHERE 
@@ -129,7 +131,7 @@
                             if (!\$stmt) {
                                 die("Prepare failed: " . \$conn->error);
                             }
-                            \$stmt->bind_param("si", \$UserId, \$cat_id);
+                            \$stmt->bind_param("ii", \$UserId, \$cat_id);
                             }
 
                             \$stmt->execute();
@@ -519,8 +521,7 @@
                                         </div>
                                         </div>
                                         <div class="manage-btn-wrapper">
-                                        <!--<a href="$manageLink?website_id=<?php echo (int)\$site['id']; ?>" class="dashboard-btn">Manage</a>-->
-                                        <a href="$manageLink?website_id=<?php echo (int)\$site['id']; ?>&product_id=<?php echo (int)\$site['product_id']; ?>&type=<?php echo \$site['type']; ?>" class="dashboard-btn">Manage</a>
+                                        <a href="$manageLink?website_id=<?php echo (int)\$site['web_id']; ?>&product_id=<?php echo (int)\$site['product_id']; ?>&type=<?php echo \$site['type']; ?>" class="dashboard-btn">Manage</a>
 
                                         </div>
                                     </div>
@@ -646,6 +647,7 @@
                         \$res = \$conn ->query(\$user);
                         \$row = \$res ->fetch_assoc();
                         \$UserId = \$row['user_id'];
+                        \$UserId = \$row['id'];
                         \$role = \$row['role'];
 
                         if (\$role == '1' || \$role == '2' || \$role == '7') {
@@ -653,6 +655,7 @@
                             SELECT 
                                 websites.id,
                                 users.user_id,
+                                users.id,
                                 users.business_name,
                                 websites.plan,
                                 websites.domain,
@@ -663,7 +666,7 @@
                             FROM 
                                 users 
                             JOIN 
-                                websites ON users.user_id = websites.user_id
+                                websites ON users.id = websites.user_id
                             WHERE 
                                 websites.cat_id = ?
                         ");
@@ -673,6 +676,7 @@
                                 SELECT 
                                     websites.id,
                                     users.user_id,
+                                    users.id,
                                     users.business_name,
                                     websites.plan,
                                     websites.domain,
@@ -683,11 +687,11 @@
                                 FROM 
                                     users 
                                 JOIN 
-                                    websites ON users.user_id = websites.user_id 
+                                    websites ON users.id = websites.user_id 
                                 WHERE 
                                     websites.user_id = ? AND websites.cat_id = ?
                             ");
-                            \$stmt->bind_param("si", \$UserId, \$cat_id);
+                            \$stmt->bind_param("ii", \$UserId, \$cat_id);
                         }
 
                         \$stmt->execute();

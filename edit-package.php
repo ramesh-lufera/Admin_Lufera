@@ -45,14 +45,23 @@ $script = '<script>
 
 <?php include './partials/layouts/layoutTop.php' ?>
 <?php
-$package_id = isset($_GET['id']) ? intval($_GET['id']) : 0;
+//$package_id = isset($_GET['id']) ? intval($_GET['id']) : 0;
 
-if ($package_id <= 0) {
-    die('Invalid Package ID');
+// Accept package ID from either POST (preferred) or GET (fallback)
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $get_package_id = isset($_POST['id']) ? intval($_POST['id']) : 0;
+    $get_cat_id     = isset($_POST['product_category']) ? intval($_POST['product_category']) : 0;
+    $get_module     = isset($_POST['template']) ? $_POST['template'] : '';
+} else {
+    $get_package_id = isset($_GET['id']) ? intval($_GET['id']) : 0;
+    $get_cat_id     = null;
+    $get_module     = null;
 }
 
+
+echo $package_id;
 $query = $conn->prepare("SELECT * FROM package WHERE id = ?");
-$query->bind_param("i", $package_id);
+$query->bind_param("i", $get_package_id);
 $query->execute();
 $result = $query->get_result();
 
@@ -64,7 +73,7 @@ $package = $result->fetch_assoc();
 
 // Fetch features
 $featuresQuery = $conn->prepare("SELECT feature FROM features WHERE package_id = ?");
-$featuresQuery->bind_param("i", $package_id);
+$featuresQuery->bind_param("i", $get_package_id);
 $featuresQuery->execute();
 $featuresResult = $featuresQuery->get_result();
 $features = [];
@@ -91,6 +100,7 @@ $selectedProducts = !empty($package['addon_product']) ? explode(',', $package['a
 $selectedAddons   = !empty($package['addon_service']) ? explode(',', $package['addon_service']) : [];
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+    $package_id = $_POST['id'];
     $package_name = $_POST['package_name'];
     $title = $_POST['title'];
     $subtitle = $_POST['subtitle'];
@@ -102,14 +112,14 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $duration_value = isset($_POST['duration_value']) ? intval($_POST['duration_value']) : 0;
     $duration_unit = isset($_POST['duration_unit']) ? $_POST['duration_unit'] : '';
     $duration = $duration_value . ' ' . $duration_unit;
-
+    $module = $_POST['module'];
     // Save add-ons separately
     $addon_package = isset($_POST['packages']) ? implode(',', $_POST['packages']) : '';
     $addon_product = isset($_POST['products']) ? implode(',', $_POST['products']) : '';
     $addon_service = isset($_POST['addons']) ? implode(',', $_POST['addons']) : '';
 
-    $stmt = $conn->prepare("UPDATE package SET package_name=?, title=?, subtitle=?, price=?, description=?, duration=?, cat_id=?, created_at=?, addon_package=?, addon_product=?, addon_service=? WHERE id=?");
-    $stmt->bind_param("ssssssissssi", $package_name, $title, $subtitle, $price, $description, $duration, $cat_id, $updated_at, $addon_package, $addon_product, $addon_service, $package_id);
+    $stmt = $conn->prepare("UPDATE package SET package_name=?, title=?, subtitle=?, price=?, description=?, duration=?, cat_id=?, template=?, created_at=?, addon_package=?, addon_product=?, addon_service=? WHERE id=?");
+    $stmt->bind_param("ssssssisssssi", $package_name, $title, $subtitle, $price, $description, $duration, $cat_id, $module, $updated_at, $addon_package, $addon_product, $addon_service, $package_id);
 
     if ($stmt->execute()) {
         $stmt->close();
@@ -160,8 +170,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             <div class="row justify-content-center">
                 <div class="col-xxl-12 col-xl-8 col-lg-10">
                     <form method="POST" class="row gy-3 needs-validation" novalidate autocomplete="off">
+                        <input type="hidden" name="id" value="<?php echo htmlspecialchars($package_id); ?>">
                         <input type="hidden" class="form-control radius-8" name="cat_id" required maxlength="30"
-                               value="<?php echo htmlspecialchars($package['cat_id']); ?>">
+                               value="<?php echo htmlspecialchars($get_cat_id); ?>">
+                        <input type="hidden" class="form-control radius-8" name="module" required maxlength="30"
+                               value="<?php echo htmlspecialchars($get_module); ?>">
                         <div class="mb-2">
                             <label class="form-label fw-semibold text-primary-light text-sm mb-8">
                                 Package name <span class="text-danger-600">*</span>

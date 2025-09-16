@@ -58,8 +58,8 @@
         // Get order + user details
         $res = $conn->query("SELECT o.invoice_id, o.plan, o.amount, u.email, u.first_name, u.last_name 
                              FROM orders o 
-                             INNER JOIN users u ON o.user_id = u.user_id 
-                             WHERE o.id = $orderId");
+                             INNER JOIN users u ON o.user_id = u.id 
+                             WHERE o.id = $Id");
         $order = $res->fetch_assoc();
 
         $userEmail = $order['email'];
@@ -192,12 +192,12 @@
             users.last_name,
             users.photo
         FROM orders
-        INNER JOIN users ON orders.user_id = users.user_id
+        INNER JOIN users ON orders.user_id = users.id
     ";
 
     if ($role !== '1' && $role !== '2') {
         if (!empty($UserId)) {
-            $query .= " WHERE orders.user_id = '$UserId'";
+            $query .= " WHERE orders.user_id = '$Id'";
         } else {
             $query .= " WHERE 1 = 0";
         }
