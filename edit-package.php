@@ -67,20 +67,28 @@ $featuresQuery = $conn->prepare("SELECT feature FROM features WHERE package_id =
 $featuresQuery->bind_param("i", $package_id);
 $featuresQuery->execute();
 $featuresResult = $featuresQuery->get_result();
-
 $features = [];
 while ($row = $featuresResult->fetch_assoc()) {
     $features[] = $row['feature'];
 }
-// Fetch all available add-on services
-$servicesQuery = $conn->query("SELECT id, name FROM `add-on-service` ORDER BY name ASC");
-$allServices = [];
-while ($row = $servicesQuery->fetch_assoc()) {
-    $allServices[] = $row;
-}
 
-// Existing package selected services
-$selectedServices = !empty($package['addon_service']) ? explode(',', $package['addon_service']) : [];
+// Fetch lists
+$packagesQuery = $conn->query("SELECT id, package_name FROM package ORDER BY package_name ASC");
+$packages_list = [];
+while ($row = $packagesQuery->fetch_assoc()) $packages_list[] = $row;
+
+$productsQuery = $conn->query("SELECT id, name FROM products ORDER BY name ASC");
+$products_list = [];
+while ($row = $productsQuery->fetch_assoc()) $products_list[] = $row;
+
+$addonsQuery = $conn->query("SELECT id, name FROM `add-on-service` ORDER BY name ASC");
+$addons_list = [];
+while ($row = $addonsQuery->fetch_assoc()) $addons_list[] = $row;
+
+// Existing selections from DB
+$selectedPackages = !empty($package['addon_package']) ? explode(',', $package['addon_package']) : [];
+$selectedProducts = !empty($package['addon_product']) ? explode(',', $package['addon_product']) : [];
+$selectedAddons   = !empty($package['addon_service']) ? explode(',', $package['addon_service']) : [];
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $package_name = $_POST['package_name'];
@@ -94,12 +102,14 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $duration_value = isset($_POST['duration_value']) ? intval($_POST['duration_value']) : 0;
     $duration_unit = isset($_POST['duration_unit']) ? $_POST['duration_unit'] : '';
     $duration = $duration_value . ' ' . $duration_unit;
-    $addon_service = isset($_POST['addon_service']) ? implode(',', $_POST['addon_service']) : '';
 
-    // $stmt = $conn->prepare("UPDATE package SET package_name=?, title=?, subtitle=?, price=?, description=?, duration=?, cat_id=?, created_at=? WHERE id=?");
-    // $stmt->bind_param("ssssssisi", $package_name, $title, $subtitle, $price, $description, $duration, $cat_id, $updated_at, $package_id);
-    $stmt = $conn->prepare("UPDATE package SET package_name=?, title=?, subtitle=?, price=?, description=?, duration=?, cat_id=?, created_at=?, addon_service=? WHERE id=?");
-    $stmt->bind_param("ssssssissi", $package_name, $title, $subtitle, $price, $description, $duration, $cat_id, $updated_at, $addon_service, $package_id);
+    // Save add-ons separately
+    $addon_package = isset($_POST['packages']) ? implode(',', $_POST['packages']) : '';
+    $addon_product = isset($_POST['products']) ? implode(',', $_POST['products']) : '';
+    $addon_service = isset($_POST['addons']) ? implode(',', $_POST['addons']) : '';
+
+    $stmt = $conn->prepare("UPDATE package SET package_name=?, title=?, subtitle=?, price=?, description=?, duration=?, cat_id=?, created_at=?, addon_package=?, addon_product=?, addon_service=? WHERE id=?");
+    $stmt->bind_param("ssssssissssi", $package_name, $title, $subtitle, $price, $description, $duration, $cat_id, $updated_at, $addon_package, $addon_product, $addon_service, $package_id);
 
     if ($stmt->execute()) {
         $stmt->close();
@@ -250,7 +260,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                 </div>
                             </div>
                         </div>
-
                         <div class="mb-2">
                             <label class="form-label fw-semibold text-primary-light text-sm mb-8">
                                 Features <span class="text-danger-600">*</span>
@@ -270,29 +279,63 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                 At least one feature is required.
                             </div>
                         </div>
+                        <!-- Add-ons Section -->
                         <div class="mb-2">
-                            <label class="form-label fw-semibold text-primary-light text-sm mb-8">
-                                Add-on Services
-                            </label>
-                            <div class="d-flex flex-wrap gap-3">
-                                <?php foreach ($allServices as $service) { ?>
-                                    <div class="d-flex align-items-center gap-10 fw-medium text-lg">
-                                        <div class="form-check style-check d-flex align-items-center">
-                                            <input class="form-check-input" 
-                                                type="checkbox" 
-                                                name="addon_service[]" 
-                                                value="<?php echo $service['id']; ?>" 
-                                                id="service_<?php echo $service['id']; ?>"
-                                                <?php echo in_array($service['id'], $selectedServices) ? 'checked' : ''; ?>>
-                                            <label class="form-check-label" for="service_<?php echo $service['id']; ?>">
-                                                <?php echo htmlspecialchars($service['name']); ?>
-                                            </label>
+                            <label class="form-label fw-semibold">Add-Ons *</label>
+                            <div class="d-flex flex-wrap gap-4 mb-3">
+                                <div class="form-check d-flex align-items-center">
+                                    <input class="form-check-input toggle-section" type="checkbox" id="showPackages" data-target="#packagesSection">
+                                    <label class="form-check-label ms-2 mb-0" for="showPackages">Packages</label>
+                                </div>
+                                <div class="form-check d-flex align-items-center">
+                                    <input class="form-check-input toggle-section" type="checkbox" id="showProducts" data-target="#productsSection">
+                                    <label class="form-check-label ms-2 mb-0" for="showProducts">Products</label>
+                                </div>
+                                <div class="form-check d-flex align-items-center">
+                                    <input class="form-check-input toggle-section" type="checkbox" id="showAddons" data-target="#addonsSection">
+                                    <label class="form-check-label ms-2 mb-0" for="showAddons">Add-on Services</label>
+                                </div>
+                            </div>
+
+                            <!-- Packages -->
+                            <div id="packagesSection" class="d-none border p-3 radius-8 mb-3">
+                                <h6 class="fw-semibold" style="font-size: 1rem !important;">Available Packages</h6>
+                                <div class="d-flex flex-wrap gap-3">
+                                    <?php foreach ($packages_list as $p): ?>
+                                        <div class="form-check d-flex align-items-center me-3">
+                                            <input class="form-check-input" type="checkbox" name="packages[]" value="<?php echo $p['id']; ?>" id="package_<?php echo $p['id']; ?>" <?php echo in_array($p['id'],$selectedPackages)?'checked':''; ?>>
+                                            <label class="form-check-label ms-2 mb-0" for="package_<?php echo $p['id']; ?>"><?php echo htmlspecialchars($p['package_name']); ?></label>
                                         </div>
-                                    </div>
-                                <?php } ?>
+                                    <?php endforeach; ?>
+                                </div>
+                            </div>
+
+                            <!-- Products -->
+                            <div id="productsSection" class="d-none border p-3 radius-8 mb-3">
+                                <h6 class="fw-semibold" style="font-size: 1rem !important;">Available Products</h6>
+                                <div class="d-flex flex-wrap gap-3">
+                                    <?php foreach ($products_list as $prod): ?>
+                                        <div class="form-check d-flex align-items-center me-3">
+                                            <input class="form-check-input" type="checkbox" name="products[]" value="<?php echo $prod['id']; ?>" id="product_<?php echo $prod['id']; ?>" <?php echo in_array($prod['id'],$selectedProducts)?'checked':''; ?>>
+                                            <label class="form-check-label ms-2 mb-0" for="product_<?php echo $prod['id']; ?>"><?php echo htmlspecialchars($prod['name']); ?></label>
+                                        </div>
+                                    <?php endforeach; ?>
+                                </div>
+                            </div>
+
+                            <!-- Add-ons -->
+                            <div id="addonsSection" class="d-none border p-3 radius-8 mb-3">
+                                <h6 class="fw-semibold" style="font-size: 1rem !important;">Available Add-on Services</h6>
+                                <div class="d-flex flex-wrap gap-3">
+                                    <?php foreach ($addons_list as $a): ?>
+                                        <div class="form-check d-flex align-items-center me-3">
+                                            <input class="form-check-input" type="checkbox" name="addons[]" value="<?php echo $a['id']; ?>" id="addon_<?php echo $a['id']; ?>" <?php echo in_array($a['id'],$selectedAddons)?'checked':''; ?>>
+                                            <label class="form-check-label ms-2 mb-0" for="addon_<?php echo $a['id']; ?>"><?php echo htmlspecialchars($a['name']); ?></label>
+                                        </div>
+                                    <?php endforeach; ?>
+                                </div>
                             </div>
                         </div>
-
 
                         <div class="d-flex align-items-center justify-content-center gap-3">
                             <button type="button" class="border border-danger-600 bg-hover-danger-200 text-danger-600 text-md px-56 py-11 radius-8">
@@ -332,31 +375,47 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             });
         });
     </script>
-<script>
-document.addEventListener("DOMContentLoaded", function () {
-    const durationInput = document.getElementById("duration_value");
-    const durationUnit = document.getElementById("duration_unit");
 
-    function updateDurationLabels() {
-        const val = parseInt(durationInput.value, 10);
-        const isOne = (val === 1);
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const durationInput = document.getElementById("duration_value");
+            const durationUnit = document.getElementById("duration_unit");
 
-        durationUnit.querySelectorAll("option").forEach(opt => {
-            switch (opt.value) {
-                case "days":   opt.textContent = isOne ? "Day" : "Days"; break;
-                case "months": opt.textContent = isOne ? "Month" : "Months"; break;
-                case "years":  opt.textContent = isOne ? "Year" : "Years"; break;
-                case "hours":  opt.textContent = isOne ? "Hour" : "Hours"; break;
+            function updateDurationLabels() {
+                const val = parseInt(durationInput.value, 10);
+                const isOne = (val === 1);
+
+                durationUnit.querySelectorAll("option").forEach(opt => {
+                    switch (opt.value) {
+                        case "days":   opt.textContent = isOne ? "Day" : "Days"; break;
+                        case "months": opt.textContent = isOne ? "Month" : "Months"; break;
+                        case "years":  opt.textContent = isOne ? "Year" : "Years"; break;
+                        case "hours":  opt.textContent = isOne ? "Hour" : "Hours"; break;
+                    }
+                });
             }
+
+            // Run on page load
+            updateDurationLabels();
+
+            // Run whenever user changes the number
+            durationInput.addEventListener("input", updateDurationLabels);
         });
-    }
+    </script>
 
-    // Run on page load
-    updateDurationLabels();
-
-    // Run whenever user changes the number
-    durationInput.addEventListener("input", updateDurationLabels);
-});
-</script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            document.querySelectorAll(".toggle-section").forEach(toggle => {
+                toggle.addEventListener("change", function () {
+                    const target = document.querySelector(this.dataset.target);
+                    if (this.checked) {
+                        target.classList.remove("d-none");
+                    } else {
+                        target.classList.add("d-none");
+                    }
+                });
+            });
+        });
+    </script>
 
 <?php include './partials/layouts/layoutBottom.php' ?>
