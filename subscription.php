@@ -16,6 +16,11 @@
     include './partials/layouts/layoutTop.php';
 
     $Id = $_SESSION['user_id'];
+    // Get role of logged-in user
+    $roleQuery = "SELECT role FROM users WHERE id = '$Id' LIMIT 1";
+    $roleResult = mysqli_query($conn, $roleQuery);
+    $roleRow = mysqli_fetch_assoc($roleResult);
+    $role = $roleRow['role'];
     // Get active symbol
     $result2 = $conn->query("SELECT symbol FROM currencies WHERE is_active = 1 LIMIT 1");
     $symbol = "$"; // default
@@ -39,6 +44,7 @@
         users.first_name,
         users.last_name,
         users.photo,
+        users.business_name,
 
         CASE 
             WHEN orders.type = 'package' THEN package.package_name
@@ -47,11 +53,14 @@
         END AS plan_name
 
         FROM orders
-        INNER JOIN users ON orders.user_id = users.user_id
+        INNER JOIN users ON orders.user_id = users.id
         LEFT JOIN package ON (orders.type = 'package' AND orders.plan = package.id)
         LEFT JOIN products ON (orders.type = 'product' AND orders.plan = products.id)
     ";
-
+// Add condition only if role is NOT 1 or 2
+if ($role != 1 && $role != 2) {
+    $query .= " WHERE orders.user_id = '$Id'";
+}
     $result = mysqli_query($conn, $query);
 ?>
 
@@ -67,6 +76,7 @@
                     <thead>
                         <tr>
                             <th scope="col">Subscription</th>
+                            <th scope="col">Bussiness name</th>
                             <th scope="col" class="text-center">Expiration date</th>
                             <th scope="col" class="text-center">Auto-renewal</th>
                             <th scope="col" class="text-center">-</th>
@@ -84,6 +94,7 @@
                             ?>
                             <tr>
                                 <td><?php echo htmlspecialchars($row['plan_name']); ?></td>
+                                <td><?php echo htmlspecialchars($row['business_name']); ?></td>
                                 <td class="text-center"><?php echo $expiryFormatted; ?></td>
                                 <td class="text-center">Off</td>
                                 <td class="text-center">
@@ -103,6 +114,7 @@
                                 </div>
                                 <div class="offcanvas-body">
                                     <h6 class="text-lg"><?php echo htmlspecialchars($row['plan_name']); ?></h6>
+                                    <p class="text-sm"><?php echo htmlspecialchars($row['business_name']); ?></p>
                                     <div class="d-flex justify-content-between my-3">
                                         <span>Status</span>
                                         <span><i class="fa-regular fa-circle-check text-success me-2"></i>Active</span>

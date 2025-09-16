@@ -25,6 +25,18 @@
     $result2 = $conn->query($session_user);
     $row2 = $result2->fetch_assoc();
 
+    function generatePaymentID($conn) {
+        do {
+            $randomNumber = str_pad(mt_rand(0, 99999999), 8, '0', STR_PAD_LEFT);
+            $paymentID = "L_" . $randomNumber;
+    
+            // Check uniqueness in DB
+            $check = mysqli_query($conn, "SELECT payment_id FROM record_payment WHERE payment_id = '$paymentID'");
+        } while (mysqli_num_rows($check) > 0);
+    
+        return $paymentID;
+    }
+    
     if (isset($_POST['save'])) {
         $order_id = $_POST['order_id'];
         $invoice_no = $_POST['invoice_no'];
@@ -37,8 +49,9 @@
         $created_at = date("Y-m-d H:i:s");
         $remarks = $_POST['remarks'];
         $balance_due = $_POST['balance_due'];
-        $sql = "INSERT INTO record_payment (orders_id, invoice_no, payment_method, amount, remarks, paid_date) 
-                        VALUES ('$order_id', '$invoice_no', '$payment_method', '$amount', '$remarks', '$created_at')";
+        $payment_id = generatePaymentID($conn);
+        $sql = "INSERT INTO record_payment (payment_id, orders_id, invoice_no, payment_method, amount, balance, remarks, paid_date) 
+                        VALUES ('$payment_id', '$order_id', '$invoice_no', '$payment_method', '$amount', '$balance_due', '$remarks', '$created_at')";
             if (mysqli_query($conn, $sql)) {
 
                 $siteInsert = "UPDATE orders
