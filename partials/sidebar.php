@@ -106,7 +106,7 @@
                         \$created_at = date("Y-m-d H:i:s");
 
                         \$addons = isset(\$_POST['addons']) && is_array(\$_POST['addons']) ? implode(',', \$_POST['addons']) : '';
-                        \$addon_package = isset(\$_POST['packages']) && is_array(\$_POST['packages']) ? implode(',', \$_POST['packages']) : '';
+                        \$addon_packages = isset(\$_POST['packages']) && is_array(\$_POST['packages']) ? implode(',', \$_POST['packages']) : '';
                         \$addon_products = isset(\$_POST['products']) && is_array(\$_POST['products']) ? implode(',', \$_POST['products']) : '';
                         
                         \$duration_value = isset(\$_POST['duration_value']) ? intval(\$_POST['duration_value']) : 0;
@@ -123,7 +123,7 @@
                         \$template = "$template";
 
                         \$stmt = \$conn->prepare("INSERT INTO package (package_name, title, subtitle, price, description, duration, cat_id, created_at, template, addon_service, addon_package, addon_product) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-                        \$stmt->bind_param("ssssssisssss", \$package_name, \$title, \$subtitle, \$price, \$description, \$duration, \$cat_id, \$created_at, \$template, \$addons, \$addon_package, \$addon_products);
+                        \$stmt->bind_param("ssssssisssss", \$package_name, \$title, \$subtitle, \$price, \$description, \$duration, \$cat_id, \$created_at, \$template, \$addons, \$addon_packages, \$addon_products);
 
                         if (\$stmt->execute()) {
                             \$package_id = \$conn->insert_id;
@@ -300,7 +300,7 @@
 
                                             <!-- Packages -->
                                             <div id="packagesSection" class="d-none border p-3 radius-8 mb-3">
-                                                <h6 class="fw-semibold">Available Packages</h6>
+                                                <h6 class="fw-semibold" style="font-size: 1rem !important;">Available Packages</h6>
                                                 <div class="d-flex flex-wrap gap-3">
                                                     <?php if (!empty(\$packages_list)): ?>
                                                         <?php foreach (\$packages_list as \$package): ?>
@@ -321,7 +321,7 @@
 
                                             <!-- Products -->
                                             <div id="productsSection" class="d-none border p-3 radius-8 mb-3">
-                                                <h6 class="fw-semibold">Available Products</h6>
+                                                <h6 class="fw-semibold" style="font-size: 1rem !important;">Available Products</h6>
                                                 <div class="d-flex flex-wrap gap-3">
                                                     <?php if (!empty(\$products_list)): ?>
                                                         <?php foreach (\$products_list as \$product): ?>
@@ -342,7 +342,7 @@
 
                                             <!-- Add-ons -->
                                             <div id="addonsSection" class="d-none border p-3 radius-8 mb-3">
-                                                <h6 class="fw-semibold">Available Add-on Services</h6>
+                                                <h6 class="fw-semibold" style="font-size: 1rem !important;">Available Add-on Services</h6>
                                                 <div class="d-flex flex-wrap gap-3">
                                                     <?php if (!empty(\$addons_list)): ?>
                                                         <?php foreach (\$addons_list as \$addon): ?>
@@ -625,7 +625,7 @@
                         <a href="subscription.php"><i class="ri-circle-fill circle-icon text-warning-600 w-auto"></i> Subscriptions</a>
                     </li>
                     <li>
-                        <a href="#"><i class="ri-circle-fill circle-icon text-warning-600 w-auto"></i> Payment History</a>
+                        <a href="payment_history.php"><i class="ri-circle-fill circle-icon text-warning-600 w-auto"></i> Payment History</a>
                     </li>
                 </ul>
             </li>
