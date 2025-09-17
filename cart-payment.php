@@ -165,58 +165,124 @@
                 ('$client_id', '$receipt_id', '$product_id', '$duration' ,'$main_amount', '$main_gst', '$price', '$insert_addon_price', 'Pending', '$pay_method', '$main_discount', '$payment_made', '$created_at', '$main_subtotal', '$main_amount', '$get_addon', '$type')";
 
         if (mysqli_query($conn, $sql)) {
-            // Packages
+            // // Packages
+            // if (!empty($get_packages)) {
+            //     $package_ids = array_map('intval', explode(',', $get_packages));
+            //     foreach ($package_ids as $pkg_id) {
+            //         $pkg_sql = "SELECT price, duration FROM package WHERE id = $pkg_id";
+            //         $pkg_res = mysqli_query($conn, $pkg_sql);
+            //         if ($pkg_res && $pkg = mysqli_fetch_assoc($pkg_res)) {
+
+            //             $pkg_price    = floatval($pkg['price']);   // base package price
+            //             $pkg_duration = $pkg['duration'];
+
+            //             // calculations
+            //             $pkg_subtotal = $pkg_price;
+            //             $pkg_discount = 0; // change if you want discount rules
+            //             $pkg_gst      = $pkg_subtotal * 0.18;
+            //             $pkg_amount   = $pkg_subtotal - $pkg_discount + $pkg_gst;
+            //             $pkg_balance  = $pkg_amount - $payment_made;
+
+            //             $sql_package = "INSERT INTO orders 
+            //                 (user_id, invoice_id, plan, duration, amount, gst, price, addon_price, status, payment_method, discount, payment_made, created_on, subtotal, balance_due, addon_service, type) 
+            //                 VALUES 
+            //                 ('$client_id', '$receipt_id', '$pkg_id', '$pkg_duration', '$pkg_amount', '$pkg_gst', '', '$pkg_price', 'Pending', '$pay_method', '$pkg_discount', '$payment_made', '$created_at', '$pkg_subtotal', '$pkg_balance', '$pkg_id', 'package_addon')";
+                        
+            //             mysqli_query($conn, $sql_package);
+            //         }
+            //     }
+            // }
+
+            // // Products
+            // if (!empty($get_products)) {
+            //     $product_ids = array_map('intval', explode(',', $get_products));
+            //     foreach ($product_ids as $prod_id) {
+            //         $prod_sql = "SELECT price, duration FROM products WHERE id = $prod_id";
+            //         $prod_res = mysqli_query($conn, $prod_sql);
+            //         if ($prod_res && $prod = mysqli_fetch_assoc($prod_res)) {
+
+            //             $prod_price    = floatval($prod['price']); // base product price
+            //             $prod_duration = $prod['duration'];
+
+            //             // calculations
+            //             $prod_subtotal = $prod_price;
+            //             $prod_discount = 0; // or discount logic if needed
+            //             $prod_gst      = $prod_subtotal * 0.18;
+            //             $prod_amount   = $prod_subtotal - $prod_discount + $prod_gst;
+            //             $prod_balance  = $prod_amount - $payment_made;
+
+            //             $sql_product = "INSERT INTO orders 
+            //                 (user_id, invoice_id, plan, duration, amount, gst, price, addon_price, status, payment_method, discount, payment_made, created_on, subtotal, balance_due, addon_service, type) 
+            //                 VALUES 
+            //                 ('$client_id', '$receipt_id', '$prod_id', '$prod_duration', '$prod_amount', '$prod_gst', '', '$prod_price', 'Pending', '$pay_method', '$prod_discount', '$payment_made', '$created_at', '$prod_subtotal', '$prod_balance', '$prod_id', 'product_addon')";
+                        
+            //             mysqli_query($conn, $sql_product);
+            //         }
+            //     }
+            // }
+
+            // ================= Packages =================
             if (!empty($get_packages)) {
                 $package_ids = array_map('intval', explode(',', $get_packages));
                 foreach ($package_ids as $pkg_id) {
-                    $pkg_sql = "SELECT price, duration FROM package WHERE id = $pkg_id";
+                    $pkg_sql = "SELECT package_name, price, duration FROM package WHERE id = $pkg_id";
                     $pkg_res = mysqli_query($conn, $pkg_sql);
                     if ($pkg_res && $pkg = mysqli_fetch_assoc($pkg_res)) {
-
-                        $pkg_price    = floatval($pkg['price']);   // base package price
+                        $pkg_name     = $pkg['package_name'];
+                        $pkg_price    = floatval($pkg['price']);
                         $pkg_duration = $pkg['duration'];
 
                         // calculations
                         $pkg_subtotal = $pkg_price;
-                        $pkg_discount = 0; // change if you want discount rules
+                        $pkg_discount = 0;
                         $pkg_gst      = $pkg_subtotal * 0.18;
                         $pkg_amount   = $pkg_subtotal - $pkg_discount + $pkg_gst;
                         $pkg_balance  = $pkg_amount - $payment_made;
 
+                        // Insert package into orders
                         $sql_package = "INSERT INTO orders 
                             (user_id, invoice_id, plan, duration, amount, gst, price, addon_price, status, payment_method, discount, payment_made, created_on, subtotal, balance_due, addon_service, type) 
                             VALUES 
                             ('$client_id', '$receipt_id', '$pkg_id', '$pkg_duration', '$pkg_amount', '$pkg_gst', '', '$pkg_price', 'Pending', '$pay_method', '$pkg_discount', '$payment_made', '$created_at', '$pkg_subtotal', '$pkg_balance', '$pkg_id', 'package_addon')";
-                        
                         mysqli_query($conn, $sql_package);
+
+                        // Insert package into websites table also
+                        $siteInsertPkg = "INSERT INTO websites (user_id, domain, plan, duration, status, cat_id, invoice_id, product_id, type) 
+                                        VALUES ('$client_id', 'N/A', '$pkg_name', '$pkg_duration', 'Pending', '$cat_id', '$receipt_id', '$pkg_id', 'package_addon')";
+                        mysqli_query($conn, $siteInsertPkg);
                     }
                 }
             }
 
-            // Products
+            // ================= Products =================
             if (!empty($get_products)) {
                 $product_ids = array_map('intval', explode(',', $get_products));
                 foreach ($product_ids as $prod_id) {
-                    $prod_sql = "SELECT price, duration FROM products WHERE id = $prod_id";
+                    $prod_sql = "SELECT name, price, duration FROM products WHERE id = $prod_id";
                     $prod_res = mysqli_query($conn, $prod_sql);
                     if ($prod_res && $prod = mysqli_fetch_assoc($prod_res)) {
-
-                        $prod_price    = floatval($prod['price']); // base product price
+                        $prod_name     = $prod['name'];
+                        $prod_price    = floatval($prod['price']);
                         $prod_duration = $prod['duration'];
 
                         // calculations
                         $prod_subtotal = $prod_price;
-                        $prod_discount = 0; // or discount logic if needed
+                        $prod_discount = 0;
                         $prod_gst      = $prod_subtotal * 0.18;
                         $prod_amount   = $prod_subtotal - $prod_discount + $prod_gst;
                         $prod_balance  = $prod_amount - $payment_made;
 
+                        // Insert product into orders
                         $sql_product = "INSERT INTO orders 
                             (user_id, invoice_id, plan, duration, amount, gst, price, addon_price, status, payment_method, discount, payment_made, created_on, subtotal, balance_due, addon_service, type) 
                             VALUES 
                             ('$client_id', '$receipt_id', '$prod_id', '$prod_duration', '$prod_amount', '$prod_gst', '', '$prod_price', 'Pending', '$pay_method', '$prod_discount', '$payment_made', '$created_at', '$prod_subtotal', '$prod_balance', '$prod_id', 'product_addon')";
-                        
                         mysqli_query($conn, $sql_product);
+
+                        // Insert product into websites table also
+                        $siteInsertProd = "INSERT INTO websites (user_id, domain, plan, duration, status, cat_id, invoice_id, product_id, type) 
+                                        VALUES ('$client_id', 'N/A', '$prod_name', '$prod_duration', 'Pending', '$cat_id', '$receipt_id', '$prod_id', 'product_addon')";
+                        mysqli_query($conn, $siteInsertProd);
                     }
                 }
             }
