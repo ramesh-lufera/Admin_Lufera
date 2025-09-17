@@ -27,9 +27,8 @@
         $gst = $price * 0.18; // 10% GST
         $total_price = $price + $gst;
         $auto_id = rand(10000000, 99999999);
-
         $get_addon = $_POST['addon_service'];
-        $get_package = $_POST['addon_package'];
+        $get_packages = $_POST['addon_package'];
         $get_products = $_POST['addon_product'];
     }
 
@@ -80,11 +79,6 @@
                                         ?>
                                     </td>
                                 </tr>
-                                <!-- <tr>
-                                    <td class="border-0" colspan="2" id="currency-symbol-display">Renews at <?= htmlspecialchars($symbol) ?>1500/year for 3 Years
-                                        <p class="text-sm ad-box">Great news! Your FREE domain + 3 months FREE are included with this order</p>
-                                    </td>
-                                </tr> -->
                             </tbody>
                         </table>
                     </div>
@@ -92,10 +86,6 @@
             </div>
             <div class="col-xxl-6 col-sm-6">
                 <div class="card h-100 radius-12">
-                    <!-- <div class="card-header py-10 border-none" style="box-shadow: 0px 3px 3px 0px lightgray">
-                        <h6 class="mb-0"><?php echo $plan_name; ?></h6>
-                        <p class="mb-0">Perfect plan to get started for your own Website</p>
-                    </div> -->
                     <div class="card-header py-10 border-none d-flex justify-content-between" style="box-shadow: 0px 3px 3px 0px lightgray">
                         <div class="">
                             <h6 class="mb-0">Sub Total</h6>
@@ -114,12 +104,11 @@
                                 </tr>
                                 <tr>
                                     <td>Tax (GST 18%)</td>
-                                    <td class="text-end" id="currency-symbol-display"><?= htmlspecialchars($symbol) ?><?php echo $gst; ?></td>
+                                    <td class="text-end gst-display" id="currency-symbol-display"><?= htmlspecialchars($symbol) ?><?php echo $gst; ?></td>
                                 </tr>
                                 <tr>
                                     <td class="border-0">Estimated Total</td>
-                                    <!-- <td class="border-0 text-end" id="currency-symbol-display"><?= htmlspecialchars($symbol) ?><?php echo $total_price; ?></td> -->
-                                    <td class="border-0 text-end" id="estimated-total"><?= htmlspecialchars($symbol) ?><?php echo $total_price; ?></td>
+                                    <td class="border-0 text-end" id="estimated-total"><?= htmlspecialchars($symbol) ?></td>
                                 </tr>
                             </tbody>
                         </table>
@@ -143,8 +132,8 @@
         }
 
         $selected_packages = [];
-        if (!empty($get_package)) {
-            $package_ids = explode(",", $get_package);
+        if (!empty($get_packages)) {
+            $package_ids = explode(",", $get_packages);
             $ids_str = implode(",", array_map('intval', $package_ids));
             $sql_packages = "SELECT id, package_name, price FROM package WHERE id IN ($ids_str)";
             $result_packages = $conn->query($sql_packages);
@@ -164,8 +153,6 @@
             }
         }
     ?>
-    
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
 
     <!-- Add-ons / Packages / Products Section -->
     <?php if(!empty($selected_packages) || !empty($selected_products) || !empty($selected_addons)): ?>
@@ -183,19 +170,19 @@
                 </div>
                 <div class="card-body">
                     <?php foreach($package_ids as $pid):
-                        $sql = "SELECT package_name, price FROM package WHERE id = $pid";
+                        $sql = "SELECT package_name, price, duration, created_at FROM package WHERE id = $pid";
                         $res = $conn->query($sql);
                         $p = $res->fetch_assoc();
                     ?>
                     <div class="mb-3 border rounded p-3">
                         <h6 class="mb-1"><?= htmlspecialchars($p['package_name']) ?></h6>
-                        <small class="d-block">Period: <?= htmlspecialchars($duration) ?></small>
+                        <small class="d-block">Period: <?= htmlspecialchars($p['duration']) ?></small>
                         <small class="d-block">
                             Validity:
                             <?php
-                                $start_date = new DateTime($created_on);
+                                $start_date = new DateTime($p['created_at']);
                                 try {
-                                    $interval = DateInterval::createFromDateString($duration);
+                                    $interval = DateInterval::createFromDateString($p['duration']);
                                     $end_date = clone $start_date;
                                     $end_date->add($interval);
                                     echo $start_date->format('d-m-Y') . " to " . $end_date->format('d-m-Y');
@@ -227,19 +214,19 @@
                 </div>
                 <div class="card-body">
                     <?php foreach($product_ids as $pid):
-                        $sql = "SELECT name, price FROM products WHERE id = $pid";
+                        $sql = "SELECT name, price, duration, created_at FROM products WHERE id = $pid";
                         $res = $conn->query($sql);
                         $p = $res->fetch_assoc();
                     ?>
                     <div class="mb-3 border rounded p-3">
                         <h6 class="mb-1"><?= htmlspecialchars($p['name']) ?></h6>
-                        <small class="d-block">Period: <?= htmlspecialchars($duration) ?></small>
+                        <small class="d-block">Period: <?= htmlspecialchars($p['duration']) ?></small>
                         <small class="d-block">
                             Validity:
                             <?php
-                                $start_date = new DateTime($created_on);
+                                $start_date = new DateTime($p['created_at']);
                                 try {
-                                    $interval = DateInterval::createFromDateString($duration);
+                                    $interval = DateInterval::createFromDateString($p['duration']);
                                     $end_date = clone $start_date;
                                     $end_date->add($interval);
                                     echo $start_date->format('d-m-Y') . " to " . $end_date->format('d-m-Y');
@@ -271,19 +258,19 @@
                 </div>
                 <div class="card-body">
                     <?php foreach($addon_ids as $aid):
-                        $sql = "SELECT name, cost FROM `add-on-service` WHERE id = $aid";
+                        $sql = "SELECT name, cost, duration, created_at FROM `add-on-service` WHERE id = $aid";
                         $res = $conn->query($sql);
                         $a = $res->fetch_assoc();
                     ?>
                     <div class="mb-3 border rounded p-3">
                         <h6 class="mb-1"><?= htmlspecialchars($a['name']) ?></h6>
-                        <small class="d-block">Period: <?= htmlspecialchars($duration) ?></small>
+                        <small class="d-block">Period: <?= htmlspecialchars($a['duration']) ?></small>
                         <small class="d-block">
                             Validity:
                             <?php
-                                $start_date = new DateTime($created_on);
+                                $start_date = new DateTime($a['created_at']);
                                 try {
-                                    $interval = DateInterval::createFromDateString($duration);
+                                    $interval = DateInterval::createFromDateString($a['duration']);
                                     $end_date = clone $start_date;
                                     $end_date->add($interval);
                                     echo $start_date->format('d-m-Y') . " to " . $end_date->format('d-m-Y');
@@ -307,20 +294,10 @@
             </div>
             <?php endif; ?>
 
-            <!-- Total Row -->
-            <!-- <div class="mt-3 border-top pt-3">
-                <div class="fw-bold">GST (18%): <span id="gst-display"><?= $symbol ?>0.00</span></div>
-                <div class="fw-bold fs-5">Estimated Total: <span id="estimated-total"><?= $symbol ?><?= number_format($price, 2) ?></span></div>
-                <input type="hidden" name="total_price" value="<?= $price ?>">
-            </div> -->
-
         </div>
     </div>
     <?php endif; ?>
 
-    <!-- Scripts -->
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
         $(document).ready(function(){
             let basePrice = <?= $price; ?>;
@@ -343,23 +320,23 @@
                 let cost = $(this).data('cost');
                 let name = $(this).data('name');
 
-                // if($(this).hasClass('add')){
-                //     // Add item
-                //     selectedItems[id] = cost;
-                //     $(this)
-                //         .removeClass('add')
-                //         .css({"background-color":"#dc3545","color":"#fff"})
-                //         .text("Remove");
-                //     Swal.fire({icon:"success", title: name + " added", timer:1500, showConfirmButton:false});
-                // } else {
-                //     // Remove item
-                //     delete selectedItems[id];
-                //     $(this)
-                //         .addClass('add')
-                //         .css({"background-color":"#fec700","color":"#000"})
-                //         .text("+ Add");
-                //     Swal.fire({icon:"warning", title: name + " removed", timer:1500, showConfirmButton:false});
-                // }
+                if($(this).hasClass('add')){
+                    // Add item
+                    selectedItems[id] = cost;
+                    $(this)
+                        .removeClass('add')
+                        .css({"background-color":"#dc3545","color":"#fff"})
+                        .text("Remove");
+                    Swal.fire({icon:"success", title: name + " added", timer:1500, showConfirmButton:false});
+                } else {
+                    // Remove item
+                    delete selectedItems[id];
+                    $(this)
+                        .addClass('add')
+                        .css({"background-color":"#fec700","color":"#000"})
+                        .text("+ Add");
+                    Swal.fire({icon:"warning", title: name + " removed", timer:1500, showConfirmButton:false});
+                }
                 recalcTotal();
             });
         });
@@ -384,9 +361,8 @@
         <input type="hidden" name="created_on" value="<?php echo $created_on; ?>">
         <input type="hidden" name="get_addon" id="get_addon_input" value="">
         <input type="hidden" name="addon-total" id="addon-total" value="">
-        <input type="hidden" name="gst" value="<?php echo $gst; ?>">
+        <input type="hidden" class="gst-hidden" name="gst" value="<?php echo $gst; ?>">
  
-        
         <button type="submit" class="lufera-bg text-center btn-sm px-12 py-10 float-end" style="width:150px; border: 1px solid #000">Continue</button>
     </form>
     <?php } 
@@ -495,169 +471,154 @@
 </div>
 
 <script>
-$(function(){
-    if (typeof $ === 'undefined') {
-        console.error('jQuery not found — this script requires jQuery.');
-        return;
-    }
- 
-    const basePrice = Number(<?= json_encode(floatval($price)) ?>) || 0;
-    const gstRate = 0.18;
-    const symbol = <?= json_encode($symbol) ?>;
- 
-    // state
-    let selectedItems = {};         // id -> cost (for total calc)
-    let selectedAddons = [];        // array of addon ids (strings)
-    let selectedPackages = [];      // array of package ids
-    let selectedProducts = [];      // array of product ids
- 
-    // find checkout form to append hidden inputs into
-    const $checkoutForm = $('form[action="cart-payment.php"]').first();
- 
-    function ensureHidden(name, id) {
-        if ($checkoutForm.length) {
-            if ($checkoutForm.find('#' + id).length === 0) {
-                $('<input>').attr({type: 'hidden', name: name, id: id}).appendTo($checkoutForm);
-            }
-        } else {
-            // fallback: append to body (won't be submitted unless inside form)
-            if ($('#' + id).length === 0) {
-                $('<input>').attr({type: 'hidden', name: name, id: id}).appendTo('body');
+    $(function(){
+        if (typeof $ === 'undefined') {
+            console.error('jQuery not found — this script requires jQuery.');
+            return;
+        }
+    
+        const basePrice = Number(<?= json_encode(floatval($price)) ?>) || 0;
+        const gstRate = 0.18;
+        const symbol = <?= json_encode($symbol) ?>;
+    
+        // state
+        let selectedItems = {};         // id -> cost (for total calc)
+        let selectedAddons = [];        // array of addon ids (strings)
+        let selectedPackages = [];      // array of package ids
+        let selectedProducts = [];      // array of product ids
+    
+        // find checkout form to append hidden inputs into
+        const $checkoutForm = $('form[action="cart-payment.php"]').first();
+    
+        function ensureHidden(name, id) {
+            if ($checkoutForm.length) {
+                if ($checkoutForm.find('#' + id).length === 0) {
+                    $('<input>').attr({type: 'hidden', name: name, id: id}).appendTo($checkoutForm);
+                }
+            } else {
+                // fallback: append to body (won't be submitted unless inside form)
+                if ($('#' + id).length === 0) {
+                    $('<input>').attr({type: 'hidden', name: name, id: id}).appendTo('body');
+                }
             }
         }
-    }
- 
-    ensureHidden('get_addon', 'get_addon_input');
-    ensureHidden('get_package', 'get_package_input');
-    ensureHidden('get_products', 'get_products_input');
-    ensureHidden('addon-total', 'addon-total');
- 
-    function updateHiddenInputs() {
-        $('#get_addon_input').val(selectedAddons.join(','));
-        $('#get_package_input').val(selectedPackages.join(','));
-        $('#get_products_input').val(selectedProducts.join(','));
-        // total cost of selected add-ons/packages/products (without GST)
-        $('#addon-total').val(Object.values(selectedItems).reduce((s,v)=>s+Number(v||0),0).toFixed(2));
-    }
- 
-    function recalcTotal() {
-        const itemsTotal = Object.values(selectedItems).reduce((s,v)=>s+Number(v||0),0);
-        const subtotal = basePrice + itemsTotal;
-        const gst = subtotal * gstRate;
-        const estimated = subtotal + gst;
- 
-        $('#estimated-total').text(symbol + estimated.toFixed(2));
-        if ($('#gst-display').length) $('#gst-display').text(symbol + gst.toFixed(2));
-        // update hidden total_price if present in form
-        $('input[name="total_price"]').val(estimated.toFixed(2));
-    }
- 
-    // click handler for all toggle buttons (delegated)
-    $(document).on('click', '.toggle-btn', function(e){
-        e.preventDefault();
-        const $btn = $(this);
-        const id = String($btn.data('id'));
-        const cost = Number($btn.data('cost')) || 0;
- 
-        // detect type by nearest .card .card-header text
-        const headerTxt = ($btn.closest('.card').find('.card-header').text() || '').toLowerCase();
-        let type = 'addon';
-        if (headerTxt.includes('package')) type = 'package';
-        else if (headerTxt.includes('product')) type = 'product';
-        else if (headerTxt.includes('add-on') || headerTxt.includes('add on') || headerTxt.includes('addon')) type = 'addon';
- 
-        const isSelected = $btn.hasClass('selected');
- 
-        if (!isSelected) {
-            // select
-            $btn.addClass('selected btn-danger').removeClass('btn-primary add').text('Remove');
-            selectedItems[id] = cost;
-            if (type === 'addon' && !selectedAddons.includes(id)) selectedAddons.push(id);
-            if (type === 'package' && !selectedPackages.includes(id)) selectedPackages.push(id);
-            if (type === 'product' && !selectedProducts.includes(id)) selectedProducts.push(id);
-        } else {
-            // deselect
-            $btn.removeClass('selected btn-danger').addClass('btn-primary add').text('+ Add');
-            delete selectedItems[id];
-            if (type === 'addon') selectedAddons = selectedAddons.filter(x => x !== id);
-            if (type === 'package') selectedPackages = selectedPackages.filter(x => x !== id);
-            if (type === 'product') selectedProducts = selectedProducts.filter(x => x !== id);
+    
+        ensureHidden('get_addon', 'get_addon_input');
+        ensureHidden('get_packages', 'get_packages_input');
+        ensureHidden('get_products', 'get_products_input');
+        ensureHidden('addon-total', 'addon-total');
+    
+        // function updateHiddenInputs() {
+        //     $('#get_addon_input').val(selectedAddons.join(','));
+        //     $('#get_packages_input').val(selectedPackages.join(','));
+        //     $('#get_products_input').val(selectedProducts.join(','));
+        //     // total cost of selected add-ons/packages/products (without GST)
+        //     $('#addon-total').val(Object.values(selectedItems).reduce((s,v)=>s+Number(v||0),0).toFixed(2));
+        // }
+
+        function updateHiddenInputs() {
+            $('#get_addon_input').val(selectedAddons.join(','));
+            $('#get_packages_input').val(selectedPackages.join(','));
+            $('#get_products_input').val(selectedProducts.join(','));
+
+            // Sum addon costs
+            let addonSum = 0;
+            selectedAddons.forEach(aid => { addonSum += Number(selectedItems[aid] || 0); });
+            $('#addon-total').val(addonSum.toFixed(2));
+
+            // Sum package costs
+            let packageSum = 0;
+            selectedPackages.forEach(pid => { packageSum += Number(selectedItems[pid] || 0); });
+            $('#package-total').val(packageSum.toFixed(2));
+
+            // Sum product costs
+            let productSum = 0;
+            selectedProducts.forEach(pid => { productSum += Number(selectedItems[pid] || 0); });
+            $('#product-total').val(productSum.toFixed(2));
         }
- 
-        updateHiddenInputs();
+    
+        function recalcTotal() {
+            const itemsTotal = Object.values(selectedItems).reduce((s,v)=>s+Number(v||0),0);
+            const subtotal = basePrice + itemsTotal;
+            const gst = subtotal * gstRate;
+            const estimated = subtotal + gst;
+    
+            $('#estimated-total').text(symbol + estimated.toFixed(2));
+            if ($('.gst-display').length) $('.gst-display').text(symbol + gst.toFixed(2));
+            if ($('.gst-hidden').length) $('.gst-hidden').val(gst.toFixed(2));
+            // update hidden total_price if present in form
+            $('input[name="total_price"]').val(estimated.toFixed(2));
+        }
+    
+        // click handler for all toggle buttons (delegated)
+        $(document).on('click', '.toggle-btn', function(e){
+            e.preventDefault();
+            const $btn = $(this);
+            const id = String($btn.data('id'));
+            const cost = Number($btn.data('cost')) || 0;
+    
+            // detect type by nearest .card .card-header text
+            const headerTxt = ($btn.closest('.card').find('.card-header').text() || '').toLowerCase();
+            let type = 'addon';
+            if (headerTxt.includes('package')) type = 'package';
+            else if (headerTxt.includes('product')) type = 'product';
+            else if (headerTxt.includes('add-on') || headerTxt.includes('add on') || headerTxt.includes('addon')) type = 'addon';
+    
+            const isSelected = $btn.hasClass('selected');
+    
+            if (!isSelected) {
+                // select
+                $btn.addClass('selected btn-danger').removeClass('btn-primary add').text('Remove');
+                selectedItems[id] = cost;
+                if (type === 'addon' && !selectedAddons.includes(id)) selectedAddons.push(id);
+                if (type === 'package' && !selectedPackages.includes(id)) selectedPackages.push(id);
+                if (type === 'product' && !selectedProducts.includes(id)) selectedProducts.push(id);
+            } else {
+                // deselect
+                $btn.removeClass('selected btn-danger').addClass('btn-primary add').text('+ Add');
+                delete selectedItems[id];
+                if (type === 'addon') selectedAddons = selectedAddons.filter(x => x !== id);
+                if (type === 'package') selectedPackages = selectedPackages.filter(x => x !== id);
+                if (type === 'product') selectedProducts = selectedProducts.filter(x => x !== id);
+            }
+    
+            updateHiddenInputs();
+            recalcTotal();
+        });
+    
+        // If server-side preselected ids exist in the hidden input on page load, trigger selection
+        const preAddons = $('#get_addon_input').val() || '';
+        if (preAddons) {
+            preAddons.split(',').map(s => s.trim()).filter(Boolean).forEach(function(aid){
+                // find matching button and simulate click if not already selected
+                const $b = $('.toggle-btn').filter(function(){ return String($(this).data('id')) === String(aid); }).first();
+                if ($b.length && !$b.hasClass('selected')) {
+                    $b.trigger('click');
+                }
+            });
+        }
+    
+        // initial recalc to set totals correctly
         recalcTotal();
     });
- 
-    // If server-side preselected ids exist in the hidden input on page load, trigger selection
-    const preAddons = $('#get_addon_input').val() || '';
-    if (preAddons) {
-        preAddons.split(',').map(s => s.trim()).filter(Boolean).forEach(function(aid){
-            // find matching button and simulate click if not already selected
-            const $b = $('.toggle-btn').filter(function(){ return String($(this).data('id')) === String(aid); }).first();
-            if ($b.length && !$b.hasClass('selected')) {
-                $b.trigger('click');
-            }
-        });
-    }
- 
-    // initial recalc to set totals correctly
-    recalcTotal();
-});
 </script>
  
-
 <script>
-    // $(document).ready(function(){
-    //     let baseTotal = <?= $total_price; ?>;
-        
-    //     function recalcTotal() {
-    //         let addonTotal = 0;
-    //         $('.addon-checkbox:checked').each(function(){
-    //             addonTotal += parseFloat($(this).data('cost'));
-    //         });
-    //         $('#addon-total').val(addonTotal);
-    //         let newTotal = baseTotal + addonTotal;
-    //         $('#estimated-total').text("<?= htmlspecialchars($symbol) ?>" + newTotal.toFixed(2));
-    //         $('input[name="total_price"]').val(newTotal); // update hidden field in form
-    //     }
-
-    //     $('.addon-checkbox').on('change', recalcTotal);
-    // });
-
-    // function updateAddonField() {
-    //     let selectedAddons = [];
-    //     $('.addon-checkbox:checked').each(function() {
-    //         selectedAddons.push($(this).val());
-    //     });
-    //     $('#get_addon_input').val(selectedAddons.join(',')); // update hidden field
-    // }
-    
-    // // Trigger when checkbox changes
-    // $('.addon-checkbox').on('change', function() {
-    //     //recalcTotal();
-    //     updateAddonField();
-    // });
-    
-    // // Also update before form submission (safety check)
-    // $('form').on('submit', function() {
-    //     updateAddonField();
-    // });
-
     $('#updateForm').submit(function(e) {
-    e.preventDefault();
+        e.preventDefault();
 
-    $.ajax({
-        url: 'update.php',
-        type: 'POST',
-        data: $(this).serialize(),
-        success: function(response) {
-            $('#result').html(response);
-        },
-        error: function(xhr) {
-            $('#result').html("Error updating data.");
-        }
+        $.ajax({
+            url: 'update.php',
+            type: 'POST',
+            data: $(this).serialize(),
+            success: function(response) {
+                $('#result').html(response);
+            },
+            error: function(xhr) {
+                $('#result').html("Error updating data.");
+            }
+        });
     });
-});
 </script>
 
 <?php include './partials/layouts/layoutBottom.php' ?>

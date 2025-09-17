@@ -32,27 +32,88 @@
         $receipt_id = $_POST['receipt_id'];
         $created_on = $_POST['created_on'];
         $get_addon = $_POST['get_addon'];
+        $get_packages = $_POST['get_packages'] ?? '';
+        $get_products = $_POST['get_products'] ?? '';
         $addon_total = $_POST['addon-total'];
     }
 
-    $service_name = ""; // default
+    // $service_name = ""; // default
+    // if (!empty($get_addon)) {
+    //     // Convert string like "2,4,6" into an array of integers
+    //     $addon_ids = array_map('intval', explode(",", $get_addon));
+    //     if (!empty($addon_ids)) {
+    //         $ids_str = implode(",", $addon_ids); // safe, integers only
+    //         $sql_addons = "SELECT name FROM `add-on-service` WHERE id IN ($ids_str)";
+    //         $result_addons = $conn->query($sql_addons);
+
+    //         $names = [];
+    //         while ($row_addon = $result_addons->fetch_assoc()) {
+    //             $names[] = $row_addon['name'];
+    //         }
+
+    //         // Join multiple add-on names with commas
+    //         $service_name = implode(", ", $names);
+    //     }
+    // }
+
+    $service_parts = []; // hold grouped text
+
+    // 1. Packages
+    if (!empty($get_packages)) {
+        $package_ids = array_map('intval', explode(',', $get_packages));
+        if (!empty($package_ids)) {
+            $ids_str = implode(',', $package_ids);
+            $sql_packages = "SELECT package_name FROM package WHERE id IN ($ids_str)";
+            $result_packages = $conn->query($sql_packages);
+
+            $pkg_names = [];
+            while ($row = $result_packages->fetch_assoc()) {
+                $pkg_names[] = $row['package_name'];
+            }
+            if (!empty($pkg_names)) {
+                $service_parts[] = "Packages: " . implode(", ", $pkg_names);
+            }
+        }
+    }
+
+    // 2. Products
+    if (!empty($get_products)) {
+        $product_ids = array_map('intval', explode(',', $get_products));
+        if (!empty($product_ids)) {
+            $ids_str = implode(',', $product_ids);
+            $sql_products = "SELECT name FROM products WHERE id IN ($ids_str)";
+            $result_products = $conn->query($sql_products);
+
+            $prod_names = [];
+            while ($row = $result_products->fetch_assoc()) {
+                $prod_names[] = $row['name'];
+            }
+            if (!empty($prod_names)) {
+                $service_parts[] = "Products: " . implode(", ", $prod_names);
+            }
+        }
+    }
+
+    // 3. Add-on Services
     if (!empty($get_addon)) {
-        // Convert string like "2,4,6" into an array of integers
         $addon_ids = array_map('intval', explode(",", $get_addon));
         if (!empty($addon_ids)) {
-            $ids_str = implode(",", $addon_ids); // safe, integers only
+            $ids_str = implode(",", $addon_ids);
             $sql_addons = "SELECT name FROM `add-on-service` WHERE id IN ($ids_str)";
             $result_addons = $conn->query($sql_addons);
 
-            $names = [];
-            while ($row_addon = $result_addons->fetch_assoc()) {
-                $names[] = $row_addon['name'];
+            $addon_names = [];
+            while ($row = $result_addons->fetch_assoc()) {
+                $addon_names[] = $row['name'];
             }
-
-            // Join multiple add-on names with commas
-            $service_name = implode(", ", $names);
+            if (!empty($addon_names)) {
+                $service_parts[] = "Add-on Services: " . implode(", ", $addon_names);
+            }
         }
     }
+
+    // Final combined string
+    $service_name = !empty($service_parts) ? implode(" | ", $service_parts) : 'None';
 
     // Get active symbol
     $result1 = $conn->query("SELECT symbol FROM currencies WHERE is_active = 1 LIMIT 1");
@@ -70,26 +131,96 @@
         $duration = $_POST['duration'];
         $total_price = $_POST['total_price'];
         $created_at = date("Y-m-d H:i:s");
-        $price = $_POST['price'];
+        // $price = $_POST['price'];
+        $price = floatval($_POST['price']);
         $gst = $_POST['gst'];
         $discount = $payment_made = "0";
         $get_addon = $_POST['get_addon'];
-        $addon_total = $_POST['addon-total'];
+        $get_packages = $_POST['get_packages'] ?? '';
+        $get_products = $_POST['get_products'] ?? '';
+        // $addon_total = $_POST['addon-total'];
+        $addon_total = floatval($_POST['addon-total']);
         $user_id = $_SESSION['user_id'];
-        $subtotal = $total_price;
+        // $subtotal = $total_price;
+        $subtotal = $price + $addon_total;
 
-        $sql    = "SELECT user_id, email, username FROM users WHERE id = $user_id LIMIT 1";
+        $sql    = "SELECT id, user_id, email, username FROM users WHERE id = $user_id LIMIT 1";
         $result2 = mysqli_query($conn, $sql);
         $row    = mysqli_fetch_assoc($result2);
-        $client_id = $row['user_id'];
+        $client_id = $row['id'];
         $toEmail   = $row['email'];     // purchaser email
         $username  = $row['username'];  // purchaser username
         $toName    = $row['username'];
+
+        // Only set addon_price if this is an addon row
+        $insert_addon_price = !empty($get_addon) ? $addon_total : '';
+
+        $main_subtotal = $price + floatval($insert_addon_price);
+        $main_discount = $discount ?? 0;
+        $main_gst      = $main_subtotal * 0.18; // 18% GST
+        $main_amount   = $main_subtotal - $main_discount + $main_gst;
+        $main_balance_due  = $main_amount - $payment_made;
  
         $sql = "INSERT INTO orders (user_id, invoice_id, plan, duration, amount, gst, price, addon_price, status, payment_method, discount, payment_made, created_on, subtotal, balance_due, addon_service, type) VALUES 
-                ('$client_id', '$receipt_id', '$plan_name', '$duration' ,'$total_price', '$gst', '$price', '$addon_total', 'Pending', '$pay_method', '$discount', '$payment_made', '$created_at', '$subtotal', '$total_price', '$get_addon', '$type')";
+                ('$client_id', '$receipt_id', '$product_id', '$duration' ,'$main_amount', '$main_gst', '$price', '$insert_addon_price', 'Pending', '$pay_method', '$main_discount', '$payment_made', '$created_at', '$main_subtotal', '$main_amount', '$get_addon', '$type')";
 
         if (mysqli_query($conn, $sql)) {
+            // Packages
+            if (!empty($get_packages)) {
+                $package_ids = array_map('intval', explode(',', $get_packages));
+                foreach ($package_ids as $pkg_id) {
+                    $pkg_sql = "SELECT price, duration FROM package WHERE id = $pkg_id";
+                    $pkg_res = mysqli_query($conn, $pkg_sql);
+                    if ($pkg_res && $pkg = mysqli_fetch_assoc($pkg_res)) {
+
+                        $pkg_price    = floatval($pkg['price']);   // base package price
+                        $pkg_duration = $pkg['duration'];
+
+                        // calculations
+                        $pkg_subtotal = $pkg_price;
+                        $pkg_discount = 0; // change if you want discount rules
+                        $pkg_gst      = $pkg_subtotal * 0.18;
+                        $pkg_amount   = $pkg_subtotal - $pkg_discount + $pkg_gst;
+                        $pkg_balance  = $pkg_amount - $payment_made;
+
+                        $sql_package = "INSERT INTO orders 
+                            (user_id, invoice_id, plan, duration, amount, gst, price, addon_price, status, payment_method, discount, payment_made, created_on, subtotal, balance_due, addon_service, type) 
+                            VALUES 
+                            ('$client_id', '$receipt_id', '$pkg_id', '$pkg_duration', '$pkg_amount', '$pkg_gst', '', '$pkg_price', 'Pending', '$pay_method', '$pkg_discount', '$payment_made', '$created_at', '$pkg_subtotal', '$pkg_balance', '$pkg_id', 'package_addon')";
+                        
+                        mysqli_query($conn, $sql_package);
+                    }
+                }
+            }
+
+            // Products
+            if (!empty($get_products)) {
+                $product_ids = array_map('intval', explode(',', $get_products));
+                foreach ($product_ids as $prod_id) {
+                    $prod_sql = "SELECT price, duration FROM products WHERE id = $prod_id";
+                    $prod_res = mysqli_query($conn, $prod_sql);
+                    if ($prod_res && $prod = mysqli_fetch_assoc($prod_res)) {
+
+                        $prod_price    = floatval($prod['price']); // base product price
+                        $prod_duration = $prod['duration'];
+
+                        // calculations
+                        $prod_subtotal = $prod_price;
+                        $prod_discount = 0; // or discount logic if needed
+                        $prod_gst      = $prod_subtotal * 0.18;
+                        $prod_amount   = $prod_subtotal - $prod_discount + $prod_gst;
+                        $prod_balance  = $prod_amount - $payment_made;
+
+                        $sql_product = "INSERT INTO orders 
+                            (user_id, invoice_id, plan, duration, amount, gst, price, addon_price, status, payment_method, discount, payment_made, created_on, subtotal, balance_due, addon_service, type) 
+                            VALUES 
+                            ('$client_id', '$receipt_id', '$prod_id', '$prod_duration', '$prod_amount', '$prod_gst', '', '$prod_price', 'Pending', '$pay_method', '$prod_discount', '$payment_made', '$created_at', '$prod_subtotal', '$prod_balance', '$prod_id', 'product_addon')";
+                        
+                        mysqli_query($conn, $sql_product);
+                    }
+                }
+            }
+
             // Generate a domain from the username
             // $domain = strtolower(preg_replace('/\s+/', '', $username)) . ".lufera.com";
 
@@ -395,7 +526,10 @@
         <input type="hidden" value="<?php echo $total_price; ?>" name="total_price">
         <input type="hidden" value="<?php echo $created_on; ?>" name="created_on">
         <input type="hidden" value="<?php echo $get_addon; ?>" name="get_addon">
+        <input type="hidden" value="<?php echo $get_packages ?? ''; ?>" name="get_packages">
+        <input type="hidden" value="<?php echo $get_products ?? ''; ?>" name="get_products">
         <input type="hidden" value="<?php echo $addon_total; ?>" name="addon-total">
+
         <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-24">
             <h6 class="fw-semibold mb-0">Your Cart</h6>
             <button type="submit" name="save" id="continuePayBtn" class="lufera-bg text-center btn-sm px-12 py-10 float-end" style="width:150px; border: 1px solid #000" value="Submit">Continue to Pay</button>
@@ -439,10 +573,15 @@
                                             ?>
                                         </td>
                                     </tr>
-                                    <tr>
-                                        <td>Add-on service</td>
+                                    <!-- <tr>
+                                        <td>Add-On Services</td>
                                         <td><?php echo !empty($service_name) ? htmlspecialchars($service_name) : 'None'; ?></td>
+                                    </tr> -->
+                                    <tr>
+                                        <td>Add-On Services</td>
+                                        <td><?php echo htmlspecialchars($service_name); ?></td>
                                     </tr>
+
                                     <!-- <tr>
                                         <td class="border-0" colspan="2" id="currency-symbol-display">Renews at <?= htmlspecialchars($symbol) ?>1500/year for 3 Years
                                             <p class="text-sm ad-box">Great news! Your FREE domain + 3 months FREE are included with this order</p>
