@@ -111,7 +111,7 @@
                     <select class="form-control" id="product_category" name="product_category" required>
                         <option value="">-- Select Category --</option>
                         <?php
-                        $categories = $conn->query("SELECT cat_id, cat_name FROM categories ORDER BY cat_name ASC");
+                        $categories = $conn->query("SELECT cat_id, cat_name FROM categories where cat_type = 'package' ORDER BY cat_name ASC");
                         while ($cat = $categories->fetch_assoc()) {
                             echo "<option value='" . $cat['cat_id'] . "'>" . htmlspecialchars($cat['cat_name']) . "</option>";
                         }
@@ -168,7 +168,7 @@
                     <select class="form-control" id="edit_product_category" name="product_category" required>
                         <option value="">-- Select Category --</option>
                         <?php
-                        $categories = $conn->query("SELECT cat_id, cat_name FROM categories ORDER BY cat_name ASC");
+                        $categories = $conn->query("SELECT cat_id, cat_name FROM categories where cat_type = 'package' ORDER BY cat_name ASC");
                         while ($cat = $categories->fetch_assoc()) {
                             echo "<option value='" . $cat['cat_id'] . "'>" . htmlspecialchars($cat['cat_name']) . "</option>";
                         }

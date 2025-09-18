@@ -80,11 +80,16 @@
                                     </button>
                                 </td>
                                 <td class="text-center">
-                                    <a href="edit-product.php?id=<?= $row['id'] ?>" class="fa fa-edit w-40-px h-40-px bg-warning-focus text-warning-main rounded-circle d-inline-flex align-items-center justify-content-center">
-                                        
+                                    <!-- <a href="edit-product.php?id=<?= $row['id'] ?>" class="fa fa-edit w-40-px h-40-px bg-warning-focus text-warning-main rounded-circle d-inline-flex align-items-center justify-content-center">
+                                    </a> -->
+                                    
+                                    <a href="javascript:void(0)" 
+                                    class="fa fa-edit w-40-px h-40-px bg-warning-focus text-warning-main rounded-circle d-inline-flex align-items-center justify-content-center edit-package-btn"
+                                    data-id="<?= $row['id'] ?>"
+                                    data-cat-id="<?= $row['cat_id'] ?>"
+                                    data-module="<?= $row['template'] ?>">
                                     </a>
                                     <a data-id="<?= $row['id'] ?>" class="fa fa-trash-alt delete-product w-40-px h-40-px bg-danger-focus text-danger-main rounded-circle d-inline-flex align-items-center justify-content-center cursor-pointer">
-                                        
                                     </a>
                                 </td>
                             </tr>
@@ -111,7 +116,7 @@
                     <select class="form-control" id="product_category" name="product_category" required>
                         <option value="">-- Select Category --</option>
                         <?php
-                        $categories = $conn->query("SELECT cat_id, cat_name FROM categories ORDER BY cat_name ASC");
+                        $categories = $conn->query("SELECT cat_id, cat_name FROM categories where cat_type = 'product' ORDER BY cat_name ASC");
                         while ($cat = $categories->fetch_assoc()) {
                             echo "<option value='" . $cat['cat_id'] . "'>" . htmlspecialchars($cat['cat_name']) . "</option>";
                         }
@@ -142,6 +147,53 @@
                         <input type="radio" id="type_product" name="product_type" value="Product" checked>
                         <label for="type_product">Product</label>
                     </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="submit" class="btn lufera-bg">Continue</button>
+            </div>
+        </form>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="edit-package-modal" tabindex="-1" aria-labelledby="editPackageModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+        <form method="post" action="edit-product.php" id="editPackageForm">
+            <div class="modal-header">
+                <h5 class="modal-title">Edit Product</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" name="id" id="edit_package_id">
+
+                <div class="form-group mb-8">
+                    <label for="edit_product_category" class="form-label">Category</label>
+                    <select class="form-control" id="edit_product_category" name="product_category" required>
+                        <option value="">-- Select Category --</option>
+                        <?php
+                        $categories = $conn->query("SELECT cat_id, cat_name FROM categories where cat_type = 'product' ORDER BY cat_name ASC");
+                        while ($cat = $categories->fetch_assoc()) {
+                            echo "<option value='" . $cat['cat_id'] . "'>" . htmlspecialchars($cat['cat_name']) . "</option>";
+                        }
+                        ?>
+                    </select>
+                </div>
+
+                <div class="mb-8">
+                    <label for="edit_template" class="form-label">Module</label>
+                    <select name="template" class="form-control" id="edit_template" required>
+                        <option value="">-- Select Module --</option>
+                        <option value="website">Website</option>
+                        <option value="marketing">Marketing</option>
+                        <option value="visa">Visa</option>
+                        <option value="website-onboarding">Website Onboarding</option>
+                        <option value="marketing-onboarding">Marketing Onboarding</option>
+                        <option value="domain-onboarding">Domain Onboarding</option>
+                        <option value="email-onboarding">Email Onboarding</option>
+                        <option value="mobile-app-onboarding">Mobile App Onboarding</option>
+                    </select>
                 </div>
             </div>
             <div class="modal-footer">
@@ -233,6 +285,19 @@ $(document).ready(function() {
             }
         });
     });
+});
+$(document).on('click', '.edit-package-btn', function() {
+    let id = $(this).data('id');
+    let catId = $(this).data('cat-id');
+    let module = $(this).data('module');
+
+    // Fill modal fields
+    $('#edit_package_id').val(id);
+    $('#edit_product_category').val(catId);  // preselect category
+    $('#edit_template').val(module);         // preselect module
+
+    // Show modal
+    $('#edit-package-modal').modal('show');
 });
 </script>
 </body>
