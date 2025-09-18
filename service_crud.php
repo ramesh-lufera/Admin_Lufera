@@ -10,7 +10,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action'])) {
         $name = $conn->real_escape_string($_POST['name']);
         $description = $conn->real_escape_string($_POST['description']);
         $cost = floatval($_POST['cost']);
-        $duration = $conn->real_escape_string($_POST['duration']);
+        $duration = $conn->real_escape_string($_POST['duration']); // e.g. "3 months"
         $isActive = isset($_POST['isActive']) ? 1 : 0;
 
         if ($action == 'create') {
@@ -23,7 +23,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action'])) {
         }
 
         if ($conn->query($sql) === TRUE) {
-            echo json_encode(['status' => 'success', 'message' => $action == 'create' ? 'Service created successfully' : 'Service updated successfully']);
+            echo json_encode([
+                'status' => 'success', 
+                'message' => $action == 'create' ? 'Service created successfully' : 'Service updated successfully'
+            ]);
         } else {
             echo json_encode(['status' => 'error', 'message' => 'Error: ' . $conn->error]);
         }
@@ -53,7 +56,14 @@ if ($_SERVER["REQUEST_METHOD"] == "GET" && isset($_GET['action']) && $_GET['acti
     if ($result === FALSE) {
         echo json_encode(['status' => 'error', 'message' => 'Query failed: ' . $conn->error]);
     } elseif ($result->num_rows > 0) {
-        echo json_encode(['status' => 'success', 'data' => $result->fetch_assoc()]);
+        $row = $result->fetch_assoc();
+
+        // Split duration into value + unit
+        $durationParts = explode(' ', trim($row['duration']));
+        $row['duration_value'] = isset($durationParts[0]) ? $durationParts[0] : '';
+        $row['duration_unit'] = isset($durationParts[1]) ? $durationParts[1] : '';
+
+        echo json_encode(['status' => 'success', 'data' => $row]);
     } else {
         echo json_encode(['status' => 'error', 'message' => 'Service not found']);
     }

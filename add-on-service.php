@@ -1,10 +1,21 @@
-<?php include './partials/layouts/layoutTop.php' ?>
+<?php include './partials/layouts/layoutTop.php'; 
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);?>
 <style>
     .form-check {
         padding: 10px;
     }
     .form-check-label {
         margin: -2px 10px;
+    }
+    input[type=number] {
+    -moz-appearance: textfield;
+    }
+    input::-webkit-outer-spin-button,
+    input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
     }
 </style>
 
@@ -18,9 +29,9 @@
     </div>
 
     <div class="card h-100 p-0 radius-12">
-        <div class="card-body p-24">
+        <div class="card-body">
             <div class="table-responsive scroll-sm">
-                <table class="table bordered-table sm-table mb-0" id="role-table">
+                <table class="table bordered-table mb-0" id="role-table">
                     <thead>
                         <tr>
                             <th scope="col">Service Name</th>
@@ -82,7 +93,7 @@
 
 <!-- Modal Start -->
 <div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title" id="modalTitle">Add New Service</h5>
@@ -101,11 +112,21 @@
                     </div>
                     <div class="mb-3">
                         <label for="serviceCost" class="form-label">Cost</label>
-                        <input type="number" class="form-control" id="serviceCost" name="cost" step="0.01" required>
+                        <input type="number" class="form-control" id="serviceCost" name="cost" onkeydown="return event.key !== 'e'" required maxlength="10">
                     </div>
                     <div class="mb-3">
                         <label for="serviceDuration" class="form-label">Duration</label>
-                        <input type="text" class="form-control" id="serviceDuration" name="duration" required>
+                        <!-- <input type="text" class="form-control" id="serviceDuration" name="duration" required> -->
+                        <div class="d-flex gap-2">
+                            <input type="number" name="duration_value" class="form-control radius-8" required min="1" style="width: 50%;">
+                            <select name="duration_unit" class="form-control radius-8" required style="width: 50%;">
+                                <option value="days">Days</option>
+                                <option value="months">Months</option>
+                                <option value="years">Years</option>
+                                <option value="hours">Hours</option>
+                            </select>
+                        </div>
+                                
                     </div>
                     <div class="form-check">
                         <input class="form-check-input" type="checkbox" id="isActive" name="isActive" checked>
@@ -122,8 +143,11 @@
 </div>
 <!-- Modal End -->
 
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
+$(document).ready(function() {
+    $('#role-table').DataTable();
+});
+
 document.addEventListener('DOMContentLoaded', function() {
     
     // Edit button click handler
@@ -146,7 +170,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 return response.json();
             })
             .then(data => {
-                console.log('Response data:', data); // Debug log
                 if (data.status === 'success' && data.data) {
                     document.getElementById('modalTitle').textContent = 'Edit Service';
                     document.getElementById('submitService').textContent = 'Update Service';
@@ -154,7 +177,11 @@ document.addEventListener('DOMContentLoaded', function() {
                     document.getElementById('serviceName').value = data.data.name || '';
                     document.getElementById('serviceDescription').value = data.data.description || '';
                     document.getElementById('serviceCost').value = data.data.cost || '';
-                    document.getElementById('serviceDuration').value = data.data.duration || '';
+
+                    // ✅ Only set duration_value and duration_unit
+                    document.querySelector('[name="duration_value"]').value = data.data.duration_value || '';
+                    document.querySelector('[name="duration_unit"]').value = data.data.duration_unit || '';
+
                     document.getElementById('isActive').checked = data.data.is_Active == 1;
                 } else {
                     Swal.fire({
@@ -165,6 +192,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     });
                 }
             })
+
             .catch(error => {
                 console.error('Fetch error:', error); // Debug log
                 Swal.fire({
@@ -234,51 +262,64 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // Submit form handler
-    document.getElementById('submitService').addEventListener('click', function() {
-        const form = document.getElementById('serviceForm');
-        if (!form.checkValidity()) {
-            form.reportValidity();
-            return;
-        }
+document.getElementById('submitService').addEventListener('click', function() {
+    const form = document.getElementById('serviceForm');
+    if (!form.checkValidity()) {
+        form.reportValidity();
+        return;
+    }
 
-        const formData = new FormData(form);
-        const id = document.getElementById('serviceId').value;
-        formData.append('action', id ? 'update' : 'create');
+    const formData = new FormData(form);
 
-        fetch('service_crud.php', {
-            method: 'POST',
-            body: new URLSearchParams(formData)
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.status === 'success') {
-                Swal.fire({
-                    icon: 'success',
-                    title: 'Success',
-                    text: data.message,
-                    confirmButtonColor: '#3085d6'
-                }).then(() => {
-                    location.reload();
-                });
-            } else {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Error',
-                    text: data.message,
-                    confirmButtonColor: '#3085d6'
-                });
-            }
-        })
-        .catch(error => {
+    // Concatenate duration value + unit into one string
+    const durationValue = formData.get('duration_value');
+    const durationUnit = formData.get('duration_unit');
+    const duration = durationValue + ' ' + durationUnit;
+
+    // Remove separate values and append combined one
+    formData.delete('duration_value');
+    formData.delete('duration_unit');
+    formData.append('duration', duration);
+
+    // Detect action
+    const id = document.getElementById('serviceId').value;
+    formData.append('action', id ? 'update' : 'create');
+
+    fetch('service_crud.php', {
+        method: 'POST',
+        body: new URLSearchParams(formData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            Swal.fire({
+                icon: 'success',
+                title: 'Success',
+                text: data.message,
+                confirmButtonColor: '#3085d6'
+            }).then(() => {
+                location.reload();
+            });
+        } else {
             Swal.fire({
                 icon: 'error',
                 title: 'Error',
-                text: 'An error occurred while saving the service: ' + error.message,
+                text: data.message,
                 confirmButtonColor: '#3085d6'
             });
-            console.error('Error:', error);
+        }
+    })
+    .catch(error => {
+        Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: 'An error occurred while saving the service: ' + error.message,
+            confirmButtonColor: '#3085d6'
         });
+        console.error('Error:', error);
     });
+});
+
 });
 
 $(document).ready(function() {
