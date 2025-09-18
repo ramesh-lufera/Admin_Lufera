@@ -111,17 +111,28 @@
 <?php
 
 ini_set('display_errors', 1);
-            ini_set('display_startup_errors', 1);
-            error_reporting(E_ALL);
-$id = isset($_GET['id']) ? intval($_GET['id']) : 0;
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
+//$id = isset($_GET['id']) ? intval($_GET['id']) : 0;
 
-if ($id <= 0) {
+// Accept package ID from either POST (preferred) or GET (fallback)
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+  $get_product_id = isset($_POST['id']) ? intval($_POST['id']) : 0;
+  $get_cat_id     = isset($_POST['product_category']) ? intval($_POST['product_category']) : 0;
+  $get_module     = isset($_POST['template']) ? $_POST['template'] : '';
+} else {
+  $get_product_id = isset($_GET['id']) ? intval($_GET['id']) : 0;
+  $get_cat_id     = null;
+  $get_module     = null;
+}
+
+if ($get_product_id <= 0) {
     die('Invalid product ID');
 }
 
 // Fetch product details
 $stmt = $conn->prepare("SELECT * FROM products WHERE id = ?");
-$stmt->bind_param("i", $id);
+$stmt->bind_param("i", $get_product_id);
 $stmt->execute();
 $result = $stmt->get_result();
 $product = $result->fetch_assoc();
@@ -130,7 +141,7 @@ if (!$product) {
     die('Product not found');
 }
 
-if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+if (isset($_POST['save'])) {
   $name = $_POST['name'];
   $title = $_POST['title'];
   $subtitle = $_POST['subtitle'];
@@ -143,8 +154,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
   $duration_unit = isset($_POST['duration_unit']) ? $_POST['duration_unit'] : '';
 
   $duration = $duration_value . ' ' . $duration_unit;
-
-
+  $cat_id = $_POST['cat_id'];
+  $module = $_POST['module'];
   $product_image = $product['product_image']; // Keep old image if new one not uploaded
 
   // If a new image is uploaded
@@ -172,8 +183,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
       }
   }
 
-  $stmt = $conn->prepare("UPDATE products SET name=?, title=?, subtitle=?, price=?, description=?, category=?, tags=?, product_image=?, duration=?, created_at=? WHERE id=?");
-  $stmt->bind_param("ssssssssssi", $name, $title, $subtitle, $price, $description, $category, $tags, $product_image, $duration, $updated_at, $id);
+  $stmt = $conn->prepare("UPDATE products SET name=?, title=?, subtitle=?, price=?, description=?, category=?, tags=?, product_image=?, duration=?, cat_id=?, created_at=?, template=? WHERE id=?");
+  $stmt->bind_param("sssssssssssi", $name, $title, $subtitle, $price, $description, $category, $tags, $product_image, $duration, $cat_id, $updated_at, $module, $get_product_id);
 
 
   if ($stmt->execute()) {
@@ -204,6 +215,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             <div class="row justify-content-center">
                 <div class="col-xxl-12 col-xl-8 col-lg-10">
                     <form method="POST" enctype="multipart/form-data" class="row gy-3 needs-validation card-form" novalidate autocomplete="off">
+                      <input type="hidden" name="id" value="<?php echo htmlspecialchars($get_product_id); ?>">
+                        <input type="hidden" class="form-control radius-8" name="cat_id" required maxlength="30"
+                               value="<?php echo htmlspecialchars($get_cat_id); ?>">
+                        <input type="hidden" class="form-control radius-8" name="module" required maxlength="30"
+                               value="<?php echo htmlspecialchars($get_module); ?>">
                         <div class="form-group text-start mb-2">
                             <label class="form-label">Product image <span class="text-danger-600">*</span></label>
                           <div class="has-validation">
@@ -310,7 +326,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                             </div>
                         </div>
                         <!-- Submit Button -->
-                        <button type="submit" class="lufera-bg text-center text-white text-sm btn-sm px-12 py-10 radius-8 mt-28 submit-btn">Submit</button>
+                        <button type="submit" name="save" class="lufera-bg text-center text-white text-sm btn-sm px-12 py-10 radius-8 mt-28 submit-btn">Submit</button>
                     </form>
                 </div>
             </div>

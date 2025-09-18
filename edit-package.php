@@ -58,8 +58,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $get_module     = null;
 }
 
-
-echo $package_id;
 $query = $conn->prepare("SELECT * FROM package WHERE id = ?");
 $query->bind_param("i", $get_package_id);
 $query->execute();
@@ -99,7 +97,7 @@ $selectedPackages = !empty($package['addon_package']) ? explode(',', $package['a
 $selectedProducts = !empty($package['addon_product']) ? explode(',', $package['addon_product']) : [];
 $selectedAddons   = !empty($package['addon_service']) ? explode(',', $package['addon_service']) : [];
 
-if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+if (isset($_POST['save'])) {
     $package_id = $_POST['id'];
     $package_name = $_POST['package_name'];
     $title = $_POST['title'];
@@ -170,7 +168,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             <div class="row justify-content-center">
                 <div class="col-xxl-12 col-xl-8 col-lg-10">
                     <form method="POST" class="row gy-3 needs-validation" novalidate autocomplete="off">
-                        <input type="hidden" name="id" value="<?php echo htmlspecialchars($package_id); ?>">
+                        <input type="hidden" name="id" value="<?php echo htmlspecialchars($get_package_id); ?>">
                         <input type="hidden" class="form-control radius-8" name="cat_id" required maxlength="30"
                                value="<?php echo htmlspecialchars($get_cat_id); ?>">
                         <input type="hidden" class="form-control radius-8" name="module" required maxlength="30"
@@ -354,7 +352,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                             <button type="button" class="border border-danger-600 bg-hover-danger-200 text-danger-600 text-md px-56 py-11 radius-8">
                                 Cancel
                             </button>
-                            <button type="submit" class="btn lufera-bg text-white text-md px-56 py-12 radius-8">
+                            <button type="submit" class="btn lufera-bg text-white text-md px-56 py-12 radius-8" name="save">
                                 Update
                             </button>
                         </div>

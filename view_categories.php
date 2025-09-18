@@ -14,7 +14,9 @@
 
 <?php 
     include './partials/layouts/layoutTop.php';
-
+    ini_set('display_errors', 1);
+    ini_set('display_startup_errors', 1);
+    error_reporting(E_ALL);
     $Id = $_SESSION['user_id'];
     $query = "SELECT * FROM categories ORDER BY created_at DESC";
     $result = mysqli_query($conn, $query);
@@ -23,6 +25,7 @@
     if (isset($_POST['save'])) {
         $cat_name = trim($_POST['cat_name']);
         $cat_url = trim($_POST['cat_url']);
+        $cat_type = trim($_POST['cat_type']);
 
         if (!str_ends_with($cat_url, '.php')) {
             $cat_url .= '.php';
@@ -31,8 +34,8 @@
         $catSlug = strtolower(preg_replace('/\s+/', '-', $cat_url));
 
         if (!empty($cat_name)) {
-            $stmt = $conn->prepare("INSERT INTO categories (cat_name, cat_url) VALUES (?, ?)");
-            $stmt->bind_param("ss", $cat_name, $catSlug);
+            $stmt = $conn->prepare("INSERT INTO categories (cat_name, cat_url, cat_type) VALUES (?, ?, ?)");
+            $stmt->bind_param("sss", $cat_name, $catSlug, $cat_type);
             $stmt->execute();
 
             //$file_path = dirname(__DIR__) . '/' . $catSlug;
@@ -602,10 +605,11 @@
     }
 
     // Edit category
-    if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['edit_cat_id'], $_POST['edit_cat_name'], $_POST['edit_cat_url'])) {
+    if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['edit_cat_id'], $_POST['edit_cat_name'], $_POST['edit_cat_url'], $_POST['edit_cat_type'])) {
         $cat_id = intval($_POST['edit_cat_id']);
-        $cat_name = trim($_POST['edit_cat_name']);
+        $edit_cat_name = trim($_POST['edit_cat_name']);
         $edit_cat_url = trim($_POST['edit_cat_url']);
+        $edit_cat_type = trim($_POST['edit_cat_type']);
         
         if (!str_ends_with($edit_cat_url, '.php')) {
             $edit_cat_url .= '.php';
@@ -616,8 +620,8 @@
         $file_path = realpath(__DIR__) . '/' . $editcatSlug;
 
 
-        $stmt = $conn->prepare("UPDATE categories SET cat_name = ?, cat_url = ? WHERE cat_id = ?");
-        $stmt->bind_param("ssi", $cat_name, $editcatSlug, $cat_id);
+        $stmt = $conn->prepare("UPDATE categories SET cat_name = ?, cat_url = ?, cat_type = ? WHERE cat_id = ?");
+        $stmt->bind_param("sssi", $edit_cat_name, $editcatSlug, $edit_cat_type, $cat_id);
         $stmt->execute();
 
         $editcatSlug1 = pathinfo($editcatSlug, PATHINFO_FILENAME);
@@ -626,7 +630,7 @@
         $det_file_path1 = realpath(__DIR__) . '/' . $det_file_name1;
 
         $manageLink1 = $det_file_name1;
-        $pageTitle1 = ucwords($cat_name);
+        $pageTitle1 = ucwords($edit_cat_name);
 
         if (!file_exists($file_path)) {
             $default_content = <<<PHP
@@ -1218,6 +1222,7 @@
                             <tr>
                                 <th scope="col">Category Name</th>
                                 <th scope="col">Category URL</th>
+                                <th scope="col">Category Type</th>
                                 <th scope="col" class="text-center">Action</th>
                             </tr>
                         </thead>
@@ -1227,8 +1232,9 @@
                             <tr>
                                 <td><?= htmlspecialchars($row['cat_name']) ?></td>
                                 <td><?= htmlspecialchars($row['cat_url']) ?></td>
+                                <td><?= htmlspecialchars($row['cat_type']) ?></td>
                                 <td class="text-center">
-                                    <a onclick="openEditModal('<?= $row['cat_id'] ?>', '<?= htmlspecialchars($row['cat_name']) ?>', '<?= htmlspecialchars($row['cat_url']) ?>')" class="fa fa-edit fw-medium w-32-px h-32-px bg-warning-focus text-warning-main rounded-circle d-inline-flex align-items-center justify-content-center cursor-pointer">
+                                    <a onclick="openEditModal('<?= $row['cat_id'] ?>', '<?= htmlspecialchars($row['cat_name']) ?>', '<?= htmlspecialchars($row['cat_url']) ?>', '<?= htmlspecialchars($row['cat_type']) ?>')" class="fa fa-edit fw-medium w-32-px h-32-px bg-warning-focus text-warning-main rounded-circle d-inline-flex align-items-center justify-content-center cursor-pointer">
                                     </a>
                                     <form method="post" class="delete-form d-inline">
                                     <input type="hidden" name="delete_cat_id" value="<?= $row['cat_id'] ?>">
@@ -1266,6 +1272,13 @@
                         <label for="edit_cat_url" class="form-label">URL</label>
                         <input type="text" class="form-control" name="edit_cat_url" id="edit_cat_url" required>
                     </div>
+                    <div class="mb-8">
+                        <label for="edit_cat_type" class="form-label">Type</label>
+                        <select class="form-control" name="edit_cat_type" id="edit_cat_type" required>
+                            <option value="package">Package</option>
+                            <option value="product">Product</option>
+                        </select>
+                    </div>
                 </div>
                 <div class="modal-footer">
                     <input type="submit" class="btn lufera-bg" value="Update">
@@ -1291,6 +1304,14 @@
                 <div class="mb-8">
                     <label for="cat_url" class="form-label">URL</label>
                     <input type="text" class="form-control" name="cat_url" id="cat_url" required >
+                </div>
+                <div class="mb-8">
+                    <label for="cat_type" class="form-label">Type</label>
+                    <select class="form-control" name="cat_type" id="cat_type" required>
+                        <option value="">Select type</option>
+                        <option value="package">Package</option>
+                        <option value="product">Product</option>
+                    </select>
                 </div>
             </div>
             <div class="modal-footer">
@@ -1390,10 +1411,11 @@ $(document).ready(function() {
 });
 </script>
 <script>
-    function openEditModal(id, name, url) {
+    function openEditModal(id, name, url, type) {
     document.getElementById("edit_cat_id").value = id;
     document.getElementById("edit_cat_name").value = name;
     document.getElementById("edit_cat_url").value = url.replace(".php", "");
+    document.getElementById("edit_cat_type").value = type;
     
     // Use Bootstrap's JS API to show modal
     let modal = new bootstrap.Modal(document.getElementById('edit-category-modal'));

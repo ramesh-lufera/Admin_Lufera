@@ -93,7 +93,7 @@ if ($role != 1 && $role != 2) {
                                 $orderId = $row['id']; // unique identifier
                             ?>
                             <tr>
-                                <td><?php echo htmlspecialchars($row['plan_name']); ?></td>
+                                <td><?php echo htmlspecialchars($row['plan_name']); ?> <?php echo htmlspecialchars($row['id']); ?></td>
                                 <td><?php echo htmlspecialchars($row['business_name']); ?></td>
                                 <td class="text-center"><?php echo $expiryFormatted; ?></td>
                                 <td class="text-center">Off</td>
