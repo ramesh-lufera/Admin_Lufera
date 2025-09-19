@@ -154,6 +154,9 @@
         }
     ?>
 
+    <!-- For Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+
     <!-- Add-ons / Packages / Products Section -->
     <?php if(!empty($selected_packages) || !empty($selected_products) || !empty($selected_addons)): ?>
     <div class="row gy-4">

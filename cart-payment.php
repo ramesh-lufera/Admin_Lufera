@@ -37,83 +37,24 @@
         $addon_total = $_POST['addon-total'];
     }
 
-    // $service_name = ""; // default
-    // if (!empty($get_addon)) {
-    //     // Convert string like "2,4,6" into an array of integers
-    //     $addon_ids = array_map('intval', explode(",", $get_addon));
-    //     if (!empty($addon_ids)) {
-    //         $ids_str = implode(",", $addon_ids); // safe, integers only
-    //         $sql_addons = "SELECT name FROM `add-on-service` WHERE id IN ($ids_str)";
-    //         $result_addons = $conn->query($sql_addons);
-
-    //         $names = [];
-    //         while ($row_addon = $result_addons->fetch_assoc()) {
-    //             $names[] = $row_addon['name'];
-    //         }
-
-    //         // Join multiple add-on names with commas
-    //         $service_name = implode(", ", $names);
-    //     }
-    // }
-
-    $service_parts = []; // hold grouped text
-
-    // 1. Packages
-    if (!empty($get_packages)) {
-        $package_ids = array_map('intval', explode(',', $get_packages));
-        if (!empty($package_ids)) {
-            $ids_str = implode(',', $package_ids);
-            $sql_packages = "SELECT package_name FROM package WHERE id IN ($ids_str)";
-            $result_packages = $conn->query($sql_packages);
-
-            $pkg_names = [];
-            while ($row = $result_packages->fetch_assoc()) {
-                $pkg_names[] = $row['package_name'];
-            }
-            if (!empty($pkg_names)) {
-                $service_parts[] = "Packages: " . implode(", ", $pkg_names);
-            }
-        }
-    }
-
-    // 2. Products
-    if (!empty($get_products)) {
-        $product_ids = array_map('intval', explode(',', $get_products));
-        if (!empty($product_ids)) {
-            $ids_str = implode(',', $product_ids);
-            $sql_products = "SELECT name FROM products WHERE id IN ($ids_str)";
-            $result_products = $conn->query($sql_products);
-
-            $prod_names = [];
-            while ($row = $result_products->fetch_assoc()) {
-                $prod_names[] = $row['name'];
-            }
-            if (!empty($prod_names)) {
-                $service_parts[] = "Products: " . implode(", ", $prod_names);
-            }
-        }
-    }
-
-    // 3. Add-on Services
+    $service_name = ""; // default
     if (!empty($get_addon)) {
+        // Convert string like "2,4,6" into an array of integers
         $addon_ids = array_map('intval', explode(",", $get_addon));
         if (!empty($addon_ids)) {
-            $ids_str = implode(",", $addon_ids);
+            $ids_str = implode(",", $addon_ids); // safe, integers only
             $sql_addons = "SELECT name FROM `add-on-service` WHERE id IN ($ids_str)";
             $result_addons = $conn->query($sql_addons);
 
-            $addon_names = [];
-            while ($row = $result_addons->fetch_assoc()) {
-                $addon_names[] = $row['name'];
+            $names = [];
+            while ($row_addon = $result_addons->fetch_assoc()) {
+                $names[] = $row_addon['name'];
             }
-            if (!empty($addon_names)) {
-                $service_parts[] = "Add-on Services: " . implode(", ", $addon_names);
-            }
+
+            // Join multiple add-on names with commas
+            $service_name = implode(", ", $names);
         }
     }
-
-    // Final combined string
-    $service_name = !empty($service_parts) ? implode(" | ", $service_parts) : 'None';
 
     // Get active symbol
     $result1 = $conn->query("SELECT symbol FROM currencies WHERE is_active = 1 LIMIT 1");
@@ -578,15 +519,10 @@
                                             ?>
                                         </td>
                                     </tr>
-                                    <!-- <tr>
-                                        <td>Add-On Services</td>
-                                        <td><?php echo !empty($service_name) ? htmlspecialchars($service_name) : 'None'; ?></td>
-                                    </tr> -->
                                     <tr>
                                         <td>Add-On Services</td>
-                                        <td><?php echo htmlspecialchars($service_name); ?></td>
+                                        <td><?php echo !empty($service_name) ? htmlspecialchars($service_name) : 'None'; ?></td>
                                     </tr>
-
                                     <!-- <tr>
                                         <td class="border-0" colspan="2" id="currency-symbol-display">Renews at <?= htmlspecialchars($symbol) ?>1500/year for 3 Years
                                             <p class="text-sm ad-box">Great news! Your FREE domain + 3 months FREE are included with this order</p>
