@@ -141,12 +141,13 @@
             if (!empty($get_products)) {
                 $product_ids = array_map('intval', explode(',', $get_products));
                 foreach ($product_ids as $prod_id) {
-                    $prod_sql = "SELECT name, price, duration FROM products WHERE id = $prod_id";
+                    $prod_sql = "SELECT name, price, duration, cat_id FROM products WHERE id = $prod_id";
                     $prod_res = mysqli_query($conn, $prod_sql);
                     if ($prod_res && $prod = mysqli_fetch_assoc($prod_res)) {
                         $prod_name     = $prod['name'];   // ✅ product name for websites table
                         $prod_price    = floatval($prod['price']);
                         $prod_duration = $prod['duration'];
+                        $prod_cat_id   = $prod['cat_id']; // ✅ product category
 
                         // calculations
                         $prod_subtotal = $prod_price;
@@ -164,7 +165,7 @@
 
                         // Insert into websites (plan = NAME ✅)
                         $siteInsertProd = "INSERT INTO websites (user_id, domain, plan, duration, status, cat_id, invoice_id, product_id, type) 
-                                        VALUES ('$client_id', 'N/A', '$prod_name', '$prod_duration', 'Pending', '$cat_id', '$receipt_id', '$prod_id', 'product')";
+                                        VALUES ('$client_id', 'N/A', '$prod_name', '$prod_duration', 'Pending', '$prod_cat_id', '$receipt_id', '$prod_id', 'product')";
                         mysqli_query($conn, $siteInsertProd);
                     }
                 }
