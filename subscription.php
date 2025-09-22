@@ -31,15 +31,7 @@
     // JOIN orders with users
     $query = "
     SELECT
-        orders.id, 
-        orders.invoice_id,
-        orders.plan,
-        orders.amount,
-        orders.status,
-        orders.duration,
-        orders.created_on,
-        orders.type,
-        orders.addon_service,
+        orders.*,
         users.username,
         users.first_name,
         users.last_name,
@@ -62,12 +54,67 @@ if ($role != 1 && $role != 2) {
     $query .= " WHERE orders.user_id = '$Id'";
 }
     $result = mysqli_query($conn, $query);
+
+    function generatePaymentID($conn) {
+        do {
+            $randomNumber = str_pad(mt_rand(0, 99999999), 8, '0', STR_PAD_LEFT);
+            $paymentID = "L_" . $randomNumber;
+    
+            // Check uniqueness in DB
+            $check = mysqli_query($conn, "SELECT payment_id FROM record_payment WHERE payment_id = '$paymentID'");
+        } while (mysqli_num_rows($check) > 0);
+    
+        return $paymentID;
+    }
+
+    if (isset($_POST['save'])) {
+        $order_id = $_POST['order_id'];
+        $invoice_no = $_POST['invoice_no'];
+        $payment_method = $_POST['payment_method'];
+        $amount = $_POST['amount'];
+
+        $payment_made = $_POST['payment_made'];
+
+        $total_amount = $amount + $payment_made;
+        $created_at = date("Y-m-d H:i:s");
+        $remarks = $_POST['remarks'];
+        $balance_due = $_POST['balance_due'];
+        $payment_id = generatePaymentID($conn);
+        $sql = "INSERT INTO record_payment (payment_id, orders_id, invoice_no, payment_method, amount, balance, remarks, paid_date) 
+                        VALUES ('$payment_id', '$order_id', '$invoice_no', '$payment_method', '$amount', '$balance_due', '$remarks', '$created_at')";
+            if (mysqli_query($conn, $sql)) {
+
+                $siteInsert = "UPDATE orders
+                                SET payment_made = $total_amount, balance_due = $balance_due
+                                WHERE invoice_id = '$invoice_id'";
+                    mysqli_query($conn, $siteInsert);
+                echo "
+                <script>
+                    Swal.fire({
+                        title: 'Success!',
+                        text: 'Payment Record Created Successfully.',
+                        confirmButtonText: 'OK',
+                        allowOutsideClick: false
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            window.location.href = 'subscription.php';
+                        }
+                    });
+                </script>";
+                } else {
+                echo "<script>
+                    alert('Error: " . $stmt->error . "');
+                    window.history.back();
+                </script>";
+            }
+    }
 ?>
 
 <body>
     <div class="dashboard-main-body">
-        <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-24">
-            <h6 class="fw-semibold mb-0">Subscriptions</h6>
+        <div class="d-flex flex-wrap align-items-center gap-3 mb-24">
+            <a class="cursor-pointer fw-bold" onclick="history.back()"><span class="fa fa-arrow-left"></span>&nbsp; Back</a>    
+            <h6 class="fw-semibold mb-0 m-auto">Subscriptions</h6>
         </div>
         <div class="card">
             <div class="card-body">
@@ -93,12 +140,11 @@ if ($role != 1 && $role != 2) {
                                 $orderId = $row['id']; // unique identifier
                             ?>
                             <tr>
-                                <td><?php echo htmlspecialchars($row['plan_name']); ?> <?php echo htmlspecialchars($row['id']); ?></td>
+                                <td><?php echo htmlspecialchars($row['plan_name']); ?></td>
                                 <td><?php echo htmlspecialchars($row['business_name']); ?></td>
                                 <td class="text-center"><?php echo $expiryFormatted; ?></td>
                                 <td class="text-center">Off</td>
                                 <td class="text-center">
-                                    <button class="btn text-white lufera-bg text-sm">Renew</button>
                                     <!-- link points to unique offcanvas -->
                                     <a class="fa fa-chevron-right ms-10 text-sm lufera-color" 
                                     data-bs-toggle="offcanvas" 
@@ -168,7 +214,44 @@ if ($role != 1 && $role != 2) {
                                         echo "<p class='text-muted'>No add-ons selected</p>";
                                     }
                                     ?>
+                                    <h6 class="text-md mt-20">Payment Received</h6>
 
+                                    <div class="d-flex justify-content-between mt-3 p-4" style="background:lightgray">
+                                        <span class="fw-semibold">Date</span>
+                                        <span class="fw-semibold">Amount</span>
+                                    </div>
+                                    <hr />
+                                    
+                                    <?php
+                                        $invoice_id = $row['invoice_id'];
+                                        $id = $row['id'];
+                                        $payment_made = $row['payment_made'];
+                                        $balance_due = $row['balance_due'];
+                                        // Get role of logged-in user
+                                        $invoiceQuery = "SELECT * FROM record_payment WHERE invoice_no = '$invoice_id'";
+                                        $invoiceResult = mysqli_query($conn, $invoiceQuery);
+                                        if (mysqli_num_rows($invoiceResult) > 0) {
+                                        while ($invoiceRow = mysqli_fetch_assoc($invoiceResult)) {
+                                            $date = $invoiceRow['paid_date'];
+                                            $amount = $invoiceRow['amount'];
+                                            ?>
+                                            <div class="d-flex justify-content-between my-2 p-4">
+                                                <span><?php echo $date; ?></span>
+                                                <span><?php echo number_format($amount, 2); ?></span>
+                                            </div>
+                                            <hr />
+                                            <?php
+                                        }
+                                    } else {
+                                        echo "<div>No payments found.</div>";
+                                    }
+                                    ?>
+
+                                    <div class="mt-20">
+                                    <a href="order-summary.php?id=<?php echo $invoice_id; ?>"><button class="btn text-white btn-danger text-sm">Order summary</button>    
+                                    <button class="btn text-white lufera-bg text-sm">Renew</button>
+                                        <button class="btn text-white btn-primary text-sm" data-bs-toggle="modal" data-bs-target="#exampleModal">Record Payment</button>
+                                    </div>
                                 </div>
                             </div>
                         <?php endwhile; ?>
@@ -179,13 +262,134 @@ if ($role != 1 && $role != 2) {
         </div>
     </div>
 </div>
+<div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <form method="post">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="exampleModalLabel">Record Payment</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="row">
+                            <div class="col-sm-6">
+                                <div class="mb-20">
+                                    <label for="" class="form-label fw-semibold text-primary-light text-sm mb-8">Invoice No: <span class="text-danger-600">*</span></label>
+                                    <input type="hidden" value="<?php echo $id; ?>" name="order_id">
+                                    <input type="text" class="form-control radius-8" name="invoice_no" value="<?php echo $invoice_id; ?>" <?php echo !empty($invoice_id) ? 'readonly' : ''; ?> required>
+                                </div>
+                            </div>
+                            <div class="col-sm-6">
+                                <div class="mb-20">
+                                    <label for="" class="form-label fw-semibold text-primary-light text-sm mb-8">Payment Method <span class="text-danger-600">*</span></label>
+                                    <select class="form-control" name="payment_method" required <?php echo $row['balance_due'] == "0" ? 'disabled' : ''; ?> >
+                                        <option value="">Select payment method</option>
+                                        <option value="Cash">Cash</option>
+                                        <option value="Card">Card</option>
+                                        <option value="UPI">UPI</option>
+                                        <option value="Bank">Bank</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-sm-6">
+                                <div class="mb-20">
+                                    <label for="" class="form-label fw-semibold text-primary-light text-sm mb-8">Enter Amount <span class="text-danger-600">*</span></label>
+                                    
+                                    <input type="hidden" class="form-control radius-8" name="payment_made" id="payment_made" value="<?php echo $payment_made; ?>">
 
+                                    <input type="text" class="form-control radius-8" name="amount" id="numericInput" required <?php echo $row['balance_due'] == "0" ? 'readonly' : ''; ?> >
+                                    <small id="amountError" class="text-danger d-none">Amount cannot be greater than Balance Due.</small>
+
+                                    <input type="hidden" class="form-control radius-8" name="balance_due" id="balance_due" value="<?php echo $balance_due; ?>">
+                                </div>
+                            </div>
+                            <div class="col-sm-6">
+                                <div class="mb-20">
+                                    <label for="" class="form-label fw-semibold text-primary-light text-sm mb-8">Remarks <span class="text-danger-600">*</span></label>
+                                    <input type="text" class="form-control radius-8" name="remarks" value="" required <?php echo $row['balance_due'] == "0" ? 'readonly' : ''; ?> >
+                                </div>
+                            </div>
+
+                            <?php if ($row['balance_due'] == '0') { ?>
+                                <p class="text-danger">Payment fully paid</p>
+                                <?php } ?>
+                        </div>
+                    </div>
+                    <div class="modal-footer d-flex align-items-center justify-content-center gap-3">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        <button type="submit" id="submit" class="btn lufera-bg text-white" name="save" <?php echo $row['balance_due'] == "0" ? 'disabled' : ''; ?>>Save</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
 <script>
 $(document).ready(function() {
     $('#userTable').DataTable();
 } );
 </script>
+<script>
+    document.getElementById("numericInput").addEventListener("input", function () {
+    this.value = this.value.replace(/\D/g, ''); // Remove non-digits
+  });
+</script>
+<script>
+    document.getElementById('numericInput').addEventListener('input', function () {
+        const amount = parseFloat(this.value);
+        const originalBalance = parseFloat(<?php echo json_encode($row['balance_due']); ?>);
 
+        if (!isNaN(amount)) {
+            const updatedBalance = originalBalance - amount;
+            document.getElementById('balance_due').value = updatedBalance.toFixed(2);;
+        } else {
+            // Reset if input is not a number
+            document.getElementById('balance_due').value = originalBalance.toFixed(2);;
+        }
+    });
+</script>
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const amountInput = document.getElementById("numericInput").toFixed(2);;
+    const balanceDue = parseFloat(document.getElementById("balance_due").value).toFixed(2);;
+    const errorText = document.getElementById("amountError").toFixed(2);;
+    const submit = document.getElementById("submit").toFixed(2);;
+    amountInput.addEventListener("input", function () {
+        const enteredAmount = parseFloat(this.value);
+
+        if (enteredAmount > balanceDue) {
+            errorText.classList.remove("d-none");
+            submit.disabled = true;
+            //this.value = ""; 
+        }
+        else {
+            errorText.classList.add("d-none");
+            submit.disabled = false;
+        }
+    });
+});
+</script>
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const amountInput = document.getElementById("numericInput");
+    const balanceDue = parseFloat(document.getElementById("balance_due").value);
+    const errorText = document.getElementById("amountError");
+    const submit = document.getElementById("submit");
+
+    amountInput.addEventListener("input", function () {
+        const enteredAmount = parseFloat(this.value);
+
+        if (!isNaN(enteredAmount) && enteredAmount > balanceDue) {
+            errorText.classList.remove("d-none");
+            submit.disabled = true;
+            //alert("Entered amount cannot be greater than Total Payable (" + balanceDue.toFixed(2) + ")");
+            //this.value = ""; // clear field
+        } else {
+            errorText.classList.add("d-none");
+            submit.disabled = false;
+        }
+    });
+});
+</script>
 </body>
 </html>
 

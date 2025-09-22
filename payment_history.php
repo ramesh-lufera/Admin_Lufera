@@ -68,8 +68,9 @@ $result = mysqli_query($conn, $query);
 
 <body>
     <div class="dashboard-main-body">
-        <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-24">
-            <h6 class="fw-semibold mb-0">Payment History</h6>
+        <div class="d-flex flex-wrap align-items-center gap-3 mb-24">
+            <a class="cursor-pointer fw-bold" onclick="history.back()"><span class="fa fa-arrow-left"></span>&nbsp; Back</a>
+            <h6 class="fw-semibold mb-0 m-auto">Payment History</h6>
         </div>
         <div class="card">
             <div class="card-body">
@@ -91,7 +92,7 @@ $result = mysqli_query($conn, $query);
                     <?php if ($result->num_rows > 0): ?>
                         <?php while ($row = $result->fetch_assoc()): ?>
                             <tr>
-                                <td><?php echo htmlspecialchars($row['payment_id']); ?></td>
+                                <td><span class="d-none"><?php echo htmlspecialchars($row['trans_id']); ?></span> <?php echo htmlspecialchars($row['payment_id']); ?></td>
                                 <td class="text-center"><?php echo htmlspecialchars($row['invoice_no']); ?></td>
                                 <td class="text-center"><?php echo htmlspecialchars($row['plan_name']); ?></td>
                                 <td class="text-center"><?php echo htmlspecialchars($row['business_name']); ?></td>
