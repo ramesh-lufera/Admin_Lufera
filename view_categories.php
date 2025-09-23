@@ -446,6 +446,7 @@
                             <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-24">
                                 <a class="cursor-pointer fw-bold" onclick="history.back()"><span class="fa fa-arrow-left"></span>&nbsp; Back</a> 
                                 <h6 class="fw-semibold mb-0">$pageTitle</h6>
+                                <a class="cursor-pointer fw-bold visibility-hidden" onclick="history.back()"><span class="fa fa-arrow-left"></span>&nbsp; Back</a>                                 
                             </div>
                             
                             <!-- Search + Add -->
@@ -1242,7 +1243,7 @@
         <div class="modal-content">
             <form method="post" action="">
                 <div class="modal-header">
-                    <h5 class="modal-title">Edit category</h5>
+                    <h5 class="modal-title">Edit Category</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
@@ -1253,7 +1254,7 @@
                     </div>
                     <div class="mb-8">
                         <label for="edit_cat_url" class="form-label">URL</label>
-                        <input type="text" class="form-control" name="edit_cat_url" id="edit_cat_url" required>
+                        <input type="text" class="form-control" name="edit_cat_url" id="edit_cat_url" required readonly>
                     </div>
                     <div class="mb-8">
                         <label for="edit_cat_type" class="form-label">Type</label>

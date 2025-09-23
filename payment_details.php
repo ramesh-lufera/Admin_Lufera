@@ -3,9 +3,8 @@ $script = '<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1
            <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
            <script>
                 function printInvoice() {
-    window.print();
-}
-
+                    window.print();
+                }
 
                 function downloadReceipt() {
                     const { jsPDF } = window.jspdf;
@@ -113,10 +112,7 @@ $script = '<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1
     font-family: Arial, Helvetica, sans-serif; /* Consistent font */
 }
 @media print {
-    .btn {
-        display: none !important;
-    }
-    .pay-rec, .navbar-header, .d-footer {
+    .btn, .back_btn, .pay-rec, .navbar-header, .d-footer {
         display: none !important;
     }
     .dashboard-main-body{
@@ -191,10 +187,11 @@ function numberToWords($number) {
 $amountInWords = numberToWords($amount);
 ?>
 <div class="dashboard-main-body">
-    <div class="text-center gap-3 mb-24">
-        <h6 class="fw-semibold mb-0">Payment details</h6>
+    <div class="d-flex flex-wrap align-items-center text-center justify-content-between gap-3 mb-24">
+        <a class="cursor-pointer fw-bold back_btn" onclick="history.back()"><span class="fa fa-arrow-left"></span>&nbsp; Back</a>    
+        <h6 class="fw-semibold mb-0 m-auto">Payment Details</h6>
+        <a class="cursor-pointer fw-bold back_btn visibility-hidden" onclick="history.back()"><span class="fa fa-arrow-left"></span>&nbsp; Back</a> 
     </div>
-
     <div class="card container">
         <div class="card-body py-40">
             <div class="row justify-content-center" id="invoice">

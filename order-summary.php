@@ -94,20 +94,28 @@
     }
 </style>
 <div class="dashboard-main-body">
-    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-24">
-        <a class="cursor-pointer fw-bold" onclick="history.back()"><span class="fa fa-arrow-left"></span>&nbsp; Back</a>    
-        <h6 class="fw-semibold mb-0">Order Summary</h6>
-        <div>
-        <?php 
-            if($row2['role'] == "1" || $row2['role'] == "2") {?>  
-            <button type="button" class="btn btn-sm btn-primary radius-8 d-inline-flex align-items-center gap-1" data-bs-toggle="modal" data-bs-target="#exampleModal">
-                <iconify-icon icon="lucide:edit" class="text-xl"></iconify-icon>
-                Record Payment
-            </button>
-            <?php } ?>
-            <button type="button" class="btn btn-sm btn-success radius-8 d-inline-flex align-items-center gap-1" data-bs-toggle="modal" data-bs-target="#Payment" id="currency-symbol-display">
-                <?= htmlspecialchars($symbol) ?> Payment History
-            </button>
+    <div class="gap-3 mb-24">
+        <div class="row">
+            <div class="col-lg-4">
+                <a class="cursor-pointer fw-bold" onclick="history.back()"><span class="fa fa-arrow-left"></span>&nbsp; Back</a> 
+            </div>
+            <div class="col-lg-4 text-center">
+                <h6 class="fw-semibold mb-0">Order Summary</h6>
+            </div>
+            <div class="col-lg-4 text-end">
+                <div>
+                    <?php 
+                    if($row2['role'] == "1" || $row2['role'] == "2") {?>  
+                    <button type="button" class="btn btn-sm btn-primary radius-8 d-inline-flex align-items-center gap-1" data-bs-toggle="modal" data-bs-target="#exampleModal">
+                        <iconify-icon icon="lucide:edit" class="text-xl"></iconify-icon>
+                        Record Payment
+                    </button>
+                    <?php } ?>
+                    <button type="button" class="btn btn-sm btn-success radius-8 d-inline-flex align-items-center gap-1" data-bs-toggle="modal" data-bs-target="#Payment" id="currency-symbol-display">
+                        <?= htmlspecialchars($symbol) ?> Payment History
+                    </button>
+                </div>
+            </div>
         </div>
     </div>
     <div class="modal fade" id="payment" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
@@ -305,7 +313,7 @@
                             <p class="mb-0">Order Summary includes discounts & taxes</p>
                         </div>
                         <div class="align-content-center">
-                            <h4 class="mb-0" id="currency-symbol-display"><?= htmlspecialchars($symbol) ?><?php echo $row['amount']; ?></h4>
+                            <h4 class="mb-0" id="currency-symbol-display"><?= htmlspecialchars($symbol) ?><?= number_format($row['amount'], 2) ?></h4>
                         </div>
                         
                     </div>
@@ -376,6 +384,44 @@
             </div>
         </div>
     </div>
+    <?php
+    $invoice_id = $_GET['id'];
+    $invoiceQuery = "SELECT * FROM record_payment WHERE invoice_no = '$invoice_id'";
+    $invoiceResult = mysqli_query($conn, $invoiceQuery);
+    $paymentCount = mysqli_num_rows($invoiceResult);
+    ?>
+    <p class="fw-semibold" style="cursor: pointer;" onclick="togglePayments()">
+        Payment Received (<?= $paymentCount ?>) 
+        <span id="arrow">▼</span>
+    </p>
+    <div id="paymentTable">
+    <table class="table mb-20">
+        <thead>
+            <th>Date</th>
+            <th>Reference</th>
+            <th>Payment Mode</th>
+            <th>Amount</th>
+        </thead>
+        <tbody>
+            <?php
+                if ($paymentCount > 0) {
+                    while ($invoiceRow = mysqli_fetch_assoc($invoiceResult)) {
+                        ?>
+                        <tr>
+                            <td><?= date('d/m/Y', strtotime($invoiceRow['paid_date'])) ?></td>
+                            <td><?= $invoiceRow['payment_id']; ?></td>
+                            <td><?= $invoiceRow['payment_method']; ?></td>
+                            <td><?= number_format($invoiceRow['amount'], 2); ?></td>
+                        </tr>
+                        <?php
+                    }
+                } else {
+                    echo "<tr><td colspan='4'>No payments found.</td></tr>";
+                }
+            ?>
+        </tbody>
+    </table>
+    </div>
 </div>
 <script>
     document.getElementById("numericInput").addEventListener("input", function () {
@@ -438,6 +484,17 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     });
 });
-</script>
 
+function togglePayments() {
+    let table = document.getElementById("paymentTable");
+    let arrow = document.getElementById("arrow");
+    if (table.style.display === "none") {
+        table.style.display = "block";
+        arrow.textContent = "▼"; // down arrow
+    } else {
+        table.style.display = "none";
+        arrow.textContent = "►"; // right arrow
+    }
+}
+</script>
 <?php include './partials/layouts/layoutBottom.php' ?>
