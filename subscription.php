@@ -15,17 +15,299 @@
 <?php 
     include './partials/layouts/layoutTop.php';
 
+    require_once __DIR__ . '/vendor/autoload.php';
+    use Dotenv\Dotenv;
+    use PHPMailer\PHPMailer\PHPMailer;
+    use PHPMailer\PHPMailer\Exception;
+
+    $dotenv = Dotenv::createImmutable(__DIR__);
+    $dotenv->load();
+
     $Id = $_SESSION['user_id'];
+
     // Get role of logged-in user
     $roleQuery = "SELECT role FROM users WHERE id = '$Id' LIMIT 1";
     $roleResult = mysqli_query($conn, $roleQuery);
     $roleRow = mysqli_fetch_assoc($roleResult);
     $role = $roleRow['role'];
+
     // Get active symbol
     $result2 = $conn->query("SELECT symbol FROM currencies WHERE is_active = 1 LIMIT 1");
     $symbol = "$"; // default
     if ($row1 = $result2->fetch_assoc()) {
         $symbol = $row1['symbol'];
+    }
+
+    // ADMIN approves → Notify USER
+    if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['approve_id']) && ($role === '1' || $role === '2')) {
+        $orderId = intval($_POST['approve_id']);
+
+        // Approve order
+        $conn->query("UPDATE orders SET status = 'Approved' WHERE id = $orderId");
+
+        // SweetAlert flag
+        $_SESSION['order_approved'] = true;
+
+        date_default_timezone_set('Asia/Kolkata');
+
+        // Get order + user details
+        $res = $conn->query("SELECT o.invoice_id, o.plan, o.amount, u.email, u.first_name, u.last_name 
+                             FROM orders o 
+                             INNER JOIN users u ON o.user_id = u.id 
+                             WHERE o.id = $Id");
+        $order = $res->fetch_assoc();
+
+        $userEmail = $order['email'];
+        $userName  = $order['first_name'] . " " . $order['last_name'];
+        $planName  = $order['plan'];
+        $invoiceId = $order['invoice_id'];
+        $amount    = $order['amount'];
+
+        // Get user_id for notification
+        $res = $conn->query("SELECT user_id FROM orders WHERE id = $orderId");
+        $user = $res->fetch_assoc();
+        $userId = $user['user_id'];
+
+        // Add notification
+        $msg = "Your payment has been approved.";
+        $createdAt = date('Y-m-d H:i:s');
+        $stmt = $conn->prepare("INSERT INTO notifications (user_id, message, n_photo, created_at) VALUES (?, ?, ?, ?)");
+        $stmt->bind_param("ssss", $userId, $msg, $photo, $createdAt);
+        $stmt->execute();
+
+        // ✅ Send Email to User
+        try {
+            $mail = new PHPMailer(true);
+            $mail->isSMTP();
+            $mail->Host       = 'smtp.gmail.com';
+            $mail->SMTPAuth   = true;
+            $mail->Username   = $_ENV['EMAIL_USERNAME']; 
+            $mail->Password   = $_ENV['GMAIL_APP_PASSWORD']; 
+            $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
+            $mail->Port       = 587;
+
+            $mail->setFrom($_ENV['EMAIL_USERNAME'], 'Lufera Infotech');
+            $mail->addAddress($userEmail, $userName);
+
+            $mail->isHTML(true);
+            $mail->Subject = "Your Order Has Been Approved";
+
+            $mail->Body = '
+                <!DOCTYPE html>
+                <html>
+                <head>
+                <meta charset="UTF-8">
+                <title>Order Approved</title>
+                </head>
+                <body style="margin:0;padding:0;background:#f5f5f5;font-family:Roboto,Arial,sans-serif;">
+                <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background:#f5f5f5;padding:30px 0;">
+                    <tr>
+                    <td align="center">
+                        <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="600" 
+                            style="background:#ffffff;border:1px solid #e0e0e0;border-radius:8px;box-shadow:0 2px 6px rgba(0,0,0,0.08);overflow:hidden;">
+                        
+                        <!-- Header -->
+                        <tr>
+                            <td style="padding:20px;text-align:center;">
+                            <img src="' . htmlspecialchars($_ENV['EMAIL_IMAGE_LINK']) . '" alt="Lufera Infotech Logo" style="width:150px;height:48px;display:block;margin:auto;">
+                            </td>
+                        </tr>
+
+                        <!-- Divider -->
+                        <tr>
+                            <td style="border-top:1px solid #eaeaea;"></td>
+                        </tr>
+
+                        <!-- Main Content -->
+                        <tr>
+                            <td style="padding:30px 40px;text-align:left;font-size:15px;line-height:1.6;color:#101010;">
+                            <h3 style="margin:0 0 15px;font-size:20px;font-weight:500;">Order Approved</h3>
+                            <p>Hello <b>' . htmlspecialchars($userName) . '</b>,</p>
+                            <p>Your order has been approved by the admin. Here are the details:</p>
+                            
+                            <table cellpadding="8" cellspacing="0" border="0" width="100%" style="border:1px solid #eaeaea;margin:20px 0;font-size:14px;">
+                                <tr><td><b>Plan</b></td><td>' . htmlspecialchars($planName) . '</td></tr>
+                                <tr><td><b>Invoice ID</b></td><td>' . htmlspecialchars($invoiceId) . '</td></tr>
+                                <tr><td><b>Total Paid</b></td><td id="currency-symbol-display">' . htmlspecialchars($symbol) . htmlspecialchars($amount) . '</td></tr>
+                            </table>
+
+                            <p>You can now access your purchased service from your dashboard.</p>
+                            
+                            <div style="margin:30px 0;text-align:center;">
+                                <a href="' . htmlspecialchars($_ENV['EMAIL_COMMON_LINK']) . '/orders.php" 
+                                style="background:#fec700;color:#101010;text-decoration:none;
+                                        padding:12px 28px;border-radius:4px;font-weight:bold;display:inline-block;">
+                                View My Orders
+                                </a>
+                            </div>
+
+                            <p>If you have any questions, feel free to reply to this email.</p>
+                            </td>
+                        </tr>
+
+                        <!-- Divider -->
+                        <tr>
+                            <td style="border-top:1px solid #eaeaea;"></td>
+                        </tr>
+
+                        <!-- Footer -->
+                        <tr>
+                            <td style="padding:20px;text-align:center;font-size:12px;color:#777;">
+                            You’re receiving this email because your payment was approved at <b>Admin Dashboard</b>.<br>
+                            &copy; 2025 Lufera Infotech. All rights reserved.
+                            </td>
+                        </tr>
+
+                        </table>
+                    </td>
+                    </tr>
+                </table>
+                </body>
+                </html>
+            ';
+
+            $mail->send();
+
+        } catch (Exception $e) {
+            error_log("Email not sent. Error: {$mail->ErrorInfo}");
+        }
+    }
+
+    // ADMIN cancels → Update status
+    if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['cancel_id']) && ($role === '1' || $role === '2')) {
+        $orderId = intval($_POST['cancel_id']);
+        $conn->query("UPDATE orders SET status = 'Cancelled' WHERE id = $orderId");
+        $_SESSION['order_cancelled'] = true;
+
+        // For Notifications..
+        date_default_timezone_set('Asia/Kolkata');
+
+        // Get user_id for notification
+        $res = $conn->query("SELECT user_id FROM orders WHERE id = $orderId");
+        $user = $res->fetch_assoc();
+        $userId = $user['user_id'];
+
+        // Add notification
+        $msg = "Your order has been cancelled.";
+        $createdAt = date('Y-m-d H:i:s');
+        $stmt = $conn->prepare("INSERT INTO notifications (user_id, message, n_photo, created_at) VALUES (?, ?, ?, ?)");
+        $stmt->bind_param("ssss", $userId, $msg, $photo, $createdAt);
+        $stmt->execute();
+
+        // Fetch order + user info for email
+        $sql = $conn->prepare("SELECT u.email, u.username, o.invoice_id, o.plan, o.amount 
+                            FROM orders o 
+                            JOIN users u ON o.user_id = u.id 
+                            WHERE o.id = ?");
+        $sql->bind_param("i", $orderId);
+        $sql->execute();
+        $result = $sql->get_result();
+        $row = $result->fetch_assoc();
+
+         if ($row) {
+            $userEmail = $row['email'];
+            $userName  = $row['username'];
+            $plan  = $row['plan'];
+            $invoiceId = $row['invoice_id'];
+            $amount    = $row['amount'];
+
+            // Send Cancelled Mail
+            try {
+                $mail = new PHPMailer(true);
+                $mail->isSMTP();
+                $mail->Host       = 'smtp.gmail.com';
+                $mail->SMTPAuth   = true;
+                $mail->Username   = $_ENV['EMAIL_USERNAME']; 
+                $mail->Password   = $_ENV['GMAIL_APP_PASSWORD']; 
+                $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
+                $mail->Port       = 587;
+
+                $mail->setFrom($_ENV['EMAIL_USERNAME'], 'Lufera Infotech');
+                $mail->addAddress($userEmail, $userName);
+
+                $mail->isHTML(true);
+                $mail->Subject = "Your Order Has Been Cancelled";
+
+                $mail->Body = '
+                    <!DOCTYPE html>
+                    <html>
+                    <head>
+                    <meta charset="UTF-8">
+                    <title>Order Cancelled</title>
+                    </head>
+                    <body style="margin:0;padding:0;background:#f5f5f5;font-family:Roboto,Arial,sans-serif;">
+                    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background:#f5f5f5;padding:30px 0;">
+                        <tr>
+                        <td align="center">
+                            <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="600" 
+                                style="background:#ffffff;border:1px solid #e0e0e0;border-radius:8px;box-shadow:0 2px 6px rgba(0,0,0,0.08);overflow:hidden;">
+                            
+                            <!-- Header -->
+                            <tr>
+                                <td style="padding:20px;text-align:center;">
+                                <img src="' . htmlspecialchars($_ENV['EMAIL_IMAGE_LINK']) . '" alt="Lufera Infotech Logo" style="width:150px;height:48px;display:block;margin:auto;">
+                                </td>
+                            </tr>
+
+                            <!-- Divider -->
+                            <tr>
+                                <td style="border-top:1px solid #eaeaea;"></td>
+                            </tr>
+
+                            <!-- Main Content -->
+                            <tr>
+                                <td style="padding:30px 40px;text-align:left;font-size:15px;line-height:1.6;color:#101010;">
+                                <h3 style="margin:0 0 15px;font-size:20px;font-weight:500;color:#d32f2f;">Order Cancelled</h3>
+                                <p>Hello <b>' . htmlspecialchars($userName) . '</b>,</p>
+                                <p>We regret to inform you that your order has been <b style="color:#d32f2f;">cancelled</b> by the admin. Here are the details:</p>
+                                
+                                <table cellpadding="8" cellspacing="0" border="0" width="100%" style="border:1px solid #eaeaea;margin:20px 0;font-size:14px;">
+                                    <tr><td><b>Plan</b></td><td>' . htmlspecialchars($plan) . '</td></tr>
+                                    <tr><td><b>Invoice ID</b></td><td>' . htmlspecialchars($invoiceId) . '</td></tr>
+                                    <tr><td><b>Total Paid</b></td><td id="currency-symbol-display">' . htmlspecialchars($symbol) . htmlspecialchars($amount) . '</td></tr>
+                                </table>
+
+                                <p>If this was unexpected, please contact our support team for clarification.</p>
+                                
+                                <div style="margin:30px 0;text-align:center;">
+                                    <a href="' . htmlspecialchars($_ENV['EMAIL_COMMON_LINK']) . '/sign-in.php" 
+                                    style="background:#d32f2f;color:#ffffff;text-decoration:none;
+                                            padding:12px 28px;border-radius:4px;font-weight:bold;display:inline-block;">
+                                    Contact Support
+                                    </a>
+                                </div>
+
+                                <p>We’re sorry for any inconvenience caused.</p>
+                                </td>
+                            </tr>
+
+                            <!-- Divider -->
+                            <tr>
+                                <td style="border-top:1px solid #eaeaea;"></td>
+                            </tr>
+
+                            <!-- Footer -->
+                            <tr>
+                                <td style="padding:20px;text-align:center;font-size:12px;color:#777;">
+                                You’re receiving this email because your order was cancelled by the <b>Admin Dashboard</b>.<br>
+                                &copy; 2025 Lufera Infotech. All rights reserved.
+                                </td>
+                            </tr>
+
+                            </table>
+                        </td>
+                        </tr>
+                    </table>
+                    </body>
+                    </html>
+                ';
+
+                $mail->send();
+
+            } catch (Exception $e) {
+                error_log("Cancel email not sent. Error: {$mail->ErrorInfo}");
+            }
+        }
     }
     
     // JOIN orders with users
@@ -49,10 +331,11 @@
         LEFT JOIN package ON (orders.type = 'package' AND orders.plan = package.id)
         LEFT JOIN products ON (orders.type = 'product' AND orders.plan = products.id)
     ";
-// Add condition only if role is NOT 1 or 2
-if ($role != 1 && $role != 2) {
-    $query .= " WHERE orders.user_id = '$Id'";
-}
+
+    // Add condition only if role is NOT 1 or 2
+    if ($role != 1 && $role != 2) {
+        $query .= " WHERE orders.user_id = '$Id'";
+    }
     $result = mysqli_query($conn, $query);
 
     function generatePaymentID($conn) {
@@ -139,6 +422,17 @@ if ($role != 1 && $role != 2) {
                                 $expiryDate = (clone $createdOn)->modify("+$duration");
                                 $expiryFormatted = $expiryDate->format("Y-m-d");
                                 $orderId = $row['id']; // unique identifier
+
+                                $statusColor = "";
+                                $statusText = "";
+
+                                if ($row['status'] === 'Approved') {
+                                    $statusColor = "text-warning"; // yellow
+                                    $statusText = "Approved";
+                                } elseif ($row['status'] === 'Cancelled') {
+                                    $statusColor = "text-danger"; // red
+                                    $statusText = "Rejected";
+                                }
                             ?>
                             <tr>
                                 <td><?php echo htmlspecialchars($row['plan_name']); ?></td>
@@ -162,9 +456,13 @@ if ($role != 1 && $role != 2) {
                                 <div class="offcanvas-body">
                                     <h6 class="text-lg"><?php echo htmlspecialchars($row['plan_name']); ?></h6>
                                     <p class="text-sm"><?php echo htmlspecialchars($row['business_name']); ?></p>
-                                    <div class="d-flex justify-content-between my-3">
+                                    <!-- <div class="d-flex justify-content-between my-3">
                                         <span>Status</span>
                                         <span><i class="fa-regular fa-circle-check text-success me-2"></i>Active</span>
+                                    </div> -->
+                                    <div class="d-flex justify-content-between my-3">
+                                        <span>Status</span>
+                                        <span class="<?= $statusColor; ?> fw-semibold"><?= $statusText; ?></span>
                                     </div>
                                     <hr />
                                     <div class="d-flex justify-content-between my-3">
@@ -232,28 +530,56 @@ if ($role != 1 && $role != 2) {
                                         $invoiceQuery = "SELECT * FROM record_payment WHERE invoice_no = '$invoice_id'";
                                         $invoiceResult = mysqli_query($conn, $invoiceQuery);
                                         if (mysqli_num_rows($invoiceResult) > 0) {
-                                        while ($invoiceRow = mysqli_fetch_assoc($invoiceResult)) {
-                                            $date = $invoiceRow['paid_date'];
-                                            $amount = $invoiceRow['amount'];
-                                            ?>
-                                            <div class="d-flex justify-content-between my-2 p-4">
-                                                <span><?php echo $date; ?></span>
-                                                <span><?php echo number_format($amount, 2); ?></span>
-                                            </div>
-                                            <hr />
-                                            <?php
+                                            while ($invoiceRow = mysqli_fetch_assoc($invoiceResult)) {
+                                                $date = $invoiceRow['paid_date'];
+                                                $amount = $invoiceRow['amount'];
+                                                ?>
+                                                <div class="d-flex justify-content-between my-2 p-4">
+                                                    <span><?php echo $date; ?></span>
+                                                    <span><?php echo number_format($amount, 2); ?></span>
+                                                </div>
+                                                <hr />
+                                                <?php
+                                            }
+                                        } else {
+                                            echo "<div>No payments found.</div>";
                                         }
-                                    } else {
-                                        echo "<div>No payments found.</div>";
-                                    }
                                     ?>
 
                                     <div class="mt-20">
-                                    <a href="order-summary.php?id=<?php echo $invoice_id; ?>"><button class="btn text-white btn-danger text-sm mb-10">View More</button></a>
-                                    <a href="invoice-preview.php?id=<?php echo $invoice_id; ?>"><button class="btn text-white btn-success text-sm mb-10">Invoice</button> </a>   
-                                    <button class="btn text-white lufera-bg text-sm mb-10">Renew</button>
-                                    <button class="btn text-white btn-primary text-sm mb-10" data-bs-toggle="modal" data-bs-target="#exampleModal">Record Payment</button>
+                                        <button class="btn text-white btn-primary text-sm mb-10" data-bs-toggle="modal" data-bs-target="#exampleModal">Record Payment</button>
+                                        <button class="btn text-white lufera-bg text-sm mb-10">Renew</button>
+                                        <a href="invoice-preview.php?id=<?php echo $invoice_id; ?>"><button class="btn text-white btn-success text-sm mb-10">Invoice</button> </a>   
+                                        <a href="order-summary.php?id=<?php echo $invoice_id; ?>"><button class="btn text-white btn-danger text-sm mb-10">View More</button></a>
                                     </div>
+
+                                    <!-- New Order Approvals Section (Admin only) -->
+                                    <?php if ($role === '1' || $role === '2'): ?>
+                                        <div class="mt-20">
+                                            <h6 class="text-md mb-10">Order Approvals Management</h6>
+                                            <p class="text-muted">This section will display all order approval and rejected buttons for this section.</p>
+                                            <div class="d-flex gap-3 mt-10">
+                                                <!-- Approve Button -->
+                                                <form method="POST" style="display:inline;">
+                                                    <input type="hidden" name="approve_id" value="<?= $orderId; ?>">
+                                                    <button type="submit" class="btn btn-success text-white text-sm d-flex align-items-center"
+                                                        <?= ($row['status'] === 'Approved') ? 'disabled' : ''; ?>>
+                                                        <i class="fa fa-check me-2"></i> Approve
+                                                    </button>
+                                                </form>
+
+                                                <!-- Reject Button -->
+                                                <form method="POST" style="display:inline;">
+                                                    <input type="hidden" name="cancel_id" value="<?= $orderId; ?>">
+                                                    <button type="submit" class="btn btn-danger text-white text-sm d-flex align-items-center"
+                                                        <?= ($row['status'] === 'Cancelled') ? 'disabled' : ''; ?>>
+                                                        <i class="fa fa-times me-2"></i> Reject
+                                                    </button>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    <?php endif; ?>
+
                                 </div>
                             </div>
                         <?php endwhile; ?>
@@ -264,6 +590,7 @@ if ($role != 1 && $role != 2) {
         </div>
     </div>
 </div>
+
 <div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered modal-lg">
             <form method="post">
@@ -325,6 +652,7 @@ if ($role != 1 && $role != 2) {
             </form>
         </div>
     </div>
+
 <script>
 $(document).ready(function() {
     $('#userTable').DataTable();
@@ -392,6 +720,30 @@ document.addEventListener("DOMContentLoaded", function () {
     });
 });
 </script>
+
+<?php if (isset($_SESSION['order_approved']) && $_SESSION['order_approved'] === true): ?>
+    <script>
+        Swal.fire({
+            title: "Order Approved",
+            // text: "The order has been successfully approved!",
+            icon: "success",
+            confirmButtonText: "OK"
+        });
+    </script>
+    <?php unset($_SESSION['order_approved']); ?>
+<?php endif; ?>
+
+<?php if (isset($_SESSION['order_cancelled']) && $_SESSION['order_cancelled'] === true): ?>
+    <script>
+        Swal.fire({
+            title: "Order Cancelled",
+            icon: "warning",
+            confirmButtonText: "OK"
+        });
+    </script>
+    <?php unset($_SESSION['order_cancelled']); ?>
+<?php endif; ?>
+
 </body>
 </html>
 
