@@ -177,6 +177,143 @@
             error_log("Email not sent. Error: {$mail->ErrorInfo}");
         }
     }
+
+    // ADMIN cancels → Update status
+    if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['cancel_id']) && ($role === '1' || $role === '2')) {
+        $orderId = intval($_POST['cancel_id']);
+        $conn->query("UPDATE orders SET status = 'Cancelled' WHERE id = $orderId");
+        $_SESSION['order_cancelled'] = true;
+
+        // For Notifications..
+        date_default_timezone_set('Asia/Kolkata');
+
+        // Get user_id for notification
+        $res = $conn->query("SELECT user_id FROM orders WHERE id = $orderId");
+        $user = $res->fetch_assoc();
+        $userId = $user['user_id'];
+
+        // Add notification
+        $msg = "Your order has been cancelled.";
+        $createdAt = date('Y-m-d H:i:s');
+        $stmt = $conn->prepare("INSERT INTO notifications (user_id, message, n_photo, created_at) VALUES (?, ?, ?, ?)");
+        $stmt->bind_param("ssss", $userId, $msg, $photo, $createdAt);
+        $stmt->execute();
+
+        // Fetch order + user info for email
+        $sql = $conn->prepare("SELECT u.email, u.username, o.invoice_id, o.plan, o.amount 
+                            FROM orders o 
+                            JOIN users u ON o.user_id = u.id 
+                            WHERE o.id = ?");
+        $sql->bind_param("i", $orderId);
+        $sql->execute();
+        $result = $sql->get_result();
+        $row = $result->fetch_assoc();
+
+         if ($row) {
+            $userEmail = $row['email'];
+            $userName  = $row['username'];
+            $plan  = $row['plan'];
+            $invoiceId = $row['invoice_id'];
+            $amount    = $row['amount'];
+
+            // Send Cancelled Mail
+            try {
+                $mail = new PHPMailer(true);
+                $mail->isSMTP();
+                $mail->Host       = 'smtp.gmail.com';
+                $mail->SMTPAuth   = true;
+                $mail->Username   = $_ENV['EMAIL_USERNAME']; 
+                $mail->Password   = $_ENV['GMAIL_APP_PASSWORD']; 
+                $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
+                $mail->Port       = 587;
+
+                $mail->setFrom($_ENV['EMAIL_USERNAME'], 'Lufera Infotech');
+                $mail->addAddress($userEmail, $userName);
+
+                $mail->isHTML(true);
+                $mail->Subject = "Your Order Has Been Cancelled";
+
+                $mail->Body = '
+                    <!DOCTYPE html>
+                    <html>
+                    <head>
+                    <meta charset="UTF-8">
+                    <title>Order Cancelled</title>
+                    </head>
+                    <body style="margin:0;padding:0;background:#f5f5f5;font-family:Roboto,Arial,sans-serif;">
+                    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background:#f5f5f5;padding:30px 0;">
+                        <tr>
+                        <td align="center">
+                            <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="600" 
+                                style="background:#ffffff;border:1px solid #e0e0e0;border-radius:8px;box-shadow:0 2px 6px rgba(0,0,0,0.08);overflow:hidden;">
+                            
+                            <!-- Header -->
+                            <tr>
+                                <td style="padding:20px;text-align:center;">
+                                <img src="' . htmlspecialchars($_ENV['EMAIL_IMAGE_LINK']) . '" alt="Lufera Infotech Logo" style="width:150px;height:48px;display:block;margin:auto;">
+                                </td>
+                            </tr>
+
+                            <!-- Divider -->
+                            <tr>
+                                <td style="border-top:1px solid #eaeaea;"></td>
+                            </tr>
+
+                            <!-- Main Content -->
+                            <tr>
+                                <td style="padding:30px 40px;text-align:left;font-size:15px;line-height:1.6;color:#101010;">
+                                <h3 style="margin:0 0 15px;font-size:20px;font-weight:500;color:#d32f2f;">Order Cancelled</h3>
+                                <p>Hello <b>' . htmlspecialchars($userName) . '</b>,</p>
+                                <p>We regret to inform you that your order has been <b style="color:#d32f2f;">cancelled</b> by the admin. Here are the details:</p>
+                                
+                                <table cellpadding="8" cellspacing="0" border="0" width="100%" style="border:1px solid #eaeaea;margin:20px 0;font-size:14px;">
+                                    <tr><td><b>Plan</b></td><td>' . htmlspecialchars($plan) . '</td></tr>
+                                    <tr><td><b>Invoice ID</b></td><td>' . htmlspecialchars($invoiceId) . '</td></tr>
+                                    <tr><td><b>Total Paid</b></td><td id="currency-symbol-display">' . htmlspecialchars($symbol) . htmlspecialchars($amount) . '</td></tr>
+                                </table>
+
+                                <p>If this was unexpected, please contact our support team for clarification.</p>
+                                
+                                <div style="margin:30px 0;text-align:center;">
+                                    <a href="' . htmlspecialchars($_ENV['EMAIL_COMMON_LINK']) . '/sign-in.php" 
+                                    style="background:#d32f2f;color:#ffffff;text-decoration:none;
+                                            padding:12px 28px;border-radius:4px;font-weight:bold;display:inline-block;">
+                                    Contact Support
+                                    </a>
+                                </div>
+
+                                <p>We’re sorry for any inconvenience caused.</p>
+                                </td>
+                            </tr>
+
+                            <!-- Divider -->
+                            <tr>
+                                <td style="border-top:1px solid #eaeaea;"></td>
+                            </tr>
+
+                            <!-- Footer -->
+                            <tr>
+                                <td style="padding:20px;text-align:center;font-size:12px;color:#777;">
+                                You’re receiving this email because your order was cancelled by the <b>Admin Dashboard</b>.<br>
+                                &copy; 2025 Lufera Infotech. All rights reserved.
+                                </td>
+                            </tr>
+
+                            </table>
+                        </td>
+                        </tr>
+                    </table>
+                    </body>
+                    </html>
+                ';
+
+                $mail->send();
+
+            } catch (Exception $e) {
+                error_log("Cancel email not sent. Error: {$mail->ErrorInfo}");
+            }
+        }
+    }
     
     // JOIN orders with users
     $query = "
@@ -266,6 +403,11 @@
                                     Approved
                                     </button>
                                 <?php } ?>
+                                <?php if ($row['status'] === 'Cancelled'){ ?>
+                                    <button class="btn btn-secondary btn-sm fw-medium text-white me-2">
+                                        Cancelled
+                                    </button>
+                                <?php } ?>
                             </td>
                             <td class="text-center">
                                 <a href="order-summary.php?id=<?php echo $row['invoice_id']; ?>" class="fa fa-eye view-user-btn bg-info-focus text-info-600 bg-hover-info-200 fw-medium w-32-px h-32-px d-inline-flex justify-content-center align-items-center rounded-circle">
@@ -276,11 +418,15 @@
                                     <form method="POST" style="display:inline;">
                                         <input type="hidden" name="approve_id" value="<?= $row['id'] ?>">
                                         <button type="submit" class="fa fa-check-square view-user-btn bg-success-focus text-success-600 bg-hover-success-200 fw-medium w-32-px h-32-px d-inline-flex justify-content-center align-items-center rounded-circle">
-                                        
                                         </button>
                                     </form>
+
+                                    <!-- CANCEL BUTTON -->
+                                    <form method="POST" style="display:inline;">
+                                        <input type="hidden" name="cancel_id" value="<?= $row['id'] ?>">
+                                        <button type="submit" class="fa fa-times-circle view-user-btn bg-danger-focus text-danger-600 bg-hover-danger-200 fw-medium w-32-px h-32-px d-inline-flex justify-content-center align-items-center rounded-circle" title="Cancel Order"></button>
+                                    </form>
                                 <?php } ?>
-                               
                             </td>
                         </tr>
                         <?php endwhile; ?>
@@ -315,6 +461,17 @@
         });
     </script>
     <?php unset($_SESSION['order_approved']); ?>
+<?php endif; ?>
+
+<?php if (isset($_SESSION['order_cancelled']) && $_SESSION['order_cancelled'] === true): ?>
+    <script>
+        Swal.fire({
+            title: "Order Cancelled",
+            icon: "warning",
+            confirmButtonText: "OK"
+        });
+    </script>
+    <?php unset($_SESSION['order_cancelled']); ?>
 <?php endif; ?>
 
 </body>

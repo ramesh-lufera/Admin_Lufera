@@ -37,12 +37,46 @@
         $addon_total = $_POST['addon-total'];
     }
 
-    $service_name = ""; // default
+    // ========== Packages ==========
+    $package_names = "";
+    if (!empty($get_packages)) {
+        $package_ids = array_map('intval', explode(",", $get_packages));
+        if (!empty($package_ids)) {
+            $ids_str = implode(",", $package_ids);
+            $sql_packages = "SELECT package_name FROM package WHERE id IN ($ids_str)";
+            $result_packages = $conn->query($sql_packages);
+
+            $names = [];
+            while ($row_pkg = $result_packages->fetch_assoc()) {
+                $names[] = $row_pkg['package_name'];
+            }
+            $package_names = implode(", ", $names);
+        }
+    }
+
+    // ========== Products ==========
+    $product_names = "";
+    if (!empty($get_products)) {
+        $product_ids = array_map('intval', explode(",", $get_products));
+        if (!empty($product_ids)) {
+            $ids_str = implode(",", $product_ids);
+            $sql_products = "SELECT name FROM products WHERE id IN ($ids_str)";
+            $result_products = $conn->query($sql_products);
+
+            $names = [];
+            while ($row_prod = $result_products->fetch_assoc()) {
+                $names[] = $row_prod['name'];
+            }
+            $product_names = implode(", ", $names);
+        }
+    }
+
+    // ========== Add-On Services ==========
+    $service_name = "";
     if (!empty($get_addon)) {
-        // Convert string like "2,4,6" into an array of integers
         $addon_ids = array_map('intval', explode(",", $get_addon));
         if (!empty($addon_ids)) {
-            $ids_str = implode(",", $addon_ids); // safe, integers only
+            $ids_str = implode(",", $addon_ids);
             $sql_addons = "SELECT name FROM `add-on-service` WHERE id IN ($ids_str)";
             $result_addons = $conn->query($sql_addons);
 
@@ -50,8 +84,6 @@
             while ($row_addon = $result_addons->fetch_assoc()) {
                 $names[] = $row_addon['name'];
             }
-
-            // Join multiple add-on names with commas
             $service_name = implode(", ", $names);
         }
     }
@@ -122,16 +154,19 @@
                         $pkg_amount   = $pkg_subtotal - $pkg_discount + $pkg_gst;
                         $pkg_balance  = $pkg_amount - $payment_made;
 
+                        // Generate unique invoice id for package
+                        $pkg_invoice_id = rand(10000000, 99999999);
+
                         // Insert into orders (plan = ID)
                         $sql_package = "INSERT INTO orders 
                             (user_id, invoice_id, plan, duration, amount, gst, price, addon_price, status, payment_method, discount, payment_made, created_on, subtotal, balance_due, addon_service, type) 
                             VALUES 
-                            ('$client_id', '$receipt_id', '$pkg_id', '$pkg_duration', '$pkg_amount', '$pkg_gst', '', '$pkg_price', 'Pending', '$pay_method', '$pkg_discount', '$payment_made', '$created_at', '$pkg_subtotal', '$pkg_balance', '$pkg_id', 'package')";
+                            ('$client_id', '$pkg_invoice_id', '$pkg_id', '$pkg_duration', '$pkg_amount', '$pkg_gst', '', '$pkg_price', 'Pending', '$pay_method', '$pkg_discount', '$payment_made', '$created_at', '$pkg_subtotal', '$pkg_balance', '$pkg_id', 'package')";
                         mysqli_query($conn, $sql_package);
 
                         // Insert into websites (plan = NAME ✅)
                         $siteInsertPkg = "INSERT INTO websites (user_id, domain, plan, duration, status, cat_id, invoice_id, product_id, type) 
-                                        VALUES ('$client_id', 'N/A', '$pkg_name', '$pkg_duration', 'Pending', '$cat_id', '$receipt_id', '$pkg_id', 'package')";
+                                        VALUES ('$client_id', 'N/A', '$pkg_name', '$pkg_duration', 'Pending', '$cat_id', '$pkg_invoice_id', '$pkg_id', 'package')";
                         mysqli_query($conn, $siteInsertPkg);
                     }
                 }
@@ -156,16 +191,19 @@
                         $prod_amount   = $prod_subtotal - $prod_discount + $prod_gst;
                         $prod_balance  = $prod_amount - $payment_made;
 
+                        // Generate unique invoice id for product
+                        $prod_invoice_id = rand(10000000, 99999999);
+
                         // Insert into orders (plan = ID)
                         $sql_product = "INSERT INTO orders 
                             (user_id, invoice_id, plan, duration, amount, gst, price, addon_price, status, payment_method, discount, payment_made, created_on, subtotal, balance_due, addon_service, type) 
                             VALUES 
-                            ('$client_id', '$receipt_id', '$prod_id', '$prod_duration', '$prod_amount', '$prod_gst', '', '$prod_price', 'Pending', '$pay_method', '$prod_discount', '$payment_made', '$created_at', '$prod_subtotal', '$prod_balance', '$prod_id', 'product')";
+                            ('$client_id', '$prod_invoice_id', '$prod_id', '$prod_duration', '$prod_amount', '$prod_gst', '', '$prod_price', 'Pending', '$pay_method', '$prod_discount', '$payment_made', '$created_at', '$prod_subtotal', '$prod_balance', '$prod_id', 'product')";
                         mysqli_query($conn, $sql_product);
 
                         // Insert into websites (plan = NAME ✅)
                         $siteInsertProd = "INSERT INTO websites (user_id, domain, plan, duration, status, cat_id, invoice_id, product_id, type) 
-                                        VALUES ('$client_id', 'N/A', '$prod_name', '$prod_duration', 'Pending', '$prod_cat_id', '$receipt_id', '$prod_id', 'product')";
+                                        VALUES ('$client_id', 'N/A', '$prod_name', '$prod_duration', 'Pending', '$prod_cat_id', '$prod_invoice_id', '$prod_id', 'product')";
                         mysqli_query($conn, $siteInsertProd);
                     }
                 }
@@ -521,8 +559,24 @@
                                         </td>
                                     </tr>
                                     <tr>
-                                        <td>Add-On Services</td>
-                                        <td><?php echo !empty($service_name) ? htmlspecialchars($service_name) : 'None'; ?></td>
+                                        <td>Add-Ons Services</td>
+                                        <td>
+                                            <?php
+                                                $output_parts = [];
+
+                                                if (!empty($package_names)) {
+                                                    $output_parts[] = "<b>Packages:</b> " . htmlspecialchars($package_names);
+                                                }
+                                                if (!empty($product_names)) {
+                                                    $output_parts[] = "<b>Products:</b> " . htmlspecialchars($product_names);
+                                                }
+                                                if (!empty($service_name)) {
+                                                    $output_parts[] = "<b>Add-On Services:</b> " . htmlspecialchars($service_name);
+                                                }
+
+                                                echo !empty($output_parts) ? implode(" | ", $output_parts) : "None";
+                                            ?>
+                                        </td>
                                     </tr>
                                     <!-- <tr>
                                         <td class="border-0" colspan="2" id="currency-symbol-display">Renews at <?= htmlspecialchars($symbol) ?>1500/year for 3 Years
