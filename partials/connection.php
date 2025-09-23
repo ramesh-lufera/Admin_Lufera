@@ -9,7 +9,7 @@
     $servername = "localhost";
     $username = "root";
     $password = "";
-    $dbname = "lufera infotech";
+    $dbname = "admin2";
 
     $conn = new mysqli($servername, $username, $password, $dbname);
 
