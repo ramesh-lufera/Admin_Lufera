@@ -98,13 +98,8 @@ $result = mysqli_query($conn, $query);
                                 <td class="text-center"><?php echo htmlspecialchars($row['plan_name']); ?></td>
                                 <td class="text-center"><?php echo htmlspecialchars($row['business_name']); ?></td>
                                 <td class="text-center"><?php echo htmlspecialchars($row['paid_date']); ?></td>
-                                <td class="text-center"><?php echo htmlspecialchars($row['amount']); ?></td>
+                                <td class="text-center"><?= number_format($row['amount'], 2) ?></td>
                                 <td class="text-center">
-                                <!-- <form action="payment_details.php" method="POST">
-                                    <input type="hidden" name="payment_id" value="<?php echo htmlspecialchars($row['payment_id']); ?>">    
-                                    <input type="hidden" name="services" value="<?php echo htmlspecialchars($row['plan_name']); ?>">
-                                    <button type="submit" class="fa fa-chevron-right ms-10 text-sm lufera-color border-0"></button>
-                                </form> -->
                                 <a href="payment_details.php?id=<?php echo $row['trans_id']; ?>" class="fa fa-chevron-right ms-10 text-sm lufera-color"></a>
                                 </td>
                             </tr>
