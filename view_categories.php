@@ -179,15 +179,6 @@
                             padding: 10px 15px;
                             }
 
-                            .header-row {
-                            margin-bottom: 20px;
-                            }
-
-                            .header-row h5 {
-                            font-size: 24px !important;
-                            margin: 0;
-                            }
-
                             .search-card {
                             background-color: #fff;
                             border-radius: 8px;
@@ -452,10 +443,11 @@
                             <div class="content-wrapper">
 
                             <!-- Title -->
-                            <div class="header-row">
-                                <h5>$pageTitle</h5>
+                            <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-24">
+                                <a class="cursor-pointer fw-bold" onclick="history.back()"><span class="fa fa-arrow-left"></span>&nbsp; Back</a> 
+                                <h6 class="fw-semibold mb-0">$pageTitle</h6>
                             </div>
-
+                            
                             <!-- Search + Add -->
                             <div class="search-card bg-base">
                                 <div class="search-container">
@@ -740,15 +732,6 @@
                         padding: 10px 15px;
                         }
 
-                        .header-row {
-                        margin-bottom: 20px;
-                        }
-
-                        .header-row h5 {
-                        font-size: 24px !important;
-                        margin: 0;
-                        }
-
                         .search-card {
                         background-color: #fff;
                         border-radius: 8px;
@@ -1011,12 +994,11 @@
                     </head>
                     <body>
                         <div class="content-wrapper">
-
-                        <!-- Title -->
-                        <div class="header-row">
-                            <h5>$pageTitle1</h5>
-                        </div>
-
+                            <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-24">
+                                <a class="cursor-pointer fw-bold" onclick="history.back()"><span class="fa fa-arrow-left"></span>&nbsp; Back</a> 
+                                <h6 class="fw-semibold mb-0">$pageTitle1</h6>
+                                <a class="cursor-pointer fw-bold visibility-hidden" onclick="history.back()"><span class="fa fa-arrow-left"></span>&nbsp; Back</a> 
+                            </div>
                         <!-- Search + Add -->
                         <div class="search-card bg-base">
                             <div class="search-container">
