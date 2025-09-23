@@ -248,9 +248,10 @@ if ($role != 1 && $role != 2) {
                                     ?>
 
                                     <div class="mt-20">
-                                    <a href="order-summary.php?id=<?php echo $invoice_id; ?>"><button class="btn text-white btn-danger text-sm">Order summary</button>    
-                                    <button class="btn text-white lufera-bg text-sm">Renew</button>
-                                        <button class="btn text-white btn-primary text-sm" data-bs-toggle="modal" data-bs-target="#exampleModal">Record Payment</button>
+                                    <a href="order-summary.php?id=<?php echo $invoice_id; ?>"><button class="btn text-white btn-danger text-sm mb-10">View More</button></a>
+                                    <a href="invoice-preview.php?id=<?php echo $invoice_id; ?>"><button class="btn text-white btn-success text-sm mb-10">Invoice</button> </a>   
+                                    <button class="btn text-white lufera-bg text-sm mb-10">Renew</button>
+                                    <button class="btn text-white btn-primary text-sm mb-10" data-bs-toggle="modal" data-bs-target="#exampleModal">Record Payment</button>
                                     </div>
                                 </div>
                             </div>
