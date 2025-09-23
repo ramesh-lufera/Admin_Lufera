@@ -32,6 +32,7 @@
 <body>
     <div class="dashboard-main-body">
         <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-24">
+            <a class="cursor-pointer fw-bold" onclick="history.back()"><span class="fa fa-arrow-left"></span>&nbsp; Back</a> 
             <h6 class="fw-semibold mb-0">Packages</h6>
             <a data-bs-toggle="modal" 
             data-bs-target="#add-package-modal" class="btn lufera-bg text-white text-sm btn-sm px-12 py-12 radius-8 d-flex align-items-center gap-2" >

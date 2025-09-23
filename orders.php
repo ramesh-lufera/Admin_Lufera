@@ -208,8 +208,9 @@
 
 <body>
     <div class="dashboard-main-body">
-        <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-24">
-            <h6 class="fw-semibold mb-0">Orders</h6>
+        <div class="d-flex flex-wrap align-items-center gap-3 mb-24">
+            <a class="cursor-pointer fw-bold" onclick="history.back()"><span class="fa fa-arrow-left"></span>&nbsp; Back</a> 
+            <h6 class="fw-semibold mb-0 m-auto">Orders</h6>
         </div>
         <div class="card">
             <div class="card-body">

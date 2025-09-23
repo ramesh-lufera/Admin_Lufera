@@ -94,10 +94,9 @@
     }
 </style>
 <div class="dashboard-main-body">
-    <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-20">
-        <div>
-            <h6 class="fw-semibold mb-0">Order #<?php echo $invoice_id; ?></h6>
-        </div>
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-24">
+        <a class="cursor-pointer fw-bold" onclick="history.back()"><span class="fa fa-arrow-left"></span>&nbsp; Back</a>    
+        <h6 class="fw-semibold mb-0">Order Summary</h6>
         <div>
         <?php 
             if($row2['role'] == "1" || $row2['role'] == "2") {?>  
@@ -109,14 +108,6 @@
             <button type="button" class="btn btn-sm btn-success radius-8 d-inline-flex align-items-center gap-1" data-bs-toggle="modal" data-bs-target="#Payment" id="currency-symbol-display">
                 <?= htmlspecialchars($symbol) ?> Payment History
             </button>
-            <!-- <button type="button" class="btn btn-sm btn-success radius-8 d-inline-flex align-items-center gap-1" >
-                <iconify-icon icon="basil:edit-outline" class="text-xl"></iconify-icon>
-                Edit
-            </button>
-            <button type="button" class="btn btn-sm btn-danger radius-8 d-inline-flex align-items-center gap-1" onclick="printInvoice()">
-                <iconify-icon icon="basil:printer-outline" class="text-xl"></iconify-icon>
-                Print
-            </button> -->
         </div>
     </div>
     <div class="modal fade" id="payment" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
