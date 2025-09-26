@@ -1,5 +1,7 @@
 <?php include './partials/layouts/layoutTop.php';
-      
+      ini_set('display_errors', 1);
+      ini_set('display_startup_errors', 1);
+      error_reporting(E_ALL);
     use PHPMailer\PHPMailer\PHPMailer;
     use PHPMailer\PHPMailer\Exception;
 
@@ -37,56 +39,59 @@
         $addon_total = $_POST['addon-total'];
     }
 
-    // ========== Packages ==========
-    $package_names = "";
-    if (!empty($get_packages)) {
-        $package_ids = array_map('intval', explode(",", $get_packages));
-        if (!empty($package_ids)) {
-            $ids_str = implode(",", $package_ids);
-            $sql_packages = "SELECT package_name FROM package WHERE id IN ($ids_str)";
-            $result_packages = $conn->query($sql_packages);
+    // ========== Packages with Prices ==========
+$package_details = [];
+if (!empty($get_packages)) {
+    $package_ids = array_map('intval', explode(",", $get_packages));
+    if (!empty($package_ids)) {
+        $ids_str = implode(",", $package_ids);
+        $sql_packages = "SELECT package_name, price FROM package WHERE id IN ($ids_str)";
+        $result_packages = $conn->query($sql_packages);
 
-            $names = [];
-            while ($row_pkg = $result_packages->fetch_assoc()) {
-                $names[] = $row_pkg['package_name'];
-            }
-            $package_names = implode(", ", $names);
+        while ($row_pkg = $result_packages->fetch_assoc()) {
+            $package_details[] = [
+                'name' => $row_pkg['package_name'],
+                'price' => floatval($row_pkg['price'])
+            ];
         }
     }
+}
 
-    // ========== Products ==========
-    $product_names = "";
-    if (!empty($get_products)) {
-        $product_ids = array_map('intval', explode(",", $get_products));
-        if (!empty($product_ids)) {
-            $ids_str = implode(",", $product_ids);
-            $sql_products = "SELECT name FROM products WHERE id IN ($ids_str)";
-            $result_products = $conn->query($sql_products);
+// ========== Products with Prices ==========
+$product_details = [];
+if (!empty($get_products)) {
+    $product_ids = array_map('intval', explode(",", $get_products));
+    if (!empty($product_ids)) {
+        $ids_str = implode(",", $product_ids);
+        $sql_products = "SELECT name, price FROM products WHERE id IN ($ids_str)";
+        $result_products = $conn->query($sql_products);
 
-            $names = [];
-            while ($row_prod = $result_products->fetch_assoc()) {
-                $names[] = $row_prod['name'];
-            }
-            $product_names = implode(", ", $names);
+        while ($row_prod = $result_products->fetch_assoc()) {
+            $product_details[] = [
+                'name' => $row_prod['name'],
+                'price' => floatval($row_prod['price'])
+            ];
         }
     }
+}
 
-    // ========== Add-On Services ==========
-    $service_name = "";
-    if (!empty($get_addon)) {
-        $addon_ids = array_map('intval', explode(",", $get_addon));
-        if (!empty($addon_ids)) {
-            $ids_str = implode(",", $addon_ids);
-            $sql_addons = "SELECT name FROM `add-on-service` WHERE id IN ($ids_str)";
-            $result_addons = $conn->query($sql_addons);
+// ========== Add-On Services with Prices ==========
+$addon_details = [];
+if (!empty($get_addon)) {
+    $addon_ids = array_map('intval', explode(",", $get_addon));
+    if (!empty($addon_ids)) {
+        $ids_str = implode(",", $addon_ids);
+        $sql_addons = "SELECT name, cost FROM `add-on-service` WHERE id IN ($ids_str)";
+        $result_addons = $conn->query($sql_addons);
 
-            $names = [];
-            while ($row_addon = $result_addons->fetch_assoc()) {
-                $names[] = $row_addon['name'];
-            }
-            $service_name = implode(", ", $names);
+        while ($row_addon = $result_addons->fetch_assoc()) {
+            $addon_details[] = [
+                'name' => $row_addon['name'],
+                'price' => floatval($row_addon['cost'])
+            ];
         }
     }
+}
 
     // Get active symbol
     $result1 = $conn->query("SELECT symbol FROM currencies WHERE is_active = 1 LIMIT 1");
@@ -531,7 +536,7 @@
                                 <h6 class="mb-0"><?php echo $plan_name; ?></h6>
                                 <span class="text-muted small">Receipt ID: <?php echo $receipt_id; ?></span>
                             </div>
-                            <p class="mb-0">Perfect plan to get started for your own Website</p>
+                            <!-- <p class="mb-0">Perfect plan to get started for your own Website</p> -->
                         </div>
                         <div class="card-body p-16">
                             <table class="plan-details-table mb-0 w-100">
@@ -559,8 +564,8 @@
                                             ?>
                                         </td>
                                     </tr>
-                                    <tr>
-                                        <td>Add-Ons Services</td>
+                                    <!-- <tr>
+                                        <td>Add-Ons</td>
                                         <td>
                                             <?php
                                                 $output_parts = [];
@@ -578,7 +583,7 @@
                                                 echo !empty($output_parts) ? implode(" | ", $output_parts) : "None";
                                             ?>
                                         </td>
-                                    </tr>
+                                    </tr> -->
                                     <!-- <tr>
                                         <td class="border-0" colspan="2" id="currency-symbol-display">Renews at <?= htmlspecialchars($symbol) ?>1500/year for 3 Years
                                             <p class="text-sm ad-box">Great news! Your FREE domain + 3 months FREE are included with this order</p>
@@ -595,31 +600,65 @@
                     <div class="card h-100 radius-12">
                         <div class="card-header py-10 border-none d-flex justify-content-between card-shadow">
                             <div>
-                                <h6 class="mb-0">Sub Total</h6>
-                                <p class="mb-0">Sub total does not include applicable taxes</p>
+                                <h6 class="mb-0">Price</h6>
+                                <!-- <p class="mb-0">Sub total does not include applicable taxes</p> -->
                             </div>
                             <div class="align-content-center">
-                                <h4 class="mb-0" id="currency-symbol-display"><?= htmlspecialchars($symbol) ?><?php echo $price; ?></h4>
+                                <h6 class="mb-0" id="currency-symbol-display"><?php echo htmlspecialchars($symbol) . number_format($price, 2); ?></h6>
                             </div>
                         </div>
                         <div class="card-body p-16">
-                            <table class="plan-details-table mb-0 w-100">
-                                <tbody>
-                                    <tr>
-                                        <td>Discount</td>
-                                        <td class="text-end">N/A</td>
-                                    </tr>
-                                    <tr>
-                                        <td>Tax (GST 18%)</td>
-                                        <td class="text-end" id="currency-symbol-display"><?= htmlspecialchars($symbol) ?><?php echo $gst; ?></td>
-                                    </tr>
-                                    <tr>
-                                        <td class="border-0">Estimated Total</td>
-                                        <td class="border-0 text-end" id="currency-symbol-display"><?= htmlspecialchars($symbol) ?><?php echo $total_price; ?></td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
+    <table class="table plan-details-table mb-0 w-100">
+        <tbody>
+           
+                <p class="fw-semibold px-10 mb-0">Add-ons :</p>
+            
+            
+            <!-- Plan Price -->
+            <!-- <tr>
+                <td><?php echo htmlspecialchars($plan_name); ?></td>
+                <td class="text-end" id="currency-symbol-display"><?php echo htmlspecialchars($symbol) . number_format($price, 2); ?></td>
+            </tr> -->
+            <!-- Packages -->
+            <?php if (!empty($package_details)): ?>
+                <?php foreach ($package_details as $package): ?>
+                    <tr>
+                        <td><?php echo htmlspecialchars($package['name']); ?> (Package)</td>
+                        <td class="text-end" id="currency-symbol-display"><?php echo htmlspecialchars($symbol) . number_format($package['price'], 2); ?></td>
+                    </tr>
+                <?php endforeach; ?>
+            <?php endif; ?>
+            <!-- Products -->
+            <?php if (!empty($product_details)): ?>
+                <?php foreach ($product_details as $product): ?>
+                    <tr>
+                        <td><?php echo htmlspecialchars($product['name']); ?> (Product)</td>
+                        <td class="text-end" id="currency-symbol-display"><?php echo htmlspecialchars($symbol) . number_format($product['price'], 2); ?></td>
+                    </tr>
+                <?php endforeach; ?>
+            <?php endif; ?>
+            <!-- Add-On Services -->
+            <?php if (!empty($addon_details)): ?>
+                <?php foreach ($addon_details as $addon): ?>
+                    <tr>
+                        <td><?php echo htmlspecialchars($addon['name']); ?> (Service)</td>
+                        <td class="text-end" id="currency-symbol-display"><?php echo htmlspecialchars($symbol) . number_format($addon['price'], 2); ?></td>
+                    </tr>
+                <?php endforeach; ?>
+            <?php endif; ?>
+            <!-- Tax (GST 18%) -->
+            <tr>
+                <td>Tax (GST 18%)</td>
+                <td class="text-end" id="currency-symbol-display"><?php echo htmlspecialchars($symbol) . number_format($gst, 2); ?></td>
+            </tr>
+            <!-- Estimated Total -->
+            <tr>
+                <td class="border-0 fw-semibold">Total</td>
+                <td class="border-0 text-end fw-semibold text-xl" id="currency-symbol-display"><?php echo htmlspecialchars($symbol) . number_format($total_price, 2); ?></td>
+            </tr>
+        </tbody>
+    </table>
+</div>
                     </div>
                 </div>
             </div>

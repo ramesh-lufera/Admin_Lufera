@@ -61,8 +61,9 @@
     .image-upload img {
       width: 100%;
       height: 100%;
-      object-fit: cover;
+      object-fit: contain;
       display: none;
+      background: #f5f6fa;
     }
 
     .image-upload span {
@@ -184,7 +185,7 @@ if (isset($_POST['save'])) {
   }
 
   $stmt = $conn->prepare("UPDATE products SET name=?, title=?, subtitle=?, price=?, description=?, category=?, tags=?, product_image=?, duration=?, cat_id=?, created_at=?, template=? WHERE id=?");
-  $stmt->bind_param("sssssssssssi", $name, $title, $subtitle, $price, $description, $category, $tags, $product_image, $duration, $cat_id, $updated_at, $module, $get_product_id);
+  $stmt->bind_param("sssssssssissi", $name, $title, $subtitle, $price, $description, $category, $tags, $product_image, $duration, $cat_id, $updated_at, $module, $get_product_id);
 
 
   if ($stmt->execute()) {
@@ -358,14 +359,15 @@ fileInput.addEventListener('change', function() {
 
 // Add custom validation on submit
 document.querySelector('form').addEventListener('submit', function(e) {
-  if (!fileInput.value) {
+  if (!fileInput.value && !preview.getAttribute('src')) {
+    // No new file chosen AND no existing image → block submit
     fileInput.setCustomValidity('Please upload a product image');
   } else {
+    // Either existing image OR new file chosen → allow submit
     fileInput.setCustomValidity('');
   }
 });
-</script>
-<script>
+
 const durationValueInput = document.getElementById('duration_value');
 const durationUnitSelect = document.getElementById('duration_unit');
 
@@ -377,8 +379,8 @@ function updateDurationOptions() {
   const isSingular = value === 1;
 
   const units = isSingular 
-    ? ['day', 'month', 'year', 'hour'] 
-    : ['days', 'months', 'years', 'hours'];
+    ? ['day', 'month', 'year'] 
+    : ['days', 'months', 'years'];
 
   durationUnitSelect.innerHTML = ''; // clear existing options
 

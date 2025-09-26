@@ -299,7 +299,7 @@ if ($stmt->execute()) {
                                     <option value="days">Days</option>
                                     <option value="months">Months</option>
                                     <option value="years">Years</option>
-                                    <option value="hours">Hours</option>
+                                    <!-- <option value="hours">Hours</option> -->
                                 </select>
                             </div>
                             <div class="invalid-feedback">
@@ -339,9 +339,9 @@ const durationUnit = document.getElementById('duration_unit');
 
 // Options with singular/plural forms
 const units = {
-  singular: ["Day", "Month", "Year", "Hour"],
-  plural: ["Days", "Months", "Years", "Hours"],
-  values: ["days", "months", "years", "hours"] // keep values consistent for backend
+  singular: ["Day", "Month", "Year"],
+  plural: ["Days", "Months", "Years"],
+  values: ["days", "months", "years"] // keep values consistent for backend
 };
 
 // Function to update options

@@ -547,7 +547,10 @@
                                     ?>
 
                                     <div class="mt-20">
+                                    <?php 
+                                        if($role == "1" || $role == "2") {?>  
                                         <button class="btn text-white btn-primary text-sm mb-10" data-bs-toggle="modal" data-bs-target="#exampleModal">Record Payment</button>
+                                    <?php } ?>
                                         <button class="btn text-white lufera-bg text-sm mb-10">Renew</button>
                                         <a href="invoice-preview.php?id=<?php echo $invoice_id; ?>"><button class="btn text-white btn-success text-sm mb-10">Invoice</button> </a>   
                                         <a href="order-summary.php?id=<?php echo $invoice_id; ?>"><button class="btn text-white btn-danger text-sm mb-10">View More</button></a>

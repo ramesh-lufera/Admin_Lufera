@@ -76,7 +76,7 @@ $script = '<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1
     width: 600px; /* Constrain width for PDF rendering */
     font-family: Arial, Helvetica, sans-serif; /* Web-safe font for better rendering */
     font-size: 14px; /* Slightly smaller font to fit content */
-    display: none; /* Hide the pay-rec content by default */
+     display: none; /*Hide the pay-rec content by default */
 }
 .invoice_table {
     font-size: 14px !important; /* Adjust font size for table */
@@ -109,7 +109,6 @@ $script = '<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1
     background: #4CAF50;
     color: #fff;
     text-align: center;
-    font-family: Arial, Helvetica, sans-serif; /* Consistent font */
 }
 @media print {
     .btn, .back_btn, .pay-rec, .navbar-header, .d-footer {
@@ -122,6 +121,14 @@ $script = '<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1
 </style>
 <?php
 $userId = $_SESSION['user_id'];
+
+$user_sql = "select * from users where id = $userId";
+$user_fetch = $conn->query($user_sql);
+$user_row = $user_fetch->fetch_assoc();
+
+$company_sql = "select * from company";
+$company_fetch = $conn->query($company_sql);
+$company_row = $company_fetch->fetch_assoc();
 
 $trans_id = $_GET['id'];
 $transaction = "select * from record_payment where id = $trans_id";
@@ -209,7 +216,7 @@ $amountInWords = numberToWords($amount);
                             </thead>
                             <tbody>
                                 <tr class="tbody">
-                                    <td><?php echo $plan_name; ?> </td>
+                                    <td class="w-40"><?php echo $plan_name; ?> </td>
                                     <td><?php echo $row['duration']; ?> </td>
                                     <td class="text-end "><?= htmlspecialchars($symbol) ?> <?= number_format($row['price'], 2, '.', ''); ?> </td>
                                 </tr>
@@ -225,18 +232,18 @@ $amountInWords = numberToWords($amount);
 
                         if (!empty($addon_ids)) {
                             $addon_id_list = implode(',', $addon_ids);
-                            $addon_query = "SELECT name, cost FROM `add-on-service` WHERE id IN ($addon_id_list)";
+                            $addon_query = "SELECT name, cost, duration FROM `add-on-service` WHERE id IN ($addon_id_list)";
                             $addon_result = $conn->query($addon_query);
 
                             if ($addon_result->num_rows > 0) {
-                                echo '<tr>
-                                        <td colspan="2" class="p-0">
+                                echo '
                                             <table class="table">
                                                 <tbody>';
 
                                 while ($addon_row = $addon_result->fetch_assoc()) {
                                     echo "<tr class='tbody'>
-                                            <td class=''>" . htmlspecialchars($addon_row['name']) . "</td>
+                                            <td class='w-40'>" . htmlspecialchars($addon_row['name']) . "</td>
+                                            <td class=''>" . htmlspecialchars($addon_row['duration']) . "</td>
                                             <td class='text-end'>
                                                 <span class='text-primary-light'>"
                                                 . htmlspecialchars($symbol) . " " . number_format($addon_row['cost'], 2, '.', '') .
@@ -247,8 +254,7 @@ $amountInWords = numberToWords($amount);
 
                                 echo '        </tbody>
                                             </table>
-                                        </td>
-                                    </tr>';
+                                        ';
                             }
                         }
                     }
@@ -325,10 +331,10 @@ $amountInWords = numberToWords($amount);
                                 <img src="assets/images/logo_lufera.png" alt="image" class="mb-8" width="200px">
                             </div>
                             <div class="">
-                                <p class="mb-0"><b>Lufera Infotech Pvt. Ltd. (OPC)</b></p>
-                                <p class="mb-0 text-sm">96/1, Bharathidasan Salai, Cantonment,<br> Trichy, TN, India, 620 001</p>
-                                <p class="mb-0 text-sm">+91 86 80808 204</p>
-                                <p class="mb-0 text-sm">www.luferatech.com</p>
+                                <p class="mb-0"><b><?php echo $company_row['full_name']; ?></b></p>
+                                <p class="mb-0 text-sm"><?php echo $company_row['address']; ?>,<br> <?php echo $company_row['   ']; ?>, <?php echo $company_row['state']; ?>, <?php echo $company_row['zip_code']; ?>, <?php echo $company_row['country']; ?></p>
+                                <p class="mb-0 text-sm"><?php echo $company_row['phone_no']; ?></p>
+                                <p class="mb-0 text-sm"><?php echo $company_row['website']; ?></p>
                             </div>
                         </div>
                         <hr>
@@ -364,11 +370,10 @@ $amountInWords = numberToWords($amount);
                         <div class="d-flex flex-wrap justify-content-between gap-3 my-20">
                             <div>
                                 <p class="mb-0 text-sm text-gray"><b>Received From</b></p>
-                                <p class="mb-0"><b>Landscape Immigration Solutions Inc</b></p>
-                                <p class="mb-0 text-sm">3321 Kingsway</p>
-                                <p class="mb-0 text-sm">Vancouver</p>
-                                <p class="mb-0 text-sm">V5R5K6 British Columbia</p>
-                                <p class="mb-0 text-sm">Canada</p>
+                                <p class="mb-0"><b><?php echo $user_row['business_name']; ?></b></p>
+                                <p class="mb-0 text-sm"><?php echo $user_row['address']; ?></p>
+                                <p class="mb-0 text-sm"><?php echo $user_row['city']; ?>, <?php echo $user_row['state']; ?> <?php echo $user_row['pincode']; ?></p>
+                                <p class="mb-0 text-sm"><?php echo $user_row['country']; ?></p>
                             </div>
                             <div class="text-end">
                                 <p class="mb-0 text-sm">Authorized Signature</p>
