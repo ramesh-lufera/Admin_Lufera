@@ -20,17 +20,28 @@
 </style>
 <?php
     $invoice_id = $_GET['id'];
-    $invoice = "select * from orders where invoice_id = $invoice_id";
+    $invoice = "
+    SELECT
+        orders.*,
+        CASE 
+            WHEN orders.type = 'package' THEN package.package_name
+            WHEN orders.type = 'product' THEN products.name
+            ELSE orders.plan
+        END AS plan_name
+        FROM orders
+        LEFT JOIN package ON (orders.type = 'package' AND orders.plan = package.id)
+        LEFT JOIN products ON (orders.type = 'product' AND orders.plan = products.id)
+    where invoice_id = $invoice_id";
     $result = $conn->query($invoice);
     $row = $result->fetch_assoc();
     $user_id = $row['user_id'];
-
+    
     $userId = $_SESSION['user_id'];
     $session_user = "select * from users where id = $userId";
     $result2 = $conn->query($session_user);
     $row2 = $result2->fetch_assoc();
     
-    $user = "select * from users where user_id = '$user_id'"; 
+    $user = "select * from users where id = '$user_id'"; 
     $results = $conn->query($user);
     $rows = $results->fetch_assoc();
     $user_ids = $rows['email'];
@@ -134,7 +145,7 @@
                                                 </thead>
                                                 <tbody>
                                                     <tr>
-                                                        <td><?php echo $row['plan']; ?> </td>
+                                                        <td><?php echo $row['plan_name']; ?> </td>
                                                         <td><?php echo $row['duration']; ?> </td>
                                                         <td><?php echo $row['payment_method']; ?> </td>
                                                         <td><?php echo $row['status']; ?> </td>

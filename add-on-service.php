@@ -124,7 +124,7 @@ error_reporting(E_ALL);?>
                                 <option value="days">Days</option>
                                 <option value="months">Months</option>
                                 <option value="years">Years</option>
-                                <option value="hours">Hours</option>
+                                <!-- <option value="hours">Hours</option> -->
                             </select>
                         </div>
                                 
