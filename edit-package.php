@@ -1,5 +1,5 @@
 <?php
-$script = '<script>
+    $script = '<script>
         (() => {
             "use strict"
 
@@ -44,8 +44,9 @@ $script = '<script>
 </style>
 
 <?php include './partials/layouts/layoutTop.php' ?>
+
 <?php
-//$package_id = isset($_GET['id']) ? intval($_GET['id']) : 0;
+// $package_id = isset($_GET['id']) ? intval($_GET['id']) : 0;
 
 // Accept package ID from either POST (preferred) or GET (fallback)
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -80,11 +81,11 @@ while ($row = $featuresResult->fetch_assoc()) {
 }
 
 // Fetch lists
-$packagesQuery = $conn->query("SELECT id, package_name FROM package ORDER BY package_name ASC");
+$packagesQuery = $conn->query("SELECT id, title FROM package ORDER BY package_name ASC");
 $packages_list = [];
 while ($row = $packagesQuery->fetch_assoc()) $packages_list[] = $row;
 
-$productsQuery = $conn->query("SELECT id, name FROM products ORDER BY name ASC");
+$productsQuery = $conn->query("SELECT id, title FROM products ORDER BY name ASC");
 $products_list = [];
 while ($row = $productsQuery->fetch_assoc()) $products_list[] = $row;
 
@@ -156,6 +157,7 @@ if (isset($_POST['save'])) {
         </script>";
     }
 }
+
 ?>
 
 <div class="dashboard-main-body">
@@ -238,13 +240,13 @@ if (isset($_POST['save'])) {
                         </div>
 
                         <?php
-                        $duration_value = '';
-                        $duration_unit = 'days'; // Default unit
-                        if (!empty($package['duration'])) {
-                            $duration_parts = explode(' ', trim($package['duration']));
-                            $duration_value = isset($duration_parts[0]) && is_numeric($duration_parts[0]) ? intval($duration_parts[0]) : '';
-                            $duration_unit = isset($duration_parts[1]) ? $duration_parts[1] : 'days';
-                        }
+                            $duration_value = '';
+                            $duration_unit = 'days'; // Default unit
+                            if (!empty($package['duration'])) {
+                                $duration_parts = explode(' ', trim($package['duration']));
+                                $duration_value = isset($duration_parts[0]) && is_numeric($duration_parts[0]) ? intval($duration_parts[0]) : '';
+                                $duration_unit = isset($duration_parts[1]) ? $duration_parts[1] : 'days';
+                            }
                         ?>
                         <div class="form-group mb-2">
                             <label class="form-label fw-semibold text-primary-light text-sm mb-8">
@@ -263,7 +265,7 @@ if (isset($_POST['save'])) {
                                         <option value="days" <?php echo $duration_unit === 'days' ? 'selected' : ''; ?>><?php echo $duration_value == 1 ? 'Day' : 'Days'; ?></option>
                                         <option value="months" <?php echo $duration_unit === 'months' ? 'selected' : ''; ?>><?php echo $duration_value == 1 ? 'Month' : 'Months'; ?></option>
                                         <option value="years" <?php echo $duration_unit === 'years' ? 'selected' : ''; ?>><?php echo $duration_value == 1 ? 'Year' : 'Years'; ?></option>
-                                        <option value="hours" <?php echo $duration_unit === 'hours' ? 'selected' : ''; ?>><?php echo $duration_value == 1 ? 'Hour' : 'Hours'; ?></option>
+                                        <!-- <option value="hours" <?php echo $duration_unit === 'hours' ? 'selected' : ''; ?>><?php echo $duration_value == 1 ? 'Hour' : 'Hours'; ?></option> -->
                                     </select>
                                     <div class="invalid-feedback">
                                         Please select a duration unit.
@@ -315,7 +317,7 @@ if (isset($_POST['save'])) {
                                     <?php foreach ($packages_list as $p): ?>
                                         <div class="form-check d-flex align-items-center me-3">
                                             <input class="form-check-input" type="checkbox" name="packages[]" value="<?php echo $p['id']; ?>" id="package_<?php echo $p['id']; ?>" <?php echo in_array($p['id'],$selectedPackages)?'checked':''; ?>>
-                                            <label class="form-check-label ms-2 mb-0" for="package_<?php echo $p['id']; ?>"><?php echo htmlspecialchars($p['package_name']); ?></label>
+                                            <label class="form-check-label ms-2 mb-0" for="package_<?php echo $p['id']; ?>"><?php echo htmlspecialchars($p['title']); ?></label>
                                         </div>
                                     <?php endforeach; ?>
                                 </div>
@@ -328,7 +330,7 @@ if (isset($_POST['save'])) {
                                     <?php foreach ($products_list as $prod): ?>
                                         <div class="form-check d-flex align-items-center me-3">
                                             <input class="form-check-input" type="checkbox" name="products[]" value="<?php echo $prod['id']; ?>" id="product_<?php echo $prod['id']; ?>" <?php echo in_array($prod['id'],$selectedProducts)?'checked':''; ?>>
-                                            <label class="form-check-label ms-2 mb-0" for="product_<?php echo $prod['id']; ?>"><?php echo htmlspecialchars($prod['name']); ?></label>
+                                            <label class="form-check-label ms-2 mb-0" for="product_<?php echo $prod['id']; ?>"><?php echo htmlspecialchars($prod['title']); ?></label>
                                         </div>
                                     <?php endforeach; ?>
                                 </div>

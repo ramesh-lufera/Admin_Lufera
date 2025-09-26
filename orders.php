@@ -53,25 +53,18 @@
         // SweetAlert flag
         $_SESSION['order_approved'] = true;
 
+        // For Notifications..
         date_default_timezone_set('Asia/Kolkata');
-
-        // Get order + user details
-        $res = $conn->query("SELECT o.invoice_id, o.plan, o.amount, u.email, u.first_name, u.last_name 
-                             FROM orders o 
-                             INNER JOIN users u ON o.user_id = u.id 
-                             WHERE o.id = $Id");
-        $order = $res->fetch_assoc();
-
-        $userEmail = $order['email'];
-        $userName  = $order['first_name'] . " " . $order['last_name'];
-        $planName  = $order['plan'];
-        $invoiceId = $order['invoice_id'];
-        $amount    = $order['amount'];
 
         // Get user_id for notification
         $res = $conn->query("SELECT user_id FROM orders WHERE id = $orderId");
         $user = $res->fetch_assoc();
-        $userId = $user['user_id'];
+        $IdFromOrders = $user['user_id'];
+
+        // Get matching user_id from users table
+        $resUser = $conn->query("SELECT user_id FROM users WHERE id = $IdFromOrders");
+        $userRow = $resUser->fetch_assoc(); // fetch the row
+        $userId = $userRow['user_id']; // matched user_id from users table
 
         // Add notification
         $msg = "Your payment has been approved.";
@@ -79,6 +72,19 @@
         $stmt = $conn->prepare("INSERT INTO notifications (user_id, message, n_photo, created_at) VALUES (?, ?, ?, ?)");
         $stmt->bind_param("ssss", $userId, $msg, $photo, $createdAt);
         $stmt->execute();
+
+        // Get order + user details
+        $res = $conn->query("SELECT o.invoice_id, o.plan, o.amount, u.email, u.first_name, u.last_name 
+                             FROM orders o 
+                             INNER JOIN users u ON o.user_id = u.id 
+                             WHERE o.id = $orderId");
+        $order = $res->fetch_assoc();
+
+        $userEmail = $order['email'];
+        $userName  = $order['first_name'] . " " . $order['last_name'];
+        $planName  = $order['plan'];
+        $invoiceId = $order['invoice_id'];
+        $amount    = $order['amount'];
 
         // ✅ Send Email to User
         try {
@@ -190,7 +196,12 @@
         // Get user_id for notification
         $res = $conn->query("SELECT user_id FROM orders WHERE id = $orderId");
         $user = $res->fetch_assoc();
-        $userId = $user['user_id'];
+        $IdFromOrders1 = $user['user_id'];
+
+        // Get matching user_id from users table
+        $resUser = $conn->query("SELECT user_id FROM users WHERE id = $IdFromOrders1");
+        $userRow = $resUser->fetch_assoc(); // fetch the row
+        $userId = $userRow['user_id']; // matched user_id from users table
 
         // Add notification
         $msg = "Your order has been cancelled.";

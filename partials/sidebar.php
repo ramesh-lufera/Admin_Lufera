@@ -80,7 +80,7 @@
 
                     // Fetch products
                     \$products_list = [];
-                    \$result = \$conn->query("SELECT id, name FROM products");
+                    \$result = \$conn->query("SELECT id, title FROM products");
                     if (\$result && \$result->num_rows > 0) {
                         while (\$row = \$result->fetch_assoc()) {
                             \$products_list[] = \$row;
@@ -309,7 +309,7 @@
                                                                     value="<?php echo \$package['id']; ?>" 
                                                                     id="package_<?php echo \$package['id']; ?>">
                                                                 <label class="form-check-label ms-2 mb-0" for="package_<?php echo \$package['id']; ?>">
-                                                                    <?php echo htmlspecialchars(\$package['package_name']); ?>
+                                                                    <?php echo htmlspecialchars(\$package['title']); ?>
                                                                 </label>
                                                             </div>
                                                         <?php endforeach; ?>
@@ -330,7 +330,7 @@
                                                                     value="<?php echo \$product['id']; ?>" 
                                                                     id="product_<?php echo \$product['id']; ?>">
                                                                 <label class="form-check-label ms-2 mb-0" for="product_<?php echo \$product['id']; ?>">
-                                                                    <?php echo htmlspecialchars(\$product['name']); ?>
+                                                                    <?php echo htmlspecialchars(\$product['title']); ?>
                                                                 </label>
                                                             </div>
                                                         <?php endforeach; ?>
