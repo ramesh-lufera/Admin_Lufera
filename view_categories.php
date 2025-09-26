@@ -76,35 +76,43 @@
                             \$cat_row = \$cat_query ->fetch_assoc();
                             
                             if (\$role == '1' || \$role == '2' || \$role == '7') {
-                            \$sql = "
-                                SELECT 
-                                    websites.id AS web_id,
-                                    users.user_id,
-                                    users.id,
-                                    users.business_name,
-                                    websites.plan,
-                                    websites.domain,
-                                    websites.access_www,
-                                    websites.status,
-                                    websites.created_at,
-                                    websites.duration,
-                                    websites.product_id,
-                                    websites.type,
-                                    JSON_UNQUOTE(JSON_EXTRACT(`json`.name, '$.name.value')) AS json_name
-                                FROM 
-                                    users 
-                                JOIN 
-                                    websites ON users.id = websites.user_id
-                                LEFT JOIN
-                                    `json` ON `json`.website_id = websites.id
-                                WHERE 
-                                    websites.cat_id = ?
-                            ";
-                            \$stmt = \$conn->prepare(\$sql);
-                            if (!\$stmt) {
-                                die("Prepare failed: " . \$conn->error);
-                            }
-                            \$stmt->bind_param("i", \$cat_id);
+                                \$sql = "
+                                    SELECT 
+                                        websites.id AS web_id,
+                                        users.user_id,
+                                        users.id,
+                                        users.business_name,
+                                        CASE 
+                                            WHEN websites.type = 'package' THEN package.package_name
+                                            WHEN websites.type = 'product' THEN products.name
+                                            ELSE websites.plan
+                                        END AS plan_name,
+                                        websites.domain,
+                                        websites.access_www,
+                                        websites.status,
+                                        websites.created_at,
+                                        websites.duration,
+                                        websites.product_id,
+                                        websites.type,
+                                        JSON_UNQUOTE(JSON_EXTRACT(`json`.name, '$.name.value')) AS json_name
+                                    FROM 
+                                        users 
+                                    JOIN 
+                                        websites ON users.id = websites.user_id
+                                    LEFT JOIN
+                                        `json` ON `json`.website_id = websites.id
+                                    LEFT JOIN 
+                                        package ON (websites.type = 'package' AND websites.plan = package.id)
+                                    LEFT JOIN 
+                                        products ON (websites.type = 'product' AND websites.plan = products.id)
+                                    WHERE 
+                                        websites.cat_id = ?
+                                ";
+                                \$stmt = \$conn->prepare(\$sql);
+                                if (!\$stmt) {
+                                    die("Prepare failed: " . \$conn->error);
+                                }
+                                \$stmt->bind_param("i", \$cat_id);
                             } else {
                                 \$sql = "
                                     SELECT 
@@ -112,7 +120,11 @@
                                         users.user_id,
                                         users.id,
                                         users.business_name,
-                                        websites.plan,
+                                        CASE 
+                                            WHEN websites.type = 'package' THEN package.package_name
+                                            WHEN websites.type = 'product' THEN products.name
+                                            ELSE websites.plan
+                                        END AS plan_name,
                                         websites.domain,
                                         websites.access_www,
                                         websites.status,
@@ -127,14 +139,18 @@
                                         websites ON users.id = websites.user_id
                                     LEFT JOIN 
                                         `json` ON `json`.website_id = websites.id
+                                    LEFT JOIN 
+                                        package ON (websites.type = 'package' AND websites.plan = package.id)
+                                    LEFT JOIN 
+                                        products ON (websites.type = 'product' AND websites.plan = products.id)
                                     WHERE 
                                         websites.user_id = ? AND websites.cat_id = ?
                                 ";
                                 \$stmt = \$conn->prepare(\$sql);
-                            if (!\$stmt) {
-                                die("Prepare failed: " . \$conn->error);
-                            }
-                            \$stmt->bind_param("ii", \$UserId, \$cat_id);
+                                if (!\$stmt) {
+                                    die("Prepare failed: " . \$conn->error);
+                                }
+                                \$stmt->bind_param("ii", \$UserId, \$cat_id);
                             }
 
                             \$stmt->execute();
@@ -504,7 +520,8 @@
                                         <!-- Domain Title -->
                                         <div class="site-info-header">
                                             <h6>
-                                            <?php echo htmlspecialchars(\$site['plan']); ?>
+                                            // <?php echo htmlspecialchars(\$site['plan']); ?>
+                                            <?php echo htmlspecialchars(\$site['plan_name']); ?>
                                             <span style="visibility:hidden"><?php echo htmlspecialchars(\$site['user_id']); ?></span>
                                             </h6>
                                         </div>
@@ -528,7 +545,7 @@
                                 <!-- Pagination -->
                                 <div class="pagination">
                                 <?php if (\$page > 1): ?>
-                                    <a href="?cat_id=?<?php echo \$cat_id; ?>&page=<?php echo \$page - 1; ?>">Previous</a>
+                                    <a href="?cat_id=?<?php echo \$cat_id; ?>&page=<?php echo \$page - 1; ?>">Previous</a> 
                                 <?php endif; ?>
 
                                 <?php for (\$i = 1; \$i <= \$totalPages; \$i++): ?>
@@ -568,7 +585,6 @@
                 //$view_file_path = dirname(__DIR__) . '/' . $view_file_name;
                 $view_file_path = realpath(__DIR__) . '/' . $view_file_name;
 
-
                 if (!file_exists($view_file_path)) {
                     $view_content = <<<PHP
                         <?php include './view-package.php'; ?>
@@ -576,24 +592,20 @@
 
                     file_put_contents($view_file_path, $view_content);
                 }
-                
-                
             }
 
             //$_SESSION['swal_success'] = "Category created";
             echo "
-        <script>
-        Swal.fire({
-            icon: 'success',
-            title: 'Category Created',
-            showConfirmButton: true
-        }).then(() => {
-            window.history.back();
-        });
-        </script>";
+                <script>
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Category Created',
+                    showConfirmButton: true
+                }).then(() => {
+                    window.history.back();
+                });
+                </script>";
         }
-
-        
         exit;
     }
 
@@ -1305,108 +1317,104 @@
     </div>
   </div>
 </div>
-
-        <script>
+  
+<script>
     $(document).ready(function() {
         $('#productPackageTable').DataTable();
-    });
-</script>
-<script>
-$(document).ready(function() {
-    $('#productPackageTable').DataTable();
 
-    // Toggle Active/Inactive with SweetAlert
-    $(document).on('click', '.toggle-status', function() {
-        let button = $(this);
-        let id = button.data('id');
-        let currentStatus = button.data('status');
-        let newStatusText = currentStatus == 1 ? 'Inactive' : 'Active';
+        // Toggle Active/Inactive with SweetAlert
+        $(document).on('click', '.toggle-status', function() {
+            let button = $(this);
+            let id = button.data('id');
+            let currentStatus = button.data('status');
+            let newStatusText = currentStatus == 1 ? 'Inactive' : 'Active';
 
-        Swal.fire({
-            title: 'Are you sure?',
-            text: `Change status to ${newStatusText}?`,
-            icon: 'question',
-            showCancelButton: true,
-            confirmButtonText: 'Yes, change it!',
-            cancelButtonText: 'Cancel',
-            confirmButtonColor: '#3085d6',
-            cancelButtonColor: '#d33'
-        }).then((result) => {
-            if (result.isConfirmed) {
-                $.ajax({
-                    url: 'product-handler.php',
-                    type: 'POST',
-                    data: { action: 'toggle_status', id: id, status: currentStatus },
-                    success: function(response) {
-                        if (response.success) {
-                            if (currentStatus == 1) {
-                                button.removeClass('btn-success').addClass('btn-secondary').text('Inactive').data('status', 0);
+            Swal.fire({
+                title: 'Are you sure?',
+                text: `Change status to ${newStatusText}?`,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: 'Yes, change it!',
+                cancelButtonText: 'Cancel',
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#d33'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    $.ajax({
+                        url: 'product-handler.php',
+                        type: 'POST',
+                        data: { action: 'toggle_status', id: id, status: currentStatus },
+                        success: function(response) {
+                            if (response.success) {
+                                if (currentStatus == 1) {
+                                    button.removeClass('btn-success').addClass('btn-secondary').text('Inactive').data('status', 0);
+                                } else {
+                                    button.removeClass('btn-secondary').addClass('btn-success').text('Active').data('status', 1);
+                                }
+                                Swal.fire('Updated!', `Status changed to ${newStatusText}.`, 'success');
                             } else {
-                                button.removeClass('btn-secondary').addClass('btn-success').text('Active').data('status', 1);
+                                Swal.fire('Error!', 'Failed to update status.', 'error');
                             }
-                            Swal.fire('Updated!', `Status changed to ${newStatusText}.`, 'success');
-                        } else {
-                            Swal.fire('Error!', 'Failed to update status.', 'error');
+                        },
+                        error: function() {
+                            Swal.fire('Error!', 'Something went wrong.', 'error');
                         }
-                    },
-                    error: function() {
-                        Swal.fire('Error!', 'Something went wrong.', 'error');
-                    }
-                });
-            }
+                    });
+                }
+            });
+        });
+
+        // Delete Product with SweetAlert
+        $(document).on('click', '.delete-product', function() {
+            let button = $(this);
+            let id = button.data('id');
+
+            Swal.fire({
+                title: 'Are you sure?',
+                text: "This product will be deleted (soft delete).",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Yes, delete it!',
+                cancelButtonText: 'Cancel',
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#3085d6'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    $.ajax({
+                        url: 'product-handler.php',
+                        type: 'POST',
+                        data: { action: 'delete_product', id: id },
+                        success: function(response) {
+                            if (response.success) {
+                                button.closest('tr').fadeOut();
+                                Swal.fire('Deleted!', 'The product has been deleted.', 'success');
+                            } else {
+                                Swal.fire('Error!', 'Failed to delete product.', 'error');
+                            }
+                        },
+                        error: function() {
+                            Swal.fire('Error!', 'Something went wrong.', 'error');
+                        }
+                    });
+                }
+            });
         });
     });
-
-    // Delete Product with SweetAlert
-    $(document).on('click', '.delete-product', function() {
-        let button = $(this);
-        let id = button.data('id');
-
-        Swal.fire({
-            title: 'Are you sure?',
-            text: "This product will be deleted (soft delete).",
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonText: 'Yes, delete it!',
-            cancelButtonText: 'Cancel',
-            confirmButtonColor: '#d33',
-            cancelButtonColor: '#3085d6'
-        }).then((result) => {
-            if (result.isConfirmed) {
-                $.ajax({
-                    url: 'product-handler.php',
-                    type: 'POST',
-                    data: { action: 'delete_product', id: id },
-                    success: function(response) {
-                        if (response.success) {
-                            button.closest('tr').fadeOut();
-                            Swal.fire('Deleted!', 'The product has been deleted.', 'success');
-                        } else {
-                            Swal.fire('Error!', 'Failed to delete product.', 'error');
-                        }
-                    },
-                    error: function() {
-                        Swal.fire('Error!', 'Something went wrong.', 'error');
-                    }
-                });
-            }
-        });
-    });
-});
 </script>
+
 <script>
     function openEditModal(id, name, url, type) {
-    document.getElementById("edit_cat_id").value = id;
-    document.getElementById("edit_cat_name").value = name;
-    document.getElementById("edit_cat_url").value = url.replace(".php", "");
-    document.getElementById("edit_cat_type").value = type;
-    
-    // Use Bootstrap's JS API to show modal
-    let modal = new bootstrap.Modal(document.getElementById('edit-category-modal'));
-    modal.show();
-}
-
+        document.getElementById("edit_cat_id").value = id;
+        document.getElementById("edit_cat_name").value = name;
+        document.getElementById("edit_cat_url").value = url.replace(".php", "");
+        document.getElementById("edit_cat_type").value = type;
+        
+        // Use Bootstrap's JS API to show modal
+        let modal = new bootstrap.Modal(document.getElementById('edit-category-modal'));
+        modal.show();
+    }
 </script>
+
 <script>
     function confirmDelete(button) {
         Swal.fire({
@@ -1430,13 +1438,14 @@ $(document).ready(function() {
     }
 
     $(document).ready(function() {
-    $('[data-bs-target="#add-category-modal"]').on('click', function() {
-        // Replace '#add-category-form' with your actual form's ID
-        $('#add-category-form')[0].reset();
+        $('[data-bs-target="#add-category-modal"]').on('click', function() {
+            // Replace '#add-category-form' with your actual form's ID
+            $('#add-category-form')[0].reset();
+        });
     });
-});
 
 </script>
+
 </body>
 </html>
 

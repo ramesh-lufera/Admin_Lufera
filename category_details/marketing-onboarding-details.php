@@ -13,17 +13,57 @@
             $role = $row['role'];
             $stmt->close();
 
+            // if ($role == '1' || $role == '2' || $role == '7') {
+            //     $stmt = $conn->prepare("SELECT invoice_id, plan, duration, status, created_at FROM websites WHERE id = ?");
+            //     $stmt->bind_param("i", $websiteId);
+            // } else {
+            //     $stmt = $conn->prepare("SELECT invoice_id, plan, duration, status, created_at FROM websites WHERE id = ? AND user_id = ?");
+            //     $stmt->bind_param("ii", $websiteId, $UserId); 
+            // }
+
             if ($role == '1' || $role == '2' || $role == '7') {
-                $stmt = $conn->prepare("SELECT invoice_id, plan, duration, status, created_at FROM websites WHERE id = ?");
+                $stmt = $conn->prepare("
+                    SELECT 
+                        websites.invoice_id,
+                        websites.duration,
+                        websites.status,
+                        websites.created_at,
+                        CASE 
+                            WHEN websites.type = 'package' THEN package.package_name
+                            WHEN websites.type = 'product' THEN products.name
+                            ELSE websites.plan
+                        END AS plan_name
+                    FROM websites
+                    LEFT JOIN package ON (websites.type = 'package' AND websites.plan = package.id)
+                    LEFT JOIN products ON (websites.type = 'product' AND websites.plan = products.id) 
+                    WHERE websites.id = ?
+                ");
                 $stmt->bind_param("i", $websiteId);
             } else {
-                $stmt = $conn->prepare("SELECT invoice_id, plan, duration, status, created_at FROM websites WHERE id = ? AND user_id = ?");
+                $stmt = $conn->prepare("
+                    SELECT 
+                        websites.invoice_id,
+                        websites.duration,
+                        websites.status,
+                        websites.created_at,
+                        CASE 
+                            WHEN websites.type = 'package' THEN package.package_name
+                            WHEN websites.type = 'product' THEN products.name
+                            ELSE websites.plan
+                        END AS plan_name
+                    FROM websites
+                    LEFT JOIN package ON (websites.type = 'package' AND websites.plan = package.id)
+                    LEFT JOIN products ON (websites.type = 'product' AND websites.plan = products.id)
+                    WHERE websites.id = ? AND websites.user_id = ?
+                ");
                 $stmt->bind_param("ii", $websiteId, $UserId); 
             }
+
             $stmt->execute();
             $result = $stmt->get_result();
             $row = $result->fetch_assoc();
-            $Plan = $row['plan'];
+
+            $Plan = $row['plan_name'];
             $Duration = $row['duration'];
             $InvoiceId = $row['invoice_id'];
             $Status = strtolower($row['status'] ?? 'Pending');
