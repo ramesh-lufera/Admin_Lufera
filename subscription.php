@@ -549,7 +549,15 @@
                                     <div class="mt-20">
                                     <?php 
                                         if($role == "1" || $role == "2") {?>  
-                                        <button class="btn text-white btn-primary text-sm mb-10" data-bs-toggle="modal" data-bs-target="#exampleModal">Record Payment</button>
+                                        <!-- <button class="btn text-white btn-primary text-sm mb-10" data-bs-toggle="modal" data-bs-target="#exampleModal">Record Payment</button> -->
+                                        <button class="btn text-white btn-primary text-sm mb-10" 
+                                                data-bs-toggle="modal" 
+                                                data-bs-target="#exampleModal"
+                                                data-invoice="<?php echo $row['invoice_id']; ?>"
+                                                >
+                                            Record Payment
+                                        </button>
+
                                     <?php } ?>
                                         <button class="btn text-white lufera-bg text-sm mb-10">Renew</button>
                                         <a href="invoice-preview.php?id=<?php echo $invoice_id; ?>"><button class="btn text-white btn-success text-sm mb-10">Invoice</button> </a>   
@@ -608,7 +616,7 @@
                                 <div class="mb-20">
                                     <label for="" class="form-label fw-semibold text-primary-light text-sm mb-8">Invoice No: <span class="text-danger-600">*</span></label>
                                     <input type="hidden" value="<?php echo $id; ?>" name="order_id">
-                                    <input type="text" class="form-control radius-8" name="invoice_no" value="<?php echo $invoice_id; ?>" <?php echo !empty($invoice_id) ? 'readonly' : ''; ?> required>
+                                    <input type="text" class="form-control radius-8" name="invoice_no"  required>
                                 </div>
                             </div>
                             <div class="col-sm-6">
@@ -632,7 +640,7 @@
                                     <input type="text" class="form-control radius-8" name="amount" id="numericInput" required <?php echo $row['balance_due'] == "0" ? 'readonly' : ''; ?> >
                                     <small id="amountError" class="text-danger d-none">Amount cannot be greater than Balance Due.</small>
 
-                                    <input type="hidden" class="form-control radius-8" name="balance_due" id="balance_due" value="<?php echo $balance_due; ?>">
+                                    <input type="hidden" class="form-control radius-8" name="balance_due" id="balance_due">
                                 </div>
                             </div>
                             <div class="col-sm-6">
@@ -682,24 +690,24 @@ $(document).ready(function() {
 </script>
 <script>
 document.addEventListener("DOMContentLoaded", function () {
-    const amountInput = document.getElementById("numericInput").toFixed(2);;
-    const balanceDue = parseFloat(document.getElementById("balance_due").value).toFixed(2);;
-    const errorText = document.getElementById("amountError").toFixed(2);;
-    const submit = document.getElementById("submit").toFixed(2);;
+    const amountInput = document.getElementById("numericInput");
+    const balanceDue = parseFloat(document.getElementById("balance_due").value);
+    const errorText = document.getElementById("amountError");
+    const submit = document.getElementById("submit");
+
     amountInput.addEventListener("input", function () {
         const enteredAmount = parseFloat(this.value);
 
-        if (enteredAmount > balanceDue) {
+        if (!isNaN(enteredAmount) && enteredAmount > balanceDue) {
             errorText.classList.remove("d-none");
             submit.disabled = true;
-            //this.value = ""; 
-        }
-        else {
+        } else {
             errorText.classList.add("d-none");
             submit.disabled = false;
         }
     });
 });
+
 </script>
 <script>
 document.addEventListener("DOMContentLoaded", function () {
@@ -722,6 +730,20 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     });
 });
+
+document.addEventListener('show.bs.modal', function (event) {
+    const button = event.relatedTarget; // the button that triggered modal
+    const invoice = button.getAttribute('data-invoice');
+    const orderId = button.getAttribute('data-order');
+    const balance = button.getAttribute('data-balance');
+    const payment = button.getAttribute('data-payment');
+
+    document.querySelector('#exampleModal input[name="invoice_no"]').value = invoice;
+    document.querySelector('#exampleModal input[name="order_id"]').value = orderId;
+    document.querySelector('#exampleModal input[name="balance_due"]').value = balance;
+    document.querySelector('#exampleModal input[name="payment_made"]').value = payment;
+});
+
 </script>
 
 <?php if (isset($_SESSION['order_approved']) && $_SESSION['order_approved'] === true): ?>

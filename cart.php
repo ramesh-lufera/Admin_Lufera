@@ -52,7 +52,7 @@
             <div class="col-xxl-6 col-sm-6">
                 <div class="card h-100 radius-12">
                 <div class="card-header py-10 border-none" style="box-shadow: 0px 3px 3px 0px lightgray">
-                    <p class="mb-0"><?php echo $subtitle; ?></p>
+                    <h6 class="mb-0"><?php echo $subtitle; ?></h6>
                 </div>
                     <div class="card-body p-16">
                         <table class="plan-details-table mb-0 w-100">
@@ -90,27 +90,30 @@
                 <div class="card h-100 radius-12">
                     <div class="card-header py-10 border-none d-flex justify-content-between" style="box-shadow: 0px 3px 3px 0px lightgray">
                         <div class="">
-                            <h6 class="mb-0">Sub Total</h6>
-                            <p class="mb-0">Sub total does not include applicable taxes</p>
+                            <h6 class="mb-0">Price</h6>
+                            <!-- <p class="mb-0">Sub total does not include applicable taxes</p> -->
                         </div>
                         <div class="align-content-center">
-                            <h4 class="mb-0" id="currency-symbol-display"><?= htmlspecialchars($symbol) ?><?php echo $price; ?></h4>
+                            <h6 class="mb-0"><?= htmlspecialchars($symbol) ?><?php echo number_format($price, 2); ?></h6>
                         </div>
                     </div>
                     <div class="card-body p-16">
                         <table class="plan-details-table mb-0 w-100">
+                            <tbody id="selected-items-summary">
+                                <!-- Selected items will be injected here -->
+                            </tbody>
                             <tbody>
-                                <tr>
+                                <!-- <tr>
                                     <td>Discount</td>
                                     <td class="text-end">N/A</td>
-                                </tr>
+                                </tr> -->
                                 <tr>
                                     <td>Tax (GST 18%)</td>
-                                    <td class="text-end gst-display" id="currency-symbol-display"><?= htmlspecialchars($symbol) ?><?php echo $gst; ?></td>
+                                    <td class="text-end gst-display"><?= htmlspecialchars($symbol) ?><?php echo number_format($gst, 2); ?></td>
                                 </tr>
                                 <tr>
                                     <td class="border-0">Estimated Total</td>
-                                    <td class="border-0 text-end" id="estimated-total"><?= htmlspecialchars($symbol) ?></td>
+                                    <td class="border-0 text-end fw-semibold" id="estimated-total"><?= htmlspecialchars($symbol) ?></td>
                                 </tr>
                             </tbody>
                         </table>
@@ -320,19 +323,42 @@
                 $('input[name="total_price"]').val((total + gst).toFixed(2));
             }
 
+            function updateSelectedSummary() {
+                const $summary = $('#selected-items-summary');
+                $summary.empty(); // clear first
+
+                // loop through selectedItems
+                $.each(selectedItems, function(id, item){
+                    $summary.append(`
+                        <tr class="selected-item-row" data-id="${id}">
+                            <td>${item.name} (${item.type})</td>
+                            <td class="text-end"><?= $symbol ?>${parseFloat(item.cost).toFixed(2)}</td>
+                        </tr>
+                    `);
+                });
+            }
+
+
             $(document).on('click', '.toggle-btn', function(){
                 let id = $(this).data('id');
-                let cost = $(this).data('cost');
+                let cost = parseFloat($(this).data('cost'));
                 let name = $(this).data('name');
+
+                // detect type from card header text
+                let headerTxt = ($(this).closest('.card').find('.card-header').text() || '').toLowerCase();
+                let type = 'Service';
+                if (headerTxt.includes('package')) type = 'Add-on Package';
+                else if (headerTxt.includes('product')) type = 'Add-on Product';
+                else if (headerTxt.includes('add-on') || headerTxt.includes('addon')) type = 'Add-on Service';
 
                 if($(this).hasClass('add')){
                     // Add item
-                    selectedItems[id] = cost;
+                    selectedItems[id] = {name: name, cost: cost, type: type};
                     $(this)
                         .removeClass('add')
                         .css({"background-color":"#dc3545","color":"#fff"})
                         .text("Remove");
-                    Swal.fire({icon:"success", title: name + " added", timer:1500, showConfirmButton:false});
+                    Swal.fire({icon:"success", title: name + " added", timer:800, showConfirmButton:false});
                 } else {
                     // Remove item
                     delete selectedItems[id];
@@ -340,10 +366,13 @@
                         .addClass('add')
                         .css({"background-color":"#fec700","color":"#000"})
                         .text("+ Add");
-                    Swal.fire({icon:"warning", title: name + " removed", timer:1500, showConfirmButton:false});
+                    Swal.fire({icon:"warning", title: name + " removed", timer:800, showConfirmButton:false});
                 }
+
+                updateSelectedSummary();
                 recalcTotal();
             });
+
         });
     </script>
 
@@ -353,9 +382,16 @@
         $result = $conn->query($sql);
         $row = $result->fetch_assoc();
 
-        if($row["username"] && $row["email"] && $row["phone"] && $row["first_name"] && $row["last_name"] && $row["business_name"] && $row["address"] && $row["city"] && $row["state"] && $row["country"] && $row["pincode"] != ""){
+        //if($row["username"] && $row["email"] && $row["phone"] && $row["first_name"] && $row["last_name"] && $row["business_name"] && $row["address"] && $row["city"] && $row["state"] && $row["country"] && $row["pincode"] != ""){
+            $profileComplete = (
+                $row["username"] && $row["email"] && $row["phone"] && 
+                $row["first_name"] && $row["last_name"] && $row["business_name"] && 
+                $row["address"] && $row["city"] && $row["state"] && 
+                $row["country"] && $row["pincode"]
+            );
     ?>
-    <form action="cart-payment.php" method="POST">
+    <?php if ($profileComplete) { ?>
+    <form action="cart-payment.php" method="POST" style="display:block;" id="checkoutForm">
         <input type="hidden" name="type" value="<?php echo $type; ?>">    
         <input type="hidden" name="id" value="<?php echo $id; ?>">
         <input type="hidden" name="plan_name" value="<?php echo $plan_name; ?>">
@@ -367,16 +403,31 @@
         <input type="hidden" name="get_addon" id="get_addon_input" value="">
         <input type="hidden" name="addon-total" id="addon-total" value="">
         <input type="hidden" class="gst-hidden" name="gst" value="<?php echo $gst; ?>">
- 
-        <button type="submit" class="lufera-bg text-center btn-sm px-12 py-10 float-end" style="width:150px; border: 1px solid #000">Continue</button>
+        <button type="submit" class="lufera-bg text-center btn-sm px-12 py-10 float-end" style="width:150px; border: 1px solid #000">Continue</button>   
     </form>
-    <?php } 
-        else{
-    ?>
-    <button class="lufera-bg text-center btn-sm px-12 py-10 float-end" data-bs-toggle="modal" data-bs-target="#exampleModal" style="width:250px; border: 1px solid #000">Update Profile & Continue</button>
-        <?php
+
+    <?php } else { ?>
+    <form action="cart-payment.php" method="POST" style="display:none;" id="checkoutForm">
+        <input type="hidden" name="type" value="<?php echo $type; ?>">    
+        <input type="hidden" name="id" value="<?php echo $id; ?>">
+        <input type="hidden" name="plan_name" value="<?php echo $plan_name; ?>">
+        <input type="hidden" name="price" value="<?php echo $price; ?>">
+        <input type="hidden" name="duration" value="<?php echo $duration; ?>">
+        <input type="hidden" name="total_price" value="<?php echo $total_price; ?>">
+        <input type="hidden" name="receipt_id" value="<?php echo $auto_id; ?>">
+        <input type="hidden" name="created_on" value="<?php echo $created_on; ?>">
+        <input type="hidden" name="get_addon" id="get_addon_input" value="">
+        <input type="hidden" name="addon-total" id="addon-total" value="">
+        <input type="hidden" class="gst-hidden" name="gst" value="<?php echo $gst; ?>">
+        <button type="submit" class="lufera-bg text-center btn-sm px-12 py-10 float-end" 
+            style="width:150px; border: 1px solid #000">Continue</button>
+    </form>
+        <button class="lufera-bg text-center btn-sm px-12 py-10 float-end" data-bs-toggle="modal" data-bs-target="#exampleModal" style="width:250px; border: 1px solid #000">Update Profile & Continue</button>
+    <?php
     }
     ?>
+    
+    
     <div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
@@ -465,7 +516,7 @@
                 </div>
             <div class="modal-footer d-flex align-items-center justify-content-center gap-3">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                <button type="submit" class="btn lufera-bg text-white">Save</button>
+                <button type="submit" class="btn lufera-bg text-white" id="saveBtn">Save</button>
             </div>
             </form>
             <div id="result"></div>
@@ -610,20 +661,45 @@
  
 <script>
     $('#updateForm').submit(function(e) {
-        e.preventDefault();
+    e.preventDefault();
 
-        $.ajax({
-            url: 'update.php',
-            type: 'POST',
-            data: $(this).serialize(),
-            success: function(response) {
+    $.ajax({
+        url: 'update.php',
+        type: 'POST',
+        data: new FormData(this),
+        processData: false,
+        contentType: false,
+        success: function(response) {
+            if(response.trim() === "updated"){
+                // Close modal
+                $('#exampleModal').modal('hide');
+                
+                $('form#checkoutForm').show();    // show the hidden Continue form
+                $('button[data-bs-target="#exampleModal"]').hide(); // hide update button
+
+                
+
+                // Optional: reload hidden inputs calculation
+                updateHiddenInputs();
+
+                // Optional success message
+                Swal.fire({
+                    icon: "success",
+                    title: "Profile updated successfully",
+                    timer: 1200,
+                    showConfirmButton: false
+                });
+            } else {
                 $('#result').html(response);
-            },
-            error: function(xhr) {
-                $('#result').html("Error updating data.");
             }
-        });
+        },
+        error: function(xhr) {
+            $('#result').html("Error updating data.");
+        }
     });
+});
+
 </script>
+
 
 <?php include './partials/layouts/layoutBottom.php' ?>

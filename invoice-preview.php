@@ -19,6 +19,10 @@
 }
 </style>
 <?php
+    $company_sql = "select * from company";
+    $company_fetch = $conn->query($company_sql);
+    $company_row = $company_fetch->fetch_assoc();
+
     $invoice_id = $_GET['id'];
     $invoice = "
     SELECT
@@ -83,56 +87,39 @@
                     <div class="row justify-content-center" id="invoice">
                         <div class="col-lg-8">
                             <div class="shadow-4 border radius-8">
-                                <div class="p-20 d-flex flex-wrap justify-content-between gap-3 border-bottom">
+                                <div class="p-20 d-flex flex-wrap justify-content-between gap-3 ">
                                     <div>
                                         <!-- <h3 class="text-xl">Invoice No: <?php echo $invoice_id; ?></h3>
                                         <p class="mb-1 text-sm">Date : <?php echo date('d/m/Y', strtotime($row['created_on'])); ?></p> -->
                                         <img src="assets/images/logo_lufera.png" alt="image" class="mb-8" width="200px">
+                                        <div class="">
+                                            <p class="mb-0 text-xl"><b><?php echo $company_row['full_name']; ?></b></p>
+                                            <p class="mb-0 text-sm"><?php echo $company_row['address']; ?>, <?php echo $company_row['city']; ?>,<?php echo $company_row['state']; ?>,<?php echo $company_row['zip_code']; ?>, <?php echo $company_row['country']; ?></p>
+                                            <p class="mb-0 text-sm"><?php echo $company_row['phone_no']; ?></p>
+                                            <p class="mb-0 text-sm"><?php echo $company_row['website']; ?></p>
+                                        </div>
                                     </div>
-                                    <div class="text-end">
-                                       <p class="mb-0"><b>Lufera Infotech Pvt. Ltd. (OPC)</b></p>
+                                    <div class="">
+                                       <!-- <p class="mb-0"><b>Lufera Infotech Pvt. Ltd. (OPC)</b></p>
                                         <p class="mb-0 text-sm">96/1, Bharathidasan Salai,Cantonment, Trichy,TN, India, 620 001</p>
                                         <p class="mb-0 text-sm">+91 86 80808 204</p>
-                                        <p class="mb-0 text-sm">www.luferatech.com</p>
-                                    </div>
-                                </div>
-
-                                <div class="d-flex flex-wrap justify-content-between gap-3 py-28 px-20">
-                                    <div>
-                                        <p class="text-md mb-0">Bill To</p>
-                                        <p class="text-md mb-0"><b><?php echo $rows['first_name']; ?> <?php echo $rows['last_name']; ?></b></p>
+                                        <p class="mb-0 text-sm">www.luferatech.com</p> -->
+                                       <?php if($row['balance_due'] != "0.00" ){ ?> 
+                                            <h4>Proforma Invoice</h4>
+                                        <?php } ?>
+                                            <p class="text-md mb-0">Invoice Date: <?php echo date('d/m/Y', strtotime($row['created_on'])); ?> </p>
+                                        <p class="text-md mb-0">Bill To:</p>
+                                        <p class="text-md mb-0"><?php echo $rows['business_name']; ?> </p>
                                         <p class="text-md mb-0"><?php echo $rows['address']; ?></p>
                                         <p class="text-md mb-0"><?php echo $rows['city']; ?> <?php echo $rows['pincode']; ?></p>
                                         <p class="text-md mb-0"><?php echo $rows['state']; ?>, <?php echo $rows['country']; ?></p>
                                     </div>
-
-                                    <table class="text-sm text-secondary-light invoice_table">
-                                        <tbody>
-                                            <tr>
-                                                <td><b>Invoice</b></td>
-                                                <td class="ps-8"> <?php echo $invoice_id; ?> </td>
-                                            </tr>
-                                            <tr>
-                                                <td><b>Invoice Date</b></td>
-                                                <td class="ps-8"> <?php echo date('d/m/Y', strtotime($row['created_on'])); ?></td>
-                                            </tr>
-                                            <tr>
-                                                <td><b>Terms</b></td>
-                                                <td class="ps-8"> Due on Receipt</td>
-                                            </tr>
-                                            <tr>
-                                                <td><b>Due Date</b></td>
-                                                <td class="ps-8"> <?php echo date('d/m/Y', strtotime($row['created_on'])); ?></td>
-                                            </tr>
-                                        </tbody>
-                                    </table>
-                                    
                                 </div>
 
                                 <div class="py-28 px-20">
                                     <div class="">
                                         <div class="table-responsive scroll-sm">
-                                            <table class="table table-bordered text-sm">
+                                            <!-- <table class="table table-bordered text-sm">
                                                 <thead>
                                                     <tr>
                                                        
@@ -152,6 +139,16 @@
                                                         <td class="text-end text-sm" id="currency-symbol-display"><?= htmlspecialchars($symbol) ?> <?php echo $row['price']; ?> </td>
                                                     </tr>
                                                 </tbody>
+                                            </table> -->
+                                            <table class="table table-bordered mb-0">
+                                                <thead>
+                                                    <th class="w-50">Description</th>
+                                                    <th class="text-end w-50">Total</th>
+                                                </thead>
+                                                <tbody>
+                                                    <td class="w-50"><?php echo $row['plan_name']; ?></td>
+                                                    <td class="text-end w-50"><?= htmlspecialchars($symbol) ?> <?php echo $row['price']; ?> </td>
+                                                </tbody>
                                             </table>
                                         </div>
 
@@ -167,31 +164,22 @@
                                                 $addon_result = $conn->query($addon_query);
 
                                                 if ($addon_result->num_rows > 0) {
-                                                    echo '<tr>
-                                                            <td colspan="2" class="p-0">
-                                                                <table class="invoice_table w-100">
-                                                                    <thead>
-                                                                        <tr>
-                                                                            <th class="text-start p-8">Add-on Service</th>
-                                                                        </tr>
-                                                                    </thead>
-                                                                    <tbody>';
+                                                    echo '
+                                                    <table class="table table-bordered w-100">
+                                                        <tbody>';
 
                                                     while ($addon_row = $addon_result->fetch_assoc()) {
                                                         echo "<tr>
-                                                                <td class='pe-64 border-bottom p-8'>" . htmlspecialchars($addon_row['name']) . "</td>
-                                                                <td class='border-bottom p-8 text-end'>
-                                                                    <span class='text-primary-light' id='currency-symbol-display'>"
+                                                                <td class='w-50'>" . htmlspecialchars($addon_row['name']) . "</td>
+                                                                <td class='w-50 text-end'>
+                                                                    <span class='text-primary-light'>"
                                                                     . htmlspecialchars($symbol) . " " . htmlspecialchars($addon_row['cost']) .
                                                                     "</span>
                                                                 </td>
                                                             </tr>";
                                                     }
-
-                                                    echo '        </tbody>
-                                                                </table>
-                                                            </td>
-                                                        </tr>';
+                                                    echo '</tbody>
+                                                                </table>';
                                                 }
                                             }
                                         }
@@ -202,49 +190,49 @@
                                                 <table class="invoice_table text-end">
                                                     <tbody>
                                                         <?php if($row['discount'] != null){ ?>
-                                                        <tr>
-                                                            <td class="pe-64 border-bottom p-8">Discount</td>
-                                                            <td class="border-bottom p-8">
+                                                        <!-- <tr>
+                                                            <td class="pe-64  p-8">Discount</td>
+                                                            <td class=" p-8">
                                                                 <span class="text-primary-light fw-semibold"> <?php echo $row['discount']; ?> <?php echo $row['discount_type'] ?></span>
                                                             </td>
-                                                        </tr>
+                                                        </tr> -->
                                                         <?php } ?>
                                                         <tr>
-                                                            <td class="pe-64 border-bottom p-8">Subtotal</td>
-                                                            <td class="border-bottom p-8">
-                                                                <span class="text-primary-light fw-semibold" id="currency-symbol-display"><?= htmlspecialchars($symbol) ?> <?php echo $row['subtotal']; ?></span>
+                                                            <td class="pe-64 p-8 fw-semibold">Subtotal</td>
+                                                            <td class=" p-8">
+                                                                <span class="text-primary-light" id="currency-symbol-display"><?= htmlspecialchars($symbol) ?> <?php echo $row['subtotal']; ?></span>
                                                             </td>
                                                         </tr>
                                                         <tr>
-                                                            <td class="pe-64 border-bottom p-8">GST 18%</td>
-                                                            <td class="border-bottom p-8">
-                                                                <span class="text-primary-light fw-semibold" id="currency-symbol-display"><?= htmlspecialchars($symbol) ?> <?php echo $row['gst']; ?></span>
+                                                            <td class="pe-64 p-8 fw-semibold">GST 18%</td>
+                                                            <td class=" p-8">
+                                                                <span class="text-primary-light" id="currency-symbol-display"><?= htmlspecialchars($symbol) ?> <?php echo $row['gst']; ?></span>
                                                             </td>
                                                         </tr>
                                                         <tr>
-                                                            <td class="pe-64 border-bottom p-8">
+                                                            <td class="pe-64 p-8 fw-semibold">
                                                                 <span class="text-primary-light">Total</span>
                                                             </td>
-                                                            <td class="border-bottom p-8">
-                                                                <span class="text-primary-light fw-semibold" id="currency-symbol-display"><?= htmlspecialchars($symbol) ?> <?php echo $row['amount']; ?></span>
+                                                            <td class="p-8">
+                                                                <span class="text-primary-light" id="currency-symbol-display"><?= htmlspecialchars($symbol) ?> <?php echo $row['amount']; ?></span>
                                                             </td>
                                                         </tr>
                                                         <?php if($row['payment_made'] != null){ ?>
                                                         <tr>
-                                                            <td class="pe-64 border-bottom p-8">
+                                                            <td class="pe-64 p-8 fw-semibold">
                                                                 <span class="text-primary-light">Payment Made</span>
                                                             </td>
-                                                            <td class="border-bottom p-8">
-                                                                <span class="text-primary-light fw-semibold" id="currency-symbol-display"><?= htmlspecialchars($symbol) ?> <?php echo $row['payment_made']; ?></span>
+                                                            <td class="p-8">
+                                                                <span class="text-primary-light" id="currency-symbol-display"><?= htmlspecialchars($symbol) ?> <?php echo $row['payment_made']; ?></span>
                                                             </td>
                                                         </tr>
                                                         <?php } ?>
                                                         <tr>
-                                                            <td class="pe-64 border-bottom p-8">
+                                                            <td class="pe-64 p-8 fw-semibold">
                                                                 <span class="text-primary-light">Balance Due</span>
                                                             </td>
-                                                            <td class="border-bottom p-8">
-                                                                <span class="text-primary-light fw-semibold" id="currency-symbol-display"><?= htmlspecialchars($symbol) ?> <?php echo $row['balance_due']; ?></span>
+                                                            <td class="p-8">
+                                                                <span class="text-primary-light" id="currency-symbol-display"><?= htmlspecialchars($symbol) ?> <?php echo $row['balance_due']; ?></span>
                                                             </td>
                                                         </tr>
                                                     </tbody>

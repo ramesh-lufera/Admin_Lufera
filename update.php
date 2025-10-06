@@ -55,18 +55,12 @@ if (isset($_FILES['photo']) && $_FILES['photo']['error'] == 0) {
     }
 }
  
-// Basic validation (you can expand this)
-// if (!$id || !$fname || !$lname || !$uname || !$bname || !$email || !$phone || !$address || !$city || !$state || !$country || !$pin) {
-//     echo "All fields are required.";
-//     exit;
-// }
- 
 //
 //$stmt = $conn->prepare("UPDATE users SET name=?, email=? WHERE id=?");
 $stmt = $conn->prepare("UPDATE users SET first_name = ?, last_name = ?, username = ?, business_name = ?, email = ?, phone = ?, address = ?, city = ?, state = ?, country = ?, pincode = ?, dob = ?  WHERE id = ?");
 $stmt->bind_param("ssssssssssssi", $fname, $lname, $uname, $bname, $email, $phone, $address, $city, $state, $country, $pin, $dob, $id);
 if ($stmt->execute()) {
-    echo "<script>location.reload();</script>";
+    echo "updated";
 } else {
     echo "Error updating user: " . $stmt->error;
 }
