@@ -72,11 +72,14 @@
         $stmt->close();
 
         if (!empty($InvoiceId)) {
-            $orderStmt = $conn->prepare("SELECT status FROM orders WHERE invoice_id = ? AND user_id = ?");
+            $orderStmt = $conn->prepare("SELECT * FROM orders WHERE invoice_id = ? AND user_id = ?");
             $orderStmt->bind_param("ii", $InvoiceId, $UserId);
             $orderStmt->execute();
             $orderResult = $orderStmt->get_result();
             $orderRow = $orderResult->fetch_assoc();
+            $order_id = $orderRow['id'];
+            $payment_made = $orderRow['payment_made'];
+            $balance_due = $orderRow['balance_due'];
             $orderStmt->close();
 
             if ($orderRow && $orderRow['status'] === 'Approved') {
@@ -242,9 +245,11 @@
             <h6 class="fw-semibold mb-0"><?php echo htmlspecialchars($BusinessName); ?></h6>
             <span>|</span>
             <iconify-icon icon="mdi:home-outline" class="text-lg icon-black" onclick="history.back()"></iconify-icon>
-            <span class="text-warning">N/A</span>
             </div>
             <div class="d-flex gap-2">
+            <?php if ($role == '1' || $role == '2'): 
+                include 'record_payment.php'; 
+            endif; ?>
             <button type="button" class="btn btn-sm btn-upgrade">Upgrade</button>
                 <a href="./domain-onboarding-wizard.php?id=<?= $websiteId ?>&prod_id=<?= $productId ?>"><button type="button" class="btn btn-sm btn-edit-website">Wizard</button></a>
             </div>
