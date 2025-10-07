@@ -429,20 +429,19 @@
   });
 </script>
 <script>
-    document.getElementById('numericInput').addEventListener('input', function () {
-        const amount = parseFloat(this.value);
-        const originalBalance = parseFloat(<?php echo json_encode($row['balance_due']); ?>);
+document.getElementById('numericInput').addEventListener('input', function () {
+    const amount = parseFloat(this.value);
+    const originalBalance = parseFloat(<?php echo json_encode($row['balance_due']); ?>);
 
-        if (!isNaN(amount)) {
-            const updatedBalance = originalBalance - amount;
-            document.getElementById('balance_due').value = updatedBalance.toFixed(2);;
-        } else {
-            // Reset if input is not a number
-            document.getElementById('balance_due').value = originalBalance.toFixed(2);;
-        }
-    });
-</script>
-<script>
+    if (!isNaN(amount)) {
+        const updatedBalance = originalBalance - amount;
+        document.getElementById('balance_due').value = updatedBalance.toFixed(2);;
+    } else {
+        // Reset if input is not a number
+        document.getElementById('balance_due').value = originalBalance.toFixed(2);;
+    }
+});
+
 document.addEventListener("DOMContentLoaded", function () {
     const amountInput = document.getElementById("numericInput").toFixed(2);;
     const balanceDue = parseFloat(document.getElementById("balance_due").value).toFixed(2);;
@@ -454,7 +453,6 @@ document.addEventListener("DOMContentLoaded", function () {
         if (enteredAmount > balanceDue) {
             errorText.classList.remove("d-none");
             submit.disabled = true;
-            //this.value = ""; 
         }
         else {
             errorText.classList.add("d-none");
@@ -462,8 +460,7 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     });
 });
-</script>
-<script>
+
 document.addEventListener("DOMContentLoaded", function () {
     const amountInput = document.getElementById("numericInput");
     const balanceDue = parseFloat(document.getElementById("balance_due").value);
@@ -476,8 +473,6 @@ document.addEventListener("DOMContentLoaded", function () {
         if (!isNaN(enteredAmount) && enteredAmount > balanceDue) {
             errorText.classList.remove("d-none");
             submit.disabled = true;
-            //alert("Entered amount cannot be greater than Total Payable (" + balanceDue.toFixed(2) + ")");
-            //this.value = ""; // clear field
         } else {
             errorText.classList.add("d-none");
             submit.disabled = false;

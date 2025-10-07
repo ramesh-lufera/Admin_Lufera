@@ -203,8 +203,14 @@ $amountInWords = numberToWords($amount);
         <div class="card-body py-40">
             <div class="row justify-content-center" id="invoice">
                 <div class="col-lg-12">
-                    <p>Payment ID: <b><?php echo $payment_id; ?></b></p>  
+                <div class="d-flex my-3 justify-content-between">
+                    <p class="mb-0 mt-auto">Payment ID: <b><?php echo $payment_id; ?></b></p>  
                     
+                        <div class="amt-rec w-auto p-20">
+                            <p class="mb-0">Payment Made</p>
+                            <p class="mb-0"><?= htmlspecialchars($symbol) ?> <?php echo number_format($amount, 2); ?></p>
+                        </div>
+                    </div>
                     <div class="table-responsive scroll-sm">
                         <table class="table mb-0">
                             <thead class="thead">
@@ -237,8 +243,8 @@ $amountInWords = numberToWords($amount);
 
                             if ($addon_result->num_rows > 0) {
                                 echo '
-                                            <table class="table">
-                                                <tbody>';
+                                    <table class="table">
+                                        <tbody>';
 
                                 while ($addon_row = $addon_result->fetch_assoc()) {
                                     echo "<tr class='tbody'>
@@ -252,9 +258,9 @@ $amountInWords = numberToWords($amount);
                                         </tr>";
                                 }
 
-                                echo '        </tbody>
-                                            </table>
-                                        ';
+                                echo '        
+                                    </tbody>
+                                    </table>';
                             }
                         }
                     }

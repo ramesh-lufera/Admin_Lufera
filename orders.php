@@ -359,6 +359,7 @@
         <div class="d-flex flex-wrap align-items-center gap-3 mb-24">
             <a class="cursor-pointer fw-bold" onclick="history.back()"><span class="fa fa-arrow-left"></span>&nbsp; Back</a> 
             <h6 class="fw-semibold mb-0 m-auto">Orders</h6>
+            <a class="cursor-pointer fw-bold visibility-hidden" onclick="history.back()"><span class="fa fa-arrow-left"></span>&nbsp; Back</a> 
         </div>
         <div class="card">
             <div class="card-body">
