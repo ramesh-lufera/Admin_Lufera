@@ -48,25 +48,18 @@
         // SweetAlert flag
         $_SESSION['order_approved'] = true;
 
+        // For Notifications..
         date_default_timezone_set('Asia/Kolkata');
-
-        // Get order + user details
-        $res = $conn->query("SELECT o.invoice_id, o.plan, o.amount, u.email, u.first_name, u.last_name 
-                             FROM orders o 
-                             INNER JOIN users u ON o.user_id = u.id 
-                             WHERE o.id = $Id");
-        $order = $res->fetch_assoc();
-
-        $userEmail = $order['email'];
-        $userName  = $order['first_name'] . " " . $order['last_name'];
-        $planName  = $order['plan'];
-        $invoiceId = $order['invoice_id'];
-        $amount    = $order['amount'];
 
         // Get user_id for notification
         $res = $conn->query("SELECT user_id FROM orders WHERE id = $orderId");
         $user = $res->fetch_assoc();
-        $userId = $user['user_id'];
+        $IdFromOrders = $user['user_id'];
+
+        // Get matching user_id from users table
+        $resUser = $conn->query("SELECT user_id FROM users WHERE id = $IdFromOrders");
+        $userRow = $resUser->fetch_assoc(); // fetch the row
+        $userId = $userRow['user_id']; // matched user_id from users table
 
         // Add notification
         $msg = "Your payment has been approved.";
@@ -74,6 +67,19 @@
         $stmt = $conn->prepare("INSERT INTO notifications (user_id, message, n_photo, created_at) VALUES (?, ?, ?, ?)");
         $stmt->bind_param("ssss", $userId, $msg, $photo, $createdAt);
         $stmt->execute();
+
+        // Get order + user details
+        $res = $conn->query("SELECT o.invoice_id, o.plan, o.amount, u.email, u.first_name, u.last_name 
+                             FROM orders o 
+                             INNER JOIN users u ON o.user_id = u.id 
+                             WHERE o.id = $orderId");
+        $order = $res->fetch_assoc();
+
+        $userEmail = $order['email'];
+        $userName  = $order['first_name'] . " " . $order['last_name'];
+        $planName  = $order['plan'];
+        $invoiceId = $order['invoice_id'];
+        $amount    = $order['amount'];
 
         // ✅ Send Email to User
         try {
@@ -185,7 +191,12 @@
         // Get user_id for notification
         $res = $conn->query("SELECT user_id FROM orders WHERE id = $orderId");
         $user = $res->fetch_assoc();
-        $userId = $user['user_id'];
+        $IdFromOrders1 = $user['user_id'];
+
+        // Get matching user_id from users table
+        $resUser = $conn->query("SELECT user_id FROM users WHERE id = $IdFromOrders1");
+        $userRow = $resUser->fetch_assoc(); // fetch the row
+        $userId = $userRow['user_id']; // matched user_id from users table
 
         // Add notification
         $msg = "Your order has been cancelled.";
@@ -312,24 +323,24 @@
     
     // JOIN orders with users
     $query = "
-    SELECT
-        orders.*,
-        users.username,
-        users.first_name,
-        users.last_name,
-        users.photo,
-        users.business_name,
+        SELECT
+            orders.*,
+            users.username,
+            users.first_name,
+            users.last_name,
+            users.photo,
+            users.business_name,
 
-        CASE 
-            WHEN orders.type = 'package' THEN package.package_name
-            WHEN orders.type = 'product' THEN products.name
-            ELSE orders.plan
-        END AS plan_name
+            CASE 
+                WHEN orders.type = 'package' THEN package.package_name
+                WHEN orders.type = 'product' THEN products.name
+                ELSE orders.plan
+            END AS plan_name
 
-        FROM orders
-        INNER JOIN users ON orders.user_id = users.id
-        LEFT JOIN package ON (orders.type = 'package' AND orders.plan = package.id)
-        LEFT JOIN products ON (orders.type = 'product' AND orders.plan = products.id)
+            FROM orders
+            INNER JOIN users ON orders.user_id = users.id
+            LEFT JOIN package ON (orders.type = 'package' AND orders.plan = package.id)
+            LEFT JOIN products ON (orders.type = 'product' AND orders.plan = products.id)
     ";
 
     // Add condition only if role is NOT 1 or 2
@@ -600,174 +611,177 @@
             </div>
         </div>
     </div>
-</div>
-
-<div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered modal-lg">
-            <form method="post">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title" id="exampleModalLabel">Record Payment</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                    </div>
-                    <div class="modal-body">
-                        <div class="row">
-                            <div class="col-sm-6">
-                                <div class="mb-20">
-                                    <label for="" class="form-label fw-semibold text-primary-light text-sm mb-8">Invoice No: <span class="text-danger-600">*</span></label>
-                                    <input type="hidden" value="<?php echo $id; ?>" name="order_id">
-                                    <input type="text" class="form-control radius-8" name="invoice_no"  required>
-                                </div>
-                            </div>
-                            <div class="col-sm-6">
-                                <div class="mb-20">
-                                    <label for="" class="form-label fw-semibold text-primary-light text-sm mb-8">Payment Method <span class="text-danger-600">*</span></label>
-                                    <select class="form-control" name="payment_method" required <?php echo $row['balance_due'] == "0" ? 'disabled' : ''; ?> >
-                                        <option value="">Select payment method</option>
-                                        <option value="Cash">Cash</option>
-                                        <option value="Card">Card</option>
-                                        <option value="UPI">UPI</option>
-                                        <option value="Bank">Bank</option>
-                                    </select>
-                                </div>
-                            </div>
-                            <div class="col-sm-6">
-                                <div class="mb-20">
-                                    <label for="" class="form-label fw-semibold text-primary-light text-sm mb-8">Enter Amount <span class="text-danger-600">*</span></label>
-                                    
-                                    <input type="hidden" class="form-control radius-8" name="payment_made" id="payment_made" value="<?php echo $payment_made; ?>">
-
-                                    <input type="text" class="form-control radius-8" name="amount" id="numericInput" required <?php echo $row['balance_due'] == "0" ? 'readonly' : ''; ?> >
-                                    <small id="amountError" class="text-danger d-none">Amount cannot be greater than Balance Due.</small>
-
-                                    <input type="hidden" class="form-control radius-8" name="balance_due" id="balance_due">
-                                </div>
-                            </div>
-                            <div class="col-sm-6">
-                                <div class="mb-20">
-                                    <label for="" class="form-label fw-semibold text-primary-light text-sm mb-8">Remarks <span class="text-danger-600">*</span></label>
-                                    <input type="text" class="form-control radius-8" name="remarks" value="" required <?php echo $row['balance_due'] == "0" ? 'readonly' : ''; ?> >
-                                </div>
-                            </div>
-
-                            <?php if ($row['balance_due'] == '0') { ?>
-                                <p class="text-danger">Payment fully paid</p>
-                                <?php } ?>
-                        </div>
-                    </div>
-                    <div class="modal-footer d-flex align-items-center justify-content-center gap-3">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                        <button type="submit" id="submit" class="btn lufera-bg text-white" name="save" <?php echo $row['balance_due'] == "0" ? 'disabled' : ''; ?>>Save</button>
-                    </div>
-                </div>
-            </form>
-        </div>
     </div>
 
-<script>
-$(document).ready(function() {
-    $('#userTable').DataTable();
-} );
-</script>
-<script>
-    document.getElementById("numericInput").addEventListener("input", function () {
-    this.value = this.value.replace(/\D/g, ''); // Remove non-digits
-  });
-</script>
-<script>
-    document.getElementById('numericInput').addEventListener('input', function () {
-        const amount = parseFloat(this.value);
-        const originalBalance = parseFloat(<?php echo json_encode($row['balance_due']); ?>);
+    <div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered modal-lg">
+                <form method="post">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="exampleModalLabel">Record Payment</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="row">
+                                <div class="col-sm-6">
+                                    <div class="mb-20">
+                                        <label for="" class="form-label fw-semibold text-primary-light text-sm mb-8">Invoice No: <span class="text-danger-600">*</span></label>
+                                        <input type="hidden" value="<?php echo $id; ?>" name="order_id">
+                                        <input type="text" class="form-control radius-8" name="invoice_no"  required>
+                                    </div>
+                                </div>
+                                <div class="col-sm-6">
+                                    <div class="mb-20">
+                                        <label for="" class="form-label fw-semibold text-primary-light text-sm mb-8">Payment Method <span class="text-danger-600">*</span></label>
+                                        <select class="form-control" name="payment_method" required <?php echo $row['balance_due'] == "0" ? 'disabled' : ''; ?> >
+                                            <option value="">Select payment method</option>
+                                            <option value="Cash">Cash</option>
+                                            <option value="Card">Card</option>
+                                            <option value="UPI">UPI</option>
+                                            <option value="Bank">Bank</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-sm-6">
+                                    <div class="mb-20">
+                                        <label for="" class="form-label fw-semibold text-primary-light text-sm mb-8">Enter Amount <span class="text-danger-600">*</span></label>
+                                        
+                                        <input type="hidden" class="form-control radius-8" name="payment_made" id="payment_made" value="<?php echo $payment_made; ?>">
 
-        if (!isNaN(amount)) {
-            const updatedBalance = originalBalance - amount;
-            document.getElementById('balance_due').value = updatedBalance.toFixed(2);;
-        } else {
-            // Reset if input is not a number
-            document.getElementById('balance_due').value = originalBalance.toFixed(2);;
-        }
-    });
-</script>
-<script>
-document.addEventListener("DOMContentLoaded", function () {
-    const amountInput = document.getElementById("numericInput");
-    const balanceDue = parseFloat(document.getElementById("balance_due").value);
-    const errorText = document.getElementById("amountError");
-    const submit = document.getElementById("submit");
+                                        <input type="text" class="form-control radius-8" name="amount" id="numericInput" required <?php echo $row['balance_due'] == "0" ? 'readonly' : ''; ?> >
+                                        <small id="amountError" class="text-danger d-none">Amount cannot be greater than Balance Due.</small>
 
-    amountInput.addEventListener("input", function () {
-        const enteredAmount = parseFloat(this.value);
+                                        <input type="hidden" class="form-control radius-8" name="balance_due" id="balance_due">
+                                    </div>
+                                </div>
+                                <div class="col-sm-6">
+                                    <div class="mb-20">
+                                        <label for="" class="form-label fw-semibold text-primary-light text-sm mb-8">Remarks <span class="text-danger-600">*</span></label>
+                                        <input type="text" class="form-control radius-8" name="remarks" value="" required <?php echo $row['balance_due'] == "0" ? 'readonly' : ''; ?> >
+                                    </div>
+                                </div>
 
-        if (!isNaN(enteredAmount) && enteredAmount > balanceDue) {
-            errorText.classList.remove("d-none");
-            submit.disabled = true;
-        } else {
-            errorText.classList.add("d-none");
-            submit.disabled = false;
-        }
-    });
-});
+                                <?php if ($row['balance_due'] == '0') { ?>
+                                    <p class="text-danger">Payment fully paid</p>
+                                    <?php } ?>
+                            </div>
+                        </div>
+                        <div class="modal-footer d-flex align-items-center justify-content-center gap-3">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                            <button type="submit" id="submit" class="btn lufera-bg text-white" name="save" <?php echo $row['balance_due'] == "0" ? 'disabled' : ''; ?>>Save</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+    </div>
 
-</script>
-<script>
-document.addEventListener("DOMContentLoaded", function () {
-    const amountInput = document.getElementById("numericInput");
-    const balanceDue = parseFloat(document.getElementById("balance_due").value);
-    const errorText = document.getElementById("amountError");
-    const submit = document.getElementById("submit");
-
-    amountInput.addEventListener("input", function () {
-        const enteredAmount = parseFloat(this.value);
-
-        if (!isNaN(enteredAmount) && enteredAmount > balanceDue) {
-            errorText.classList.remove("d-none");
-            submit.disabled = true;
-            //alert("Entered amount cannot be greater than Total Payable (" + balanceDue.toFixed(2) + ")");
-            //this.value = ""; // clear field
-        } else {
-            errorText.classList.add("d-none");
-            submit.disabled = false;
-        }
-    });
-});
-
-document.addEventListener('show.bs.modal', function (event) {
-    const button = event.relatedTarget; // the button that triggered modal
-    const invoice = button.getAttribute('data-invoice');
-    const orderId = button.getAttribute('data-order');
-    const balance = button.getAttribute('data-balance');
-    const payment = button.getAttribute('data-payment');
-
-    document.querySelector('#exampleModal input[name="invoice_no"]').value = invoice;
-    document.querySelector('#exampleModal input[name="order_id"]').value = orderId;
-    document.querySelector('#exampleModal input[name="balance_due"]').value = balance;
-    document.querySelector('#exampleModal input[name="payment_made"]').value = payment;
-});
-
-</script>
-
-<?php if (isset($_SESSION['order_approved']) && $_SESSION['order_approved'] === true): ?>
     <script>
-        Swal.fire({
-            title: "Order Approved",
-            // text: "The order has been successfully approved!",
-            icon: "success",
-            confirmButtonText: "OK"
+        $(document).ready(function() {
+            $('#userTable').DataTable();
+        } );
+    </script>
+
+    <script>
+        document.getElementById("numericInput").addEventListener("input", function () {
+            this.value = this.value.replace(/\D/g, ''); // Remove non-digits
         });
     </script>
-    <?php unset($_SESSION['order_approved']); ?>
-<?php endif; ?>
 
-<?php if (isset($_SESSION['order_cancelled']) && $_SESSION['order_cancelled'] === true): ?>
     <script>
-        Swal.fire({
-            title: "Order Cancelled",
-            icon: "warning",
-            confirmButtonText: "OK"
+        document.getElementById('numericInput').addEventListener('input', function () {
+            const amount = parseFloat(this.value);
+            const originalBalance = parseFloat(<?php echo json_encode($row['balance_due']); ?>);
+
+            if (!isNaN(amount)) {
+                const updatedBalance = originalBalance - amount;
+                document.getElementById('balance_due').value = updatedBalance.toFixed(2);;
+            } else {
+                // Reset if input is not a number
+                document.getElementById('balance_due').value = originalBalance.toFixed(2);;
+            }
         });
     </script>
-    <?php unset($_SESSION['order_cancelled']); ?>
-<?php endif; ?>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const amountInput = document.getElementById("numericInput");
+            const balanceDue = parseFloat(document.getElementById("balance_due").value);
+            const errorText = document.getElementById("amountError");
+            const submit = document.getElementById("submit");
+
+            amountInput.addEventListener("input", function () {
+                const enteredAmount = parseFloat(this.value);
+
+                if (!isNaN(enteredAmount) && enteredAmount > balanceDue) {
+                    errorText.classList.remove("d-none");
+                    submit.disabled = true;
+                } else {
+                    errorText.classList.add("d-none");
+                    submit.disabled = false;
+                }
+            });
+        });
+    </script>
+
+    <script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const amountInput = document.getElementById("numericInput");
+        const balanceDue = parseFloat(document.getElementById("balance_due").value);
+        const errorText = document.getElementById("amountError");
+        const submit = document.getElementById("submit");
+
+        amountInput.addEventListener("input", function () {
+            const enteredAmount = parseFloat(this.value);
+
+            if (!isNaN(enteredAmount) && enteredAmount > balanceDue) {
+                errorText.classList.remove("d-none");
+                submit.disabled = true;
+                //alert("Entered amount cannot be greater than Total Payable (" + balanceDue.toFixed(2) + ")");
+                //this.value = ""; // clear field
+            } else {
+                errorText.classList.add("d-none");
+                submit.disabled = false;
+            }
+        });
+    });
+
+    document.addEventListener('show.bs.modal', function (event) {
+        const button = event.relatedTarget; // the button that triggered modal
+        const invoice = button.getAttribute('data-invoice');
+        const orderId = button.getAttribute('data-order');
+        const balance = button.getAttribute('data-balance');
+        const payment = button.getAttribute('data-payment');
+
+        document.querySelector('#exampleModal input[name="invoice_no"]').value = invoice;
+        document.querySelector('#exampleModal input[name="order_id"]').value = orderId;
+        document.querySelector('#exampleModal input[name="balance_due"]').value = balance;
+        document.querySelector('#exampleModal input[name="payment_made"]').value = payment;
+    });
+
+    </script>
+
+    <?php if (isset($_SESSION['order_approved']) && $_SESSION['order_approved'] === true): ?>
+        <script>
+            Swal.fire({
+                title: "Order Approved",
+                // text: "The order has been successfully approved!",
+                icon: "success",
+                confirmButtonText: "OK"
+            });
+        </script>
+        <?php unset($_SESSION['order_approved']); ?>
+    <?php endif; ?>
+
+    <?php if (isset($_SESSION['order_cancelled']) && $_SESSION['order_cancelled'] === true): ?>
+        <script>
+            Swal.fire({
+                title: "Order Cancelled",
+                icon: "warning",
+                confirmButtonText: "OK"
+            });
+        </script>
+        <?php unset($_SESSION['order_cancelled']); ?>
+    <?php endif; ?>
 
 </body>
 </html>
