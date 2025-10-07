@@ -28,6 +28,8 @@
                     websites.duration,
                     websites.status,
                     websites.created_at,
+                    websites.plan,
+                    websites.type,
                     CASE 
                         WHEN websites.type = 'package' THEN package.package_name
                         WHEN websites.type = 'product' THEN products.name
@@ -46,6 +48,8 @@
                     websites.duration,
                     websites.status,
                     websites.created_at,
+                    websites.plan,
+                    websites.type,
                     CASE 
                         WHEN websites.type = 'package' THEN package.package_name
                         WHEN websites.type = 'product' THEN products.name
@@ -68,6 +72,8 @@
         $InvoiceId = $row['invoice_id'];
         $Status = strtolower($row['status'] ?? 'Pending');
         $CreatedAt = $row['created_at'];
+        $planId = $row['plan'] ?? null;
+        $type = $row['type'] ?? null;
         $stmt->close();
 
         if (!empty($InvoiceId)) {
@@ -187,6 +193,52 @@
             $nameserver2 = $data['nameserver2'];
         }
 
+        $currentPrice = "N/A";
+        if (!empty($planId) && !empty($type)) {
+            if ($type == 'package') {
+                $priceStmt = $conn->prepare("SELECT price FROM package WHERE id = ?");
+            } elseif ($type == 'product') {
+                $priceStmt = $conn->prepare("SELECT price FROM products WHERE id = ?");
+            }
+
+            if (isset($priceStmt)) {
+                $priceStmt->bind_param("i", $planId);
+                $priceStmt->execute();
+                $priceResult = $priceStmt->get_result();
+                if ($priceResult && $priceResult->num_rows > 0) {
+                    $priceRow = $priceResult->fetch_assoc();
+                    $currentPrice = $priceRow['price'];
+                }
+                $priceStmt->close();
+            }
+        }
+
+        // $Duration comes from database, e.g., "1 year", "12 months", "30 days"
+        // Normalize duration to months or days
+        $durationStr = strtolower($Duration);
+
+        // Default
+        $monthlyPriceFormatted = $currentPrice; // fallback: show as-is
+
+        if (strpos($durationStr, 'year') !== false) {
+            // Extract number of years
+            preg_match('/\d+/', $durationStr, $matches);
+            $years = $matches[0] ?? 1;
+            $months = $years * 12;
+            $monthlyPrice = $currentPrice / $months;
+            $monthlyPriceFormatted = number_format($monthlyPrice, 2);
+
+        } elseif (strpos($durationStr, 'month') !== false) {
+            preg_match('/\d+/', $durationStr, $matches);
+            $months = $matches[0] ?? 1;
+            $monthlyPrice = $currentPrice / $months;
+            $monthlyPriceFormatted = number_format($monthlyPrice, 2);
+
+        } elseif (strpos($durationStr, 'day') !== false) {
+            // Show total price as-is (no division)
+            $monthlyPriceFormatted = number_format($currentPrice, 2);
+        }
+
     ?>
     <style>
         .btn-upgrade {
@@ -249,6 +301,9 @@
             <?php if ($role == '1' || $role == '2'): 
                 include 'record_payment.php'; 
             endif; ?>
+            <button type="button" class="btn btn-sm btn-renewal" data-bs-toggle="modal" data-bs-target="#renewal-modal">
+                Renewal
+            </button>
             <button type="button" class="btn btn-sm btn-upgrade">Upgrade</button>
                 <a href="./website-wizard.php?id=<?= $websiteId ?>&prod_id=<?= $productId ?>"><button type="button" class="btn btn-sm btn-edit-website">Wizard</button></a>
             </div>
@@ -370,6 +425,158 @@
         </form>
         </div>
     </div>
+    <style>
+    /* Custom button styling */
+    .btn-renewal {
+        background-color: #c8e6c9;
+        color: #000;
+        border: 1px solid #81c784;
+        font-weight: 500;
+    }
+    .btn-renewal:hover {
+        background-color: #81c784;
+        color: #fff;
+    }
+</style>
+
+<!-- Renewal Modal -->
+<div class="modal fade" id="renewal-modal" tabindex="-1" aria-labelledby="renewalModalLabel" aria-hidden="true">
+<div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
+    <div class="modal-content border-0 shadow-lg">
+
+    <!-- Header -->
+    <div class="modal-header border-0 pb-0">
+        <h4 class="modal-title fw-semibold w-100 text-center">Renew your Business WordPress</h4>
+    </div>
+
+    <!-- Body -->
+    <div class="modal-body px-3 px-md-5 pb-0">
+        <p class="text-center text-muted mb-4">Review the details and proceed to checkout</p>
+
+        <!-- Period Section -->
+        <div class="p-3 border rounded-3 mb-3">
+        <div class="row align-items-center text-center text-md-start">
+            <div class="col-12 col-md-auto mb-2 mb-md-0">
+            <select id="periodSelect" class="form-select w-100 w-md-auto">
+                <option value="48">48 months</option>
+                <option value="24">24 months</option>
+                <option value="12" selected>12 months</option>
+                <option value="1">1 month</option>
+            </select>
+            </div>
+            <div class="col-12 col-md text-center mb-2 mb-md-0">
+            <span class="badge bg-light text-success fw-semibold">save 7%</span>
+            </div>
+            <div class="col-12 col-md-auto text-center text-md-end">
+            <div class="text-muted small" style="text-decoration: line-through;">
+                ₹<?= htmlspecialchars($monthlyPriceFormatted) ?> /mo
+            </div>
+            <div class="fw-bold fs-5">
+                ₹<?= htmlspecialchars($monthlyPriceFormatted) ?> /mo
+            </div>
+            </div>
+        </div>
+        </div>
+
+        <!-- Add-on Services -->
+        <div class="p-3 border rounded-3 mb-3">
+        <div class="d-flex justify-content-between align-items-center flex-wrap">
+            <div>
+            <label class="fw-semibold mb-1">Add-on services</label><br>
+            <span>Daily Backup</span>
+            </div>
+            <span class="fw-semibold text-success mt-2 mt-md-0">Free</span>
+        </div>
+        </div>
+
+        <!-- Payment Method -->
+        <div class="mb-3">
+        <label class="fw-semibold mb-2">Payment method</label>
+        <select class="form-select">
+            <option>💳 Visa ending 1234</option>
+            <option>💳 MasterCard ending 5678</option>
+            <option>Choose a different payment method</option>
+        </select>
+        </div>
+
+        <!-- Expiration Date -->
+        <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap">
+        <label class="fw-semibold mb-1 mb-md-0">Expiration date</label>
+        <span id="expirationDate"><?= htmlspecialchars($endDate->format('Y-m-d')) ?></span>
+        </div>
+
+        <hr class="my-3">
+
+        <!-- Subtotal -->
+        <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap">
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+                <span class="fw-semibold">Subtotal</span>
+                <a href="#" class="text-warning fw-semibold text-decoration-none">Add coupon code</a>
+            </div>
+            <span id="subtotal" class="fw-semibold mt-2 mt-md-0">
+                ₹<?= htmlspecialchars(number_format($monthlyPriceFormatted * 12, 2)) ?>
+            </span>
+        </div>
+
+        <hr class="my-3">
+
+        <!-- Total -->
+        <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap">
+        <span class="fw-bold fs-5">Total</span>
+        <span id="total" class="fw-bold fs-5 mt-2 mt-md-0">
+            ₹<?= htmlspecialchars(number_format($monthlyPriceFormatted * 12, 2)) ?>
+        </span>
+        </div>
+
+        <p class="text-muted small mt-3">
+        By checking out, you agree with our 
+        <a href="#" class="text-decoration-none">Terms of Service</a> and confirm that you have read our 
+        <a href="#" class="text-decoration-none">Privacy Policy</a>. 
+        You can cancel recurring payments at any time.
+        </p>
+    </div>
+
+    <!-- Footer -->
+    <div class="modal-footer border-0 px-3 px-md-5 pb-4 d-flex justify-content-end gap-3 flex-wrap">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-renewal lufera-bg">Complete Payment</button>
+    </div>
+
+    </div>
+</div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const monthlyPrice = <?= $monthlyPrice ?>;
+        const select = document.getElementById('periodSelect');
+        const subtotalEl = document.getElementById('subtotal');
+        const totalEl = document.getElementById('total');
+        const expirationDateEl = document.getElementById('expirationDate');
+        const baseEndDate = new Date("<?= $endDate->format('Y-m-d') ?>");
+
+        function formatCurrency(amount) {
+            return '₹' + amount.toLocaleString('en-IN', { minimumFractionDigits: 2 });
+        }
+
+        function updateTotals() {
+            const months = parseInt(select.value);
+            let discount = 0;
+            if (months === 48 || months === 24) discount = 0.07;
+            const subtotal = monthlyPrice * months * (1 - discount);
+            subtotalEl.textContent = formatCurrency(subtotal);
+            totalEl.textContent = formatCurrency(subtotal);
+
+            const newDate = new Date(baseEndDate);
+            newDate.setMonth(newDate.getMonth() + months);
+            expirationDateEl.textContent = newDate.toISOString().split('T')[0];
+        }
+
+        select.addEventListener('change', updateTotals);
+        updateTotals();
+    });
+</script>
+
     <script>
         function copyIP(text) {
             navigator.clipboard.writeText(text).then(() => {

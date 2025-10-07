@@ -520,7 +520,7 @@
                                         <!-- Domain Title -->
                                         <div class="site-info-header">
                                             <h6>
-                                            // <?php echo htmlspecialchars(\$site['plan']); ?>
+                                            <!-- <?php echo htmlspecialchars(\$site['plan']); ?> -->
                                             <?php echo htmlspecialchars(\$site['plan_name']); ?>
                                             <span style="visibility:hidden"><?php echo htmlspecialchars(\$site['user_id']); ?></span>
                                             </h6>
