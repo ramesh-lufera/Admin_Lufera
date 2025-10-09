@@ -1,3 +1,8 @@
+<?php
+        ini_set('display_errors', 1);
+        ini_set('display_startup_errors', 1);
+        error_reporting(E_ALL);
+?>
 <!-- meta tags and other links -->
 <!DOCTYPE html>
 <html lang="en" data-theme="light">
@@ -14,7 +19,6 @@
 
 <?php 
     include './partials/layouts/layoutTop.php';
-
     require_once __DIR__ . '/vendor/autoload.php';
     use Dotenv\Dotenv;
     use PHPMailer\PHPMailer\PHPMailer;
@@ -380,7 +384,7 @@
 
                 $siteInsert = "UPDATE orders
                                 SET payment_made = $total_amount, balance_due = $balance_due
-                                WHERE invoice_id = '$invoice_id'";
+                                WHERE invoice_id = '$invoice_no'";
                     mysqli_query($conn, $siteInsert);
                 echo "
                 <script>
@@ -418,6 +422,7 @@
                     <thead>
                         <tr>
                             <th scope="col">Subscription</th>
+                            <th scope="col">Invoice Id</th>
                             <th scope="col">Bussiness name</th>
                             <th scope="col" class="text-center">Expiration date</th>
                             <th scope="col" class="text-center">Auto-renewal</th>
@@ -447,6 +452,7 @@
                             ?>
                             <tr>
                                 <td><?php echo htmlspecialchars($row['plan_name']); ?></td>
+                                <td><?php echo htmlspecialchars($row['invoice_id']); ?></td>
                                 <td><?php echo htmlspecialchars($row['business_name']); ?></td>
                                 <td class="text-center"><?php echo $expiryFormatted; ?></td>
                                 <td class="text-center">Off</td>
@@ -561,14 +567,17 @@
                                     <?php 
                                         if($role == "1" || $role == "2") {?>  
                                         <!-- <button class="btn text-white btn-primary text-sm mb-10" data-bs-toggle="modal" data-bs-target="#exampleModal">Record Payment</button> -->
-                                        <button class="btn text-white btn-primary text-sm mb-10" 
-                                                data-bs-toggle="modal" 
-                                                data-bs-target="#exampleModal"
-                                                data-invoice="<?php echo $row['invoice_id']; ?>"
-                                                >
+                                        <button
+                                            class="btn text-white btn-primary text-sm mb-10 record-payment-btn"
+                                            data-bs-toggle="modal"
+                                            data-bs-target="#exampleModal"
+                                            data-invoice="<?php echo htmlspecialchars($row['invoice_id']); ?>"
+                                            data-order="<?php echo htmlspecialchars($row['id']); ?>"
+                                            data-balance="<?php echo htmlspecialchars($row['balance_due']); ?>"
+                                            data-payment="<?php echo htmlspecialchars($row['payment_made']); ?>"
+                                        >
                                             Record Payment
                                         </button>
-
                                     <?php } ?>
                                         <button class="btn text-white lufera-bg text-sm mb-10">Renew</button>
                                         <a href="invoice-preview.php?id=<?php echo $invoice_id; ?>"><button class="btn text-white btn-success text-sm mb-10">Invoice</button> </a>   
@@ -614,151 +623,158 @@
     </div>
 
     <div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
-            <div class="modal-dialog modal-dialog-centered modal-lg">
-                <form method="post">
-                    <div class="modal-content">
-                        <div class="modal-header">
-                            <h5 class="modal-title" id="exampleModalLabel">Record Payment</h5>
-                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                        </div>
-                        <div class="modal-body">
-                            <div class="row">
-                                <div class="col-sm-6">
-                                    <div class="mb-20">
-                                        <label for="" class="form-label fw-semibold text-primary-light text-sm mb-8">Invoice No: <span class="text-danger-600">*</span></label>
-                                        <input type="hidden" value="<?php echo $id; ?>" name="order_id">
-                                        <input type="text" class="form-control radius-8" name="invoice_no"  required>
-                                    </div>
-                                </div>
-                                <div class="col-sm-6">
-                                    <div class="mb-20">
-                                        <label for="" class="form-label fw-semibold text-primary-light text-sm mb-8">Payment Method <span class="text-danger-600">*</span></label>
-                                        <select class="form-control" name="payment_method" required <?php echo $row['balance_due'] == "0" ? 'disabled' : ''; ?> >
-                                            <option value="">Select payment method</option>
-                                            <option value="Cash">Cash</option>
-                                            <option value="Card">Card</option>
-                                            <option value="UPI">UPI</option>
-                                            <option value="Bank">Bank</option>
-                                        </select>
-                                    </div>
-                                </div>
-                                <div class="col-sm-6">
-                                    <div class="mb-20">
-                                        <label for="" class="form-label fw-semibold text-primary-light text-sm mb-8">Enter Amount <span class="text-danger-600">*</span></label>
-                                        
-                                        <input type="hidden" class="form-control radius-8" name="payment_made" id="payment_made" value="<?php echo $payment_made; ?>">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <form method="post">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="exampleModalLabel">Record Payment</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
 
-                                        <input type="text" class="form-control radius-8" name="amount" id="numericInput" required <?php echo $row['balance_due'] == "0" ? 'readonly' : ''; ?> >
-                                        <small id="amountError" class="text-danger d-none">Amount cannot be greater than Balance Due.</small>
-
-                                        <input type="hidden" class="form-control radius-8" name="balance_due" id="balance_due">
-                                    </div>
-                                </div>
-                                <div class="col-sm-6">
-                                    <div class="mb-20">
-                                        <label for="" class="form-label fw-semibold text-primary-light text-sm mb-8">Remarks <span class="text-danger-600">*</span></label>
-                                        <input type="text" class="form-control radius-8" name="remarks" value="" required <?php echo $row['balance_due'] == "0" ? 'readonly' : ''; ?> >
-                                    </div>
-                                </div>
-
-                                <?php if ($row['balance_due'] == '0') { ?>
-                                    <p class="text-danger">Payment fully paid</p>
-                                    <?php } ?>
-                            </div>
-                        </div>
-                        <div class="modal-footer d-flex align-items-center justify-content-center gap-3">
-                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                            <button type="submit" id="submit" class="btn lufera-bg text-white" name="save" <?php echo $row['balance_due'] == "0" ? 'disabled' : ''; ?>>Save</button>
-                        </div>
-                    </div>
-                </form>
+        <div class="modal-body">
+          <div class="row">
+            <div class="col-sm-6 mb-20">
+              <label class="form-label fw-semibold text-primary-light text-sm mb-8">Invoice No: <span class="text-danger-600">*</span></label>
+              <input type="hidden" name="order_id" id="modal_order_id">
+              <input type="text" class="form-control radius-8" name="invoice_no" id="modal_invoice_no" required readonly>
             </div>
-    </div>
 
-    <script>
-        $(document).ready(function() {
-            $('#userTable').DataTable();
-        } );
-    </script>
+            <div class="col-sm-6 mb-20">
+              <label class="form-label fw-semibold text-primary-light text-sm mb-8">Payment Method <span class="text-danger-600">*</span></label>
+              <select class="form-control" name="payment_method" id="modal_payment_method" required>
+                <option value="">Select payment method</option>
+                <option value="Cash">Cash</option>
+                <option value="Card">Card</option>
+                <option value="UPI">UPI</option>
+                <option value="Bank">Bank</option>
+              </select>
+            </div>
 
-    <script>
-        document.getElementById("numericInput").addEventListener("input", function () {
-            this.value = this.value.replace(/\D/g, ''); // Remove non-digits
-        });
-    </script>
+            <div class="col-sm-6 mb-20">
+              <label class="form-label fw-semibold text-primary-light text-sm mb-8">Enter Amount <span class="text-danger-600">*</span></label>
 
-    <script>
-        document.getElementById('numericInput').addEventListener('input', function () {
-            const amount = parseFloat(this.value);
-            const originalBalance = parseFloat(<?php echo json_encode($row['balance_due']); ?>);
+              <input type="hidden" name="payment_made" id="modal_payment_made">
+              <input type="text" class="form-control radius-8" name="amount" id="modal_amount" required>
+              <small id="amountError" class="text-danger d-none">Amount cannot be greater than Balance Due.</small>
+              <input type="hidden" name="balance_due" id="modal_balance_due">
+            </div>
 
-            if (!isNaN(amount)) {
-                const updatedBalance = originalBalance - amount;
-                document.getElementById('balance_due').value = updatedBalance.toFixed(2);;
-            } else {
-                // Reset if input is not a number
-                document.getElementById('balance_due').value = originalBalance.toFixed(2);;
-            }
-        });
-    </script>
+            <div class="col-sm-6 mb-20">
+              <label class="form-label fw-semibold text-primary-light text-sm mb-8">Remarks <span class="text-danger-600">*</span></label>
+              <input type="text" class="form-control radius-8" name="remarks" id="modal_remarks" required>
+            </div>
 
-    <script>
-        document.addEventListener("DOMContentLoaded", function () {
-            const amountInput = document.getElementById("numericInput");
-            const balanceDue = parseFloat(document.getElementById("balance_due").value);
-            const errorText = document.getElementById("amountError");
-            const submit = document.getElementById("submit");
+            <div class="col-12">
+              <p id="fullyPaidMessage" class="text-danger d-none mt-2">Payment fully paid</p>
+            </div>
+          </div>
+        </div>
 
-            amountInput.addEventListener("input", function () {
-                const enteredAmount = parseFloat(this.value);
+        <div class="modal-footer d-flex align-items-center justify-content-center gap-3">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+          <button type="submit" id="modal_submit" class="btn lufera-bg text-white" name="save">Save</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+ 
 
-                if (!isNaN(enteredAmount) && enteredAmount > balanceDue) {
-                    errorText.classList.remove("d-none");
-                    submit.disabled = true;
-                } else {
-                    errorText.classList.add("d-none");
-                    submit.disabled = false;
-                }
-            });
-        });
-    </script>
+<script>
+    $(document).ready(function() {
+        $('#userTable').DataTable();
+    } );
+    
+(function () {
+  // Allow only digits and one dot
+  function sanitizeNumberInput(el) {
+    el.value = el.value.replace(/[^0-9.]/g, '');
+    el.value = el.value.replace(/(\..*)\./g, '$1');
+  }
 
-    <script>
-    document.addEventListener("DOMContentLoaded", function () {
-        const amountInput = document.getElementById("numericInput");
-        const balanceDue = parseFloat(document.getElementById("balance_due").value);
-        const errorText = document.getElementById("amountError");
-        const submit = document.getElementById("submit");
+  var exampleModal = document.getElementById('exampleModal');
 
-        amountInput.addEventListener("input", function () {
-            const enteredAmount = parseFloat(this.value);
+  exampleModal.addEventListener('show.bs.modal', function (event) {
+    var button = event.relatedTarget;
+    if (!button) return;
 
-            if (!isNaN(enteredAmount) && enteredAmount > balanceDue) {
-                errorText.classList.remove("d-none");
-                submit.disabled = true;
-                //alert("Entered amount cannot be greater than Total Payable (" + balanceDue.toFixed(2) + ")");
-                //this.value = ""; // clear field
-            } else {
-                errorText.classList.add("d-none");
-                submit.disabled = false;
-            }
-        });
-    });
+    // Get data from the clicked button
+    var invoice = button.getAttribute('data-invoice') || '';
+    var orderId = button.getAttribute('data-order') || '';
+    var balanceRaw = button.getAttribute('data-balance') || '0';
+    var paymentRaw = button.getAttribute('data-payment') || '0';
 
-    document.addEventListener('show.bs.modal', function (event) {
-        const button = event.relatedTarget; // the button that triggered modal
-        const invoice = button.getAttribute('data-invoice');
-        const orderId = button.getAttribute('data-order');
-        const balance = button.getAttribute('data-balance');
-        const payment = button.getAttribute('data-payment');
+    var balance = parseFloat(balanceRaw);
+    if (isNaN(balance)) balance = 0;
+    var payment = parseFloat(paymentRaw);
+    if (isNaN(payment)) payment = 0;
 
-        document.querySelector('#exampleModal input[name="invoice_no"]').value = invoice;
-        document.querySelector('#exampleModal input[name="order_id"]').value = orderId;
-        document.querySelector('#exampleModal input[name="balance_due"]').value = balance;
-        document.querySelector('#exampleModal input[name="payment_made"]').value = payment;
-    });
+    // Fill in modal fields
+    document.getElementById('modal_invoice_no').value = invoice;
+    document.getElementById('modal_order_id').value = orderId;
+    document.getElementById('modal_balance_due').value = balance.toFixed(2);
+    document.getElementById('modal_payment_made').value = payment.toFixed(2);
+    document.getElementById('modal_amount').value = '';
+    document.getElementById('modal_remarks').value = '';
 
-    </script>
+    var amountInput = document.getElementById('modal_amount');
+    var submitBtn = document.getElementById('modal_submit');
+    var paymentMethod = document.getElementById('modal_payment_method');
+    var fullyPaid = document.getElementById('fullyPaidMessage');
+    var amountError = document.getElementById('amountError');
+
+    // Disable everything if fully paid
+    if (balance <= 0) {
+      amountInput.setAttribute('readonly', 'readonly');
+      paymentMethod.setAttribute('disabled', 'disabled');
+      submitBtn.disabled = true;
+      fullyPaid.classList.remove('d-none');
+      amountError.classList.add('d-none');
+    } else {
+      amountInput.removeAttribute('readonly');
+      paymentMethod.removeAttribute('disabled');
+      submitBtn.disabled = false;
+      fullyPaid.classList.add('d-none');
+      amountError.classList.add('d-none');
+    }
+
+    // When user types amount
+    amountInput.oninput = function () {
+      sanitizeNumberInput(this);
+
+      var entered = parseFloat(this.value || '0');
+      if (isNaN(entered)) entered = 0;
+
+      var newBalance = balance - entered;
+
+      // Don’t allow negative balance
+      if (newBalance < 0) {
+        amountError.classList.remove('d-none');
+        submitBtn.disabled = true;
+        newBalance = 0; // optional — keep 0 in hidden field if overpaid
+      } else {
+        amountError.classList.add('d-none');
+        submitBtn.disabled = false;
+      }
+
+      // Update hidden balance_due field live
+      document.getElementById('modal_balance_due').value = newBalance.toFixed(2);
+    };
+  });
+
+  // Cleanup when modal closes
+  exampleModal.addEventListener('hidden.bs.modal', function () {
+    document.getElementById('modal_amount').value = '';
+    document.getElementById('modal_remarks').value = '';
+    document.getElementById('amountError').classList.add('d-none');
+    document.getElementById('fullyPaidMessage').classList.add('d-none');
+    document.getElementById('modal_submit').disabled = false;
+    document.getElementById('modal_payment_method').removeAttribute('disabled');
+  });
+})();
+</script>
+
+
 
     <?php if (isset($_SESSION['order_approved']) && $_SESSION['order_approved'] === true): ?>
         <script>
