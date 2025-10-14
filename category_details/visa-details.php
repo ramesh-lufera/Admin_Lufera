@@ -4,6 +4,7 @@
     $Id = $_SESSION['user_id'];
     $websiteId = isset($_GET['website_id']) ? (int)$_GET['website_id'] : 0;
     $productId = isset($_GET['product_id']) ? (int)$_GET['product_id'] : 0;
+
     $stmt = $conn->prepare("SELECT id, user_id, business_name, role FROM users WHERE id = ?");
     $stmt->bind_param("i", $Id);
     $stmt->execute();
@@ -14,14 +15,6 @@
     $role = $row['role'];
     $stmt->close();
 
-    // if ($role == '1' || $role == '2' || $role == '7') {
-    //     $stmt = $conn->prepare("SELECT invoice_id, plan, duration, status, created_at FROM websites WHERE id = ?");
-    //     $stmt->bind_param("i", $websiteId);
-    // } else {
-    //     $stmt = $conn->prepare("SELECT invoice_id, plan, duration, status, created_at FROM websites WHERE id = ? AND user_id = ?");
-    //     $stmt->bind_param("ii", $websiteId, $UserId); 
-    // }
-
     if ($role == '1' || $role == '2' || $role == '7') {
         $stmt = $conn->prepare("
             SELECT 
@@ -29,6 +22,8 @@
                 websites.duration,
                 websites.status,
                 websites.created_at,
+                websites.plan,
+                websites.type,
                 CASE 
                     WHEN websites.type = 'package' THEN package.package_name
                     WHEN websites.type = 'product' THEN products.name
@@ -47,6 +42,8 @@
                 websites.duration,
                 websites.status,
                 websites.created_at,
+                websites.plan,
+                websites.type,
                 CASE 
                     WHEN websites.type = 'package' THEN package.package_name
                     WHEN websites.type = 'product' THEN products.name
@@ -69,6 +66,8 @@
     $InvoiceId = $row['invoice_id'];
     $Status = strtolower($row['status'] ?? 'Pending');
     $CreatedAt = $row['created_at'];
+    $planId = $row['plan'] ?? null;
+    $type = $row['type'] ?? null;
     $stmt->close();
 
     if (!empty($InvoiceId)) {
@@ -188,6 +187,56 @@
         $Nameserver_1 = $data['nameserver_1'];
         $Nameserver_2 = $data['nameserver_2'];
     }
+
+    // For Renewal..
+    // === Get current plan price ===
+    $currentPrice = "N/A";
+    if (!empty($planId) && !empty($type)) {
+        if ($type == 'package') {
+            $priceStmt = $conn->prepare("SELECT price FROM package WHERE id = ?");
+        } elseif ($type == 'product') {
+            $priceStmt = $conn->prepare("SELECT price FROM products WHERE id = ?");
+        }
+
+        if (isset($priceStmt)) {
+            $priceStmt->bind_param("i", $planId);
+            $priceStmt->execute();
+            $priceResult = $priceStmt->get_result();
+            if ($priceResult && $priceResult->num_rows > 0) {
+                $priceRow = $priceResult->fetch_assoc();
+                $currentPrice = floatval($priceRow['price']); // ensure numeric
+            }
+            $priceStmt->close();
+        }
+    }
+
+    // === Normalize duration string ===
+    $durationStr = strtolower(trim($Duration)); // from DB
+    preg_match('/\d+/', $durationStr, $matches);
+    $number = isset($matches[0]) ? (int)$matches[0] : 1;
+
+    // Determine duration type
+    $durationType = 'month';
+    if (preg_match('/year/', $durationStr)) {
+        $durationType = 'year';
+    } elseif (preg_match('/month/', $durationStr)) {
+        $durationType = 'month';
+    } elseif (preg_match('/day/', $durationStr)) {
+        $durationType = 'day';
+    }
+
+    // === Calculate monthly price for display ===
+    if ($durationType === 'year' || ($durationType === 'month' && $number >= 1)) {
+        $months = ($durationType === 'year') ? $number * 12 : $number;
+        $monthlyPrice = $currentPrice / $months;
+        $monthlyPriceFormatted = number_format($monthlyPrice, 2);
+        $showMo = true; // show /mo
+    } else {
+        // duration in days or <1 month → show total price directly
+        $monthlyPrice = $currentPrice; 
+        $monthlyPriceFormatted = number_format($monthlyPrice, 2);
+        $showMo = false; // no /mo
+    }
 ?>
 
 <style>
@@ -252,6 +301,10 @@
         <?php if ($role == '1' || $role == '2'): 
             include 'record_payment.php'; 
         endif; ?>
+        <button type="button" class="btn btn-sm btn-renewal" data-bs-toggle="modal" data-bs-target="#renewal-modal">
+                    Renewal
+                </button>
+                <?php include 'renewal.php'; ?>
         <button type="button" class="btn btn-sm btn-upgrade">Upgrade</button>
             <a href="./visa-wizard.php?id=<?= $websiteId ?>&prod_id=<?= $productId ?>"><button type="button" class="btn btn-sm btn-edit-website">Wizard</button></a>
         </div>
