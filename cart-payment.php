@@ -1,7 +1,9 @@
 <?php include './partials/layouts/layoutTop.php';
-      ini_set('display_errors', 1);
-      ini_set('display_startup_errors', 1);
-      error_reporting(E_ALL);
+
+    // ini_set('display_errors', 1);
+    // ini_set('display_startup_errors', 1);
+    // error_reporting(E_ALL);
+
     use PHPMailer\PHPMailer\PHPMailer;
     use PHPMailer\PHPMailer\Exception;
 
@@ -37,61 +39,87 @@
         $get_packages = $_POST['get_packages'] ?? '';
         $get_products = $_POST['get_products'] ?? '';
         $addon_total = $_POST['addon-total'];
+
+        // For Renewal..
+        if (isset($_POST['renewal']) && $_POST['renewal'] == 1 && !empty($id)) {
+            $durationQuery = $conn->prepare("SELECT duration FROM websites WHERE id = ?");
+            $durationQuery->bind_param("i", $id);
+            $durationQuery->execute();
+            $durationResult = $durationQuery->get_result();
+            if ($durationResult && $durationResult->num_rows > 0) {
+                $row = $durationResult->fetch_assoc();
+                $original_duration = $row['duration'];
+            } else {
+                $original_duration = "N/A";
+            }
+            $durationQuery->close();
+
+            // ✅ Update renewal info
+            $renewal_period = $_POST['period'] ?? '';
+            $duration = $renewal_period ?: $duration;
+            $price = isset($_POST['total']) ? floatval($_POST['total']) : floatval($price);
+            $gst = round($price * 0.18, 2);
+            $total_price = round($price + $gst, 2);
+            $created_on = $_POST['expiration_date'] ?? $CreatedAt;
+            $receipt_id = $_POST['receipt_id'] ?? $receipt_id;
+        } else {
+            $original_duration = $duration; // normal case
+        }
     }
 
     // ========== Packages with Prices ==========
-$package_details = [];
-if (!empty($get_packages)) {
-    $package_ids = array_map('intval', explode(",", $get_packages));
-    if (!empty($package_ids)) {
-        $ids_str = implode(",", $package_ids);
-        $sql_packages = "SELECT package_name, price FROM package WHERE id IN ($ids_str)";
-        $result_packages = $conn->query($sql_packages);
+    $package_details = [];
+    if (!empty($get_packages)) {
+        $package_ids = array_map('intval', explode(",", $get_packages));
+        if (!empty($package_ids)) {
+            $ids_str = implode(",", $package_ids);
+            $sql_packages = "SELECT package_name, price FROM package WHERE id IN ($ids_str)";
+            $result_packages = $conn->query($sql_packages);
 
-        while ($row_pkg = $result_packages->fetch_assoc()) {
-            $package_details[] = [
-                'name' => $row_pkg['package_name'],
-                'price' => floatval($row_pkg['price'])
-            ];
+            while ($row_pkg = $result_packages->fetch_assoc()) {
+                $package_details[] = [
+                    'name' => $row_pkg['package_name'],
+                    'price' => floatval($row_pkg['price'])
+                ];
+            }
         }
     }
-}
 
-// ========== Products with Prices ==========
-$product_details = [];
-if (!empty($get_products)) {
-    $product_ids = array_map('intval', explode(",", $get_products));
-    if (!empty($product_ids)) {
-        $ids_str = implode(",", $product_ids);
-        $sql_products = "SELECT name, price FROM products WHERE id IN ($ids_str)";
-        $result_products = $conn->query($sql_products);
+    // ========== Products with Prices ==========
+    $product_details = [];
+    if (!empty($get_products)) {
+        $product_ids = array_map('intval', explode(",", $get_products));
+        if (!empty($product_ids)) {
+            $ids_str = implode(",", $product_ids);
+            $sql_products = "SELECT name, price FROM products WHERE id IN ($ids_str)";
+            $result_products = $conn->query($sql_products);
 
-        while ($row_prod = $result_products->fetch_assoc()) {
-            $product_details[] = [
-                'name' => $row_prod['name'],
-                'price' => floatval($row_prod['price'])
-            ];
+            while ($row_prod = $result_products->fetch_assoc()) {
+                $product_details[] = [
+                    'name' => $row_prod['name'],
+                    'price' => floatval($row_prod['price'])
+                ];
+            }
         }
     }
-}
 
-// ========== Add-On Services with Prices ==========
-$addon_details = [];
-if (!empty($get_addon)) {
-    $addon_ids = array_map('intval', explode(",", $get_addon));
-    if (!empty($addon_ids)) {
-        $ids_str = implode(",", $addon_ids);
-        $sql_addons = "SELECT name, cost FROM `add-on-service` WHERE id IN ($ids_str)";
-        $result_addons = $conn->query($sql_addons);
+    // ========== Add-On Services with Prices ==========
+    $addon_details = [];
+    if (!empty($get_addon)) {
+        $addon_ids = array_map('intval', explode(",", $get_addon));
+        if (!empty($addon_ids)) {
+            $ids_str = implode(",", $addon_ids);
+            $sql_addons = "SELECT name, cost FROM `add-on-service` WHERE id IN ($ids_str)";
+            $result_addons = $conn->query($sql_addons);
 
-        while ($row_addon = $result_addons->fetch_assoc()) {
-            $addon_details[] = [
-                'name' => $row_addon['name'],
-                'price' => floatval($row_addon['cost'])
-            ];
+            while ($row_addon = $result_addons->fetch_assoc()) {
+                $addon_details[] = [
+                    'name' => $row_addon['name'],
+                    'price' => floatval($row_addon['cost'])
+                ];
+            }
         }
     }
-}
 
     // Get active symbol
     $result1 = $conn->query("SELECT symbol FROM currencies WHERE is_active = 1 LIMIT 1");
@@ -120,208 +148,315 @@ if (!empty($get_addon)) {
         // $subtotal = $total_price;
         $subtotal = $price + $addon_total;
 
-        $sql    = "SELECT id, user_id, email, username FROM users WHERE id = $user_id LIMIT 1";
-        $result2 = mysqli_query($conn, $sql);
-        $row    = mysqli_fetch_assoc($result2);
-        $client_id = $row['id'];
-        $toEmail   = $row['email'];     // purchaser email
-        $username  = $row['username'];  // purchaser username
-        $toName    = $row['username'];
+        $is_renewal = isset($_POST['renewal']) && $_POST['renewal'] == 1;
 
-        // Only set addon_price if this is an addon row
-        $insert_addon_price = !empty($get_addon) ? $addon_total : '';
+        // ===================== HANDLE RENEWAL =====================
+        if ($is_renewal) {
+            $renewal_duration = $_POST['period'];
 
-        $main_subtotal = $price + floatval($insert_addon_price);
-        $main_discount = $discount ?? 0;
-        $main_gst      = $main_subtotal * 0.18; // 18% GST
-        $main_amount   = $main_subtotal - $main_discount + $main_gst;
-        $main_balance_due  = $main_amount - $payment_made;
- 
-        $sql = "INSERT INTO orders (user_id, invoice_id, plan, duration, amount, gst, price, addon_price, status, payment_method, discount, payment_made, created_on, subtotal, balance_due, addon_service, type) VALUES 
-                ('$client_id', '$receipt_id', '$plan_id', '$duration' ,'$main_amount', '$main_gst', '$price', '$insert_addon_price', 'Pending', '$pay_method', '$main_discount', '$payment_made', '$created_at', '$main_subtotal', '$main_amount', '$get_addon', '$type')";
+            // Update website record for renewal
+            $stmt = $conn->prepare("UPDATE websites SET renewal_duration = ?, duration = '' WHERE id = ?");
+            $stmt->bind_param("si", $renewal_duration, $id);
 
-        if (mysqli_query($conn, $sql)) {
-            // ================= Packages =================
-            if (!empty($get_packages)) {
-                $package_ids = array_map('intval', explode(',', $get_packages));
-                foreach ($package_ids as $pkg_id) {
-                    $pkg_sql = "SELECT package_name, price, duration, cat_id FROM package WHERE id = $pkg_id";
-                    $pkg_res = mysqli_query($conn, $pkg_sql);
-                    if ($pkg_res && $pkg = mysqli_fetch_assoc($pkg_res)) {
-                        $pkg_name     = $pkg['package_name'];  // ✅ package name for websites table
-                        $pkg_price    = floatval($pkg['price']);
-                        $pkg_duration = $pkg['duration'];
-                        $pkg_cat_id   = $pkg['cat_id']; // ✅ package category
+            if ($stmt->execute()) {
+                // Fetch user info
+                $sqlUser = "SELECT email, username FROM users WHERE id = ?";
+                $userStmt = $conn->prepare($sqlUser);
+                $userStmt->bind_param("i", $user_id);
+                $userStmt->execute();
+                $userResult = $userStmt->get_result();
+                $userData = $userResult->fetch_assoc();
+                $userStmt->close();
 
-                        // calculations
-                        $pkg_subtotal = $pkg_price;
-                        $pkg_discount = 0;
-                        $pkg_gst      = $pkg_subtotal * 0.18;
-                        $pkg_amount   = $pkg_subtotal - $pkg_discount + $pkg_gst;
-                        $pkg_balance  = $pkg_amount - $payment_made;
+                $toEmail = $userData['email'];
+                $toName  = $userData['username'];
+                $orders_link = rtrim($_ENV['EMAIL_COMMON_LINK'], '/') . '/orders.php';
 
-                        // Generate unique invoice id for package
-                        $pkg_invoice_id = rand(10000000, 99999999);
+                // ===================== SEND RENEWAL EMAIL =====================
+                $mail = new PHPMailer(true);
+                try {
+                    $mail->isSMTP();
+                    $mail->Host       = 'smtp.gmail.com';
+                    $mail->SMTPAuth   = true;
+                    $mail->Username   = $_ENV['EMAIL_USERNAME'];
+                    $mail->Password   = $_ENV['GMAIL_APP_PASSWORD'];
+                    $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
+                    $mail->Port       = 587;
 
-                        // Insert into orders (plan = ID)
-                        $sql_package = "INSERT INTO orders 
-                            (user_id, invoice_id, plan, duration, amount, gst, price, addon_price, status, payment_method, discount, payment_made, created_on, subtotal, balance_due, addon_service, type) 
-                            VALUES 
-                            ('$client_id', '$pkg_invoice_id', '$pkg_id', '$pkg_duration', '$pkg_amount', '$pkg_gst', '$pkg_price', '$pkg_price', 'Pending', '$pay_method', '$pkg_discount', '$payment_made', '$created_at', '$pkg_subtotal', '$pkg_balance', '$pkg_id', 'package')";
-                        mysqli_query($conn, $sql_package);
+                    $mail->setFrom($_ENV['EMAIL_USERNAME'], 'Lufera Infotech');
+                    $mail->addAddress($toEmail, $toName);
 
-                        // Insert into websites (plan = NAME ✅)
-                        $siteInsertPkg = "INSERT INTO websites (user_id, domain, plan, duration, status, cat_id, invoice_id, product_id, type) 
-                                        VALUES ('$client_id', 'N/A', '$pkg_id', '$pkg_duration', 'Pending', '$pkg_cat_id', '$pkg_invoice_id', '$pkg_id', 'package')";
-                        mysqli_query($conn, $siteInsertPkg);
-                    }
+                    $mail->isHTML(true);
+                    $mail->Subject = "Renewal Confirmation - Order #$receipt_id";
+                    $mail->Body = '
+                        <!DOCTYPE html>
+                        <html>
+                        <head><meta charset="UTF-8"><title>Renewal Confirmation</title></head>
+                        <body style="margin:0;padding:0;background:#f5f5f5;font-family:Roboto,Arial,sans-serif;">
+                        <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background:#f5f5f5;padding:30px 0;">
+                            <tr><td align="center">
+                                <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="600" 
+                                    style="background:#ffffff;border:1px solid #e0e0e0;border-radius:8px;box-shadow:0 2px 6px rgba(0,0,0,0.08);overflow:hidden;">
+                                    <tr><td style="padding:20px;text-align:center;">
+                                        <img src="' . htmlspecialchars($_ENV['EMAIL_IMAGE_LINK']) . '" alt="Lufera Infotech Logo" style="width:150px;height:48px;display:block;margin:auto;">
+                                    </td></tr>
+                                    <tr><td style="border-top:1px solid #eaeaea;"></td></tr>
+                                    <tr><td style="padding:30px 40px;text-align:left;font-size:15px;line-height:1.6;color:#101010;">
+                                        <h3 style="margin:0 0 15px;font-size:20px;font-weight:500;">Renewal Confirmation</h3>
+                                        <p>Hello <b>' . htmlspecialchars($toName) . '</b>,</p>
+                                        <p>Thank you for renewing your plan! Here are your updated order details:</p>
+                                        <table cellpadding="8" cellspacing="0" border="0" width="100%" style="border:1px solid #eaeaea;margin:20px 0;font-size:14px;">
+                                            <tr><td><b>Plan</b></td><td>' . htmlspecialchars($plan_name) . '</td></tr>
+                                            <tr><td><b>Receipt ID</b></td><td>' . htmlspecialchars($receipt_id) . '</td></tr>
+                                            <tr><td><b>Renewal Duration</b></td><td>' . htmlspecialchars($renewal_duration) . '</td></tr>
+                                            <tr><td><b>Total Paid</b></td><td id="currency-symbol-display">' . htmlspecialchars($symbol) . htmlspecialchars($total_price) . '</td></tr>
+                                        </table>
+                                        <p>Your renewal has been processed successfully. You can check your renewal details anytime in your dashboard.</p>
+                                        <div style="margin:30px 0;text-align:center;">
+                                            <a href="' . htmlspecialchars($orders_link) . '" style="background:#fec700;color:#101010;text-decoration:none;
+                                                padding:12px 28px;border-radius:4px;font-weight:bold;display:inline-block;">View My Orders</a>
+                                        </div>
+                                        <p>If you have any questions, feel free to reply to this email.</p>
+                                    </td></tr>
+                                    <tr><td style="border-top:1px solid #eaeaea;"></td></tr>
+                                    <tr><td style="padding:20px;text-align:center;font-size:12px;color:#777;">
+                                        You’re receiving this email because you renewed your plan at <b>Admin Dashboard</b>.<br>
+                                        &copy; 2025 Lufera Infotech. All rights reserved.
+                                    </td></tr>
+                                </table>
+                            </td></tr>
+                        </table>
+                        </body>
+                        </html>';
+                    $mail->send();
+                } catch (Exception $e) {
+                    error_log("Renewal email failed: " . $mail->ErrorInfo);
                 }
+
+                echo "<script> 
+                    Swal.fire({ 
+                        icon: 'success',
+                        title: 'Renewed Successfully',
+                        confirmButtonColor: '#3085d6'
+                    }).then(() => {
+                        window.location.href = 'orders.php'; 
+                    }); 
+                </script>"; 
+            } else {
+                echo "<script> 
+                    Swal.fire({ 
+                        icon: 'error',
+                        title: 'Update Failed',
+                        text: 'Database error: " . addslashes($stmt->error) . "',
+                        confirmButtonColor: '#d33'
+                    });
+                </script>"; 
             }
+            $stmt->close(); 
+        } else {
+            $sql    = "SELECT id, user_id, email, username FROM users WHERE id = $user_id LIMIT 1";
+            $result2 = mysqli_query($conn, $sql);
+            $row    = mysqli_fetch_assoc($result2);
+            $client_id = $row['id'];
+            $toEmail   = $row['email'];     // purchaser email
+            $username  = $row['username'];  // purchaser username
+            $toName    = $row['username'];
 
-            // ================= Products =================
-            if (!empty($get_products)) {
-                $product_ids = array_map('intval', explode(',', $get_products));
-                foreach ($product_ids as $prod_id) {
-                    $prod_sql = "SELECT name, price, duration, cat_id FROM products WHERE id = $prod_id";
-                    $prod_res = mysqli_query($conn, $prod_sql);
-                    if ($prod_res && $prod = mysqli_fetch_assoc($prod_res)) {
-                        $prod_name     = $prod['name'];   // ✅ product name for websites table
-                        $prod_price    = floatval($prod['price']);
-                        $prod_duration = $prod['duration'];
-                        $prod_cat_id   = $prod['cat_id']; // ✅ product category
+            // Only set addon_price if this is an addon row
+            $insert_addon_price = !empty($get_addon) ? $addon_total : '';
 
-                        // calculations
-                        $prod_subtotal = $prod_price;
-                        $prod_discount = 0;
-                        $prod_gst      = $prod_subtotal * 0.18;
-                        $prod_amount   = $prod_subtotal - $prod_discount + $prod_gst;
-                        $prod_balance  = $prod_amount - $payment_made;
+            $main_subtotal = $price + floatval($insert_addon_price);
+            $main_discount = $discount ?? 0;
+            $main_gst      = $main_subtotal * 0.18; // 18% GST
+            $main_amount   = $main_subtotal - $main_discount + $main_gst;
+            $main_balance_due  = $main_amount - $payment_made;
 
-                        // Generate unique invoice id for product
-                        $prod_invoice_id = rand(10000000, 99999999);
+            $sql = "INSERT INTO orders (user_id, invoice_id, plan, duration, amount, gst, price, addon_price, status, payment_method, discount, payment_made, created_on, subtotal, balance_due, addon_service, type) VALUES 
+                    ('$client_id', '$receipt_id', '$plan_id', '$duration' ,'$main_amount', '$main_gst', '$price', '$insert_addon_price', 'Pending', '$pay_method', '$main_discount', '$payment_made', '$created_at', '$main_subtotal', '$main_amount', '$get_addon', '$type')";
 
-                        // Insert into orders (plan = ID)
-                        $sql_product = "INSERT INTO orders 
-                            (user_id, invoice_id, plan, duration, amount, gst, price, addon_price, status, payment_method, discount, payment_made, created_on, subtotal, balance_due, addon_service, type) 
-                            VALUES 
-                            ('$client_id', '$prod_invoice_id', '$prod_id', '$prod_duration', '$prod_amount', '$prod_gst', '$prod_price', '$prod_price', 'Pending', '$pay_method', '$prod_discount', '$payment_made', '$created_at', '$prod_subtotal', '$prod_balance', '$prod_id', 'product')";
-                        mysqli_query($conn, $sql_product);
+            if (mysqli_query($conn, $sql)) {
+                // ================= Packages =================
+                if (!empty($get_packages)) {
+                    $package_ids = array_map('intval', explode(',', $get_packages));
+                    foreach ($package_ids as $pkg_id) {
+                        $pkg_sql = "SELECT package_name, price, duration, cat_id FROM package WHERE id = $pkg_id";
+                        $pkg_res = mysqli_query($conn, $pkg_sql);
+                        if ($pkg_res && $pkg = mysqli_fetch_assoc($pkg_res)) {
+                            $pkg_name     = $pkg['package_name'];  // ✅ package name for websites table
+                            $pkg_price    = floatval($pkg['price']);
+                            $pkg_duration = $pkg['duration'];
+                            $pkg_cat_id   = $pkg['cat_id']; // ✅ package category
 
-                        // Insert into websites (plan = NAME ✅)
-                        $siteInsertProd = "INSERT INTO websites (user_id, domain, plan, duration, status, cat_id, invoice_id, product_id, type) 
-                                        VALUES ('$client_id', 'N/A', '$prod_id', '$prod_duration', 'Pending', '$prod_cat_id', '$prod_invoice_id', '$prod_id', 'product')";
-                        mysqli_query($conn, $siteInsertProd);
-                    }
-                }
-            }
+                            // calculations
+                            $pkg_subtotal = $pkg_price;
+                            $pkg_discount = 0;
+                            $pkg_gst      = $pkg_subtotal * 0.18;
+                            $pkg_amount   = $pkg_subtotal - $pkg_discount + $pkg_gst;
+                            $pkg_balance  = $pkg_amount - $payment_made;
 
-            $domain = "N/A";
+                            // Generate unique invoice id for package
+                            $pkg_invoice_id = rand(10000000, 99999999);
 
-            // Insert new website record
-            $siteInsert = "INSERT INTO websites (user_id, domain, plan, duration, status, cat_id, invoice_id, product_id, type) 
-                        VALUES ('$client_id', '$domain', '$plan_id', '$duration', 'Pending', '$cat_id', '$receipt_id', '$plan_id', '$type')";
-            mysqli_query($conn, $siteInsert);
+                            // Insert into orders (plan = ID)
+                            $sql_package = "INSERT INTO orders 
+                                (user_id, invoice_id, plan, duration, amount, gst, price, addon_price, status, payment_method, discount, payment_made, created_on, subtotal, balance_due, addon_service, type) 
+                                VALUES 
+                                ('$client_id', '$pkg_invoice_id', '$pkg_id', '$pkg_duration', '$pkg_amount', '$pkg_gst', '$pkg_price', '$pkg_price', 'Pending', '$pay_method', '$pkg_discount', '$payment_made', '$created_at', '$pkg_subtotal', '$pkg_balance', '$pkg_id', 'package')";
+                            mysqli_query($conn, $sql_package);
 
-            // Show loader immediately
-            echo "
-            <script>
-                Swal.fire({
-                    title: 'Processing...',
-                    text: 'Please wait while we finalize your purchase.',
-                    allowOutsideClick: false,
-                    didOpen: () => {
-                        Swal.showLoading();
-                        const spinner = document.querySelector('.swal2-loader');
-                        if (spinner) {
-                            spinner.style.borderColor = '#fec700 transparent #fec700 transparent';
+                            // Insert into websites (plan = NAME ✅)
+                            $siteInsertPkg = "INSERT INTO websites (user_id, domain, plan, duration, renewal_duration, status, cat_id, invoice_id, product_id, type) 
+                                            VALUES ('$client_id', 'N/A', '$pkg_id', '$pkg_duration', '', 'Pending', '$pkg_cat_id', '$pkg_invoice_id', '$pkg_id', 'package')";
+                            mysqli_query($conn, $siteInsertPkg);
                         }
                     }
-                });
-            </script>";
-            // flush response so browser shows the loader instantly
-            ob_flush(); flush();
+                }
 
-            $orders_link = rtrim($_ENV['EMAIL_COMMON_LINK'], '/') . '/orders.php';
+                // ================= Products =================
+                if (!empty($get_products)) {
+                    $product_ids = array_map('intval', explode(',', $get_products));
+                    foreach ($product_ids as $prod_id) {
+                        $prod_sql = "SELECT name, price, duration, cat_id FROM products WHERE id = $prod_id";
+                        $prod_res = mysqli_query($conn, $prod_sql);
+                        if ($prod_res && $prod = mysqli_fetch_assoc($prod_res)) {
+                            $prod_name     = $prod['name'];   // ✅ product name for websites table
+                            $prod_price    = floatval($prod['price']);
+                            $prod_duration = $prod['duration'];
+                            $prod_cat_id   = $prod['cat_id']; // ✅ product category
 
-            // ===================== SEND PURCHASE EMAIL =====================
-            $mail = new PHPMailer(true);
-            try {
-                $mail->isSMTP();
-                $mail->Host       = 'smtp.gmail.com';
-                $mail->SMTPAuth   = true;
-                $mail->Username   = $_ENV['EMAIL_USERNAME'];
-                $mail->Password   = $_ENV['GMAIL_APP_PASSWORD'];
-                $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
-                $mail->Port       = 587;
+                            // calculations
+                            $prod_subtotal = $prod_price;
+                            $prod_discount = 0;
+                            $prod_gst      = $prod_subtotal * 0.18;
+                            $prod_amount   = $prod_subtotal - $prod_discount + $prod_gst;
+                            $prod_balance  = $prod_amount - $payment_made;
 
-                $mail->setFrom($_ENV['EMAIL_USERNAME'], 'Lufera Infotech');
-                $mail->addAddress($toEmail, $toName);
+                            // Generate unique invoice id for product
+                            $prod_invoice_id = rand(10000000, 99999999);
 
-                $mail->isHTML(true);
-                $mail->Subject = "Purchase Confirmation - Order #$receipt_id";
-                $mail->Body = '
-                    <!DOCTYPE html>
-                    <html>
-                    <head><meta charset="UTF-8"><title>Purchase Confirmation</title></head>
-                    <body style="margin:0;padding:0;background:#f5f5f5;font-family:Roboto,Arial,sans-serif;">
-                    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background:#f5f5f5;padding:30px 0;">
-                        <tr><td align="center">
-                            <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="600" 
-                                style="background:#ffffff;border:1px solid #e0e0e0;border-radius:8px;box-shadow:0 2px 6px rgba(0,0,0,0.08);overflow:hidden;">
-                                <tr><td style="padding:20px;text-align:center;">
-                                    <img src="' . htmlspecialchars($_ENV['EMAIL_IMAGE_LINK']) . '" alt="Lufera Infotech Logo" style="width:150px;height:48px;display:block;margin:auto;">
-                                </td></tr>
-                                <tr><td style="border-top:1px solid #eaeaea;"></td></tr>
-                                <tr><td style="padding:30px 40px;text-align:left;font-size:15px;line-height:1.6;color:#101010;">
-                                    <h3 style="margin:0 0 15px;font-size:20px;font-weight:500;">Purchase Confirmation</h3>
-                                    <p>Hello <b>' . htmlspecialchars($toName) . '</b>,</p>
-                                    <p>Thank you for your purchase! Here are the details of your order:</p>
-                                    <table cellpadding="8" cellspacing="0" border="0" width="100%" style="border:1px solid #eaeaea;margin:20px 0;font-size:14px;">
-                                        <tr><td><b>Plan</b></td><td>' . htmlspecialchars($plan_name) . '</td></tr>
-                                        <tr><td><b>Receipt ID</b></td><td>' . htmlspecialchars($receipt_id) . '</td></tr>
-                                        <tr><td><b>Duration</b></td><td>' . htmlspecialchars($duration) . '</td></tr>
-                                        <tr><td><b>Total Paid</b></td><td id="currency-symbol-display">' . htmlspecialchars($symbol) . htmlspecialchars($total_price) . '</td></tr>
-                                    </table>
-                                    <p>Your service will be activated shortly. You can check your order status anytime in your dashboard.</p>
-                                    <div style="margin:30px 0;text-align:center;">
-                                        <a href="' . htmlspecialchars($orders_link) . '" style="background:#fec700;color:#101010;text-decoration:none;
-                                            padding:12px 28px;border-radius:4px;font-weight:bold;display:inline-block;">View My Orders</a>
-                                    </div>
-                                    <p>If you have any questions, feel free to reply to this email.</p>
-                                </td></tr>
-                                <tr><td style="border-top:1px solid #eaeaea;"></td></tr>
-                                <tr><td style="padding:20px;text-align:center;font-size:12px;color:#777;">
-                                    You’re receiving this email because you made a purchase at <b>Admin Dashboard</b>.<br>
-                                    &copy; 2025 Lufera Infotech. All rights reserved.
-                                </td></tr>
-                            </table>
-                        </td></tr>
-                    </table>
-                    </body>
-                    </html>';
-                $mail->send();
-            } catch (Exception $e) {
-                error_log("Purchase email failed: " . $mail->ErrorInfo);
-            }
+                            // Insert into orders (plan = ID)
+                            $sql_product = "INSERT INTO orders 
+                                (user_id, invoice_id, plan, duration, amount, gst, price, addon_price, status, payment_method, discount, payment_made, created_on, subtotal, balance_due, addon_service, type) 
+                                VALUES 
+                                ('$client_id', '$prod_invoice_id', '$prod_id', '$prod_duration', '$prod_amount', '$prod_gst', '$prod_price', '$prod_price', 'Pending', '$pay_method', '$prod_discount', '$payment_made', '$created_at', '$prod_subtotal', '$prod_balance', '$prod_id', 'product')";
+                            mysqli_query($conn, $sql_product);
 
-            echo "
-            <script>
-                Swal.fire({
-                    title: 'Success!',
-                    text: 'Purchased Successfully.',
-                    confirmButtonText: 'OK',
-                    allowOutsideClick: false
-                }).then((result) => {
-                    if (result.isConfirmed) {
-                        window.location.href = 'orders.php';
+                            // Insert into websites (plan = NAME ✅)
+                            $siteInsertProd = "INSERT INTO websites (user_id, domain, plan, duration, renewal_duration, status, cat_id, invoice_id, product_id, type) 
+                                            VALUES ('$client_id', 'N/A', '$prod_id', '$prod_duration', '', 'Pending', '$prod_cat_id', '$prod_invoice_id', '$prod_id', 'product')";
+                            mysqli_query($conn, $siteInsertProd);
+                        }
                     }
-                });
-            </script>";
-        } else {
-            echo "<script>
-                alert('Error: " . $stmt->error . "');
-                window.history.back();
-            </script>";
+                }
+
+                $domain = "N/A";
+
+                // Insert new website record
+                $siteInsert = "INSERT INTO websites (user_id, domain, plan, duration, renewal_duration, status, cat_id, invoice_id, product_id, type) 
+                            VALUES ('$client_id', '$domain', '$plan_id', '$duration', '', 'Pending', '$cat_id', '$receipt_id', '$plan_id', '$type')";
+                mysqli_query($conn, $siteInsert);
+
+                // Show loader immediately
+                echo "
+                <script>
+                    Swal.fire({
+                        title: 'Processing...',
+                        text: 'Please wait while we finalize your purchase.',
+                        allowOutsideClick: false,
+                        didOpen: () => {
+                            Swal.showLoading();
+                            const spinner = document.querySelector('.swal2-loader');
+                            if (spinner) {
+                                spinner.style.borderColor = '#fec700 transparent #fec700 transparent';
+                            }
+                        }
+                    });
+                </script>";
+                // flush response so browser shows the loader instantly
+                ob_flush(); flush();
+
+                $orders_link = rtrim($_ENV['EMAIL_COMMON_LINK'], '/') . '/orders.php';
+
+                // ===================== SEND PURCHASE EMAIL =====================
+                $mail = new PHPMailer(true);
+                try {
+                    $mail->isSMTP();
+                    $mail->Host       = 'smtp.gmail.com';
+                    $mail->SMTPAuth   = true;
+                    $mail->Username   = $_ENV['EMAIL_USERNAME'];
+                    $mail->Password   = $_ENV['GMAIL_APP_PASSWORD'];
+                    $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
+                    $mail->Port       = 587;
+
+                    $mail->setFrom($_ENV['EMAIL_USERNAME'], 'Lufera Infotech');
+                    $mail->addAddress($toEmail, $toName);
+
+                    $mail->isHTML(true);
+                    $mail->Subject = "Purchase Confirmation - Order #$receipt_id";
+                    $mail->Body = '
+                        <!DOCTYPE html>
+                        <html>
+                        <head><meta charset="UTF-8"><title>Purchase Confirmation</title></head>
+                        <body style="margin:0;padding:0;background:#f5f5f5;font-family:Roboto,Arial,sans-serif;">
+                        <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background:#f5f5f5;padding:30px 0;">
+                            <tr><td align="center">
+                                <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="600" 
+                                    style="background:#ffffff;border:1px solid #e0e0e0;border-radius:8px;box-shadow:0 2px 6px rgba(0,0,0,0.08);overflow:hidden;">
+                                    <tr><td style="padding:20px;text-align:center;">
+                                        <img src="' . htmlspecialchars($_ENV['EMAIL_IMAGE_LINK']) . '" alt="Lufera Infotech Logo" style="width:150px;height:48px;display:block;margin:auto;">
+                                    </td></tr>
+                                    <tr><td style="border-top:1px solid #eaeaea;"></td></tr>
+                                    <tr><td style="padding:30px 40px;text-align:left;font-size:15px;line-height:1.6;color:#101010;">
+                                        <h3 style="margin:0 0 15px;font-size:20px;font-weight:500;">Purchase Confirmation</h3>
+                                        <p>Hello <b>' . htmlspecialchars($toName) . '</b>,</p>
+                                        <p>Thank you for your purchase! Here are the details of your order:</p>
+                                        <table cellpadding="8" cellspacing="0" border="0" width="100%" style="border:1px solid #eaeaea;margin:20px 0;font-size:14px;">
+                                            <tr><td><b>Plan</b></td><td>' . htmlspecialchars($plan_name) . '</td></tr>
+                                            <tr><td><b>Receipt ID</b></td><td>' . htmlspecialchars($receipt_id) . '</td></tr>
+                                            <tr><td><b>Duration</b></td><td>' . htmlspecialchars($duration) . '</td></tr>
+                                            <tr><td><b>Total Paid</b></td><td id="currency-symbol-display">' . htmlspecialchars($symbol) . htmlspecialchars($total_price) . '</td></tr>
+                                        </table>
+                                        <p>Your service will be activated shortly. You can check your order status anytime in your dashboard.</p>
+                                        <div style="margin:30px 0;text-align:center;">
+                                            <a href="' . htmlspecialchars($orders_link) . '" style="background:#fec700;color:#101010;text-decoration:none;
+                                                padding:12px 28px;border-radius:4px;font-weight:bold;display:inline-block;">View My Orders</a>
+                                        </div>
+                                        <p>If you have any questions, feel free to reply to this email.</p>
+                                    </td></tr>
+                                    <tr><td style="border-top:1px solid #eaeaea;"></td></tr>
+                                    <tr><td style="padding:20px;text-align:center;font-size:12px;color:#777;">
+                                        You’re receiving this email because you made a purchase at <b>Admin Dashboard</b>.<br>
+                                        &copy; 2025 Lufera Infotech. All rights reserved.
+                                    </td></tr>
+                                </table>
+                            </td></tr>
+                        </table>
+                        </body>
+                        </html>';
+                    $mail->send();
+                } catch (Exception $e) {
+                    error_log("Purchase email failed: " . $mail->ErrorInfo);
+                }
+
+                echo "
+                <script>
+                    Swal.fire({
+                        title: 'Success!',
+                        text: 'Purchased Successfully.',
+                        confirmButtonText: 'OK',
+                        allowOutsideClick: false
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            window.location.href = 'orders.php';
+                        }
+                    });
+                </script>";
+            } else {
+                echo "<script>
+                    alert('Error: " . $stmt->error . "');
+                    window.history.back();
+                </script>";
+            }
         }
     }
 
@@ -521,6 +656,14 @@ if (!empty($get_addon)) {
         <input type="hidden" value="<?php echo $get_products ?? ''; ?>" name="get_products">
         <input type="hidden" value="<?php echo $addon_total; ?>" name="addon-total">
 
+        <?php if (isset($_POST['renewal']) && $_POST['renewal'] == 1): ?>
+            <input type="hidden" name="renewal" value="1">
+            <input type="hidden" name="id" value="<?= htmlspecialchars($_POST['id']) ?>">
+            <input type="hidden" name="period" value="<?= htmlspecialchars($_POST['period']) ?>">
+            <input type="hidden" name="expiration_date" value="<?= htmlspecialchars($_POST['expiration_date']) ?>">
+            <input type="hidden" name="total" value="<?= htmlspecialchars($_POST['total']) ?>">
+        <?php endif; ?>
+
         <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-24">
             <h6 class="fw-semibold mb-0">Your Cart</h6>
             <button type="submit" name="save" id="continuePayBtn" class="lufera-bg text-center btn-sm px-12 py-10 float-end" style="width:150px; border: 1px solid #000" value="Submit">Continue to Pay</button>
@@ -541,11 +684,23 @@ if (!empty($get_addon)) {
                         <div class="card-body p-16">
                             <table class="plan-details-table mb-0 w-100">
                                 <tbody>
-                                    <tr>
+                                    <!-- <tr>
                                         <td>Period</td>
                                         <td><?php echo $duration; ?></td>
-                                    </tr>
+                                    </tr> -->
                                     <tr>
+                                        <td>Period</td>
+                                        <td>
+                                            <?php
+                                                if (isset($_POST['renewal']) && $_POST['renewal'] == 1 && !empty($_POST['period'])) {
+                                                    echo htmlspecialchars($original_duration) . " + Renewal (" . htmlspecialchars($_POST['period']) . ")";
+                                                } else {
+                                                    echo htmlspecialchars($original_duration);
+                                                }
+                                            ?>
+                                        </td>
+                                    </tr>
+                                    <!-- <tr>
                                         <td>Validity</td>
                                         <td>
                                             <?php
@@ -558,6 +713,38 @@ if (!empty($get_addon)) {
                                                     $end_date->add($interval);
 
                                                     echo $start_date->format('d-m-Y') . " to " . $end_date->format('d-m-Y');
+                                                } catch (Exception $e) {
+                                                    echo $start_date->format('d-m-Y') . " to (Invalid duration)";
+                                                }
+                                            ?>
+                                        </td>
+                                    </tr> -->
+                                    <tr>
+                                        <td>Validity</td>
+                                        <td>
+                                            <?php
+                                                $start_date = new DateTime($created_on);
+                                                $duration_str = $original_duration ?? $duration;
+
+                                                try {
+                                                    // Original period end date
+                                                    $interval_original = DateInterval::createFromDateString($original_duration);
+                                                    $original_end_date = clone $start_date;
+                                                    $original_end_date->add($interval_original);
+
+                                                    if (isset($_POST['renewal']) && $_POST['renewal'] == 1 && !empty($_POST['period'])) {
+                                                        // Renewal period
+                                                        $renewal_period = $_POST['period'];
+                                                        $interval_renewal = DateInterval::createFromDateString($renewal_period);
+                                                        $renewal_end_date = clone $original_end_date;
+                                                        $renewal_end_date->add($interval_renewal);
+
+                                                        echo $start_date->format('d-m-Y') . " to " . $original_end_date->format('d-m-Y') .
+                                                            " + Renewal (" . $original_end_date->format('d-m-Y') . " to " . $renewal_end_date->format('d-m-Y') . ")";
+                                                    } else {
+                                                        // No renewal
+                                                        echo $start_date->format('d-m-Y') . " to " . $original_end_date->format('d-m-Y');
+                                                    }
                                                 } catch (Exception $e) {
                                                     echo $start_date->format('d-m-Y') . " to (Invalid duration)";
                                                 }
