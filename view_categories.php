@@ -106,7 +106,7 @@
                                     LEFT JOIN 
                                         products ON (websites.type = 'product' AND websites.plan = products.id)
                                     WHERE 
-                                        websites.cat_id = ?
+                                        websites.cat_id = ? AND websites.is_active = 1
                                 ";
                                 \$stmt = \$conn->prepare(\$sql);
                                 if (!\$stmt) {
@@ -144,7 +144,7 @@
                                     LEFT JOIN 
                                         products ON (websites.type = 'product' AND websites.plan = products.id)
                                     WHERE 
-                                        websites.user_id = ? AND websites.cat_id = ?
+                                        websites.user_id = ? AND websites.cat_id = ? AND websites.is_active = 1
                                 ";
                                 \$stmt = \$conn->prepare(\$sql);
                                 if (!\$stmt) {

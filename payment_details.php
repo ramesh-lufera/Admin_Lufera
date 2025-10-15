@@ -326,10 +326,10 @@ $amountInWords = numberToWords($amount);
                             <iconify-icon icon="basil:printer-outline" class="text-xl"></iconify-icon>
                             Payment Receipt
                         </button>
-                        <button type="button" class="btn btn-sm border radius-8 d-inline-flex align-items-center gap-1 lufera-color" onclick="printInvoice()">
+                        <!-- <button type="button" class="btn btn-sm border radius-8 d-inline-flex align-items-center gap-1 lufera-color" onclick="printInvoice()">
                             <iconify-icon icon="basil:printer-outline" class="text-xl"></iconify-icon>
                             Print
-                        </button>
+                        </button> -->
                     </div>
                     <div class="pay-rec">                    
                         <div class="d-flex flex-wrap justify-content-between gap-3 my-20">

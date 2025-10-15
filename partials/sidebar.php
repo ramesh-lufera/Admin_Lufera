@@ -665,6 +665,12 @@
                             <a href="add-on-service.php"><i class="ri-circle-fill circle-icon text-warning-600 w-auto"></i> Add on Services</a>
                         </li>
                         <li>
+                            <a href="taxes.php"><i class="ri-circle-fill circle-icon text-warning-600 w-auto"></i> Taxes</a>
+                        </li>
+                        <li>
+                            <a href="promotion.php"><i class="ri-circle-fill circle-icon text-warning-600 w-auto"></i> Promotion</a>
+                        </li>
+                        <li>
                             <a href="company.php"><i class="ri-circle-fill circle-icon text-warning-600 w-auto"></i> Company</a>
                         </li>
                         <li>
