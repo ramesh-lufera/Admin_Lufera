@@ -19,7 +19,7 @@
         $type = $_POST['type'];
         $id = $_POST['id'];
         $plan_name = $_POST['plan_name'];
-        // $title = $_POST['title'];
+        $title = $_POST['title'];
         $subtitle = $_POST['subtitle'];
         $price = $_POST['price'];
         $duration = $_POST['duration'];
@@ -52,7 +52,7 @@
             <div class="col-xxl-6 col-sm-6">
                 <div class="card h-100 radius-12">
                 <div class="card-header py-10 border-none" style="box-shadow: 0px 3px 3px 0px lightgray">
-                    <h6 class="mb-0"><?php echo $subtitle; ?></h6>
+                    <h6 class="mb-0"><?php echo $title; ?></h6>
                 </div>
                     <div class="card-body p-16">
                         <table class="plan-details-table mb-0 w-100">
@@ -90,15 +90,21 @@
                 <div class="card h-100 radius-12">
                     <div class="card-header py-10 border-none d-flex justify-content-between" style="box-shadow: 0px 3px 3px 0px lightgray">
                         <div class="">
-                            <h6 class="mb-0">Price</h6>
+                            <h6 class="mb-0">Subtotal</h6>
                             <!-- <p class="mb-0">Sub total does not include applicable taxes</p> -->
                         </div>
                         <div class="align-content-center">
-                            <h6 class="mb-0"><?= htmlspecialchars($symbol) ?><?php echo number_format($price, 2); ?></h6>
+                        <h6 class="mb-0 subtotal-display"><?= htmlspecialchars($symbol) ?><?php echo number_format($price, 2); ?></h6>
                         </div>
                     </div>
                     <div class="card-body p-16">
                         <table class="plan-details-table mb-0 w-100">
+                            <tbody>
+                                <tr>
+                                    <td><?php echo $title; ?></td>
+                                    <td class="text-end"><?= htmlspecialchars($symbol) ?><?php echo number_format($price, 2); ?></td>
+                                </tr>
+                            </tbody>
                             <tbody id="selected-items-summary">
                                 <!-- Selected items will be injected here -->
                             </tbody>
@@ -313,15 +319,26 @@
             let selectedItems = {};
 
             function recalcTotal() {
-                let total = basePrice;
-                $.each(selectedItems, function(id, cost){
-                    total += parseFloat(cost);
+                let subtotal = basePrice;
+                $.each(selectedItems, function(id, item){
+                    subtotal += parseFloat(item.cost);
                 });
-                let gst = total * gstRate;
-                $('#estimated-total').text("<?= $symbol ?>" + (total + gst).toFixed(2));
-                $('#gst-display').text("<?= $symbol ?>" + gst.toFixed(2));
-                $('input[name="total_price"]').val((total + gst).toFixed(2));
+
+                // Update subtotal display
+                $('.subtotal-display').text("<?= $symbol ?>" + subtotal.toFixed(2));
+
+                // Calculate GST and total
+                let gst = subtotal * gstRate;
+                let estimatedTotal = subtotal + gst;
+
+                // Update GST and total displays
+                $('.gst-display').text("<?= $symbol ?>" + gst.toFixed(2));
+                $('#estimated-total').text("<?= $symbol ?>" + estimatedTotal.toFixed(2));
+
+                // Update hidden total for form submission
+                $('input[name="total_price"]').val(estimatedTotal.toFixed(2));
             }
+
 
             function updateSelectedSummary() {
                 const $summary = $('#selected-items-summary');

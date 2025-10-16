@@ -304,7 +304,7 @@
                 Renewal
             </button>
             <?php include 'renewal.php'; ?>
-            <button type="button" class="btn btn-sm btn-upgrade">Upgrade</button>
+            <a href="upgrade_plan.php?web_id=<?= $websiteId ?>&prod_id=<?= $productId ?>"><button type="button" class="s btn btn-sm btn-upgrade">Upgrade</button></a>
                 <a href="./mobile-app-onboarding-wizard.php?id=<?= $websiteId ?>&prod_id=<?= $productId ?>"><button type="button" class="btn btn-sm btn-edit-website">Wizard</button></a>
             </div>
         </div>
