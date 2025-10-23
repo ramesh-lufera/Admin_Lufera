@@ -1,7 +1,21 @@
 <?php include './partials/layouts/layoutTop.php'; 
 ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
-error_reporting(E_ALL);?>
+error_reporting(E_ALL);
+
+// Fetch lists
+$packagesQuery = $conn->query("SELECT id, title FROM package ORDER BY package_name ASC");
+$packages_list = [];
+while ($row = $packagesQuery->fetch_assoc()) $packages_list[] = $row;
+
+$productsQuery = $conn->query("SELECT id, title FROM products ORDER BY name ASC");
+$products_list = [];
+while ($row = $productsQuery->fetch_assoc()) $products_list[] = $row;
+
+$addonsQuery = $conn->query("SELECT id, name FROM `add-on-service` ORDER BY name ASC");
+$addons_list = [];
+while ($row = $addonsQuery->fetch_assoc()) $addons_list[] = $row;
+?>
 <style>
     .form-check {
         padding: 10px;
@@ -140,23 +154,84 @@ error_reporting(E_ALL);?>
                         <label for="end_date" class="form-label">End Date</label>
                         <input type="date" class="form-control" id="end_date" name="end_date">
                     </div>
-                    <div class="mb-3">
-    <label class="form-label">Applies To</label>
-    <div class="d-flex flex-wrap">
-        <div class="form-check me-3">
-            <input class="form-check-input" type="checkbox" name="apply_to[]" value="Packages" id="apply_packages">
-            <label class="form-check-label" for="apply_packages">Packages</label>
-        </div>
-        <div class="form-check me-3">
-            <input class="form-check-input" type="checkbox" name="apply_to[]" value="Products" id="apply_products">
-            <label class="form-check-label" for="apply_products">Products</label>
-        </div>
-        <div class="form-check me-3">
-            <input class="form-check-input" type="checkbox" name="apply_to[]" value="Services" id="apply_services">
-            <label class="form-check-label" for="apply_services">Services</label>
-        </div>
-    </div>
-</div>
+                    <!--<div class="mb-3">-->
+                    <!--    <label class="form-label">Applies To</label>-->
+                    <!--    <div class="d-flex flex-wrap">-->
+                    <!--        <div class="form-check me-3">-->
+                    <!--            <input class="form-check-input" type="checkbox" name="apply_to[]" value="Packages" id="apply_packages">-->
+                    <!--            <label class="form-check-label" for="apply_packages">Packages</label>-->
+                    <!--        </div>-->
+                    <!--        <div class="form-check me-3">-->
+                    <!--            <input class="form-check-input" type="checkbox" name="apply_to[]" value="Products" id="apply_products">-->
+                    <!--            <label class="form-check-label" for="apply_products">Products</label>-->
+                    <!--        </div>-->
+                    <!--        <div class="form-check me-3">-->
+                    <!--            <input class="form-check-input" type="checkbox" name="apply_to[]" value="Services" id="apply_services">-->
+                    <!--            <label class="form-check-label" for="apply_services">Services</label>-->
+                    <!--        </div>-->
+                    <!--    </div>-->
+                    <!--</div>-->
+
+<!-- Add-ons Section -->
+                        <div class="mb-2">
+                            <label class="form-label fw-semibold">Applies To</label>
+                            <div class="d-flex mb-3"> 
+                                <div class="form-check d-flex align-items-center">
+                                    <input class="form-check-input toggle-section" type="checkbox" id="showPackages" data-target="#packagesSection" name="apply_to[]" value="Packages">
+                                    <label class="form-check-label ms-2 mb-0" for="showPackages">Packages</label>
+                                </div>
+                                <div class="form-check d-flex align-items-center">
+                                    <input class="form-check-input toggle-section" type="checkbox" id="showProducts" data-target="#productsSection" name="apply_to[]" value="Products">
+                                    <label class="form-check-label ms-2 mb-0" for="showProducts">Products</label>
+                                </div>
+                                <div class="form-check d-flex align-items-center">
+                                    <input class="form-check-input toggle-section" type="checkbox" id="showAddons" data-target="#addonsSection" name="apply_to[]" value="Services">
+                                    <label class="form-check-label ms-2 mb-0" for="showAddons">Add-on Services</label>
+                                </div>
+                            </div>
+
+                            <!-- Packages -->
+                            <div id="packagesSection" class="d-none border p-3 radius-8 mb-3">
+                                <h6 class="fw-semibold" style="font-size: 1rem !important;">Available Packages</h6>
+                                <div class="d-flex flex-wrap">
+                                    <?php foreach ($packages_list as $p): ?>
+                                        <div class="form-check d-flex align-items-center me-3">
+                                            <input class="form-check-input" type="checkbox" name="packages[]" value="<?php echo $p['id']; ?>" id="package_<?php echo $p['id']; ?>">
+                                            <label class="form-check-label ms-2 mb-0" for="package_<?php echo $p['id']; ?>"><?php echo htmlspecialchars($p['title']); ?></label>
+                                        </div>
+                                    <?php endforeach; ?>
+                                </div>
+                            </div>
+
+                            <!-- Products -->
+                            <div id="productsSection" class="d-none border p-3 radius-8 mb-3">
+                                <h6 class="fw-semibold" style="font-size: 1rem !important;">Available Products</h6>
+                                <div class="d-flex flex-wrap">
+                                    <?php foreach ($products_list as $prod): ?>
+                                        <div class="form-check d-flex align-items-center me-3">
+                                            <input class="form-check-input" type="checkbox" name="products[]" value="<?php echo $prod['id']; ?>" id="product_<?php echo $prod['id']; ?>">
+                                            <label class="form-check-label ms-2 mb-0" for="product_<?php echo $prod['id']; ?>"><?php echo htmlspecialchars($prod['title']); ?></label>
+                                        </div>
+                                    <?php endforeach; ?>
+                                </div>
+                            </div>
+
+                            <!-- Add-ons -->
+                            <div id="addonsSection" class="d-none border p-3 radius-8 mb-3">
+                                <h6 class="fw-semibold" style="font-size: 1rem !important;">Available Add-on Services</h6>
+                                <div class="d-flex flex-wrap">
+                                    <?php foreach ($addons_list as $a): ?>
+                                        <div class="form-check d-flex align-items-center me-3">
+                                            <input class="form-check-input" type="checkbox" name="addons[]" value="<?php echo $a['id']; ?>" id="addon_<?php echo $a['id']; ?>">
+                                            <label class="form-check-label ms-2 mb-0" for="addon_<?php echo $a['id']; ?>"><?php echo htmlspecialchars($a['name']); ?></label>
+                                        </div>
+                                    <?php endforeach; ?>
+                                </div>
+                            </div>
+                        </div>
+
+
+
 
                     <div class="form-check">
                         <input class="form-check-input" type="checkbox" id="isActive" name="is_Active" checked>
@@ -305,4 +380,50 @@ fetch('promotion_crud.php', {
 
 });
 </script>
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const startInput = document.getElementById('start_date');
+    const endInput = document.getElementById('end_date');
+
+    startInput.addEventListener('change', function () {
+        if (this.value) {
+            const startDate = new Date(this.value);
+            
+            // ✅ Add one day to start date
+            const nextDay = new Date(startDate);
+            nextDay.setDate(startDate.getDate() + 0);
+
+            // Format to YYYY-MM-DD
+            const nextDayStr = nextDay.toISOString().split('T')[0];
+
+            // Set min date for end_date input
+            endInput.min = nextDayStr;
+
+            // If the current end date is before nextDay, reset it
+            if (endInput.value && endInput.value < nextDayStr) {
+                endInput.value = nextDayStr;
+            }
+        } else {
+            // If start date cleared, also reset end date limit
+            endInput.min = '';
+            endInput.value = '';
+        }
+    });
+});
+</script>
+
+ <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            document.querySelectorAll(".toggle-section").forEach(toggle => {
+                toggle.addEventListener("change", function () {
+                    const target = document.querySelector(this.dataset.target);
+                    if (this.checked) {
+                        target.classList.remove("d-none");
+                    } else {
+                        target.classList.add("d-none");
+                    }
+                });
+            });
+        });
+    </script>
 <?php include './partials/layouts/layoutBottom.php' ?>

@@ -325,7 +325,7 @@
         }
     }
     
-    // JOIN orders with users
+    // JOIN orders with users for Active Plans
     $query = "
         SELECT
             orders.*,
@@ -345,6 +345,8 @@
             INNER JOIN users ON orders.user_id = users.id
             LEFT JOIN package ON (orders.type = 'package' AND orders.plan = package.id)
             LEFT JOIN products ON (orders.type = 'product' AND orders.plan = products.id)
+
+        WHERE orders.is_Active = 1;
     ";
 
     // Add condition only if role is NOT 1 or 2
@@ -352,6 +354,35 @@
         $query .= " WHERE orders.user_id = '$Id'";
     }
     $result = mysqli_query($conn, $query);
+
+    // JOIN orders with users for Inactive Plans
+    $inactiveQuery = "
+        SELECT
+            orders.*,
+            users.username,
+            users.first_name,
+            users.last_name,
+            users.photo,
+            users.business_name,
+
+            CASE 
+                WHEN orders.type = 'package' THEN package.package_name
+                WHEN orders.type = 'product' THEN products.name
+                ELSE orders.plan
+            END AS plan_name
+
+            FROM orders
+            INNER JOIN users ON orders.user_id = users.id
+            LEFT JOIN package ON (orders.type = 'package' AND orders.plan = package.id)
+            LEFT JOIN products ON (orders.type = 'product' AND orders.plan = products.id)
+            WHERE orders.is_active = 0
+    ";
+
+    // Add condition only if role is NOT 1 or 2
+    if ($role != 1 && $role != 2) {
+        $inactiveQuery .= " AND orders.user_id = '$Id'";
+    }
+    $inactiveResult = mysqli_query($conn, $inactiveQuery);
 
     function generatePaymentID($conn) {
         do {
@@ -409,14 +440,16 @@
 ?>
 
 <body>
-    <div class="dashboard-main-body">
+<div class="dashboard-main-body">
         <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-24">
             <a class="cursor-pointer fw-bold" onclick="history.back()"><span class="fa fa-arrow-left"></span>&nbsp; Back</a>    
             <h6 class="fw-semibold mb-0">Subscriptions</h6>
             <a class="cursor-pointer fw-bold visibility-hidden" onclick="history.back()"><span class="fa fa-arrow-left"></span>&nbsp; Back</a> 
         </div>
-        <div class="card">
-            <div class="card-body">
+    <!-- Active Plans Section -->
+    <div class="card">
+        <div class="card-body">
+            <h6 class="fw-semibold mb-3">Active Plans</h6>
             <div class="table-responsive scroll-sm">
                 <table class="table bordered-table mb-0" id="userTable">
                     <thead>
@@ -473,10 +506,6 @@
                                 <div class="offcanvas-body">
                                     <h6 class="text-lg"><?php echo htmlspecialchars($row['plan_name']); ?></h6>
                                     <p class="text-sm"><?php echo htmlspecialchars($row['business_name']); ?></p>
-                                    <!-- <div class="d-flex justify-content-between my-3">
-                                        <span>Status</span>
-                                        <span><i class="fa-regular fa-circle-check text-success me-2"></i>Active</span>
-                                    </div> -->
                                     <div class="d-flex justify-content-between my-3">
                                         <span>Status</span>
                                         <span class="<?= $statusColor; ?> fw-semibold"><?= $statusText; ?></span>
@@ -566,7 +595,6 @@
                                     <div class="mt-20">
                                     <?php 
                                         if($role == "1" || $role == "2") {?>  
-                                        <!-- <button class="btn text-white btn-primary text-sm mb-10" data-bs-toggle="modal" data-bs-target="#exampleModal">Record Payment</button> -->
                                         <button
                                             class="btn text-white btn-primary text-sm mb-10 record-payment-btn"
                                             data-bs-toggle="modal"
@@ -620,9 +648,212 @@
             </div>
         </div>
     </div>
-    </div>
 
-    <div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+    <!-- Inactive Plans Section -->
+    <div class="card mt-20">
+        <div class="card-body">
+            <h6 class="fw-semibold mb-3">Inactive Plans</h6>
+            <div class="table-responsive scroll-sm">
+                <table class="table bordered-table mb-0" id="inactiveUserTable">
+                    <thead>
+                        <tr>
+                            <th scope="col">Subscription</th>
+                            <th scope="col">Invoice Id</th>
+                            <th scope="col">Bussiness name</th>
+                            <th scope="col" class="text-center">Expiration date</th>
+                            <th scope="col" class="text-center">Auto-renewal</th>
+                            <th scope="col" class="text-center">-</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    <?php if ($inactiveResult->num_rows > 0): ?>
+                        <?php while ($row = $inactiveResult->fetch_assoc()): ?>
+                            <?php
+                                $createdOn = new DateTime($row['created_on']);
+                                $duration  = $row['duration'];
+                                $expiryDate = (clone $createdOn)->modify("+$duration");
+                                $expiryFormatted = $expiryDate->format("Y-m-d");
+                                $orderId = $row['id']; // unique identifier
+
+                                $statusColor = "";
+                                $statusText = "";
+
+                                if ($row['status'] === 'Approved') {
+                                    $statusColor = "text-warning"; // yellow
+                                    $statusText = "Approved";
+                                } elseif ($row['status'] === 'Cancelled') {
+                                    $statusColor = "text-danger"; // red
+                                    $statusText = "Rejected";
+                                }
+                            ?>
+                            <tr>
+                                <td><?php echo htmlspecialchars($row['plan_name']); ?></td>
+                                <td><?php echo htmlspecialchars($row['invoice_id']); ?></td>
+                                <td><?php echo htmlspecialchars($row['business_name']); ?></td>
+                                <td class="text-center"><?php echo $expiryFormatted; ?></td>
+                                <td class="text-center">Off</td>
+                                <td class="text-center">
+                                    <!-- link points to unique offcanvas -->
+                                    <a class="fa fa-chevron-right ms-10 text-sm lufera-color" 
+                                    data-bs-toggle="offcanvas" 
+                                    data-bs-target="#offcanvas-inactive-<?php echo $orderId; ?>"></a>
+                                </td>
+                            </tr>
+
+                            <!-- unique offcanvas for this row -->
+                            <div class="offcanvas offcanvas-end" id="offcanvas-inactive-<?php echo $orderId; ?>">
+                                <div class="offcanvas-header pb-0">
+                                    <h6>Subscription details</h6>
+                                    <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
+                                </div>
+                                <div class="offcanvas-body">
+                                    <h6 class="text-lg"><?php echo htmlspecialchars($row['plan_name']); ?></h6>
+                                    <p class="text-sm"><?php echo htmlspecialchars($row['business_name']); ?></p>
+                                    <div class="d-flex justify-content-between my-3">
+                                        <span>Status</span>
+                                        <span class="<?= $statusColor; ?> fw-semibold"><?= $statusText; ?></span>
+                                    </div>
+                                    <hr />
+                                    <div class="d-flex justify-content-between my-3">
+                                        <span>Expiration date</span>
+                                        <span><?php echo $expiryFormatted; ?></span>
+                                    </div>
+                                    <hr />
+                                    <div class="d-flex justify-content-between my-3">
+                                        <span>Renewal price</span>
+                                        <span></span>
+                                    </div>
+                                    <hr />
+                                    <div class="d-flex justify-content-between my-3">
+                                        <span>Auto renewal</span>
+                                        <span>Off</span>
+                                    </div>
+                                    <hr />
+                                    <div class="d-flex justify-content-between my-3">
+                                        <span>Next billing period</span>
+                                        <span><?php echo $duration; ?></span>
+                                    </div>
+                                    <hr />
+
+                                    <h6 class="text-md mt-20">ADD-ONS</h6>
+                                    <?php
+                                    if (!empty($row['addon_service'])) {
+                                        $addon_ids = explode(",", $row['addon_service']);
+                                        $ids_str = implode(",", array_map('intval', $addon_ids));
+
+                                        $sql_addons = "SELECT name FROM `add-on-service` WHERE id IN ($ids_str)";
+                                        $res_addons = $conn->query($sql_addons);
+
+                                        if ($res_addons && $res_addons->num_rows > 0) {
+                                            while ($addon = $res_addons->fetch_assoc()) {
+                                                ?>
+                                                <h6 class="text-lg my-20"><?= htmlspecialchars($addon['name']) ?></h6>
+                                                <div class="d-flex justify-content-between my-3">
+                                                    <span>Renewal price</span>
+                                                    <span></span>
+                                                </div>
+                                                <hr />
+                                                <?php
+                                            }
+                                        } else {
+                                            echo "<p class='text-muted'>No add-ons found</p>";
+                                        }
+                                    } else {
+                                        echo "<p class='text-muted'>No add-ons selected</p>";
+                                    }
+                                    ?>
+                                    <h6 class="text-md mt-20">Payment Received</h6>
+
+                                    <div class="d-flex justify-content-between mt-3 p-4" style="background:lightgray">
+                                        <span class="fw-semibold">Date</span>
+                                        <span class="fw-semibold">Amount</span>
+                                    </div>
+                                    <hr />
+                                    
+                                    <?php
+                                        $invoice_id = $row['invoice_id'];
+                                        $id = $row['id'];
+                                        $payment_made = $row['payment_made'];
+                                        $balance_due = $row['balance_due'];
+                                        // Get role of logged-in user
+                                        $invoiceQuery = "SELECT * FROM record_payment WHERE invoice_no = '$invoice_id'";
+                                        $invoiceResult = mysqli_query($conn, $invoiceQuery);
+                                        if (mysqli_num_rows($invoiceResult) > 0) {
+                                            while ($invoiceRow = mysqli_fetch_assoc($invoiceResult)) {
+                                                $date = $invoiceRow['paid_date'];
+                                                $amount = $invoiceRow['amount'];
+                                                ?>
+                                                <div class="d-flex justify-content-between my-2 p-4">
+                                                    <span><?php echo $date; ?></span>
+                                                    <span><?php echo number_format($amount, 2); ?></span>
+                                                </div>
+                                                <hr />
+                                                <?php
+                                            }
+                                        } else {
+                                            echo "<div>No payments found.</div>";
+                                        }
+                                    ?>
+
+                                    <div class="mt-20">
+                                    <?php 
+                                        if($role == "1" || $role == "2") {?>  
+                                        <button
+                                            class="btn text-white btn-primary text-sm mb-10 record-payment-btn"
+                                            data-bs-toggle="modal"
+                                            data-bs-target="#exampleModal"
+                                            data-invoice="<?php echo htmlspecialchars($row['invoice_id']); ?>"
+                                            data-order="<?php echo htmlspecialchars($row['id']); ?>"
+                                            data-balance="<?php echo htmlspecialchars($row['balance_due']); ?>"
+                                            data-payment="<?php echo htmlspecialchars($row['payment_made']); ?>"
+                                        >
+                                            Record Payment
+                                        </button>
+                                    <?php } ?>
+                                        <button class="btn text-white lufera-bg text-sm mb-10">Renew</button>
+                                        <a href="invoice-preview.php?id=<?php echo $invoice_id; ?>"><button class="btn text-white btn-success text-sm mb-10">Invoice</button> </a>   
+                                        <a href="order-summary.php?id=<?php echo $invoice_id; ?>"><button class="btn text-white btn-danger text-sm mb-10">View More</button></a>
+                                    </div>
+
+                                    <!-- New Order Approvals Section (Admin only) -->
+                                    <?php if ($role === '1' || $role === '2'): ?>
+                                        <div class="mt-20">
+                                            <h6 class="text-md mb-10">Order Approvals Management</h6>
+                                            <p class="text-muted">This section will display all order approval and rejected buttons for this section.</p>
+                                            <div class="d-flex gap-3 mt-10">
+                                                <!-- Approve Button -->
+                                                <form method="POST" style="display:inline;">
+                                                    <input type="hidden" name="approve_id" value="<?= $orderId; ?>">
+                                                    <button type="submit" class="btn btn-success text-white text-sm d-flex align-items-center"
+                                                        <?= ($row['status'] === 'Approved') ? 'disabled' : ''; ?>>
+                                                        <i class="fa fa-check me-2"></i> Approve
+                                                    </button>
+                                                </form>
+
+                                                <!-- Reject Button -->
+                                                <form method="POST" style="display:inline;">
+                                                    <input type="hidden" name="cancel_id" value="<?= $orderId; ?>">
+                                                    <button type="submit" class="btn btn-danger text-white text-sm d-flex align-items-center"
+                                                        <?= ($row['status'] === 'Cancelled') ? 'disabled' : ''; ?>>
+                                                        <i class="fa fa-times me-2"></i> Reject
+                                                    </button>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    <?php endif; ?>
+
+                                </div>
+                            </div>
+                        <?php endwhile; ?>
+                    <?php endif; ?>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered modal-lg">
     <form method="post">
       <div class="modal-content">
@@ -683,6 +914,7 @@
 <script>
     $(document).ready(function() {
         $('#userTable').DataTable();
+        $('#inactiveUserTable').DataTable();
     } );
     
 (function () {
@@ -780,7 +1012,6 @@
         <script>
             Swal.fire({
                 title: "Order Approved",
-                // text: "The order has been successfully approved!",
                 icon: "success",
                 confirmButtonText: "OK"
             });
