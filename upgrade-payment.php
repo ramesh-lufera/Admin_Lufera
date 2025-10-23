@@ -9,7 +9,7 @@ ini_set('display_errors', 1);
         $symbol = $row['symbol'];
     }
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-$web_id = $_POST['web_id'];
+    $web_id = $_POST['web_id'];
     $user_id = $_POST['user_id'];
     $upgrade_package_id = $_POST['upgrade_package_id'];
     $total_amount = $_POST['total_amount'];
@@ -17,6 +17,7 @@ $web_id = $_POST['web_id'];
     $amount_to_pay = $_POST['amount_to_pay'];
     $duration = $_POST['duration'];
     $cat_id = $_POST['cat_id'];
+    $invoice_id = $_POST['invoice_id'];
 
     // Fetch Package Title
     $website_sql = "SELECT * FROM package WHERE id = ? LIMIT 1";
@@ -106,8 +107,18 @@ if (isset($_POST['continuePay'])) {
             $update_sql = "UPDATE websites SET is_Active = 0 WHERE id = ?";
             $stmt_update = $conn->prepare($update_sql);
             $stmt_update->bind_param("i", $web_id);
+        }
+            if (!$stmt_update->execute()) {
+                echo "<script>alert('Error inserting order: " . $stmt_update->error . "');</script>";
+            } else {
+                // --- UPDATE old website record ---
+                $update_order_sql = "UPDATE orders SET is_Active = 0 WHERE invoice_id = ?";
+                $stmt_order_update = $conn->prepare($update_order_sql);
+                $stmt_order_update->bind_param("i", $invoice_id);
 
-            if ($stmt_update->execute()) {
+
+
+            if ($stmt_order_update->execute()) {
                 echo "<script>
                     Swal.fire({
                         title: 'Success!',
@@ -134,10 +145,7 @@ if (isset($_POST['continuePay'])) {
 
     $stmt_insert->close();
 }
-
-
 ?>
-
 
 <style>
     .plan-details-table tbody tr td {
@@ -241,17 +249,17 @@ if (isset($_POST['continuePay'])) {
         <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-24">
             <h6 class="fw-semibold mb-0">Your Cart</h6>
             <form method="POST" action="">
-    <input type="hidden" name="web_id" value="<?php echo $web_id; ?>">
-    <input type="hidden" name="user_id" value="<?php echo $user_id; ?>">
-    <input type="hidden" name="upgrade_package_id" value="<?php echo $upgrade_package_id; ?>">
-    <input type="hidden" name="total_amount" value="<?php echo $total_amount; ?>">
-    <input type="hidden" name="hostinger_balance" value="<?php echo $hostinger_balance; ?>">
-    <input type="hidden" name="amount_to_pay" value="<?php echo $amount_to_pay; ?>">
-    <input type="hidden" name="duration" value="<?php echo $duration; ?>">
-    <input type="hidden" name="cat_id" value="<?php echo $cat_id; ?>">
-
-            <button type="submit" name="continuePay" id="continuePayBtn" class="lufera-bg text-center btn-sm px-12 py-10 float-end" style="width:150px; border: 1px solid #000" value="Submit">Continue to Pay</button>
-</form>
+                <input type="hidden" name="web_id" value="<?php echo $web_id; ?>">
+                <input type="hidden" name="user_id" value="<?php echo $user_id; ?>">
+                <input type="hidden" name="upgrade_package_id" value="<?php echo $upgrade_package_id; ?>">
+                <input type="hidden" name="total_amount" value="<?php echo $total_amount; ?>">
+                <input type="hidden" name="hostinger_balance" value="<?php echo $hostinger_balance; ?>">
+                <input type="hidden" name="amount_to_pay" value="<?php echo $amount_to_pay; ?>">
+                <input type="hidden" name="duration" value="<?php echo $duration; ?>">
+                <input type="hidden" name="cat_id" value="<?php echo $cat_id; ?>">
+                <input type="hidden" name="invoice_id" value="<?php echo $invoice_id; ?>">
+                <button type="submit" name="continuePay" id="continuePayBtn" class="lufera-bg text-center btn-sm px-12 py-10 float-end" style="width:150px; border: 1px solid #000" value="Submit">Continue to Pay</button>
+            </form>
         </div>
             <div class="row">
                 <div class="col-6 mt-3">

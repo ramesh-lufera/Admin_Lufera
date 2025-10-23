@@ -17,8 +17,7 @@
 <!DOCTYPE html>
 <html lang="en" data-theme="light">
 <head>
-<title>Upgrade your plan
-</title>
+<title>Upgrade your plan</title>
 <style>
     /* Styling for disabled button to appear blurred */
     .disabled {
@@ -182,6 +181,7 @@
     align-content: center;
 }
 </style>
+
 </head>
 
 <body>
@@ -235,7 +235,6 @@
                                                             <span class="new-price__value"><?= htmlspecialchars($symbol) ?> <?= number_format($monthly_price, 2); ?></span>
                                                             <span class="new-price__period">/mo</span>
                                                         </div>
-                                                        <!-- <p class="text-body-3 text-center">Price when renewing for 12 months</p> -->
                                                     </div>
                                                     <ul>
                                                     <?php
@@ -262,7 +261,6 @@
                                             <div class="upgrade__body upgrade__body--current">
                                                 <div class="h-portlet__body position-relative">
                                                     <div class="mb-20">
-                                                        <!-- <h4 class="h-my-16 text-center">Business WordPress</h4> -->
                                                         <?php
                                                         // Fetch the selected/current package
                                                         $plan_sql = "SELECT * FROM package WHERE id = ?";
@@ -277,66 +275,77 @@
                                                         $current_duration = $plan_row['duration'];
 
                                                         // Fetch all packages with price greater than the current plan
-                                                        $upgrade_sql = "SELECT id, package_name, price, duration FROM package WHERE price >= ? and cat_id = ? and duration = ? ORDER BY price ASC";
+                                                        $upgrade_sql = "SELECT id, package_name, price, duration FROM package WHERE price > ? and cat_id = ? and duration = ? ORDER BY price ASC";
                                                         $stmt2 = $conn->prepare($upgrade_sql);
                                                         $stmt2->bind_param("dis", $current_price, $current_cat, $current_duration);
                                                         $stmt2->execute();
                                                         $upgrade_result = $stmt2->get_result();
 
-                                                        // Get the first higher package (default)
+                                                        // Check if there are any upgrade options
+                                                        $has_upgrades = $upgrade_result->num_rows > 0;
                                                         $default_price = 0;
-                                                    ?>
-                                                    <div class="height-fixed">
-                                                        <select id="upgradePackage" class="form-select">
-                                                            <?php 
+                                                        $first_package_id = null;
+
+                                                        if ($has_upgrades):
+                                                            // Get the first higher package (default)
                                                             $first = true;
-                                                            while ($upgrade = $upgrade_result->fetch_assoc()):
-                                                                if ($first) {
-                                                                    $duration = strtolower($upgrade['duration']);
-                                                                    $months = 1;
-                                                                    if (strpos($duration, 'year') !== false) {
-                                                                        $years = floatval($duration) ?: 1;
-                                                                        $months = $years * 12;
-                                                                    } elseif (strpos($duration, 'month') !== false) {
-                                                                        $months = floatval($duration) ?: 1;
-                                                                    }
-                                                                    $default_price = $upgrade['price'] / $months;
-                                                                    $first_package_id = $upgrade['id'];
-                                                                    $first = false;
-                                                                }                                                                                                                        
-                                                            ?>
-                                                                <option value="<?= htmlspecialchars($upgrade['id']) ?>" data-price="<?= htmlspecialchars($upgrade['price']) ?>" data-duration="<?= htmlspecialchars($upgrade['duration']) ?>">
-                                                                    <?= htmlspecialchars($upgrade['package_name']) ?>
-                                                                </option>
-                                                            <?php endwhile; ?>
-                                                        </select>
-                                                    </div>
-                                                    <div class="new-price">
-                                                        <span class="new-price__value upgrade_price"><?= htmlspecialchars($symbol) ?> <?= number_format($default_price, 2); ?></span>                                                        
-                                                        <span class="new-price__period">/mo</span>
-                                                    </div>
-                                                    <!-- <p class="text-body-3 text-center">Price when upgrading for 12 months</p> -->
-
-                                                    <ul id="upgradeFeatures" class="mt-3">
-                                                        <?php
-                                                        // Fetch default features for first package
-                                                        if (isset($first_package_id)) {
-                                                            $feature_sql = "SELECT feature FROM features WHERE package_id = ?";
-                                                            $stmt_feat = $conn->prepare($feature_sql);
-                                                            $stmt_feat->bind_param("i", $first_package_id);
-                                                            $stmt_feat->execute();
-                                                            $feat_result = $stmt_feat->get_result();
-
-                                                            while ($feat = $feat_result->fetch_assoc()):
                                                         ?>
-                                                            <li class="d-flex align-items-center gap-16 mb-16">
-                                                                <span class="w-24-px h-24-px p-2 d-flex justify-content-center align-items-center lufera-bg rounded-circle">
-                                                                    <iconify-icon icon="iconamoon:check-light" class="text-white text-lg"></iconify-icon>
-                                                                </span>
-                                                                <span class="text-secondary-light"><?= htmlspecialchars($feat['feature']) ?></span>
-                                                            </li>
-                                                        <?php endwhile; } ?>
-                                                    </ul>
+                                                        <div class="height-fixed">
+                                                            <select id="upgradePackage" class="form-select">
+                                                                <?php 
+                                                                while ($upgrade = $upgrade_result->fetch_assoc()):
+                                                                    if ($first) {
+                                                                        $duration = strtolower($upgrade['duration']);
+                                                                        $months = 1;
+                                                                        if (strpos($duration, 'year') !== false) {
+                                                                            $years = floatval($duration) ?: 1;
+                                                                            $months = $years * 12;
+                                                                        } elseif (strpos($duration, 'month') !== false) {
+                                                                            $months = floatval($duration) ?: 1;
+                                                                        }
+                                                                        $default_price = $upgrade['price'] / $months;
+                                                                        $first_package_id = $upgrade['id'];
+                                                                        $first = false;
+                                                                    }                                                                                                                        
+                                                                ?>
+                                                                    <option value="<?= htmlspecialchars($upgrade['id']) ?>" data-price="<?= htmlspecialchars($upgrade['price']) ?>" data-duration="<?= htmlspecialchars($upgrade['duration']) ?>">
+                                                                        <?= htmlspecialchars($upgrade['package_name']) ?>
+                                                                    </option>
+                                                                <?php endwhile; ?>
+                                                            </select>
+                                                        </div>
+                                                        <div class="new-price">
+                                                            <span class="new-price__value upgrade_price"><?= htmlspecialchars($symbol) ?> <?= number_format($default_price, 2); ?></span>                                                        
+                                                            <span class="new-price__period">/mo</span>
+                                                        </div>
+                                                        <ul id="upgradeFeatures" class="mt-3">
+                                                            <?php
+                                                            // Fetch default features for first package
+                                                            if (isset($first_package_id)) {
+                                                                $feature_sql = "SELECT feature FROM features WHERE package_id = ?";
+                                                                $stmt_feat = $conn->prepare($feature_sql);
+                                                                $stmt_feat->bind_param("i", $first_package_id);
+                                                                $stmt_feat->execute();
+                                                                $feat_result = $stmt_feat->get_result();
+
+                                                                while ($feat = $feat_result->fetch_assoc()):
+                                                            ?>
+                                                                <li class="d-flex align-items-center gap-16 mb-16">
+                                                                    <span class="w-24-px h-24-px p-2 d-flex justify-content-center align-items-center lufera-bg rounded-circle">
+                                                                        <iconify-icon icon="iconamoon:check-light" class="text-white text-lg"></iconify-icon>
+                                                                    </span>
+                                                                    <span class="text-secondary-light"><?= htmlspecialchars($feat['feature']) ?></span>
+                                                                </li>
+                                                            <?php endwhile; } ?>
+                                                        </ul>
+                                                        <?php else: ?>
+                                                        <div class="height-fixed">
+                                                            <h4 class="h-my-16 text-center text-muted">You are on the highest plan</h4>
+                                                        </div>
+                                                        <ul id="upgradeFeatures" class="mt-3">
+                                                            <li class="text-muted">No upgrade options available</li>
+                                                        </ul>
+                                                        <?php endif; ?>
                                                     </div>
                                                 </div>
                                             </div>
@@ -346,6 +355,7 @@
                         </div>
                     </div>
                     
+                    <?php if ($has_upgrades): ?>
                     <div class="upgrade__payment-card">
                         <div class="h-portlet w-100">
                             <div class="h-portlet__body position-relative">
@@ -383,6 +393,7 @@
                                             $website = $result_web->fetch_assoc();
                                             $webs_id = $website['id'];
                                             $cat_id = $website['cat_id'];
+                                            $invoice_id = $website['invoice_id'];
 
                                             $start_date = $website ? new DateTime($website['created_at']) : new DateTime();
                                             $today = new DateTime();
@@ -416,9 +427,7 @@
                                             $hostinger_balance = ($total_days > 0) ? ($remaining_days / $total_days) * $price : 0;
 
                                             ?>
-
                                             <p class="details-item__price hostinger-balance"><?= number_format($hostinger_balance, 2) ?></p>
-
                                             </div>
                                         </li>
                                         <li class="details-item">
@@ -431,25 +440,24 @@
                                         </li>
                                     </ul>                            
                                 </div>
-                                <!-- <button type="button" class="lufera-bg btn w-100 text-white">Complete upgrade payment</button> -->
                                 <form action="upgrade-payment.php" method="POST">
                                     <input type="hidden" name="web_id" value="<?= htmlspecialchars($web_id) ?>">
                                     <input type="hidden" name="user_id" value="<?= htmlspecialchars($_SESSION['user_id']) ?>">
                                     <input type="hidden" name="upgrade_package_id" id="upgrade_package_id" value="">
-                                    
                                     <input type="hidden" name="total_amount" id="total_amount" value="">
-    <input type="hidden" name="hostinger_balance" id="hostinger_balance" value="">
-    <input type="hidden" name="amount_to_pay" id="amount_to_pay" value="">
-    <input type="hidden" name="duration" id="duration" value="<?php echo $duration; ?>">
-    <input type="hidden" name="cat_id" id="cat_id" value="<?php echo $current_cat; ?>">
-    <input type="hidden" name="current_plan_id" id="current_plan_id" value="<?php echo $current_plan_id ?>">
-    
+                                    <input type="hidden" name="hostinger_balance" id="hostinger_balance" value="">
+                                    <input type="hidden" name="amount_to_pay" id="amount_to_pay" value="">
+                                    <input type="hidden" name="duration" id="duration" value="<?php echo $duration; ?>">
+                                    <input type="hidden" name="cat_id" id="cat_id" value="<?php echo $current_cat; ?>">
+                                    <input type="hidden" name="current_plan_id" id="current_plan_id" value="<?php echo $current_plan_id ?>">
+                                    <input type="hidden" name="invoice_id" id="invoice_id" value="<?php echo $invoice_id ?>">
     
                                     <button type="submit" class="lufera-bg btn w-100 text-white">Complete upgrade payment</button>
                                 </form>
                             </div>  
                         </div>
-                    </div>                                                                
+                    </div>
+                    <?php endif; ?>
                 </div>
             </div>
         </div>
@@ -458,8 +466,11 @@
 
 <script>
 const websiteDuration = <?= json_encode(strtolower($plan_row['duration'] ?? '1 month')) ?>;
+const hasUpgrades = <?= json_encode($has_upgrades) ?>;
 
 function updateUpgradeDisplay() {
+    if (!hasUpgrades) return; // Skip if no upgrades available
+
     const select = document.getElementById('upgradePackage');
     const selected = select.options[select.selectedIndex];
     const price = parseFloat(selected.getAttribute('data-price'));
@@ -549,10 +560,10 @@ function updateUpgradeDisplay() {
         });
 }
 
-
 document.addEventListener('DOMContentLoaded', updateUpgradeDisplay);
-document.getElementById('upgradePackage').addEventListener('change', updateUpgradeDisplay);
-
+if (hasUpgrades) {
+    document.getElementById('upgradePackage').addEventListener('change', updateUpgradeDisplay);
+}
 </script>
 
 </html>
