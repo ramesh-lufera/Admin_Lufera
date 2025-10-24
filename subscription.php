@@ -34,7 +34,7 @@
     $roleResult = mysqli_query($conn, $roleQuery);
     $roleRow = mysqli_fetch_assoc($roleResult);
     $role = $roleRow['role'];
-
+    
     // Get active symbol
     $result2 = $conn->query("SELECT symbol FROM currencies WHERE is_active = 1 LIMIT 1");
     $symbol = "$"; // default
@@ -326,7 +326,32 @@
     }
     
     // JOIN orders with users for Active Plans
+    if ($role != 1 && $role != 2) {
     $query = "
+        SELECT
+            orders.*,
+            users.username,
+            users.first_name,
+            users.last_name,
+            users.photo,
+            users.business_name,
+
+            CASE 
+                WHEN orders.type = 'package' THEN package.package_name
+                WHEN orders.type = 'product' THEN products.name
+                ELSE orders.plan
+            END AS plan_name
+
+            FROM orders
+            INNER JOIN users ON orders.user_id = users.id
+            LEFT JOIN package ON (orders.type = 'package' AND orders.plan = package.id)
+            LEFT JOIN products ON (orders.type = 'product' AND orders.plan = products.id)
+
+        WHERE orders.is_Active = 1 AND orders.user_id = '$Id';
+    ";
+    }
+    else{
+        $query = "
         SELECT
             orders.*,
             users.username,
@@ -348,10 +373,6 @@
 
         WHERE orders.is_Active = 1;
     ";
-
-    // Add condition only if role is NOT 1 or 2
-    if ($role != 1 && $role != 2) {
-        $query .= " WHERE orders.user_id = '$Id'";
     }
     $result = mysqli_query($conn, $query);
 
