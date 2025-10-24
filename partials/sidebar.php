@@ -100,7 +100,6 @@
                         \$package_name = \$_POST['package_name'];                           
                         \$title = \$_POST['title'];
                         \$subtitle = \$_POST['subtitle'];
-                        \$price = \$_POST['price'];
                         \$description = \$_POST['description'];
                         \$features = \$_POST['features'];
                         \$created_at = date("Y-m-d H:i:s");
@@ -109,21 +108,11 @@
                         \$addon_packages = isset(\$_POST['packages']) && is_array(\$_POST['packages']) ? implode(',', \$_POST['packages']) : '';
                         \$addon_products = isset(\$_POST['products']) && is_array(\$_POST['products']) ? implode(',', \$_POST['products']) : '';
                         
-                        \$duration_value = isset(\$_POST['duration_value']) ? intval(\$_POST['duration_value']) : 0;
-                        \$duration_unit = isset(\$_POST['duration_unit']) ? \$_POST['duration_unit'] : '';
-
-                        if (\$duration_value > 0 && in_array(\$duration_unit, ['days', 'months', 'years'])) {
-                            \$duration = \$duration_value . ' ' . \$duration_unit;
-                        } else {
-                            echo "<script>alert('Invalid duration input.'); window.history.back();</script>";
-                            exit;
-                        }
-
                         \$cat_id = $product_category;
                         \$template = "$template";
 
-                        \$stmt = \$conn->prepare("INSERT INTO package (package_name, title, subtitle, price, description, duration, cat_id, created_at, template, addon_service, addon_package, addon_product) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-                        \$stmt->bind_param("ssssssisssss", \$package_name, \$title, \$subtitle, \$price, \$description, \$duration, \$cat_id, \$created_at, \$template, \$addons, \$addon_packages, \$addon_products);
+                        \$stmt = \$conn->prepare("INSERT INTO package (package_name, title, subtitle, description, cat_id, created_at, template, addon_service, addon_package, addon_product) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                        \$stmt->bind_param("ssssisssss", \$package_name, \$title, \$subtitle, \$description, \$cat_id, \$created_at, \$template, \$addons, \$addon_packages, \$addon_products);
 
                         if (\$stmt->execute()) {
                             \$package_id = \$conn->insert_id;
@@ -139,6 +128,26 @@
                                     }
                                 }
                                 \$featureStmt->close();
+                            }
+                            
+                            
+                            // 3️⃣ Insert duration+price pairs
+                            if (!empty(\$_POST['duration_values']) && is_array(\$_POST['duration_values'])) {
+                                \$durationStmt = \$conn->prepare("INSERT INTO durations (package_id, duration, price, created_at, preview_price) VALUES (?, ?, ?, ?, ?)");
+                                
+                                foreach (\$_POST['duration_values'] as \$index => \$value) {
+                                    \$unit = \$_POST['duration_units'][\$index] ?? '';
+                                    \$price = \$_POST['prices'][\$index] ?? '';
+                                    \$pre_prices = \$_POST['pre_prices'][\$index] ?? '';
+                                    
+                                    if (!empty(\$value) && !empty(\$unit) && !empty(\$price)) {
+                                        // Combine value + unit
+                                        \$duration_text = \$value . ' ' . \$unit;
+                                        \$durationStmt->bind_param("isdsd", \$package_id, \$duration_text, \$price, \$created_at, \$pre_prices);
+                                        \$durationStmt->execute();
+                                    }
+                                }
+                                \$durationStmt->close();
                             }
 
                             // create details file if missing
@@ -231,16 +240,6 @@
                                             </div>
                                         </div>
                                         <div class="mb-2">
-                                            <label for="name" class="form-label fw-semibold text-primary-light text-sm mb-8">Price <span class="text-danger-600">*</span></label>
-                                            <div class="has-validation">
-                                                
-                                                <input type="number" class="form-control radius-8" name="price" required maxlength="20" onkeydown="return event.key !== 'e'">
-                                                <div class="invalid-feedback">
-                                                    Price is required
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="mb-2">
                                             <label for="name" class="form-label fw-semibold text-primary-light text-sm mb-8">Description <span class="text-danger-600">*</span></label>
                                             <div class="has-validation">
                                                 
@@ -251,18 +250,25 @@
                                             </div>
                                         </div>
                                         <div class="mb-2">
-                                            <label class="form-label">Duration <span class="text-danger-600">*</span></label>
-                                            <div class="d-flex gap-2">
-                                                <input type="number" name="duration_value" class="form-control radius-8" required min="1" style="width: 60%;">
-                                                <select name="duration_unit" class="form-control radius-8" required style="width: 40%;">
-                                                    <option value="days">Days</option>
-                                                    <option value="months">Months</option>
-                                                    <option value="years">Years</option>
-                                                    <option value="hours">Hours</option>
-                                                </select>
+                                            <label class="form-label fw-semibold text-primary-light text-sm mb-8">
+                                                Duration & Price <span class="text-danger-600">*</span>
+                                            </label>
+                                            <div id="duration-wrapper">
+                                                <div class="duration-group mb-10 d-flex gap-2 align-items-center">
+                                                    <input type="number" name="duration_values[]" class="form-control radius-8" required min="1" style="width: 25%;" onkeydown="return event.key !== 'e'" placeholder="Value">
+                                                    <select name="duration_units[]" class="form-control radius-8" required style="width: 25%;">
+                                                        <option value="">Select Unit</option>
+                                                        <option value="days">Days</option>
+                                                        <option value="months">Months</option>
+                                                        <option value="years">Years</option>
+                                                    </select>
+                                                    <input type="number" name="prices[]" class="form-control radius-8" required min="0" style="width: 25%;" onkeydown="return event.key !== 'e'" placeholder="Enter price">
+                                                    <input type="number" name="pre_prices[]" class="form-control radius-8" required min="0" style="width: 25%;" onkeydown="return event.key !== 'e'" placeholder="Enter preview price">
+                                                    <button type="button" class="btn btn-sm btn-success add-duration">+</button>
+                                                </div>
                                             </div>
                                             <div class="invalid-feedback">
-                                                Duration is required
+                                                At least one duration and price pair is required.
                                             </div>
                                         </div>
                                         <div class="mb-2">
@@ -385,7 +391,7 @@
                             if (e.target && e.target.classList.contains("add-feature")) {
                                 e.preventDefault();
                                 const newGroup = document.createElement("div");
-                                newGroup.className = "feature-group mb-2 d-flex gap-2";
+                                newGroup.className = "feature-group mb-10 d-flex gap-2";
                                 newGroup.innerHTML = `
                                     <input type="text" name="features[]" class="form-control radius-8" required placeholder="Enter a feature" />
                                     <button type="button" class="btn btn-sm btn-danger remove-feature">−</button>
@@ -397,7 +403,7 @@
                                 e.target.parentElement.remove();
                             }
                         });
-
+            
                         // Toggle sections
                         document.querySelectorAll(".toggle-section").forEach(checkbox => {
                             checkbox.addEventListener("change", function () {
@@ -413,7 +419,36 @@
                             });
                         });
                     });
-                </script>
+            
+            // Add/remove duration+price rows with value/unit combination
+            const durationWrapper = document.getElementById("duration-wrapper");
+            durationWrapper.addEventListener("click", function (e) {
+                if (e.target && e.target.classList.contains("add-duration")) {
+                    e.preventDefault();
+                    const newGroup = document.createElement("div");
+                    newGroup.className = "duration-group mb-10 d-flex gap-2 align-items-center";
+                    newGroup.innerHTML = `
+                        <input type="number" name="duration_values[]" class="form-control radius-8" placeholder="Value" required min="1" style="width: 25%;" onkeydown="return event.key !== 'e'">
+                        <select name="duration_units[]" class="form-control radius-8" required style="width: 25%;">
+                            <option value="">Select Unit</option>
+                            <option value="days">Days</option>
+                            <option value="months">Months</option>
+                            <option value="years">Years</option>
+                        </select>
+                        <input type="number" name="prices[]" class="form-control radius-8" placeholder="Enter price" required min="0" style="width: 25%;" onkeydown="return event.key !== 'e'">
+                        <input type="number" name="pre_prices[]" class="form-control radius-8" placeholder="Enter preview price" required min="0" style="width: 25%;" onkeydown="return event.key !== 'e'">
+                        <button type="button" class="btn btn-sm btn-danger remove-duration">−</button>
+                    `;
+                    durationWrapper.appendChild(newGroup);
+                }
+                if (e.target && e.target.classList.contains("remove-duration")) {
+                    e.preventDefault();
+                    e.target.parentElement.remove();
+                }
+            });
+            
+            
+            </script>
 
                 <?php include './partials/layouts/layoutBottom.php' ?>
             PHP;
