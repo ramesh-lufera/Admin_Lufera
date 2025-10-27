@@ -14,7 +14,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $upgrade_package_id = $_POST['upgrade_package_id'];
     $total_amount = $_POST['total_amount'];
     $hostinger_balance = $_POST['hostinger_balance'];
-    $amount_to_pay = $_POST['amount_to_pay'];
+    // GST is 18% on (total_amount - hostinger_balance)
+    $gst_base = max($total_amount - $hostinger_balance, 0);
+    $gst = round($gst_base * 0.18, 2);
+
+    // Final payable = base + GST
+    $amount_to_pay = round($gst_base + $gst, 2);
+    //$amount_to_pay = $_POST['amount_to_pay'];
     $duration = $_POST['duration'];
     $cat_id = $_POST['cat_id'];
     $invoice_id = $_POST['invoice_id'];
@@ -42,7 +48,7 @@ if (isset($_POST['continuePay'])) {
     $type = "package";
     $gst = 0;
     $payment_method = "Direct pay";
-    $status = "pending";
+    $status = "Pending";
 
     // --- INSERT new record into websites table ---
     $insert_sql = "
@@ -52,7 +58,7 @@ if (isset($_POST['continuePay'])) {
             insta_id, password_2, access_your_marketing_at, access_your_marketing_with_www,
             marketing_ip_address, nameserver_1, nameserver_2, product_id, type, is_Active
         ) VALUES (
-            ?, 'N/A', ?, ?, 'pending', NOW(), ?, ?, 
+            ?, 'N/A', ?, ?, 'Pending', NOW(), ?, ?, 
             NULL, NULL, NULL, NULL, NULL, NULL, NULL,
             NULL, NULL, NULL, NULL, NULL, NULL, NULL, ?, ?, 1
         )
@@ -80,25 +86,26 @@ if (isset($_POST['continuePay'])) {
                 amount, balance_due, payment_made, payment_method, addon_service, type,
                 discount_type, status, created_on
             ) VALUES (
-                ?, ?, ?, ?, ?, NULL, ?, 0, 0, ?, ?, 0, ?, NULL, ?, NULL, ?, NOW()
+                ?, ?, ?, ?, ?, NULL, ?, ?, 0, ?, ?, 0, ?, NULL, ?, NULL, ?, NOW()
             )
         ";
 
         $stmt_order = $conn->prepare($order_sql);
         $stmt_order->bind_param(
-            "sisssssssss",
+            "sisssddddsss",
             $user_id,
             $pkg_invoice_id,
             $upgrade_package_id,
             $duration,
             $total_amount,
-            $amount_to_pay,
-            $amount_to_pay,
-            $amount_to_pay,
+            $gst_base,      // subtotal (total - credits)
+            $gst,           // GST (18%)
+            $amount_to_pay, // amount (subtotal + GST)
+            $amount_to_pay, // balance_due
             $payment_method,
             $type,
             $status
-        );
+        );        
 
         if (!$stmt_order->execute()) {
             echo "<script>alert('Error inserting order: " . $stmt_order->error . "');</script>";
@@ -258,15 +265,16 @@ if (isset($_POST['continuePay'])) {
                 <input type="hidden" name="duration" value="<?php echo $duration; ?>">
                 <input type="hidden" name="cat_id" value="<?php echo $cat_id; ?>">
                 <input type="hidden" name="invoice_id" value="<?php echo $invoice_id; ?>">
+                <input type="hidden" name="gst" value="<?php echo $gst; ?>">
                 <button type="submit" name="continuePay" id="continuePayBtn" class="lufera-bg text-center btn-sm px-12 py-10 float-end" style="width:150px; border: 1px solid #000" value="Submit">Continue to Pay</button>
             </form>
         </div>
             <div class="row">
-                <div class="col-6 mt-3">
+                <div class="col-6">
                     <div class="card h-100 radius-12">
                         <div class="card-header py-10 border-none card-shadow">
                             <h6 class="mb-0">Select Payment Mode</h6>
-                            <p class="mb-0 text-muted">Order Summary includes discounts & taxes</p>
+                            <!-- <p class="mb-0 text-muted">Order Summary includes discounts & taxes</p> -->
                         </div>
                         <div class="card-body p-16">
                             <p class="text-muted fw-medium mb-3">How would you like to make the payment? <span class="text-danger-600">*</span></p>
@@ -396,18 +404,26 @@ if (isset($_POST['continuePay'])) {
                                 
                                      <tr>
                                         <td><?php echo $title; ?></td>
-                                        <td class="text-end" id="currency-symbol-display"><?php echo htmlspecialchars($symbol) . number_format($total_amount, 2); ?></td>
+                                        <td class="text-end"><?php echo htmlspecialchars($symbol) . number_format($total_amount, 2); ?></td>
                                     </tr> 
                                     <!-- Tax (GST 18%) -->
                                     <tr>
                                         <td>Credits</td>
-                                        <td class="text-end" id="currency-symbol-display"><?php echo htmlspecialchars($symbol) . number_format($hostinger_balance, 2); ?></td>
+                                        <td class="text-end"><?php echo htmlspecialchars($symbol) . number_format($hostinger_balance, 2); ?></td>
                                     </tr>
+                                    <tr>
+                                        <td>Tax (GST 18%)</td>
+                                        <td class="text-end"><?php echo htmlspecialchars($symbol) . number_format($gst, 2); ?></td>
+                                    </tr>
+
                                     <!-- Estimated Total -->
                                     <tr>
                                         <td class="border-0 fw-semibold">Total</td>
-                                        <td class="border-0 text-end fw-semibold text-xl" id="currency-symbol-display"><?php echo htmlspecialchars($symbol) . number_format($amount_to_pay, 2); ?></td>
+                                        <td class="border-0 text-end fw-semibold text-xl" id="currency-symbol-display">
+                                            <?php echo htmlspecialchars($symbol) . number_format($amount_to_pay, 2); ?>
+                                        </td>
                                     </tr>
+
                                 </tbody>
                             </table>
                         </div>

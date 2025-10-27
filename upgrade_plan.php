@@ -6,7 +6,10 @@
     $Id = $_SESSION['user_id'];
     $package_id = $_GET['prod_id'];
     $web_id = $_GET['web_id'];
+    $duration_get = $_GET['duration'];
     
+    echo $duration_get;
+
     $result1 = $conn->query("SELECT symbol FROM currencies WHERE is_active = 1 LIMIT 1");
     $symbol = "$"; // default
     if ($row1 = $result1->fetch_assoc()) {
@@ -204,12 +207,18 @@
                                                 <div class="h-portlet__body position-relative">
                                                     <div class="mb-20">
                                                     <?php 
-                                                    $plan_sql = "SELECT * FROM package WHERE id = ?";
-                                                    $stmt = $conn->prepare($plan_sql);
-                                                    $stmt->bind_param("i", $package_id);
-                                                    $stmt->execute();
-                                                    $plan_fetch = $stmt->get_result();
-                                                    $plan_row = $plan_fetch->fetch_assoc();
+                                                    $plan_sql = "
+                                                    SELECT p.*, d.price, d.duration 
+                                                    FROM package p
+                                                    INNER JOIN durations d ON d.package_id = p.id
+                                                    WHERE p.id = ? AND d.duration = ?
+                                                ";
+                                                $stmt = $conn->prepare($plan_sql);
+                                                $stmt->bind_param("is", $package_id, $duration_get);
+                                                $stmt->execute();
+                                                $plan_fetch = $stmt->get_result();
+                                                $plan_row = $plan_fetch->fetch_assoc();
+                                                
 
                                                     $current_plan_id = $plan_row['id'];
                                                     $plan_name = $plan_row['package_name'];
@@ -263,23 +272,37 @@
                                                     <div class="mb-20">
                                                         <?php
                                                         // Fetch the selected/current package
-                                                        $plan_sql = "SELECT * FROM package WHERE id = ?";
-                                                        $stmt = $conn->prepare($plan_sql);
-                                                        $stmt->bind_param("i", $package_id);
-                                                        $stmt->execute();
-                                                        $plan_result = $stmt->get_result();
-                                                        $plan_row = $plan_result->fetch_assoc();
+                                                        $plan_sql = "
+    SELECT p.*, d.price, d.duration 
+    FROM package p
+    INNER JOIN durations d ON d.package_id = p.id
+    WHERE p.id = ? AND d.duration = ?
+";
+$stmt = $conn->prepare($plan_sql);
+$stmt->bind_param("is", $package_id, $duration_get);
+$stmt->execute();
+$plan_fetch = $stmt->get_result();
+$plan_row = $plan_fetch->fetch_assoc();
+
 
                                                         $current_price = $plan_row['price'];
-                                                        $current_cat = $plan_row['cat_id'];
-                                                        $current_duration = $plan_row['duration'];
+$current_cat = $plan_row['cat_id'];
+$current_duration = $plan_row['duration'];
+
 
                                                         // Fetch all packages with price greater than the current plan
-                                                        $upgrade_sql = "SELECT id, package_name, price, duration FROM package WHERE price > ? and cat_id = ? and duration = ? ORDER BY price ASC";
-                                                        $stmt2 = $conn->prepare($upgrade_sql);
-                                                        $stmt2->bind_param("dis", $current_price, $current_cat, $current_duration);
-                                                        $stmt2->execute();
-                                                        $upgrade_result = $stmt2->get_result();
+                                                        $upgrade_sql = "
+    SELECT p.id, p.package_name, d.price, d.duration
+    FROM package p
+    INNER JOIN durations d ON d.package_id = p.id
+    WHERE d.price > ? AND p.cat_id = ? AND d.duration = ?
+    ORDER BY d.price ASC
+";
+$stmt2 = $conn->prepare($upgrade_sql);
+$stmt2->bind_param("dis", $current_price, $current_cat, $current_duration);
+$stmt2->execute();
+$upgrade_result = $stmt2->get_result();
+
 
                                                         // Check if there are any upgrade options
                                                         $has_upgrades = $upgrade_result->num_rows > 0;
@@ -399,12 +422,17 @@
                                             $today = new DateTime();
 
                                             // Get plan info
-                                            $plan_sql = "SELECT price, duration FROM package WHERE id = ?";
-                                            $stmt_plan = $conn->prepare($plan_sql);
-                                            $stmt_plan->bind_param("i", $package_id);
-                                            $stmt_plan->execute();
-                                            $plan_result = $stmt_plan->get_result();
-                                            $plan = $plan_result->fetch_assoc();
+                                            $plan_sql = "
+    SELECT d.price, d.duration 
+    FROM durations d
+    WHERE d.package_id = ? AND d.duration = ?
+";
+$stmt_plan = $conn->prepare($plan_sql);
+$stmt_plan->bind_param("is", $package_id, $duration_get);
+$stmt_plan->execute();
+$plan_result = $stmt_plan->get_result();
+$plan = $plan_result->fetch_assoc();
+
 
                                             $price = floatval($plan['price']);
                                             $duration = strtolower($plan['duration']);
