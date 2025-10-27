@@ -198,6 +198,26 @@
 
                 $toEmail = $userData['email'];
                 $toName  = $userData['username'];
+
+                // Show loader immediately
+                echo "
+                <script>
+                    Swal.fire({
+                        title: 'Processing...',
+                        text: 'Please wait while we finalize your renewal.',
+                        allowOutsideClick: false,
+                        didOpen: () => {
+                            Swal.showLoading();
+                            const spinner = document.querySelector('.swal2-loader');
+                            if (spinner) {
+                                spinner.style.borderColor = '#fec700 transparent #fec700 transparent';
+                            }
+                        }
+                    });
+                </script>";
+                // flush response so browser shows the loader instantly
+                ob_flush(); flush();
+
                 $orders_link = rtrim($_ENV['EMAIL_COMMON_LINK'], '/') . '/orders.php';
 
                 // ===================== SEND RENEWAL EMAIL =====================
@@ -267,7 +287,7 @@
                         title: 'Renewed Successfully',
                         confirmButtonColor: '#3085d6'
                     }).then(() => {
-                        window.location.href = 'orders.php'; 
+                        window.location.href = 'subscription.php'; 
                     }); 
                 </script>"; 
             } else {
@@ -475,7 +495,7 @@
                         allowOutsideClick: false
                     }).then((result) => {
                         if (result.isConfirmed) {
-                            window.location.href = 'orders.php';
+                            window.location.href = 'subscription.php';
                         }
                     });
                 </script>";
