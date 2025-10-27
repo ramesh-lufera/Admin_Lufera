@@ -91,6 +91,7 @@
                                         websites.access_www,
                                         websites.status,
                                         websites.created_at,
+                                        websites.expired_at,
                                         websites.duration,
                                         websites.product_id,
                                         websites.type,
@@ -129,6 +130,7 @@
                                         websites.access_www,
                                         websites.status,
                                         websites.created_at,
+                                        websites.expired_at,
                                         websites.duration,
                                         websites.product_id,
                                         websites.type,
@@ -489,6 +491,7 @@
                                          \$status = strtolower(\$site['status']);
                                         \$CreatedAt = \$site['created_at'];
                                         \$Duration = \$site['duration'];
+                                        \$expiredAt = \$site['expired_at'];
 
                                         
                                             \$statusClass = 'status-pending';
@@ -503,9 +506,20 @@
 
                                             
 
+                                <!-- \$startDate = new DateTime(\$CreatedAt);
+                                \$endDate = (clone \$startDate)->modify("+{\$Duration}");
+                                \$Validity = \$startDate->format("d-m-Y") . " to " . \$endDate->format("d-m-Y"); -->
+
                                 \$startDate = new DateTime(\$CreatedAt);
                                 \$endDate = (clone \$startDate)->modify("+{\$Duration}");
-                                \$Validity = \$startDate->format("d-m-Y") . " to " . \$endDate->format("d-m-Y");
+                                \$calculatedEnd = \$endDate->format("d-m-Y");
+
+                                // If renewed, use expired_at from database
+                                if (!empty(\$expiredAt) && \$expiredAt !== '0000-00-00 00:00:00') {
+                                    \$Validity = (new DateTime(\$expiredAt))->format("d-m-Y");
+                                } else {
+                                    \$Validity = \$calculatedEnd;
+                                }
 
                                 if (\$status === 'approved') {
                                     \$expiresText = htmlspecialchars(\$Validity);
