@@ -17,7 +17,9 @@
 
 <?php 
     include './partials/layouts/layoutTop.php';
-
+    ini_set('display_errors', 1);
+    ini_set('display_startup_errors', 1);
+    error_reporting(E_ALL);
     require_once __DIR__ . '/vendor/autoload.php';
     use Dotenv\Dotenv;
     use PHPMailer\PHPMailer\PHPMailer;
@@ -333,13 +335,19 @@
     $query = "
         SELECT
             orders.*,
-            orders.created_on,
             users.username,
             users.first_name,
             users.last_name,
-            users.photo
+            users.photo,
+            CASE 
+                WHEN orders.type = 'package' THEN package.package_name
+                WHEN orders.type = 'product' THEN products.name
+                ELSE orders.plan
+            END AS plan_name
         FROM orders
         INNER JOIN users ON orders.user_id = users.id
+        LEFT JOIN package ON (orders.type = 'package' AND orders.plan = package.id)
+        LEFT JOIN products ON (orders.type = 'product' AND orders.plan = products.id)
     ";
 
     if ($role !== '1' && $role !== '2') {
@@ -357,7 +365,7 @@
     <div class="dashboard-main-body">
         <div class="d-flex flex-wrap align-items-center gap-3 mb-24">
             <a class="cursor-pointer fw-bold" onclick="history.back()"><span class="fa fa-arrow-left"></span>&nbsp; Back</a> 
-            <h6 class="fw-semibold mb-0 m-auto">Orders</h6>
+            <h6 class="fw-semibold mb-0 m-auto">Invoice</h6>
             <a class="cursor-pointer fw-bold visibility-hidden" onclick="history.back()"><span class="fa fa-arrow-left"></span>&nbsp; Back</a> 
         </div>
         <div class="card">
@@ -367,6 +375,7 @@
                     <thead>
                         <tr>
                             <th scope="col">Name</th>
+                            <th scope="col">Plan</th>
                             <th scope="col" class="text-center">Invoice ID</th>
                             <th scope="col" class="text-center">Date</th>
                             <th scope="col" class="text-center">Amount</th>
@@ -388,11 +397,11 @@
                                     <?php echo $row['first_name']; ?> <?php echo $row['last_name']; ?>
                                 </div>
                             </td>
+                            <td><?php echo htmlspecialchars($row['plan_name']); ?></td>
                             <td class="text-center"><?php echo $row['invoice_id']; ?></td>
                             <td class="text-center"><?= date('d M Y', strtotime($row['created_on'])) ?></td>
                             <td class="text-center" id="currency-symbol-display"><?= htmlspecialchars($symbol) ?> <?= number_format($row['amount'], 2) ?></td>
                            
-
                             <td class="text-center">
                                 <?php 
                                 if ($row['is_Active'] === '0'){ ?>
@@ -431,19 +440,18 @@
                                 </a>
                                 <a href="invoice-preview.php?id=<?php echo $row['invoice_id']; ?>" class="fa fa-file view-user-btn bg-warning-focus text-warning-600 bg-hover-warning-200 fw-medium w-32-px h-32-px d-inline-flex justify-content-center align-items-center rounded-circle">
                                 </a>
-                                <?php if (($role === '1' || $role === '2') && $row['status'] === 'Pending'){ ?>
+                                <!-- <?php if (($role === '1' || $role === '2') && $row['status'] === 'Pending'){ ?>
                                     <form method="POST" style="display:inline;">
                                         <input type="hidden" name="approve_id" value="<?= $row['id'] ?>">
                                         <button type="submit" class="fa fa-check-square view-user-btn bg-success-focus text-success-600 bg-hover-success-200 fw-medium w-32-px h-32-px d-inline-flex justify-content-center align-items-center rounded-circle">
                                         </button>
                                     </form>
 
-                                    <!-- CANCEL BUTTON -->
                                     <form method="POST" style="display:inline;">
                                         <input type="hidden" name="cancel_id" value="<?= $row['id'] ?>">
                                         <button type="submit" class="fa fa-times-circle view-user-btn bg-danger-focus text-danger-600 bg-hover-danger-200 fw-medium w-32-px h-32-px d-inline-flex justify-content-center align-items-center rounded-circle" title="Cancel Order"></button>
                                     </form>
-                                <?php } ?>
+                                <?php } ?> -->
                             </td>
                         </tr>
                         <?php endwhile; ?>

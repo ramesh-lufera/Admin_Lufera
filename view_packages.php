@@ -16,7 +16,12 @@
     include './partials/layouts/layoutTop.php';
 
     $Id = $_SESSION['user_id'];
-    $query = "SELECT * FROM package WHERE is_deleted = 0 ORDER BY created_at DESC";
+    // Join package and durations tables
+    $query = "SELECT p.id AS package_id, p.package_name, p.title, p.subtitle, p.is_active, p.cat_id, p.template, d.id AS duration_id, d.duration, d.price, d.preview_price 
+              FROM package p 
+              LEFT JOIN durations d ON p.id = d.package_id 
+              WHERE p.is_deleted = 0 
+              ORDER BY p.created_at DESC, d.created_at DESC";
     $result = mysqli_query($conn, $query);
 
     // Get active symbol
@@ -25,8 +30,6 @@
     if ($row1 = $result1->fetch_assoc()) {
         $symbol = $row1['symbol'];
     }
-
-    $result1 = mysqli_query($conn, $query);
 ?>
 
 <body>
@@ -66,31 +69,33 @@
                                 </td>
                                 <td class="text-center"><?= htmlspecialchars($row['title']) ?></td>
                                 <td class="text-center"><?= htmlspecialchars($row['subtitle']) ?></td>
-                                <td class="text-center" id="currency-symbol-display"><?= htmlspecialchars($symbol) ?> <?= number_format($row['price'], 2) ?></td>
-                                <td class="text-center"><?= htmlspecialchars($row['duration']) ?></td>
+                                <td class="text-center" id="currency-symbol-display">
+                                    <?= htmlspecialchars($symbol) ?> <?= number_format($row['price'] ?? 0, 2) ?>
+                                </td>
+                                <td class="text-center"><?= htmlspecialchars($row['duration'] ?? '-') ?></td>
                                 <td class="text-center">
                                     <button class="toggle-status btn btn-sm <?= $row['is_active'] ? 'btn-success' : 'btn-secondary' ?>" 
-                                            data-id="<?= $row['id'] ?>" 
+                                            data-id="<?= $row['package_id'] ?>" 
                                             data-status="<?= $row['is_active'] ?>">
                                         <?= $row['is_active'] ? 'Active' : 'Inactive' ?>
                                     </button>
                                 </td>
                                 <td class="text-center">
-                                    <!-- <a href="edit-package.php?id=<?= $row['id'] ?>" class="fa fa-edit w-40-px h-40-px bg-warning-focus text-warning-main rounded-circle d-inline-flex align-items-center justify-content-center">
-                                    </a> -->
                                     <a href="javascript:void(0)" 
                                     class="fa fa-edit w-40-px h-40-px bg-warning-focus text-warning-main rounded-circle d-inline-flex align-items-center justify-content-center edit-package-btn"
-                                    data-id="<?= $row['id'] ?>"
+                                    data-id="<?= $row['package_id'] ?>"
                                     data-cat-id="<?= $row['cat_id'] ?>"
                                     data-module="<?= $row['template'] ?>">
                                     </a>
-
-
-                                    <a data-id="<?= $row['id'] ?>" class="fa fa-trash-alt delete-package w-40-px h-40-px bg-danger-focus text-danger-main rounded-circle d-inline-flex align-items-center justify-content-center cursor-pointer">
+                                    <a data-id="<?= $row['package_id'] ?>" class="fa fa-trash-alt delete-package w-40-px h-40-px bg-danger-focus text-danger-main rounded-circle d-inline-flex align-items-center justify-content-center cursor-pointer">
                                     </a>
                                 </td>
                             </tr>
                             <?php endwhile; ?>
+                            <?php else: ?>
+                            <tr>
+                                <td colspan="7" class="text-center">No packages found.</td>
+                            </tr>
                             <?php endif; ?>
                         </tbody>
                     </table>
@@ -112,7 +117,7 @@
                     <select class="form-control" id="product_category" name="product_category" required>
                         <option value="">-- Select Category --</option>
                         <?php
-                        $categories = $conn->query("SELECT cat_id, cat_name FROM categories where cat_type = 'package' ORDER BY cat_name ASC");
+                        $categories = $conn->query("SELECT cat_id, cat_name FROM categories WHERE cat_type = 'package' ORDER BY cat_name ASC");
                         while ($cat = $categories->fetch_assoc()) {
                             echo "<option value='" . $cat['cat_id'] . "'>" . htmlspecialchars($cat['cat_name']) . "</option>";
                         }
@@ -135,11 +140,10 @@
                 </div>
                 <!-- Type Radio Toggle -->
                 <div class="form-group d-none">
-                <label >Type</label>
+                <label>Type</label>
                 <div class="radio-group">
                     <input type="radio" id="type_package" name="product_type" value="Package" required checked>
                     <label for="type_package">Package</label>
-
                     <input type="radio" id="type_product" name="product_type" value="Product">
                     <label for="type_product">Product</label>
                 </div>
@@ -163,20 +167,18 @@
             </div>
             <div class="modal-body">
                 <input type="hidden" name="id" id="edit_package_id">
-
                 <div class="form-group mb-8">
                     <label for="edit_product_category" class="form-label">Category</label>
                     <select class="form-control" id="edit_product_category" name="product_category" required>
                         <option value="">-- Select Category --</option>
                         <?php
-                        $categories = $conn->query("SELECT cat_id, cat_name FROM categories where cat_type = 'package' ORDER BY cat_name ASC");
+                        $categories = $conn->query("SELECT cat_id, cat_name FROM categories WHERE cat_type = 'package' ORDER BY cat_name ASC");
                         while ($cat = $categories->fetch_assoc()) {
                             echo "<option value='" . $cat['cat_id'] . "'>" . htmlspecialchars($cat['cat_name']) . "</option>";
                         }
                         ?>
                     </select>
                 </div>
-
                 <div class="mb-8">
                     <label for="edit_template" class="form-label">Module</label>
                     <select name="template" class="form-control" id="edit_template" required>
@@ -201,10 +203,6 @@
 </div>
 
 <script>
-    $(document).ready(function() {
-        $('#productPackageTable').DataTable();
-    });
-
 $(document).ready(function() {
     $('#productPackageTable').DataTable();
 
@@ -300,7 +298,6 @@ $(document).on('click', '.edit-package-btn', function() {
     // Show modal
     $('#edit-package-modal').modal('show');
 });
-
 </script>
 
 </body>
