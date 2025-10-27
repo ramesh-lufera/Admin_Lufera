@@ -24,23 +24,34 @@
                 <!-- Period Section -->
                 <div class="p-3 border rounded-3 mb-3">
                     <div class="row align-items-center text-center text-md-start">
-                        <div class="col-12 col-md-auto mb-2 mb-md-0">
-                            <select id="periodSelect" class="form-select w-100 w-md-auto">
-                                <option value="48">48 months</option>
-                                <option value="24">24 months</option>
-                                <option value="12" selected>12 months</option>
-                                <option value="1">1 month</option>
-                            </select>
-                        </div>
+                        <div class="col-12 col-md-auto mb-2 mb-md-0"> 
+
+                        <!-- Dynamic Period Dropdown -->
+                        <select id="periodSelect" class="form-select w-100 w-md-auto">
+                        <?php foreach ($durations as $dur): ?>
+                            <?php
+                                preg_match('/\d+/', strtolower($dur), $m);
+                                $durValue = isset($m[0]) ? (int)$m[0] : 1;
+                                if (stripos($dur, 'year') !== false) $durValue *= 12;
+
+                                $isSelected = ($dur === $website['duration']) ? 'selected' : '';
+                            ?>
+                            <option value="<?= htmlspecialchars($durValue) ?>" <?= $isSelected ?>>
+                                <?= htmlspecialchars(ucwords($dur)) ?>
+                            </option>
+                        <?php endforeach; ?>
+                        </select>
+                                                </div>
                         <div class="col-12 col-md text-center mb-2 mb-md-0">
                             <span class="badge bg-light text-success fw-semibold">save 7%</span>
                         </div>
+                        <!-- ✅ Updated Price Section -->
                         <div class="col-12 col-md-auto text-center text-md-end">
-                            <div class="text-muted small" style="text-decoration: line-through;">
-                                ₹<?= htmlspecialchars($monthlyPriceFormatted) ?><?= $showMo ? ' /mo' : '' ?>
+                            <div id="previewPrice" class="text-muted small" style="text-decoration: line-through;">
+                                ₹<?= htmlspecialchars(number_format($durationPrices[strtolower($Duration)]['preview_price'] ?? $currentPrice, 2)) ?> /<?= htmlspecialchars(ucwords($Duration)) ?>
                             </div>
-                            <div class="fw-bold fs-5">
-                                ₹<?= htmlspecialchars($monthlyPriceFormatted) ?><?= $showMo ? ' /mo' : '' ?>
+                            <div id="actualPrice" class="fw-bold fs-5">
+                                ₹<?= htmlspecialchars(number_format($durationPrices[strtolower($Duration)]['price'] ?? $currentPrice, 2)) ?> /<?= htmlspecialchars(ucwords($Duration)) ?>
                             </div>
                         </div>
                     </div>
@@ -67,10 +78,24 @@
                     </select>
                 </div>
 
-                <!-- Expiration Date -->
+                <!-- Expiration Date
                 <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap">
                     <label class="fw-semibold mb-1 mb-md-0">Expiration date</label>
                     <span id="expirationDate"><?= htmlspecialchars($endDate->format('Y-m-d')) ?></span>
+                </div> -->
+
+                <!-- Expiration Date -->
+                <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap">
+                    <label class="fw-semibold mb-1 mb-md-0">Expiration date</label>
+                    <?php
+                        // Decide which date to display
+                        if (!empty($expiredAt) && $expiredAt !== '0000-00-00 00:00:00') {
+                            $displayExpiration = (new DateTime($expiredAt))->format('Y-m-d');
+                        } else {
+                            $displayExpiration = $endDate->format('Y-m-d');
+                        }
+                    ?>
+                    <span id="expirationDate"><?= htmlspecialchars($displayExpiration) ?></span>
                 </div>
 
                 <hr class="my-3">
@@ -124,20 +149,24 @@
     </div>
 </div>
 
+<?php
+    $baseExpirationDate = $displayExpiration; // base date for JS
+?>
+
+
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    const monthlyPrice = <?= $monthlyPrice ?>;
-    const durationType = '<?= $durationType ?>';
-    const number = <?= $number ?>;
+    const durationData = <?= json_encode($durationPrices) ?>;
     const select = document.getElementById('periodSelect');
-
     const subtotalEl = document.getElementById('subtotal');
     const totalEl = document.getElementById('total');
     const expirationDateEl = document.getElementById('expirationDate');
     const periodInput = document.getElementById('periodInput');
     const subtotalInput = document.getElementById('subtotalInput');
     const totalInput = document.getElementById('totalInput');
-    const baseEndDate = new Date("<?= $endDate->format('Y-m-d') ?>");
+    // const baseEndDate = new Date("<?= $endDate->format('Y-m-d') ?>");
+    const baseEndDate = new Date("<?= $baseExpirationDate ?>");
+
 
     function formatCurrency(amount) {
         return '₹' + amount.toLocaleString('en-IN', { minimumFractionDigits: 2 });
@@ -145,20 +174,27 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function updateTotals() {
         const months = parseInt(select.value);
-        let subtotal = monthlyPrice * months;
-        subtotalEl.textContent = formatCurrency(subtotal);
-        totalEl.textContent = formatCurrency(subtotal);
+        let selectedText = select.options[select.selectedIndex].text.toLowerCase().trim();
+
+        const priceInfo = durationData[selectedText] || { price: 0, preview_price: 0 };
+        const price = parseFloat(priceInfo.price);
+        const previewPrice = parseFloat(priceInfo.preview_price);
+
+        // ✅ Updated to show “/Duration” instead of “/mo”
+        document.getElementById('previewPrice').textContent = formatCurrency(previewPrice) + ' /' + select.options[select.selectedIndex].text;
+        document.getElementById('actualPrice').textContent = formatCurrency(price) + ' /' + select.options[select.selectedIndex].text;
+
+        subtotalEl.textContent = formatCurrency(price);
+        totalEl.textContent = formatCurrency(price);
 
         const newDate = new Date(baseEndDate);
         newDate.setMonth(newDate.getMonth() + months);
         const formattedDate = newDate.toISOString().split('T')[0];
         expirationDateEl.textContent = formattedDate;
 
-        periodInput.value = months + " months";
-        subtotalInput.value = subtotal;
-        totalInput.value = subtotal;
-
-        // Do NOT update expiration_date hidden input (only display changes)
+        periodInput.value = select.options[select.selectedIndex].text;
+        subtotalInput.value = price;
+        totalInput.value = price;
     }
 
     select.addEventListener('change', updateTotals);

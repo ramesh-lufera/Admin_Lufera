@@ -154,9 +154,37 @@
         if ($is_renewal) {
             $renewal_duration = $_POST['period'];
 
+            // Fetch current expired_at from DB
+            $query = $conn->prepare("SELECT expired_at FROM websites WHERE id = ?");
+            $query->bind_param("i", $id);
+            $query->execute();
+            $result = $query->get_result();
+            $row = $result->fetch_assoc();
+            $query->close();
+
+            // Determine base date for renewal
+            if (!empty($row['expired_at']) && strtotime($row['expired_at']) > time()) {
+                // If previous expiration exists and is in the future, add renewal on top of it
+                $baseDate = new DateTime($row['expired_at']);
+            } else {
+                // Otherwise, use created_at + original duration
+                $baseDate = new DateTime($created_at);
+
+                if (!empty($duration)) {
+                    $baseDate->modify($duration); // e.g., "1 year"
+                }
+            }
+
+            // Add current renewal duration
+            if (!empty($renewal_duration)) {
+                $baseDate->modify($renewal_duration);
+            }
+
+            $expiredAt = $baseDate->format('Y-m-d H:i:s');
+
             // Update website record for renewal
-            $stmt = $conn->prepare("UPDATE websites SET renewal_duration = ?, duration = '' WHERE id = ?");
-            $stmt->bind_param("si", $renewal_duration, $id);
+            $stmt = $conn->prepare("UPDATE websites SET renewal_duration = ?, expired_at = ? WHERE id = ?");
+            $stmt->bind_param("ssi", $renewal_duration, $expiredAt, $id);
 
             if ($stmt->execute()) {
                 // Fetch user info
@@ -305,8 +333,8 @@
                             mysqli_query($conn, $sql_package);
 
                             // Insert into websites (plan = NAME ✅)
-                            $siteInsertPkg = "INSERT INTO websites (user_id, domain, plan, duration, renewal_duration, status, cat_id, invoice_id, product_id, type) 
-                                            VALUES ('$client_id', 'N/A', '$pkg_id', '$pkg_duration', '', 'Pending', '$pkg_cat_id', '$pkg_invoice_id', '$pkg_id', 'package')";
+                            $siteInsertPkg = "INSERT INTO websites (user_id, domain, plan, duration, renewal_duration, expired_at, status, cat_id, invoice_id, product_id, type) 
+                                            VALUES ('$client_id', 'N/A', '$pkg_id', '$pkg_duration', '', NULL, 'Pending', '$pkg_cat_id', '$pkg_invoice_id', '$pkg_id', 'package')";
                             mysqli_query($conn, $siteInsertPkg);
                         }
                     }
@@ -342,8 +370,8 @@
                             mysqli_query($conn, $sql_product);
 
                             // Insert into websites (plan = NAME ✅)
-                            $siteInsertProd = "INSERT INTO websites (user_id, domain, plan, duration, renewal_duration, status, cat_id, invoice_id, product_id, type) 
-                                            VALUES ('$client_id', 'N/A', '$prod_id', '$prod_duration', '', 'Pending', '$prod_cat_id', '$prod_invoice_id', '$prod_id', 'product')";
+                            $siteInsertProd = "INSERT INTO websites (user_id, domain, plan, duration, renewal_duration, expired_at, status, cat_id, invoice_id, product_id, type) 
+                                            VALUES ('$client_id', 'N/A', '$prod_id', '$prod_duration', '', NULL, 'Pending', '$prod_cat_id', '$prod_invoice_id', '$prod_id', 'product')";
                             mysqli_query($conn, $siteInsertProd);
                         }
                     }
@@ -352,8 +380,8 @@
                 $domain = "N/A";
 
                 // Insert new website record
-                $siteInsert = "INSERT INTO websites (user_id, domain, plan, duration, renewal_duration, status, cat_id, invoice_id, product_id, type) 
-                            VALUES ('$client_id', '$domain', '$plan_id', '$duration', '', 'Pending', '$cat_id', '$receipt_id', '$plan_id', '$type')";
+                $siteInsert = "INSERT INTO websites (user_id, domain, plan, duration, renewal_duration, expired_at, status, cat_id, invoice_id, product_id, type) 
+                            VALUES ('$client_id', '$domain', '$plan_id', '$duration', '', NULL, 'Pending', '$cat_id', '$receipt_id', '$plan_id', '$type')";
                 mysqli_query($conn, $siteInsert);
 
                 // Show loader immediately
