@@ -613,54 +613,48 @@
                                         }
                                     ?>
 
+                                    <?php
+                                    /* ---- get web_id, prod_id, duration ---- */
+                                    $webId = 0;
+                                    $inv   = $row['invoice_id'];
+                                    $webQ  = $conn->query("SELECT id FROM websites WHERE invoice_id = '$inv' LIMIT 1");
+                                    if ($webQ && $webQ->num_rows) {
+                                        $webId = $webQ->fetch_assoc()['id'];
+                                    }
+                                    $dur   = $row['duration'];
+                                    $parts = explode(' ', trim($dur));
+                                    $num   = $parts[0] ?? 1;
+                                    $unit  = ($parts[1] ?? 'year') === 'year' ? 'years' : 'months';
+                                    $durationStr = "$num $unit";
+                                    $prodId = $row['plan'];
+                                    ?>
+                                    <!-- ... existing table row ... -->
+
                                     <div class="mt-20">
-                                    <?php 
-                                        if($role == "1" || $role == "2") {?>  
-                                        <button
-                                            class="btn text-white btn-primary text-sm mb-10 record-payment-btn"
-                                            data-bs-toggle="modal"
-                                            data-bs-target="#exampleModal"
-                                            data-invoice="<?php echo htmlspecialchars($row['invoice_id']); ?>"
-                                            data-order="<?php echo htmlspecialchars($row['id']); ?>"
-                                            data-balance="<?php echo htmlspecialchars($row['balance_due']); ?>"
-                                            data-payment="<?php echo htmlspecialchars($row['payment_made']); ?>"
-                                        >
-                                            Record Payment
-                                        </button>
-                                    <?php } ?>
+                                        <?php if($role == "1" || $role == "2") {?>  
+                                            <button class="btn text-white btn-primary text-sm mb-10 record-payment-btn"
+                                                    data-bs-toggle="modal" data-bs-target="#exampleModal"
+                                                    data-invoice="<?=htmlspecialchars($row['invoice_id'])?>"
+                                                    data-order="<?=htmlspecialchars($row['id'])?>"
+                                                    data-balance="<?=htmlspecialchars($row['balance_due'])?>"
+                                                    data-payment="<?=htmlspecialchars($row['payment_made'])?>">
+                                                Record Payment
+                                            </button>
+                                        <?php } ?>
                                         <button class="btn text-white lufera-bg text-sm mb-10">Renew</button>
-                                        <a href="invoice-preview.php?id=<?php echo $invoice_id; ?>"><button class="btn text-white btn-success text-sm mb-10">Invoice</button> </a>   
-                                        <a href="order-summary.php?id=<?php echo $invoice_id; ?>"><button class="btn text-white btn-danger text-sm mb-10">View More</button></a>
+
+                                        <!-- *** UPGRADE BUTTON *** -->
+                                        <a href="upgrade_plan.php?web_id=<?= $webId ?>&prod_id=<?= $prodId ?>&duration=<?= urlencode($durationStr) ?>">
+                                            <button class="btn text-white btn-warning text-sm mb-10">Upgrade</button>
+                                        </a>
+
+                                        <a href="invoice-preview.php?id=<?=$row['invoice_id']?>">
+                                            <button class="btn text-white btn-success text-sm mb-10">Invoice</button>
+                                        </a>
+                                        <a href="order-summary.php?id=<?=$row['invoice_id']?>">
+                                            <button class="btn text-white btn-danger text-sm mb-10">View More</button>
+                                        </a>
                                     </div>
-
-                                    <!-- New Order Approvals Section (Admin only) -->
-                                    <?php if ($role === '1' || $role === '2'): ?>
-                                        <div class="mt-20">
-                                            <h6 class="text-md mb-10">Order Approvals Management</h6>
-                                            <p class="text-muted">This section will display all order approval and rejected buttons for this section.</p>
-                                            <div class="d-flex gap-3 mt-10">
-                                                <!-- Approve Button -->
-                                                <form method="POST" style="display:inline;">
-                                                    <input type="hidden" name="approve_id" value="<?= $orderId; ?>">
-                                                    <button type="submit" class="btn btn-success text-white text-sm d-flex align-items-center"
-                                                        <?= ($row['status'] === 'Approved') ? 'disabled' : ''; ?>>
-                                                        <i class="fa fa-check me-2"></i> Approve
-                                                    </button>
-                                                </form>
-
-                                                <!-- Reject Button -->
-                                                <form method="POST" style="display:inline;">
-                                                    <input type="hidden" name="cancel_id" value="<?= $orderId; ?>">
-                                                    <button type="submit" class="btn btn-danger text-white text-sm d-flex align-items-center"
-                                                        <?= ($row['status'] === 'Cancelled') ? 'disabled' : ''; ?>>
-                                                        <i class="fa fa-times me-2"></i> Reject
-                                                    </button>
-                                                </form>
-                                            </div>
-                                        </div>
-                                    <?php endif; ?>
-
-                                </div>
                             </div>
                         <?php endwhile; ?>
                     <?php endif; ?>
@@ -816,54 +810,48 @@
                                         }
                                     ?>
 
+                                    <?php
+                                    /* ---- get web_id, prod_id, duration ---- */
+                                    $webId = 0;
+                                    $inv   = $row['invoice_id'];
+                                    $webQ  = $conn->query("SELECT id FROM websites WHERE invoice_id = '$inv' LIMIT 1");
+                                    if ($webQ && $webQ->num_rows) {
+                                        $webId = $webQ->fetch_assoc()['id'];
+                                    }
+                                    $dur   = $row['duration'];
+                                    $parts = explode(' ', trim($dur));
+                                    $num   = $parts[0] ?? 1;
+                                    $unit  = ($parts[1] ?? 'year') === 'year' ? 'years' : 'months';
+                                    $durationStr = "$num $unit";
+                                    $prodId = $row['plan'];
+                                    ?>
+                                    <!-- ... existing table row ... -->
+
                                     <div class="mt-20">
-                                    <?php 
-                                        if($role == "1" || $role == "2") {?>  
-                                        <button
-                                            class="btn text-white btn-primary text-sm mb-10 record-payment-btn"
-                                            data-bs-toggle="modal"
-                                            data-bs-target="#exampleModal"
-                                            data-invoice="<?php echo htmlspecialchars($row['invoice_id']); ?>"
-                                            data-order="<?php echo htmlspecialchars($row['id']); ?>"
-                                            data-balance="<?php echo htmlspecialchars($row['balance_due']); ?>"
-                                            data-payment="<?php echo htmlspecialchars($row['payment_made']); ?>"
-                                        >
-                                            Record Payment
-                                        </button>
-                                    <?php } ?>
+                                        <?php if($role == "1" || $role == "2") {?>  
+                                            <button class="btn text-white btn-primary text-sm mb-10 record-payment-btn"
+                                                    data-bs-toggle="modal" data-bs-target="#exampleModal"
+                                                    data-invoice="<?=htmlspecialchars($row['invoice_id'])?>"
+                                                    data-order="<?=htmlspecialchars($row['id'])?>"
+                                                    data-balance="<?=htmlspecialchars($row['balance_due'])?>"
+                                                    data-payment="<?=htmlspecialchars($row['payment_made'])?>">
+                                                Record Payment
+                                            </button>
+                                        <?php } ?>
                                         <button class="btn text-white lufera-bg text-sm mb-10">Renew</button>
-                                        <a href="invoice-preview.php?id=<?php echo $invoice_id; ?>"><button class="btn text-white btn-success text-sm mb-10">Invoice</button> </a>   
-                                        <a href="order-summary.php?id=<?php echo $invoice_id; ?>"><button class="btn text-white btn-danger text-sm mb-10">View More</button></a>
+
+                                        <!-- *** UPGRADE BUTTON *** -->
+                                        <a href="upgrade_plan.php?web_id=<?= $webId ?>&prod_id=<?= $prodId ?>&duration=<?= urlencode($durationStr) ?>">
+                                            <button class="btn text-white btn-warning text-sm mb-10">Upgrade</button>
+                                        </a>
+
+                                        <a href="invoice-preview.php?id=<?=$row['invoice_id']?>">
+                                            <button class="btn text-white btn-success text-sm mb-10">Invoice</button>
+                                        </a>
+                                        <a href="order-summary.php?id=<?=$row['invoice_id']?>">
+                                            <button class="btn text-white btn-danger text-sm mb-10">View More</button>
+                                        </a>
                                     </div>
-
-                                    <!-- New Order Approvals Section (Admin only) -->
-                                    <?php if ($role === '1' || $role === '2'): ?>
-                                        <div class="mt-20">
-                                            <h6 class="text-md mb-10">Order Approvals Management</h6>
-                                            <p class="text-muted">This section will display all order approval and rejected buttons for this section.</p>
-                                            <div class="d-flex gap-3 mt-10">
-                                                <!-- Approve Button -->
-                                                <form method="POST" style="display:inline;">
-                                                    <input type="hidden" name="approve_id" value="<?= $orderId; ?>">
-                                                    <button type="submit" class="btn btn-success text-white text-sm d-flex align-items-center"
-                                                        <?= ($row['status'] === 'Approved') ? 'disabled' : ''; ?>>
-                                                        <i class="fa fa-check me-2"></i> Approve
-                                                    </button>
-                                                </form>
-
-                                                <!-- Reject Button -->
-                                                <form method="POST" style="display:inline;">
-                                                    <input type="hidden" name="cancel_id" value="<?= $orderId; ?>">
-                                                    <button type="submit" class="btn btn-danger text-white text-sm d-flex align-items-center"
-                                                        <?= ($row['status'] === 'Cancelled') ? 'disabled' : ''; ?>>
-                                                        <i class="fa fa-times me-2"></i> Reject
-                                                    </button>
-                                                </form>
-                                            </div>
-                                        </div>
-                                    <?php endif; ?>
-
-                                </div>
                             </div>
                         <?php endwhile; ?>
                     <?php endif; ?>
