@@ -155,12 +155,15 @@
             $renewal_duration = $_POST['period'];
 
             // Fetch current expired_at from DB
-            $query = $conn->prepare("SELECT expired_at FROM websites WHERE id = ?");
+            $query = $conn->prepare("SELECT plan, type, expired_at FROM websites WHERE id = ?");
             $query->bind_param("i", $id);
             $query->execute();
             $result = $query->get_result();
             $row = $result->fetch_assoc();
             $query->close();
+
+            $plan_id = $row['plan'];
+            $type = $row['type'];
 
             // Determine base date for renewal
             if (!empty($row['expired_at']) && strtotime($row['expired_at']) > time()) {
@@ -187,6 +190,27 @@
             $stmt->bind_param("ssi", $renewal_duration, $expiredAt, $id);
 
             if ($stmt->execute()) {
+                $sql1    = "SELECT id, user_id, email, username FROM users WHERE id = $user_id LIMIT 1";
+                $result21 = mysqli_query($conn, $sql1);
+                $row1    = mysqli_fetch_assoc($result21);
+                $client_id = $row1['id'];
+
+                // Only set addon_price if this is an addon row
+                $insert_addon_price = !empty($get_addon) ? $addon_total : '';
+
+                $main_subtotal = $price + floatval($insert_addon_price);
+                $main_discount = $discount ?? 0;
+                $main_gst      = $main_subtotal * 0.18; // 18% GST
+                $main_amount   = $main_subtotal - $main_discount + $main_gst;
+                $main_balance_due  = $main_amount - $payment_made;
+
+                $auto_id = rand(10000000, 99999999);
+
+                $sqlRenewal = "INSERT INTO renewal_invoices (user_id, invoice_id, plan, duration, amount, gst, price, addon_price, status, payment_method, discount, payment_made, created_on, subtotal, balance_due, addon_service, type) VALUES 
+                    ('$client_id', '$auto_id', '$plan_id', '$duration' ,'$main_amount', '$main_gst', '$price', '$insert_addon_price', 'Pending', '$pay_method', '$main_discount', '$payment_made', '$created_at', '$main_subtotal', '$main_amount', '$get_addon', '$type')";
+
+                mysqli_query($conn, $sqlRenewal);
+
                 // Fetch user info
                 $sqlUser = "SELECT email, username FROM users WHERE id = ?";
                 $userStmt = $conn->prepare($sqlUser);
