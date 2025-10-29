@@ -657,6 +657,7 @@
         border-radius: 0;
         padding: 8px 20px;
         font-weight: 600;
+        width:200px;
     }
     .custom-pay-btn:hover {
         background-color: #ffd700;
@@ -686,6 +687,28 @@
         }
     }
     .payment-detail { display:none; }
+
+    .coupon-item {
+    background: #f8f9fa;
+    transition: background-color 0.2s ease;
+}
+.coupon-item:hover {
+    background: #fff8dc;
+}
+.coupon-item .btn {
+    padding: 6px 12px;
+    font-size: 0.9rem;
+}
+.modal-content {
+    border-radius: 8px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+}
+.modal-header {
+    border-bottom: 1px solid #eaeaea;
+}
+.modal-footer {
+    border-top: 1px solid #eaeaea;
+}
 </style>
 
 <div class="dashboard-main-body">
@@ -907,6 +930,58 @@
                             <p class="mb-0 text-muted">Order Summary includes discounts & taxes</p>
                         </div>
                         <div class="card-body p-16">
+                            <!-- Coupon Code Section -->
+                            <div class="mb-3">
+                                <label for="coupon_code" class="fw-medium mb-2">Coupon Code</label>
+                                <div class="d-flex gap-2 align-items-center">
+                                    <input type="text" id="coupon_code" name="coupon_code" class="form-control" placeholder="Enter coupon code" value="<?php echo isset($_POST['coupon_code']) ? htmlspecialchars($_POST['coupon_code']) : ''; ?>">
+                                    <button type="button" class="btn custom-pay-btn" data-bs-toggle="modal" data-bs-target="#couponModal">View Coupons</button>
+                                </div>
+                            </div>
+
+                            <!-- Coupon List Modal -->
+                            <div class="modal fade" id="couponModal" tabindex="-1" aria-labelledby="couponModalLabel" aria-hidden="true">
+                                <div class="modal-dialog modal-dialog-centered">
+                                    <div class="modal-content">
+                                        <div class="modal-header">
+                                            <h5 class="modal-title" id="couponModalLabel">Available Coupons</h5>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                        </div>
+                                        <div class="modal-body">
+                                            <?php
+                                            // Fetch active coupons
+                                            $coupon_sql = "SELECT `id`, `promo_name`, `coupon_code`, `description`, `discount`, `type`, `start_date`, `end_date`, `apply_to`, `applied_packages`, `applied_products`, `applied_services`, `is_Active` 
+                                                        FROM `promotion` 
+                                                        WHERE `is_Active` = 1 AND `end_date` >= CURDATE() AND `start_date` <= CURDATE()";
+                                            $coupon_result = $conn->query($coupon_sql);
+                                            if ($coupon_result->num_rows > 0) {
+                                                while ($coupon = $coupon_result->fetch_assoc()) {
+                                                    $coupon_code = htmlspecialchars($coupon['coupon_code']);
+                                                    $promo_name = htmlspecialchars($coupon['promo_name']);
+                                                    $description = htmlspecialchars($coupon['description']);
+                                                    $discount = htmlspecialchars($coupon['discount']);
+                                                    $type = $coupon['type'] === 'percentage' ? '%' : $symbol;
+                                                    ?>
+                                                    <div class="coupon-item mb-3 p-3 border rounded">
+                                                        <h6 class="mb-1"><?php echo $promo_name; ?> (<?php echo $coupon_code; ?>)</h6>
+                                                        <p class="mb-1 small text-muted"><?php echo $description; ?></p>
+                                                        <p class="mb-2 small">Discount: <?php echo $discount . $type; ?></p>
+                                                        <button type="button" class="btn btn-sm custom-pay-btn apply-coupon w-auto" data-coupon-code="<?php echo $coupon_code; ?>">Apply</button>
+                                                    </div>
+                                                    <?php
+                                                }
+                                            } else {
+                                                echo '<p class="text-muted">No active coupons available.</p>';
+                                            }
+                                            ?>
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
                             <p class="text-muted fw-medium mb-3">How would you like to make the payment? <span class="text-danger-600">*</span></p>
 
                             <div class="d-flex flex-wrap gap-3 justify-content-start">
@@ -1139,6 +1214,32 @@
             }
         });
     });
+
+    document.addEventListener('DOMContentLoaded', function () {
+        // Handle Apply Coupon button clicks
+        document.querySelectorAll('.apply-coupon').forEach(button => {
+            button.addEventListener('click', function () {
+                const couponCode = this.getAttribute('data-coupon-code');
+                const couponInput = document.getElementById('coupon_code');
+                couponInput.value = couponCode;
+
+                // Close the modal
+                const modal = bootstrap.Modal.getInstance(document.getElementById('couponModal'));
+                modal.hide();
+
+                // Optionally, show a success message
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Coupon Applied',
+                    text: `Coupon code ${couponCode} has been applied.`,
+                    confirmButtonColor: '#fec700',
+                    timer: 2000,
+                    timerProgressBar: true
+                });
+            });
+        });
+    });
+
 </script>
 
 <?php include './partials/layouts/layoutBottom.php' ?>
