@@ -1,144 +1,89 @@
 <?php
+// promotion_crud.php
 include './partials/connection.php';
 
-ini_set('display_errors', 1);
-error_reporting(E_ALL);
-header('Content-Type: application/json');
+$action = isset($_REQUEST['action']) ? $_REQUEST['action'] : '';
 
-$action = $_POST['action'] ?? $_GET['action'] ?? '';
+function sanitize($data) {
+    return htmlspecialchars(strip_tags(trim($data)));
+}
 
 try {
-
-    // === CREATE PROMOTION ===
     if ($action === 'create') {
+        $promo_name = sanitize($_POST['promo_name']);
+        $coupon_code = sanitize($_POST['coupon_code']);
+        $description = sanitize($_POST['description']);
+        $discount = floatval($_POST['discount']);
+        $type = sanitize($_POST['type']);
+        $start_date = sanitize($_POST['start_date']);
+        $end_date = sanitize($_POST['end_date']);
+        $apply_to = sanitize($_POST['apply_to']);
+        $applied_packages = sanitize($_POST['applied_packages']);
+        $applied_products = sanitize($_POST['applied_products']);
+        $applied_services = sanitize($_POST['applied_services']);
+        $is_active = isset($_POST['is_Active']) ? 1 : 0;
 
-        $promo_name  = $_POST['promo_name'] ?? '';
-        $coupon_code  = $_POST['coupon_code'] ?? '';
-        $description = $_POST['description'] ?? '';
-        $discount    = $_POST['discount'] ?? 0;
-        $type        = $_POST['type'] ?? '';
-        $start_date  = $_POST['start_date'] ?? null;
-        $end_date    = $_POST['end_date'] ?? null;
-        $apply_to    = $_POST['apply_to'] ?? '';
-        $is_Active   = isset($_POST['is_Active']) ? 1 : 0;
+        $stmt = $conn->prepare("INSERT INTO promotion (promo_name, coupon_code, description, discount, type, start_date, end_date, apply_to, applied_packages, applied_products, applied_services, is_Active) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+        $stmt->bind_param("sssisssssssi", $promo_name, $coupon_code, $description, $discount, $type, $start_date, $end_date, $apply_to, $applied_packages, $applied_products, $applied_services, $is_active);
 
-        // ✅ Validation
-        if (empty($promo_name) || empty($discount) || empty($type)) {
-            echo json_encode(['status' => 'error', 'message' => 'Required fields are missing.']);
-            exit;
+        if ($stmt->execute()) {
+            echo json_encode(['status' => 'success', 'message' => 'Promotion created successfully']);
+        } else {
+            echo json_encode(['status' => 'error', 'message' => 'Failed to create promotion']);
         }
+        $stmt->close();
+    } elseif ($action === 'update') {
+        $id = intval($_POST['id']);
+        $promo_name = sanitize($_POST['promo_name']);
+        $coupon_code = sanitize($_POST['coupon_code']);
+        $description = sanitize($_POST['description']);
+        $discount = floatval($_POST['discount']);
+        $type = sanitize($_POST['type']);
+        $start_date = sanitize($_POST['start_date']);
+        $end_date = sanitize($_POST['end_date']);
+        $apply_to = sanitize($_POST['apply_to']);
+        $applied_packages = sanitize($_POST['applied_packages']);
+        $applied_products = sanitize($_POST['applied_products']);
+        $applied_services = sanitize($_POST['applied_services']);
+        $is_active = isset($_POST['is_Active']) ? 1 : 0;
 
-        $stmt = $conn->prepare("
-            INSERT INTO promotion (promo_name, coupon_code, description, discount, type, start_date, end_date, apply_to, is_Active)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-        ");
+        $stmt = $conn->prepare("UPDATE promotion SET promo_name = ?, coupon_code = ?, description = ?, discount = ?, type = ?, start_date = ?, end_date = ?, apply_to = ?, applied_packages = ?, applied_products = ?, applied_services = ?, is_Active = ? WHERE id = ?");
+        $stmt->bind_param("sssisssssssii", $promo_name, $coupon_code, $description, $discount, $type, $start_date, $end_date, $apply_to, $applied_packages, $applied_products, $applied_services, $is_active, $id);
 
-        if (!$stmt) {
-            echo json_encode(['status' => 'error', 'message' => 'Prepare failed: ' . $conn->error]);
-            exit;
+        if ($stmt->execute()) {
+            echo json_encode(['status' => 'success', 'message' => 'Promotion updated successfully']);
+        } else {
+            echo json_encode(['status' => 'error', 'message' => 'Failed to update promotion']);
         }
-
-        // discount may be DECIMAL or VARCHAR — adjust type if needed
-        $stmt->bind_param('sssdssssi', 
-            $promo_name, 
-            $coupon_code,
-            $description, 
-            $discount, 
-            $type, 
-            $start_date, 
-            $end_date, 
-            $apply_to, 
-            $is_Active
-        );
-
-        if (!$stmt->execute()) {
-            echo json_encode(['status' => 'error', 'message' => 'Execute failed: ' . $stmt->error]);
-            exit;
-        }
-
-        echo json_encode(['status' => 'success', 'message' => 'Promotion added successfully.']);
-        exit;
-    }
-
-    // === UPDATE PROMOTION ===
-    elseif ($action === 'update') {
-
-        $id          = $_POST['id'] ?? 0;
-        $promo_name  = $_POST['promo_name'] ?? '';
-        $coupon_code  = $_POST['coupon_code'] ?? '';
-        $description = $_POST['description'] ?? '';
-        $discount    = $_POST['discount'] ?? 0;
-        $type        = $_POST['type'] ?? '';
-        $start_date  = $_POST['start_date'] ?? null;
-        $end_date    = $_POST['end_date'] ?? null;
-        $apply_to    = $_POST['apply_to'] ?? '';
-        $is_Active   = isset($_POST['is_Active']) ? 1 : 0;
-
-        $stmt = $conn->prepare("
-            UPDATE promotion 
-            SET promo_name=?, coupon_code=?, description=?, discount=?, type=?, start_date=?, end_date=?, apply_to=?, is_Active=? 
-            WHERE id=?
-        ");
-
-        if (!$stmt) {
-            echo json_encode(['status' => 'error', 'message' => 'Prepare failed: ' . $conn->error]);
-            exit;
-        }
-
-        $stmt->bind_param('sssdssssii', 
-            $promo_name, 
-            $coupon_code,
-            $description, 
-            $discount, 
-            $type, 
-            $start_date, 
-            $end_date, 
-            $apply_to, 
-            $is_Active, 
-            $id
-        );
-
-        if (!$stmt->execute()) {
-            echo json_encode(['status' => 'error', 'message' => 'Execute failed: ' . $stmt->error]);
-            exit;
-        }
-
-        echo json_encode(['status' => 'success', 'message' => 'Promotion updated successfully.']);
-        exit;
-    }
-
-    // === DELETE PROMOTION ===
-    elseif ($action === 'delete') {
-
-        $id = $_POST['id'] ?? 0;
-
-        $stmt = $conn->prepare("DELETE FROM promotion WHERE id=?");
-        $stmt->bind_param('i', $id);
+        $stmt->close();
+    } elseif ($action === 'get' && isset($_GET['id'])) {
+        $id = intval($_GET['id']);
+        $stmt = $conn->prepare("SELECT * FROM promotion WHERE id = ?");
+        $stmt->bind_param("i", $id);
         $stmt->execute();
-
-        echo json_encode(['status' => 'success', 'message' => 'Promotion deleted successfully.']);
-        exit;
+        $result = $stmt->get_result();
+        if ($row = $result->fetch_assoc()) {
+            echo json_encode(['status' => 'success', 'data' => $row]);
+        } else {
+            echo json_encode(['status' => 'error', 'message' => 'Promotion not found']);
+        }
+        $stmt->close();
+    } elseif ($action === 'delete' && isset($_POST['id'])) {
+        $id = intval($_POST['id']);
+        $stmt = $conn->prepare("DELETE FROM promotion WHERE id = ?");
+        $stmt->bind_param("i", $id);
+        if ($stmt->execute()) {
+            echo json_encode(['status' => 'success', 'message' => 'Promotion deleted successfully']);
+        } else {
+            echo json_encode(['status' => 'error', 'message' => 'Failed to delete promotion']);
+        }
+        $stmt->close();
+    } else {
+        echo json_encode(['status' => 'error', 'message' => 'Invalid action or parameters']);
     }
-
-    // === GET SINGLE PROMOTION ===
-    elseif ($action === 'get') {
-
-        $id = $_GET['id'] ?? 0;
-        $stmt = $conn->prepare("SELECT * FROM promotion WHERE id=?");
-        $stmt->bind_param('i', $id);
-        $stmt->execute();
-        $result = $stmt->get_result()->fetch_assoc();
-
-        echo json_encode(['status' => 'success', 'data' => $result]);
-        exit;
-    }
-
-    else {
-        echo json_encode(['status' => 'error', 'message' => 'Invalid action.']);
-        exit;
-    }
-
 } catch (Exception $e) {
-    echo json_encode(['status' => 'error', 'message' => $e->getMessage()]);
+    echo json_encode(['status' => 'error', 'message' => 'An error occurred: ' . $e->getMessage()]);
 }
+
+$conn->close();
 ?>

@@ -660,6 +660,9 @@
                         <a href="subscription.php"><i class="ri-circle-fill circle-icon text-warning-600 w-auto"></i> Subscriptions</a>
                     </li>
                     <li>
+                        <a href="invoices.php"><i class="ri-circle-fill circle-icon text-warning-600 w-auto"></i> Invoice</a>
+                    </li>
+                    <li>
                         <a href="payment_history.php"><i class="ri-circle-fill circle-icon text-warning-600 w-auto"></i> Payment History</a>
                     </li>
                 </ul>

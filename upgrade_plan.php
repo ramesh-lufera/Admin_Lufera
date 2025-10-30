@@ -8,8 +8,6 @@
     $web_id = $_GET['web_id'];
     $duration_get = $_GET['duration'];
     
-    echo $duration_get;
-
     $result1 = $conn->query("SELECT symbol FROM currencies WHERE is_active = 1 LIMIT 1");
     $symbol = "$"; // default
     if ($row1 = $result1->fetch_assoc()) {

@@ -1,5 +1,4 @@
 <?php include './partials/layouts/layoutTop.php'; ?>
-
 <style>
     .form-group {
         margin-bottom: 24px !important;
@@ -186,6 +185,13 @@
     }
 </style>
 
+<div class="dashboard-main-body">
+    <div class="d-flex flex-wrap align-items-center gap-3 mb-24 justify-content-between">
+        <div class="d-flex align-self-end">
+            <a class="cursor-pointer fw-bold" onclick="history.back()"><span class="fa fa-arrow-left"></span>&nbsp; </a>     
+            <h6 class="fw-semibold mb-0">Web Development Client Onboarding Form</h6>
+        </div>
+
 <?php
     $session_user_id = $_SESSION['user_id'];
     $prod_id = intval($_GET['prod_id']);
@@ -209,30 +215,35 @@
         $template = $row['template'];   
     }
 
-    // Fetch all past records of this user
+    // Fetch all past records of this user that have a prefill_name
     $prevRecords = [];
-    $stmt = $conn->prepare("SELECT id, name FROM json WHERE user_id = ? AND template = ?");
+    $stmt = $conn->prepare(
+        "SELECT id, name, prefill_name 
+         FROM json 
+         WHERE user_id = ? AND template = ? AND prefill_name IS NOT NULL AND prefill_name != ''"
+    );
     $stmt->bind_param("is", $session_user_id, $template);
     $stmt->execute();
     $result = $stmt->get_result();
 
     while ($row = $result->fetch_assoc()) {
         $decoded = json_decode($row['name'], true);
-        if ($decoded && isset($decoded['bussiness_name']['value'])) { // Updated key
+        if ($decoded && isset($decoded['bussiness_name']['value'])) {
             $prevRecords[] = [
-                'id' => $row['id'],
-                'data' => $decoded
+                'id'          => $row['id'],
+                'data'        => $decoded,
+                'prefill_name'=> $row['prefill_name']
             ];
         }
     }
     $stmt->close();
+
     // Determine if admin/dev is viewing another user's data
     $target_user_id = $session_user_id;
 
     if (isset($_GET['id']) && in_array($session_user_id, [1, 2, 7])) {
         $website_id = intval($_GET['id']);
         
-        // Find the user_id from website table
         $stmt = $conn->prepare("SELECT user_id FROM websites WHERE id = ?");
         $stmt->bind_param("i", $website_id);
         $stmt->execute();
@@ -271,9 +282,9 @@
     $query->close();
 
     if (isset($_POST['save'])) {
-        $bussiness_name = $_POST['bussiness_name'] ?? ''; // Updated key
+        $bussiness_name = $_POST['bussiness_name'] ?? '';
         $industry_niche = $_POST['industry_niche'] ?? '';
-        $business_description = $_POST['business_description'] ?? ''; // Updated key
+        $business_description = $_POST['business_description'] ?? '';
         $target_audience = $_POST['target_audience'] ?? '';
 
         $existing_website = $_POST['existing_website'] ?? '';
@@ -300,21 +311,22 @@
         $contact_info = $_POST['contact_info'] ?? '';
         $communication_method = $_POST['communication_method'] ?? '';
 
+        // NEW: Prefill name
+        $allow_prefill = isset($_POST['allow_prefill']) && $_POST['allow_prefill'] === 'on';
+        $prefill_name = $allow_prefill ? ($_POST['prefill_name'] ?? '') : '';
+
         function createField($value) {
-            return [
-                'value' => $value,
-                'status' => 'pending'
-            ];
+            return ['value' => $value, 'status' => 'pending'];
         }
         
         $data = json_encode([
-            'bussiness_name' => createField($bussiness_name), // Updated key
+            'bussiness_name' => createField($bussiness_name),
             'industry_niche' => createField($industry_niche),
-            'business_description' => createField($business_description), // Updated key
+            'business_description' => createField($business_description),
             'target_audience' => createField($target_audience),
 
             'existing_website' => createField($existing_website),
-            'website_purpose' => createField(str_replace(' \/ ', '/', $website_purpose)), // Clean value
+            'website_purpose' => createField(str_replace(' \/ ', '/', $website_purpose)),
             'top_goals' => createField($top_goals),
 
             'has_logo' => createField($has_logo),
@@ -336,6 +348,9 @@
             'contact_name' => createField($contact_name),
             'contact_info' => createField($contact_info),
             'communication_method' => createField($communication_method),
+
+            // NEW
+            'prefill_name' => createField($prefill_name),
         ]);
 
         $website_id = isset($_GET['id']) ? intval($_GET['id']) : 0;
@@ -346,13 +361,13 @@
         $check->store_result();
 
         if ($check->num_rows > 0) {
-            $update = $conn->prepare("UPDATE json SET name = ? WHERE user_id = ? AND website_id = ? AND template = ?");
-            $update->bind_param("siis", $data, $user_id, $website_id, $template);
+            $update = $conn->prepare("UPDATE json SET name = ?, prefill_name = ? WHERE user_id = ? AND website_id = ? AND template = ?");
+            $update->bind_param("sssis", $data, $prefill_name, $user_id, $website_id, $template);
             $success = $update->execute();
             $update->close();
         } else {
-            $insert = $conn->prepare("INSERT INTO json (name, user_id, website_id, template) VALUES (?, ?, ?, ?)");
-            $insert->bind_param("siis", $data, $user_id, $website_id, $template);
+            $insert = $conn->prepare("INSERT INTO json (name, user_id, website_id, template, prefill_name) VALUES (?, ?, ?, ?, ?)");
+            $insert->bind_param("siiss", $data, $user_id, $website_id, $template, $prefill_name);
             $success = $insert->execute();
             $insert->close();
         }
@@ -372,7 +387,7 @@
     }
 
     if (!empty($prevRecords)): ?>
-        <div class="d-flex justify-content-center justify-content-md-end mt-3 me-md-5" style="margin-bottom:0;">
+        <div class="d-flex justify-content-center justify-content-md-end" style="margin-bottom:0;">
             <div class="p-3 rounded shadow-sm w-100 w-md-40" 
                 style="font-size: 0.85rem; background-color: #fffbea; max-width: 600px; text-align:left;">
                 <h6 class="fw-bold text-dark mb-3" style="font-size: 0.9rem;">
@@ -387,7 +402,7 @@
                                 data-record='<?php echo json_encode($record['data']); ?>'
                                 id="rec_<?php echo $record['id']; ?>">
                             <label for="rec_<?php echo $record['id']; ?>" class="form-check-label ms-1" style="font-size: 0.9rem;">
-                                <?php echo htmlspecialchars($record['data']['bussiness_name']['value']); ?>
+                                <?php echo htmlspecialchars($record['prefill_name']); ?>
                             </label>
                         </div>
                     <?php endforeach; ?>
@@ -409,7 +424,6 @@
         echo '<div class="form-group mb-4">';
         echo '<div class="d-flex align-items-start">';
 
-        // Admin checkbox
         if ($isAdmin) {
             echo '<div class="me-3 d-flex align-items-center pt-4">';
             echo '<input class="form-check-input bulk-approve-checkbox custom-checkbox custom-checkbox-yellow mt-0" type="checkbox" value="' . htmlspecialchars($fieldName) . '" id="chk_' . htmlspecialchars($fieldName) . '">';
@@ -418,7 +432,6 @@
 
         echo '<div class="flex-grow-1">';
 
-        // Label
         if ($label) {
             echo '<label for="' . $inputId . '" class="form-label">' . htmlspecialchars($label) . '</label>';
         }
@@ -426,17 +439,14 @@
         $styleClass = $status === 'approved' ? 'field-approved' : ($status === 'rejected' ? 'field-rejected' : '');
         echo '<div class="input-group">';
 
-        // === TEXT / EMAIL ===
         if ($type === 'text' || $type === 'email') {
             echo '<input type="' . $type . '" class="form-control w-85 ' . $styleClass . '" id="' . $inputId . '" name="' . htmlspecialchars($fieldName) . '" placeholder="' . htmlspecialchars($placeholder) . '" value="' . htmlspecialchars($val) . '" ' . $isReadonly . '>';
         }
 
-        // === TEXTAREA ===
         elseif ($type === 'textarea') {           
             echo '<textarea class="form-control w-85 ' . $styleClass . '" id="' . $inputId . '" name="' . htmlspecialchars($fieldName) . '" rows="3" placeholder="' . htmlspecialchars($placeholder) . '" ' . $isReadonly . '>' . htmlspecialchars($val) . '</textarea>';
         }
 
-        // === RADIO ===
         elseif ($type === 'radio') {
             foreach ($options as $option) {
                 $checked = ($val == $option) ? 'checked' : '';
@@ -447,7 +457,6 @@
             }
         }
 
-        // === CHECKBOX ===
         elseif ($type === 'checkbox') {
             $valArray = is_array($val) ? $val : explode(',', str_replace(' ', '', $val));
             foreach ($options as $option) {
@@ -459,7 +468,6 @@
             }
         }
 
-        // === FILE ===
         elseif ($type === 'file') {
             echo '<input type="file" class="form-control w-85 ' . $styleClass . '" id="' . $inputId . '" name="' . htmlspecialchars($fieldName) . '" ' . $isDisabled . '>';
 
@@ -477,12 +485,10 @@
             }
         }
 
-        // === DATE ===
         elseif ($type === 'date') {
             echo '<input type="' . $type . '" class="form-control w-85 ' . $styleClass . '" id="' . $inputId . '" name="' . htmlspecialchars($fieldName) . '" placeholder="' . htmlspecialchars($placeholder) . '" value="' . htmlspecialchars($val) . '" ' . $isReadonly . '>';
         }
     
-        // === SELECT ===
         elseif ($type === 'select') {
             echo '<select class="form-control w-85 h-auto ' . $styleClass . '" id="' . $inputId . '" name="' . htmlspecialchars($fieldName) . '" ' . $isDisabled . '>';
             echo '<option value="">-- Select an option --</option>';
@@ -493,36 +499,33 @@
             echo '</select>';
         }
 
-        // === Admin Buttons ===
         if ($isAdmin) {
             echo '<div class="btn-group mt-2 ms-1">';
-            echo '<button type="button" class="btn btn-sm edit-icon" style="background-color: #FEC700; color: black;" data-field="' . htmlspecialchars($fieldName) . '" title="Edit">&#9998;</button>';
-            echo '<button type="button" class="btn btn-sm update-icon d-none" style="background-color: #00B4D8; color: white;" data-field="' . htmlspecialchars($fieldName) . '" title="Update">&#128190;</button>';
-            echo '<button type="button" class="btn btn-success btn-sm approve-btn" data-field="' . htmlspecialchars($fieldName) . '" title="Approve">&#10004;</button>';
-            echo '<button type="button" class="btn btn-danger btn-sm reject-btn" data-field="' . htmlspecialchars($fieldName) . '" title="Reject">&#10006;</button>';
+            echo '<button type="button" class="btn btn-sm edit-icon" style="background-color: #FEC700; color: black;" data-field="' . htmlspecialchars($fieldName) . '" title="Edit">Edit</button>';
+            echo '<button type="button" class="btn btn-sm update-icon d-none" style="background-color: #00B4D8; color: white;" data-field="' . htmlspecialchars($fieldName) . '" title="Update">Update</button>';
+            echo '<button type="button" class="btn btn-success btn-sm approve-btn" data-field="' . htmlspecialchars($fieldName) . '" title="Approve">Approve</button>';
+            echo '<button type="button" class="btn btn-danger btn-sm reject-btn" data-field="' . htmlspecialchars($fieldName) . '" title="Reject">Reject</button>';
             echo '</div>';
         }
 
-        // === USER Rejected Fields – Show Edit Icon ===
         if (!$isAdmin && $status === 'rejected') {
             echo '<button type="button" class="input-group-text text-warning edit-btn ms-2" title="Edit"
                 data-field="' . htmlspecialchars($fieldName) . '"
                 data-type="' . htmlspecialchars($type) . '"
                 data-value="' . htmlspecialchars($dataValue) . '"
                 ' . $dataOptions . '>
-                &#9998;
+                Edit
             </button>';
         }
 
-        // === USER Approved Fields – Show Checkmark ===
         elseif (!$isAdmin && $status === 'approved') {
-            echo '<span class="input-group-text text-success">&#10004;</span>';
+            echo '<span class="input-group-text text-success">Approved</span>';
         }
 
-        echo '</div>'; // .input-group or after field
-        echo '</div>'; // .flex-grow-1
-        echo '</div>'; // .d-flex
-        echo '</div>'; // .form-group
+        echo '</div>';
+        echo '</div>';
+        echo '</div>';
+        echo '</div>';
     }
 
     if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['edit_field'])) {
@@ -572,7 +575,6 @@
             exit;
         }
 
-        // Fetch existing JSON
         $stmt = $conn->prepare("SELECT name FROM json WHERE website_id = ?");
         $stmt->bind_param("i", $website_id);
         $stmt->execute();
@@ -587,7 +589,6 @@
             exit;
         }
 
-        // === FILE upload ===
         if (!empty($_FILES['file'])) {
             $fileTmp = $_FILES['file']['tmp_name'];
             $fileName = basename($_FILES['file']['name']);
@@ -606,14 +607,12 @@
                 exit;
             }
         }
-        // === NORMAL text/radio/checkbox ===
         else {
             $value = $_POST['value'] ?? '';
             $decoded[$field]['value'] = $value;
             $decoded[$field]['status'] = 'pending';
         }
 
-        // Update JSON
         $updatedJson = json_encode($decoded);
         $updateStmt = $conn->prepare("UPDATE json SET name = ? WHERE website_id = ?");
         $updateStmt->bind_param("si", $updatedJson, $website_id);
@@ -624,11 +623,7 @@
         exit;
     }
 ?>
-
-<div class="dashboard-main-body">
-    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-24">
-        <h6 class="fw-semibold mb-0">Web Development Client Onboarding Form</h6>
-    </div>
+</div>
 
     <div class="card h-100 p-0 radius-12 overflow-hidden">               
         <div class="card-body p-40">
@@ -638,7 +633,6 @@
                     <div class="row no-gutters">
                         <div class="col-lg-12">
                             <div class="form-wizard">
-                                <!-- Progress Bar -->   
                                 <div class="progress mb-20">
                                     <div class="progress-bar progress-bar-striped progress-bar-animated bg-warning"
                                         role="progressbar"
@@ -705,8 +699,38 @@
                                         renderFieldExtended('contact_info', $savedData, $user_role, 'Email & Phone', '', 'text');
                                         renderFieldExtended('communication_method', $savedData, $user_role, 'Preferred Communication Method', '', 'select', ['email', 'whatsapp', 'phone', 'zoom']);
                                     ?>
+
+                                    <!-- NEW: Allow Prefill Data -->
+                                    <?php
+                                    if ($user_role != 1 && $user_role != 2) {
+                                    $prefillName = $savedData['prefill_name']['value'] ?? '';
+                                    $allowPrefill = !empty($prefillName);
+                                    ?>
+                                    <div class="mt-5 p-4">
+                                        <div class="form-check">
+                                            <input class="form-check-input mt-4 me-4" type="checkbox" id="allow_prefill" name="allow_prefill" <?= $allowPrefill ? 'checked' : '' ?>>
+                                            <label class="form-check-label fw-bold" for="allow_prefill">
+                                                Allow users to save prefill data
+                                            </label>
+                                        </div>
+
+                                        <div id="prefill_name_wrapper" class="mt-3" style="display:<?= $allowPrefill ? 'block' : 'none' ?>;">
+                                            <?php
+                                            renderFieldExtended(
+                                                'prefill_name',
+                                                $savedData,
+                                                $user_role,
+                                                'Prefill name (will appear in “Fill Values From Previous Wizards”)',
+                                                '',
+                                                'text'
+                                            );
+                                        }
+                                            ?>
+                                        </div>
+                                    </div>
+
                                     <?php if (in_array($user_role, [8])): ?>
-                                        <input type="submit" name="save" class="lufera-bg bg-hover-warning-400 text-white text-md px-56 py-11 radius-8 m-auto d-block" value="Save" >
+                                        <input type="submit" name="save" class="lufera-bg bg-hover-warning-400 text-white text-md px-56 py-11 radius-8 m-auto d-block mt-4" value="Save" >
                                     <?php endif; ?>
                                 </form>
                             </div>
@@ -720,6 +744,16 @@
 </div>
 
 <script>
+    document.getElementById('allow_prefill').addEventListener('change', function () {
+        document.getElementById('prefill_name_wrapper').style.display = this.checked ? 'block' : 'none';
+        if (!this.checked) {
+            const inp = document.getElementById('field_prefill_name');
+            if (inp) inp.value = '';
+        }
+    });
+</script>
+
+<script>
     document.addEventListener('DOMContentLoaded', () => {
         let currentField = '';
         let currentType = 'text';
@@ -728,7 +762,6 @@
         const saveBtn = document.getElementById('saveEditBtn');
         const closeBtn = document.querySelector('.close-btn');
 
-        // Open modal
         document.querySelectorAll('.edit-btn').forEach(btn => {
             btn.addEventListener('click', () => {
                 currentField = btn.dataset.field;
@@ -736,7 +769,7 @@
                 const value = btn.dataset.value || '';
                 const options = btn.dataset.options ? btn.dataset.options.split(',') : [];
 
-                fieldContainer.innerHTML = ''; // Clear previous field content
+                fieldContainer.innerHTML = '';
 
                 if (currentType === 'textarea') {
                     fieldContainer.innerHTML = `<textarea id="modalInput" class="form-control" rows="4">${value}</textarea>`;
@@ -792,7 +825,6 @@
             });
         });
 
-        // Save edit
         saveBtn.addEventListener('click', () => {
             const formData = new FormData();
             formData.append('edit_field', currentField);
@@ -834,7 +866,6 @@
             });
         });
 
-        // Close modal
         closeBtn.addEventListener('click', () => modal.style.display = 'none');
         window.addEventListener('click', (e) => {
             if (e.target === modal) modal.style.display = 'none';
@@ -844,7 +875,7 @@
 
 <div id="editModal" class="modal" style="display:none;">
     <div class="modal-content p-20 rounded" style="background:#fff; max-width:500px; margin:auto;">
-        <span class="close-btn float-end" title="Close" style="cursor:pointer;">&times;</span>
+        <span class="close-btn float-end" title="Close" style="cursor:pointer;">×</span>
         <h5 class="mb-3">Edit Field</h5>
         <div id="editFieldContainer" class="mb-3"></div>
         <button type="button" class="btn lufera-bg btn-warning w-100" id="saveEditBtn">Save</button>
@@ -875,7 +906,6 @@
     $(document).ready(function () {
         const websiteId = new URLSearchParams(window.location.search).get('id');
 
-        // Single field approve/reject
         $('.approve-btn, .reject-btn').click(function () {
             const field = $(this).data('field');
             const status = $(this).hasClass('approve-btn') ? 'approved' : 'rejected';
@@ -890,7 +920,6 @@
             });
         });
 
-        // Bulk approve/reject
         function bulkUpdate(status) {
             const fields = $('.bulk-approve-checkbox:checked').map(function () {
                 return $(this).val();
@@ -911,13 +940,8 @@
             });
         }
 
-        $('#bulkApproveBtn').click(function () {
-            bulkUpdate('approved');
-        });
-
-        $('#bulkRejectBtn').click(function () {
-            bulkUpdate('rejected');
-        });
+        $('#bulkApproveBtn').click(function () { bulkUpdate('approved'); });
+        $('#bulkRejectBtn').click(function () { bulkUpdate('rejected'); });
     });
 </script>
 
@@ -925,29 +949,17 @@
     $(document).ready(function () {
         const websiteId = new URLSearchParams(window.location.search).get('id');
 
-        // Enable inline editing for all fields
         $('.edit-icon').click(function () {
             const field = $(this).data('field');
-
-            // Enable text/email/textarea
             const input = $('#field_' + field);
             input.prop('readonly', false).focus();
-
-            // Enable radio buttons
             $('input[type="radio"][name="' + field + '"]').prop('disabled', false);
-
-            // Enable checkboxes
             $('input[type="checkbox"][name="' + field + '[]"]').prop('disabled', false);
-
-            // Enable file input
             input.prop('disabled', false);
-
-            // Show update icon
             $('.update-icon[data-field="' + field + '"]').removeClass('d-none');
             $(this).addClass('d-none');
         });
 
-        // Handle update/save click
         $('.update-icon').click(function () {
             const field = $(this).data('field');
             const input = $('#field_' + field);
@@ -969,15 +981,11 @@
                     contentType: false,
                     success: function () {
                         Swal.fire('Success', 'File updated.', 'success').then(() => location.reload());
-                    },
-                    error: function () {
-                        Swal.fire('Success', 'File updated.', 'success').then(() => location.reload());
                     }
                 });
                 return;
             }
 
-            // Checkbox (multiple)
             if (input.length === 0 && $('input[name="' + field + '[]"]').length > 0) {
                 let selected = [];
                 $('input[name="' + field + '[]"]:checked').each(function () {
@@ -985,11 +993,9 @@
                 });
                 value = selected.join(',');
             }
-            // Radio
             else if ($('input[name="' + field + '"]:checked').length > 0) {
                 value = $('input[name="' + field + '"]:checked').val();
             }
-            // Text, email, textarea
             else {
                 value = input.val();
             }
@@ -1000,8 +1006,6 @@
                 value: value
             }, function (res) {
                 if (res === 'updated') {
-                    Swal.fire('Success', 'Field updated.', 'success').then(() => location.reload());
-                } else {
                     Swal.fire('Success', 'Field updated.', 'success').then(() => location.reload());
                 }
             }).fail(function () {
@@ -1014,8 +1018,8 @@
 <script>
     function updateProgressBar() {
         let filled = 0;
-        const totalFields = 22;
- 
+        const totalFields = 22; // +1 for prefill_name
+
         const bussiness_name = $('#field_bussiness_name').val()?.trim();
         if (bussiness_name) filled++;
 
@@ -1088,7 +1092,7 @@
  
     $(document).ready(function () {
         updateProgressBar();
-        $('#field_bussiness_name, #field_industry_niche, #field_existing_website, #field_business_description, #field_top_goals, #field_target_audience, #field_reference_websites, #field_page_count, #field_features, #field_domain_name, #field_budget_range, #field_contact_name, #field_contact_info')
+        $('#field_bussiness_name, #field_industry_niche, #field_existing_website, #field_business_description, #field_top_goals, #field_target_audience, #field_reference_websites, #field_page_count, #field_features, #field_domain_name, #field_budget_range, #field_contact_name, #field_contact_info, #field_prefill_name')
             .on('input', updateProgressBar);
         $('#field_website_purpose, #field_has_logo, #field_has_branding, #field_content_ready, #field_has_domain, #field_has_hosting, #field_platform_preference, #field_launch_date, #field_communication_method')
             .on('change', updateProgressBar);
@@ -1113,12 +1117,12 @@
         }
     });
 </script>
+
 <script>
 document.addEventListener('DOMContentLoaded', function () {
     document.querySelectorAll('.load-record').forEach(cb => {
         cb.addEventListener('change', function () {
             const form = document.getElementById('myForm');
-            // Uncheck all other checkboxes
             document.querySelectorAll('.load-record').forEach(other => {
                 if (other !== this) other.checked = false;
             });
@@ -1178,6 +1182,12 @@ document.addEventListener('DOMContentLoaded', function () {
                         opt.selected = (opt.value === data.communication_method.value);
                     });
                 }
+                if (data.prefill_name?.value) {
+                    const prefillInput = document.getElementById('field_prefill_name');
+                    if (prefillInput) prefillInput.value = data.prefill_name.value;
+                    document.getElementById('allow_prefill').checked = true;
+                    document.getElementById('prefill_name_wrapper').style.display = 'block';
+                }
                 if (typeof updateProgressBar === 'function') updateProgressBar();
             } else {
                 form.reset();
@@ -1188,6 +1198,7 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 });
 </script>
+
 <script>
 document.addEventListener('DOMContentLoaded', function () {
     const form = document.getElementById('myForm');
@@ -1198,4 +1209,5 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 });
 </script>
+
 <?php include './partials/layouts/layoutBottom.php'; ?>

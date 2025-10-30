@@ -92,10 +92,10 @@
                                 </td>
                             </tr>
                             <?php endwhile; ?>
-                            <?php else: ?>
+                            <!-- <?//php else: ?>
                             <tr>
-                                <td colspan="7" class="text-center">No packages found.</td>
-                            </tr>
+                                <td colspan="6" class="text-center">No packages found.</td>
+                            </tr> -->
                             <?php endif; ?>
                         </tbody>
                     </table>

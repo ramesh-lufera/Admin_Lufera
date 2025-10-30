@@ -1,4 +1,9 @@
 <?php
+$currentURL = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http");
+$currentURL .= "://".$_SERVER['HTTP_HOST'].$_SERVER['REQUEST_URI'];
+?>
+
+<?php
     function generatePaymentID($conn) {
         do {
             $randomNumber = str_pad(mt_rand(0, 99999999), 8, '0', STR_PAD_LEFT);
@@ -40,7 +45,7 @@
                         allowOutsideClick: false
                     }).then((result) => {
                         if (result.isConfirmed) {
-                            window.location.href('');
+                           window.location.href = window.location.href;
                         }
                     });
                 </script>";
