@@ -12,30 +12,53 @@
                 </script>';?>
 
 <?php include './partials/layouts/layoutTop.php' ?>
+
 <style>
-.invoice_table {
-    font-size:16px !important;
-    width:300px;
-}
+    .invoice_table {
+        font-size:16px !important;
+        width:300px;
+    }
 </style>
+
 <?php
     $company_sql = "select * from company";
     $company_fetch = $conn->query($company_sql);
     $company_row = $company_fetch->fetch_assoc();
 
     $invoice_id = $_GET['id'];
-    $invoice = "
-    SELECT
-        orders.*,
-        CASE 
-            WHEN orders.type = 'package' THEN package.package_name
-            WHEN orders.type = 'product' THEN products.name
-            ELSE orders.plan
-        END AS plan_name
-        FROM orders
-        LEFT JOIN package ON (orders.type = 'package' AND orders.plan = package.id)
-        LEFT JOIN products ON (orders.type = 'product' AND orders.plan = products.id)
-    where invoice_id = $invoice_id";
+    $type = $_GET['type'] ?? 'normal';
+
+     if ($type === 'renewal') {
+        // ✅ Fetch from renewal_invoices when renewal invoice
+        $invoice = "
+            SELECT
+                r.*,
+                CASE 
+                    WHEN r.type = 'package' THEN p.package_name
+                    WHEN r.type = 'product' THEN pr.name
+                    ELSE r.plan
+                END AS plan_name
+            FROM renewal_invoices r
+            LEFT JOIN package p ON (r.type = 'package' AND r.plan = p.id)
+            LEFT JOIN products pr ON (r.type = 'product' AND r.plan = pr.id)
+            WHERE r.invoice_id = '$invoice_id'
+        ";
+    } else {
+        $invoice = "
+            SELECT
+                orders.*,
+                CASE 
+                    WHEN orders.type = 'package' THEN package.package_name
+                    WHEN orders.type = 'product' THEN products.name
+                    ELSE orders.plan
+                END AS plan_name
+                FROM orders
+                LEFT JOIN package ON (orders.type = 'package' AND orders.plan = package.id)
+                LEFT JOIN products ON (orders.type = 'product' AND orders.plan = products.id)
+            where invoice_id = $invoice_id
+        ";
+    }
+
     $result = $conn->query($invoice);
     $row = $result->fetch_assoc();
     $user_id = $row['user_id'];
