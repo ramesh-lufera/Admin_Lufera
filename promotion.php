@@ -4,15 +4,15 @@ ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
 
 // Fetch lists
-$packagesQuery = $conn->query("SELECT id, title FROM package ORDER BY package_name ASC");
+$packagesQuery = $conn->query("SELECT * FROM package ORDER BY package_name ASC");
 $packages_list = [];
 while ($row = $packagesQuery->fetch_assoc()) $packages_list[] = $row;
 
-$productsQuery = $conn->query("SELECT id, title FROM products ORDER BY name ASC");
+$productsQuery = $conn->query("SELECT * FROM products ORDER BY name ASC");
 $products_list = [];
 while ($row = $productsQuery->fetch_assoc()) $products_list[] = $row;
 
-$addonsQuery = $conn->query("SELECT id, name FROM `add-on-service` ORDER BY name ASC");
+$addonsQuery = $conn->query("SELECT * FROM `add-on-service` ORDER BY name ASC");
 $addons_list = [];
 while ($row = $addonsQuery->fetch_assoc()) $addons_list[] = $row;
 ?>
@@ -154,38 +154,20 @@ while ($row = $addonsQuery->fetch_assoc()) $addons_list[] = $row;
                         <label for="end_date" class="form-label">End Date</label>
                         <input type="date" class="form-control" id="end_date" name="end_date">
                     </div>
-                    <!--<div class="mb-3">-->
-                    <!--    <label class="form-label">Applies To</label>-->
-                    <!--    <div class="d-flex flex-wrap">-->
-                    <!--        <div class="form-check me-3">-->
-                    <!--            <input class="form-check-input" type="checkbox" name="apply_to[]" value="Packages" id="apply_packages">-->
-                    <!--            <label class="form-check-label" for="apply_packages">Packages</label>-->
-                    <!--        </div>-->
-                    <!--        <div class="form-check me-3">-->
-                    <!--            <input class="form-check-input" type="checkbox" name="apply_to[]" value="Products" id="apply_products">-->
-                    <!--            <label class="form-check-label" for="apply_products">Products</label>-->
-                    <!--        </div>-->
-                    <!--        <div class="form-check me-3">-->
-                    <!--            <input class="form-check-input" type="checkbox" name="apply_to[]" value="Services" id="apply_services">-->
-                    <!--            <label class="form-check-label" for="apply_services">Services</label>-->
-                    <!--        </div>-->
-                    <!--    </div>-->
-                    <!--</div>-->
-
-<!-- Add-ons Section -->
+                    
                         <div class="mb-2">
                             <label class="form-label fw-semibold">Applies To</label>
                             <div class="d-flex mb-3"> 
                                 <div class="form-check d-flex align-items-center">
-                                    <input class="form-check-input toggle-section" type="checkbox" id="showPackages" data-target="#packagesSection" name="apply_to[]" value="Packages">
+                                    <input class="form-check-input toggle-section" type="checkbox" id="showPackages" data-target="#packagesSection" name="apply_to[]" value="package">
                                     <label class="form-check-label ms-2 mb-0" for="showPackages">Packages</label>
                                 </div>
                                 <div class="form-check d-flex align-items-center">
-                                    <input class="form-check-input toggle-section" type="checkbox" id="showProducts" data-target="#productsSection" name="apply_to[]" value="Products">
+                                    <input class="form-check-input toggle-section" type="checkbox" id="showProducts" data-target="#productsSection" name="apply_to[]" value="product">
                                     <label class="form-check-label ms-2 mb-0" for="showProducts">Products</label>
                                 </div>
                                 <div class="form-check d-flex align-items-center">
-                                    <input class="form-check-input toggle-section" type="checkbox" id="showAddons" data-target="#addonsSection" name="apply_to[]" value="Services">
+                                    <input class="form-check-input toggle-section" type="checkbox" id="showAddons" data-target="#addonsSection" name="apply_to[]" value="service">
                                     <label class="form-check-label ms-2 mb-0" for="showAddons">Add-on Services</label>
                                 </div>
                             </div>
@@ -197,7 +179,7 @@ while ($row = $addonsQuery->fetch_assoc()) $addons_list[] = $row;
                                     <?php foreach ($packages_list as $p): ?>
                                         <div class="form-check d-flex align-items-center me-3">
                                             <input class="form-check-input" type="checkbox" name="packages[]" value="<?php echo $p['id']; ?>" id="package_<?php echo $p['id']; ?>">
-                                            <label class="form-check-label ms-2 mb-0" for="package_<?php echo $p['id']; ?>"><?php echo htmlspecialchars($p['title']); ?></label>
+                                            <label class="form-check-label ms-2 mb-0" for="package_<?php echo $p['id']; ?>"><?php echo htmlspecialchars($p['package_name']); ?></label>
                                         </div>
                                     <?php endforeach; ?>
                                 </div>
@@ -229,10 +211,6 @@ while ($row = $addonsQuery->fetch_assoc()) $addons_list[] = $row;
                                 </div>
                             </div>
                         </div>
-
-
-
-
                     <div class="form-check">
                         <input class="form-check-input" type="checkbox" id="isActive" name="is_Active" checked>
                         <label class="form-check-label" for="isActive">Active</label>
@@ -264,49 +242,83 @@ $(document).ready(function() {
 document.addEventListener('DOMContentLoaded', function() {
 
     // EDIT Promotion
-    document.querySelectorAll('.edit-role-btn').forEach(button => {
-        button.addEventListener('click', function() {
-            const id = this.getAttribute('data-id');
-            fetch(`promotion_crud.php?action=get&id=${id}`, {
-                method: 'GET',
-                headers: { 'Accept': 'application/json' }
-            })
-            .then(res => res.json())
-            .then(data => {
-                if (data.status === 'success' && data.data) {
-                    document.getElementById('modalTitle').textContent = 'Edit Promotion';
-                    document.getElementById('submitPromotion').textContent = 'Update Promotion';
-                    document.getElementById('promotionId').value = data.data.id;
-                    document.getElementById('promotionName').value = data.data.promo_name || '';
-                    document.getElementById('promotionDescription').value = data.data.description || '';
-                    document.getElementById('couponCode').value = data.data.coupon_code || '';
-                    document.getElementById('promotionDiscount').value = data.data.discount || '';
-                    document.getElementById('promotionType').value = data.data.type || '';
-                    document.getElementById('start_date').value = data.data.start_date || '';
-                    document.getElementById('end_date').value = data.data.end_date || '';
-                    //document.getElementById('apply_to').value = data.data.apply_to || '';
-                    document.getElementById('isActive').checked = data.data.is_Active == 1;
-                    // Uncheck all first
-document.querySelectorAll('input[name="apply_to[]"]').forEach(cb => cb.checked = false);
+document.querySelectorAll('.edit-role-btn').forEach(button => {
+    button.addEventListener('click', function() {
+        const id = this.getAttribute('data-id');
+        fetch(`promotion_crud.php?action=get&id=${id}`, {
+            method: 'GET',
+            headers: { 'Accept': 'application/json' }
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.status === 'success' && data.data) {
+                document.getElementById('modalTitle').textContent = 'Edit Promotion';
+                document.getElementById('submitPromotion').textContent = 'Update Promotion';
+                document.getElementById('promotionId').value = data.data.id;
+                document.getElementById('promotionName').value = data.data.promo_name || '';
+                document.getElementById('promotionDescription').value = data.data.description || '';
+                document.getElementById('couponCode').value = data.data.coupon_code || '';
+                document.getElementById('promotionDiscount').value = data.data.discount || '';
+                document.getElementById('promotionType').value = data.data.type || '';
+                document.getElementById('start_date').value = data.data.start_date || '';
+                document.getElementById('end_date').value = data.data.end_date || '';
+                document.getElementById('isActive').checked = data.data.is_Active == 1;
 
-// If the database stores comma-separated applies (e.g. "Packages,Products"), split and check them
-if (data.data.apply_to) {
-    const applies = data.data.apply_to.split(',');
-    applies.forEach(val => {
-        const checkbox = document.querySelector(`input[name="apply_to[]"][value="${val.trim()}"]`);
-        if (checkbox) checkbox.checked = true;
-    });
-}
+                // Reset all checkboxes
+                document.querySelectorAll('input[name="apply_to[]"]').forEach(cb => cb.checked = false);
+                document.querySelectorAll('input[name="packages[]"]').forEach(cb => cb.checked = false);
+                document.querySelectorAll('input[name="products[]"]').forEach(cb => cb.checked = false);
+                document.querySelectorAll('input[name="addons[]"]').forEach(cb => cb.checked = false);
 
-                } else {
-                    Swal.fire('Error', data.message || 'Failed to fetch promotion data.', 'error');
+                // Populate apply_to checkboxes
+                if (data.data.apply_to) {
+                    const applies = data.data.apply_to.split(',');
+                    applies.forEach(val => {
+                        const checkbox = document.querySelector(`input[name="apply_to[]"][value="${val.trim()}"]`);
+                        if (checkbox) {
+                            checkbox.checked = true;
+                            // Show corresponding section
+                            const targetSection = document.querySelector(checkbox.dataset.target);
+                            if (targetSection) targetSection.classList.remove('d-none');
+                        }
+                    });
                 }
-            })
-            .catch(err => {
-                Swal.fire('Error', 'An error occurred while fetching promotion: ' + err.message, 'error');
-            });
+
+                // Populate packages checkboxes
+                if (data.data.applied_packages) {
+                    const packages = data.data.applied_packages.split(',');
+                    packages.forEach(val => {
+                        const checkbox = document.querySelector(`input[name="packages[]"][value="${val.trim()}"]`);
+                        if (checkbox) checkbox.checked = true;
+                    });
+                }
+
+                // Populate products checkboxes
+                if (data.data.applied_products) {
+                    const products = data.data.applied_products.split(',');
+                    products.forEach(val => {
+                        const checkbox = document.querySelector(`input[name="products[]"][value="${val.trim()}"]`);
+                        if (checkbox) checkbox.checked = true;
+                    });
+                }
+
+                // Populate addons checkboxes
+                if (data.data.applied_services) {
+                    const addons = data.data.applied_services.split(',');
+                    addons.forEach(val => {
+                        const checkbox = document.querySelector(`input[name="addons[]"][value="${val.trim()}"]`);
+                        if (checkbox) checkbox.checked = true;
+                    });
+                }
+            } else {
+                Swal.fire('Error', data.message || 'Failed to fetch promotion data.', 'error');
+            }
+        })
+        .catch(err => {
+            Swal.fire('Error', 'An error occurred while fetching promotion: ' + err.message, 'error');
         });
     });
+});
 
     // DELETE Promotion
     document.querySelectorAll('.remove-item-btn').forEach(button => {
@@ -342,41 +354,55 @@ if (data.data.apply_to) {
     });
 
     // SUBMIT (Create / Update)
-    document.getElementById('submitPromotion').addEventListener('click', function() {
-        const form = document.getElementById('promotionForm');
-        if (!form.checkValidity()) {
-            form.reportValidity();
-            return;
+document.getElementById('submitPromotion').addEventListener('click', function() {
+    const form = document.getElementById('promotionForm');
+    if (!form.checkValidity()) {
+        form.reportValidity();
+        return;
+    }
+
+    const formData = new FormData(form);
+    const id = document.getElementById('promotionId').value;
+
+    // Collect checked "apply_to[]" checkboxes into a single string
+    const applies = Array.from(document.querySelectorAll('input[name="apply_to[]"]:checked'))
+        .map(cb => cb.value)
+        .join(',');
+
+    // Collect checked packages, products, and addons into comma-separated strings
+    const packages = Array.from(document.querySelectorAll('input[name="packages[]"]:checked'))
+        .map(cb => cb.value)
+        .join(',');
+    const products = Array.from(document.querySelectorAll('input[name="products[]"]:checked'))
+        .map(cb => cb.value)
+        .join(',');
+    const addons = Array.from(document.querySelectorAll('input[name="addons[]"]:checked'))
+        .map(cb => cb.value)
+        .join(',');
+
+    // Append the collected values to formData
+    formData.append('apply_to', applies);
+    formData.append('applied_packages', packages);
+    formData.append('applied_products', products);
+    formData.append('applied_services', addons);
+    formData.append('action', id ? 'update' : 'create');
+
+    fetch('promotion_crud.php', {
+        method: 'POST',
+        body: new URLSearchParams(formData)
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.status === 'success') {
+            Swal.fire('Success', data.message, 'success').then(() => location.reload());
+        } else {
+            Swal.fire('Error', data.message, 'error');
         }
-
-        const formData = new FormData(form);
-const id = document.getElementById('promotionId').value;
-
-// Collect checked "apply_to[]" checkboxes into a single string
-const applies = Array.from(document.querySelectorAll('input[name="apply_to[]"]:checked'))
-    .map(cb => cb.value)
-    .join(',');
-
-formData.append('apply_to', applies);
-formData.append('action', id ? 'update' : 'create');
-
-fetch('promotion_crud.php', {
-    method: 'POST',
-    body: new URLSearchParams(formData)
-})
-
-        .then(res => res.json())
-        .then(data => {
-            if (data.status === 'success') {
-                Swal.fire('Success', data.message, 'success').then(() => location.reload());
-            } else {
-                Swal.fire('Error', data.message, 'error');
-            }
-        })
-        .catch(err => {
-            Swal.fire('Error', 'An error occurred while saving the promotion: ' + err.message, 'error');
-        });
+    })
+    .catch(err => {
+        Swal.fire('Error', 'An error occurred while saving the promotion: ' + err.message, 'error');
     });
+});
 
 });
 </script>

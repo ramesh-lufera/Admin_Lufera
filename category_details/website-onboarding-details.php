@@ -71,16 +71,16 @@
         $planId = $row['plan'] ?? null;
         $type = $row['type'] ?? null;
         $stmt->close();
-
         if (!empty($InvoiceId)) {
-            $orderStmt = $conn->prepare("SELECT * FROM orders WHERE invoice_id = ? AND user_id = ?");
-            $orderStmt->bind_param("ii", $InvoiceId, $UserId);
+            $orderStmt = $conn->prepare("SELECT * FROM orders WHERE invoice_id = ?");
+            $orderStmt->bind_param("i", $InvoiceId);
             $orderStmt->execute();
             $orderResult = $orderStmt->get_result();
             $orderRow = $orderResult->fetch_assoc();
             $order_id = $orderRow['id'];
             $payment_made = $orderRow['payment_made'];
             $balance_due = $orderRow['balance_due'];
+
             $orderStmt->close();
 
             if ($orderRow && $orderRow['status'] === 'Approved') {
@@ -430,9 +430,10 @@
     <div class="dashboard-main-body">
         <div class="mb-24 d-flex justify-content-between align-items-center">
             <div class="d-flex align-items-center gap-2">
+            <a class="cursor-pointer fw-bold" onclick="history.back()"><span class="fa fa-arrow-left"></span>&nbsp; </a> 
             <h6 class="fw-semibold mb-0"><?php echo htmlspecialchars($BusinessName); ?></h6>
             <span>|</span>
-            <iconify-icon icon="mdi:home-outline" class="text-lg icon-black" onclick="history.back()"></iconify-icon>
+            <iconify-icon icon="mdi:home-outline" class="text-lg icon-black"></iconify-icon>
             </div>
             <div class="d-flex gap-2">
             <?php if ($role == '1' || $role == '2'): 
@@ -445,7 +446,7 @@
             </button>
             <?php include 'renewal.php'; ?>
             <?php endif; ?>
-            <a href="upgrade_plan.php?web_id=<?= $websiteId ?>&prod_id=<?= $productId ?>"><button type="button" class="s btn btn-sm btn-upgrade">Upgrade</button></a>
+                <a href="upgrade_plan.php?web_id=<?= $websiteId ?>&prod_id=<?= $productId?>&duration=<?= $Duration ?>"><button type="button" class="btn btn-sm btn-upgrade">Upgrade</button></a>
                 <a href="./website-onboarding-wizard.php?id=<?= $websiteId ?>&prod_id=<?= $productId ?>"><button type="button" class="btn btn-sm btn-edit-website">Wizard</button></a>
             </div>
         </div>

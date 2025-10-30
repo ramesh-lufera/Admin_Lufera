@@ -655,6 +655,32 @@
                                             <button class="btn text-white btn-danger text-sm mb-10">View More</button>
                                         </a>
                                     </div>
+                                    <!-- New Order Approvals Section (Admin only) -->
+                                    <?php if ($role === '1' || $role === '2'): ?>
+                                        <div class="mt-20">
+                                            <h6 class="text-md mb-10">Order Approvals Management</h6>
+                                            <p class="text-muted">This section will display all order approval and rejected buttons for this section.</p>
+                                            <div class="d-flex gap-3 mt-10">
+                                                <!-- Approve Button -->
+                                                <form method="POST" style="display:inline;">
+                                                    <input type="hidden" name="approve_id" value="<?= $orderId; ?>">
+                                                    <button type="submit" class="btn btn-success text-white text-sm d-flex align-items-center"
+                                                        <?= ($row['status'] === 'Approved') ? 'disabled' : ''; ?>>
+                                                        <i class="fa fa-check me-2"></i> Approve
+                                                    </button>
+                                                </form>
+
+                                                <!-- Reject Button -->
+                                                <form method="POST" style="display:inline;">
+                                                    <input type="hidden" name="cancel_id" value="<?= $orderId; ?>">
+                                                    <button type="submit" class="btn btn-danger text-white text-sm d-flex align-items-center"
+                                                        <?= ($row['status'] === 'Cancelled') ? 'disabled' : ''; ?>>
+                                                        <i class="fa fa-times me-2"></i> Reject
+                                                    </button>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    <?php endif; ?>
                             </div>
                         <?php endwhile; ?>
                     <?php endif; ?>
@@ -852,6 +878,32 @@
                                             <button class="btn text-white btn-danger text-sm mb-10">View More</button>
                                         </a>
                                     </div>
+                                    <!-- New Order Approvals Section (Admin only) -->
+                                    <?php if ($role === '1' || $role === '2'): ?>
+                                        <div class="mt-20">
+                                            <h6 class="text-md mb-10">Order Approvals Management</h6>
+                                            <p class="text-muted">This section will display all order approval and rejected buttons for this section.</p>
+                                            <div class="d-flex gap-3 mt-10">
+                                                <!-- Approve Button -->
+                                                <form method="POST" style="display:inline;">
+                                                    <input type="hidden" name="approve_id" value="<?= $orderId; ?>">
+                                                    <button type="submit" class="btn btn-success text-white text-sm d-flex align-items-center"
+                                                        <?= ($row['status'] === 'Approved') ? 'disabled' : ''; ?>>
+                                                        <i class="fa fa-check me-2"></i> Approve
+                                                    </button>
+                                                </form>
+
+                                                <!-- Reject Button -->
+                                                <form method="POST" style="display:inline;">
+                                                    <input type="hidden" name="cancel_id" value="<?= $orderId; ?>">
+                                                    <button type="submit" class="btn btn-danger text-white text-sm d-flex align-items-center"
+                                                        <?= ($row['status'] === 'Cancelled') ? 'disabled' : ''; ?>>
+                                                        <i class="fa fa-times me-2"></i> Reject
+                                                    </button>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    <?php endif; ?>
                             </div>
                         <?php endwhile; ?>
                     <?php endif; ?>
