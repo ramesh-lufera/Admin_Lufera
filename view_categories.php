@@ -14,9 +14,11 @@
 
 <?php 
     include './partials/layouts/layoutTop.php';
+
     ini_set('display_errors', 1);
     ini_set('display_startup_errors', 1);
     error_reporting(E_ALL);
+    
     $Id = $_SESSION['user_id'];
     $query = "SELECT * FROM categories ORDER BY created_at DESC";
     $result = mysqli_query($conn, $query);
@@ -506,9 +508,9 @@
 
                                             
 
-                                <!-- \$startDate = new DateTime(\$CreatedAt);
-                                \$endDate = (clone \$startDate)->modify("+{\$Duration}");
-                                \$Validity = \$startDate->format("d-m-Y") . " to " . \$endDate->format("d-m-Y"); -->
+                                // \$startDate = new DateTime(\$CreatedAt);
+                                // \$endDate = (clone \$startDate)->modify("+{\$Duration}");
+                                // \$Validity = \$startDate->format("d-m-Y") . " to " . \$endDate->format("d-m-Y"); 
 
                                 \$startDate = new DateTime(\$CreatedAt);
                                 \$endDate = (clone \$startDate)->modify("+{\$Duration}");
@@ -548,8 +550,10 @@
                                         </div>
                                         </div>
                                         <div class="manage-btn-wrapper">
-                                        <a href="$manageLink?website_id=<?php echo (int)\$site['web_id']; ?>&product_id=<?php echo (int)\$site['product_id']; ?>&type=<?php echo \$site['type']; ?>" class="dashboard-btn">Manage</a>
-
+                                            <?php if (\$role == '1' || \$role == '2' || \$role == '7') { ?>
+                                                <p class="mb-0"><?php echo htmlspecialchars(\$site['business_name']); ?></p>
+                                            <?php } ?>
+                                            <a href="$manageLink?website_id=<?php echo (int)\$site['web_id']; ?>&product_id=<?php echo (int)\$site['product_id']; ?>&type=<?php echo \$site['type']; ?>" class="dashboard-btn">Manage</a>
                                         </div>
                                     </div>
                                     <?php endforeach; ?>

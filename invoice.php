@@ -17,10 +17,13 @@
 
 <?php 
     include './partials/layouts/layoutTop.php';
-    ini_set('display_errors', 1);
-    ini_set('display_startup_errors', 1);
-    error_reporting(E_ALL);
+
+    // ini_set('display_errors', 1);
+    // ini_set('display_startup_errors', 1);
+    // error_reporting(E_ALL);
+
     require_once __DIR__ . '/vendor/autoload.php';
+
     use Dotenv\Dotenv;
     use PHPMailer\PHPMailer\PHPMailer;
     use PHPMailer\PHPMailer\Exception;
@@ -331,32 +334,93 @@
         }
     }
     
-    // JOIN orders with users
+    // // JOIN orders with users
+    // $query = "
+    //     SELECT
+    //         orders.*,
+    //         users.username,
+    //         users.first_name,
+    //         users.last_name,
+    //         users.photo,
+    //         CASE 
+    //             WHEN orders.type = 'package' THEN package.package_name
+    //             WHEN orders.type = 'product' THEN products.name
+    //             ELSE orders.plan
+    //         END AS plan_name
+    //     FROM orders
+    //     INNER JOIN users ON orders.user_id = users.id
+    //     LEFT JOIN package ON (orders.type = 'package' AND orders.plan = package.id)
+    //     LEFT JOIN products ON (orders.type = 'product' AND orders.plan = products.id)
+    // ";
+
+    // JOIN orders + renewal_invoices with users + websites
     $query = "
         SELECT
-            orders.*,
-            users.username,
-            users.first_name,
-            users.last_name,
-            users.photo,
-            CASE 
-                WHEN orders.type = 'package' THEN package.package_name
-                WHEN orders.type = 'product' THEN products.name
-                ELSE orders.plan
-            END AS plan_name
-        FROM orders
-        INNER JOIN users ON orders.user_id = users.id
-        LEFT JOIN package ON (orders.type = 'package' AND orders.plan = package.id)
-        LEFT JOIN products ON (orders.type = 'product' AND orders.plan = products.id)
+            combined.*,
+            combined.username,
+            combined.first_name,
+            combined.last_name,
+            combined.photo,
+            combined.plan_name,
+            combined.expired_at
+        FROM (
+            SELECT
+                orders.*,
+                users.username,
+                users.first_name,
+                users.last_name,
+                users.photo,
+                websites.expired_at,
+                CASE 
+                    WHEN orders.type = 'package' THEN package.package_name
+                    WHEN orders.type = 'product' THEN products.name
+                    ELSE orders.plan
+                END AS plan_name
+            FROM orders
+            INNER JOIN users ON orders.user_id = users.id
+            LEFT JOIN package ON (orders.type = 'package' AND orders.plan = package.id)
+            LEFT JOIN products ON (orders.type = 'product' AND orders.plan = products.id)
+            LEFT JOIN websites ON orders.invoice_id = websites.invoice_id
+
+            UNION ALL
+
+            SELECT
+                renewal_invoices.*,
+                users.username,
+                users.first_name,
+                users.last_name,
+                users.photo,
+                websites.expired_at,
+                CASE 
+                    WHEN renewal_invoices.type = 'package' THEN package.package_name
+                    WHEN renewal_invoices.type = 'product' THEN products.name
+                    ELSE renewal_invoices.plan
+                END AS plan_name
+            FROM renewal_invoices
+            INNER JOIN users ON renewal_invoices.user_id = users.id
+            LEFT JOIN package ON (renewal_invoices.type = 'package' AND renewal_invoices.plan = package.id)
+            LEFT JOIN products ON (renewal_invoices.type = 'product' AND renewal_invoices.plan = products.id)
+            LEFT JOIN websites ON (renewal_invoices.user_id = websites.user_id AND renewal_invoices.plan = websites.plan)
+        ) AS combined
     ";
+
+    // if ($role !== '1' && $role !== '2') {
+    //     if (!empty($UserId)) {
+    //         $query .= " WHERE orders.user_id = '$Id'";
+    //     } else {
+    //         $query .= " WHERE 1 = 0";
+    //     }
+    // }
 
     if ($role !== '1' && $role !== '2') {
         if (!empty($UserId)) {
-            $query .= " WHERE orders.user_id = '$Id'";
+            $query .= " WHERE combined.user_id = '$Id'";
         } else {
             $query .= " WHERE 1 = 0";
         }
     }
+
+    $query .= " ORDER BY combined.created_on DESC";
 
     $result = mysqli_query($conn, $query);
 ?>
@@ -436,9 +500,32 @@
                                 <?php } }?>
                             </td>
                             <td class="text-center">
+                                <?php
+                                    $invoice_id = $row['invoice_id'];
+                                    $expiredAt = isset($row['expired_at']) ? $row['expired_at'] : null;
+                                    $todayDate = date('Y-m-d');
+
+                                    // // Determine link type based on expiry
+                                    // if (!empty($expiredAt) && $todayDate > $expiredAt) {
+                                    //     $type = 'renewal';
+                                    // } else {
+                                    //     $type = 'normal';
+                                    // }
+
+                                    $checkOrder = mysqli_query($conn, "SELECT id FROM orders WHERE invoice_id = '$invoice_id' LIMIT 1");
+
+                                    if (mysqli_num_rows($checkOrder) > 0) {
+                                        // invoice_id exists in orders → normal
+                                        $type = 'normal';
+                                    } else {
+                                        // invoice_id not found → renewal
+                                        $type = 'renewal';
+                                    }
+                                ?>
                                 <a href="order-summary.php?id=<?php echo $row['invoice_id']; ?>" class="fa fa-eye view-user-btn bg-info-focus text-info-600 bg-hover-info-200 fw-medium w-32-px h-32-px d-inline-flex justify-content-center align-items-center rounded-circle">
                                 </a>
-                                <a href="invoice-preview.php?id=<?php echo $row['invoice_id']; ?>" class="fa fa-file view-user-btn bg-warning-focus text-warning-600 bg-hover-warning-200 fw-medium w-32-px h-32-px d-inline-flex justify-content-center align-items-center rounded-circle">
+                                <!-- <a href="invoice-preview.php?id=<?php echo $row['invoice_id']; ?>" class="fa fa-file view-user-btn bg-warning-focus text-warning-600 bg-hover-warning-200 fw-medium w-32-px h-32-px d-inline-flex justify-content-center align-items-center rounded-circle"> -->
+                                <a href="invoice-preview.php?id=<?php echo $invoice_id; ?>&type=<?php echo $type; ?>" class="fa fa-file view-user-btn bg-warning-focus text-warning-600 bg-hover-warning-200 fw-medium w-32-px h-32-px d-inline-flex justify-content-center align-items-center rounded-circle">
                                 </a>
                                 <!-- <?php if (($role === '1' || $role === '2') && $row['status'] === 'Pending'){ ?>
                                     <form method="POST" style="display:inline;">
