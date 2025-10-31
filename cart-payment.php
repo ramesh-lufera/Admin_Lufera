@@ -984,13 +984,21 @@
                                                     $promo_name = htmlspecialchars($coupon['promo_name']);
                                                     $description = htmlspecialchars($coupon['description']);
                                                     $discount = htmlspecialchars($coupon['discount']);
-                                                    $type = $coupon['type'] === 'percentage' ? '%' : $symbol;
+                                                    $type = htmlspecialchars($coupon['type']);
                                                     ?>
                                                     <div class="coupon-item mb-3 p-3 border rounded">
                                                         <h6 class="mb-1"><?php echo $promo_name; ?> (<?php echo $coupon_code; ?>)</h6>
                                                         <p class="mb-1 small text-muted"><?php echo $description; ?></p>
                                                         <p class="mb-2 small">Discount: <?php echo $discount . $type; ?></p>
-                                                        <button type="button" class="btn btn-sm custom-pay-btn apply-coupon w-auto" data-coupon-code="<?php echo $coupon_code; ?>">Apply</button>
+                                                        <!-- <button type="button" class="btn btn-sm custom-pay-btn apply-coupon w-auto" data-coupon-code="<?php echo $coupon_code; ?>">Apply</button> -->
+                                                        <button type="button" class="btn btn-sm btn-warning apply-coupon"
+                                                        data-coupon-code="<?php echo htmlspecialchars($coupon_code); ?>"
+                                                        data-discount-value="<?php echo htmlspecialchars($discount); ?>"
+                                                        data-discount-type="<?php echo htmlspecialchars($type); ?>"
+                                                        >
+                                                        Apply
+                                                        </button>
+
                                                     </div>
                                                     <?php
                                                 }
@@ -1239,31 +1247,98 @@
         });
     });
 
-    document.addEventListener('DOMContentLoaded', function () {
-        // Handle Apply Coupon button clicks
-        document.querySelectorAll('.apply-coupon').forEach(button => {
-            button.addEventListener('click', function () {
-                const couponCode = this.getAttribute('data-coupon-code');
-                const couponInput = document.getElementById('coupon_code');
-                couponInput.value = couponCode;
+</script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const symbol = '<?php echo htmlspecialchars($symbol); ?>';
+    const totalCell = document.querySelector('.plan-details-table tr:last-child td.text-end');
+    const totalValueInitial = parseFloat(<?php echo json_encode($total_price); ?>);
+    const gstValue = parseFloat(<?php echo json_encode($gst); ?>);
+    const tableBody = document.querySelector('.plan-details-table tbody');
 
-                // Close the modal
-                const modal = bootstrap.Modal.getInstance(document.getElementById('couponModal'));
-                modal.hide();
+    // Find GST row safely
+    let gstRow = null;
+    document.querySelectorAll('.plan-details-table tbody tr').forEach(tr => {
+        const firstTd = tr.querySelector('td');
+        if (firstTd && firstTd.textContent.trim() === 'Tax (GST 18%)') {
+            gstRow = tr;
+        }
+    });
 
-                // Optionally, show a success message
-                Swal.fire({
-                    icon: 'success',
-                    title: 'Coupon Applied',
-                    text: `Coupon code ${couponCode} has been applied.`,
-                    confirmButtonColor: '#fec700',
-                    timer: 2000,
-                    timerProgressBar: true
-                });
+    let currentDiscountRow = null;
+
+    document.querySelectorAll('.apply-coupon').forEach(button => {
+        button.addEventListener('click', function () {
+            const couponCode = this.getAttribute('data-coupon-code');
+            const discountValueRaw = parseFloat(this.getAttribute('data-discount-value')) || 0;
+            const discountType = this.getAttribute('data-discount-type') || ''; 
+            // Expected values: "Flat Amount" or "Percentage"
+
+            const couponInput = document.getElementById('coupon_code');
+            couponInput.value = couponCode;
+
+            // Hide modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById('couponModal'));
+            modal.hide();
+
+            // Calculate discount based on type
+            let discountValue = 0;
+            if (discountType.toLowerCase().includes('percentage')) {
+                discountValue = totalValueInitial * discountValueRaw / 100;
+            } else if (discountType.toLowerCase().includes('flat')) {
+                discountValue = discountValueRaw;
+            } else {
+                discountValue = 0; // fallback
+            }
+
+            // Remove previous discount row if any
+            if (currentDiscountRow) currentDiscountRow.remove();
+
+            // Insert new discount row below GST
+            const discountRow = document.createElement('tr');
+            discountRow.innerHTML = `
+                <td>Discount (${couponCode})</td>
+                <td class="text-end text-success">- ${symbol}${discountValue.toFixed(2)}</td>
+            `;
+            if (gstRow) gstRow.insertAdjacentElement('afterend', discountRow);
+            else tableBody.appendChild(discountRow);
+
+            currentDiscountRow = discountRow;
+
+            // Update total
+            const newTotal = totalValueInitial - discountValue;
+            totalCell.textContent = symbol + newTotal.toFixed(2);
+
+            // Update hidden inputs for backend
+            let discountInput = document.querySelector('input[name="discount_value"]');
+            let finalTotalInput = document.querySelector('input[name="final_total"]');
+            if (!discountInput) {
+                discountInput = document.createElement('input');
+                discountInput.type = 'hidden';
+                discountInput.name = 'discount_value';
+                document.querySelector('form').appendChild(discountInput);
+            }
+            if (!finalTotalInput) {
+                finalTotalInput = document.createElement('input');
+                finalTotalInput.type = 'hidden';
+                finalTotalInput.name = 'final_total';
+                document.querySelector('form').appendChild(finalTotalInput);
+            }
+            discountInput.value = discountValue.toFixed(2);
+            finalTotalInput.value = newTotal.toFixed(2);
+
+            // SweetAlert confirmation
+            Swal.fire({
+                icon: 'success',
+                title: 'Coupon Applied',
+                html: `Discount of <b>${symbol}${discountValue.toFixed(2)}</b> applied!<br>New total: <b>${symbol}${newTotal.toFixed(2)}</b>`,
+                confirmButtonColor: '#fec700',
+                timer: 2500,
+                timerProgressBar: true
             });
         });
     });
-
+});
 </script>
 
 <?php include './partials/layouts/layoutBottom.php' ?>
