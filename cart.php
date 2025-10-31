@@ -146,7 +146,17 @@
         if (!empty($get_packages)) {
             $package_ids = explode(",", $get_packages);
             $ids_str = implode(",", array_map('intval', $package_ids));
-            $sql_packages = "SELECT id, package_name, price FROM package WHERE id IN ($ids_str)";
+            // Get package name from package table and price/duration from durations table (first matching row)
+            $sql_packages = "
+                SELECT 
+                    p.id, 
+                    p.package_name,
+                    (SELECT d.price FROM durations d WHERE d.package_id = p.id ORDER BY d.id ASC LIMIT 1) AS price,
+                    (SELECT d.duration FROM durations d WHERE d.package_id = p.id ORDER BY d.id ASC LIMIT 1) AS duration,
+                    p.created_at
+                FROM package p
+                WHERE p.id IN ($ids_str)
+            ";
             $result_packages = $conn->query($sql_packages);
             while ($row = $result_packages->fetch_assoc()) {
                 $selected_packages[] = $row;
@@ -184,7 +194,24 @@
                 </div>
                 <div class="card-body">
                     <?php foreach($package_ids as $pid):
-                        $sql = "SELECT package_name, price, duration, created_at FROM package WHERE id = $pid";
+                        $pid = (int)$pid; // sanitize
+                        $sql = "
+                            SELECT 
+                                p.package_name,
+                                COALESCE(d.price, 0) AS price,
+                                COALESCE(d.duration, '') AS duration,
+                                p.created_at
+                            FROM package p
+                            LEFT JOIN (
+                                SELECT package_id, price, duration
+                                FROM durations
+                                WHERE package_id = $pid
+                                ORDER BY id ASC
+                                LIMIT 1
+                            ) d ON d.package_id = p.id
+                            WHERE p.id = $pid
+                            LIMIT 1
+                        ";
                         $res = $conn->query($sql);
                         $p = $res->fetch_assoc();
                     ?>
