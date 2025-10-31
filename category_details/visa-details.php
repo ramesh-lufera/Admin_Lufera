@@ -74,8 +74,8 @@
     $stmt->close();
 
     if (!empty($InvoiceId)) {
-        $orderStmt = $conn->prepare("SELECT * FROM orders WHERE invoice_id = ? AND user_id = ?");
-        $orderStmt->bind_param("ii", $InvoiceId, $UserId);
+        $orderStmt = $conn->prepare("SELECT * FROM orders WHERE invoice_id = ?");
+        $orderStmt->bind_param("i", $InvoiceId);
         $orderStmt->execute();
         $orderResult = $orderStmt->get_result();
         $orderRow = $orderResult->fetch_assoc();
