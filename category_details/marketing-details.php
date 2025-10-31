@@ -203,7 +203,15 @@
             // $currentPrice = "N/A";
             // if (!empty($planId) && !empty($type)) {
             //     if ($type == 'package') {
-            //         $priceStmt = $conn->prepare("SELECT price FROM package WHERE id = ?");
+            //         // ✅ Changed: Get price from durations table (joined with package)
+            //         $priceStmt = $conn->prepare("
+            //             SELECT d.price 
+            //             FROM durations d
+            //             INNER JOIN package p ON d.package_id = p.id
+            //             WHERE p.id = ?
+            //             ORDER BY d.id ASC 
+            //             LIMIT 1
+            //         ");
             //     } elseif ($type == 'product') {
             //         $priceStmt = $conn->prepare("SELECT price FROM products WHERE id = ?");
             //     }
@@ -247,6 +255,74 @@
             //     $monthlyPriceFormatted = number_format($monthlyPrice, 2);
             //     $showMo = false; // no /mo
             // }
+
+            // // --- STEP 1: Get current website info ---
+            // $websiteQuery = $conn->prepare("SELECT type, cat_id, plan FROM websites WHERE id = ?");
+            // $websiteQuery->bind_param("i", $websiteId);
+            // $websiteQuery->execute();
+            // $websiteResult = $websiteQuery->get_result();
+            // $website = $websiteResult->fetch_assoc();
+            // $websiteQuery->close();
+
+            // $type = $website['type'];
+            // $catId = $website['cat_id'];
+            // $planId = $website['plan'];
+
+            // // --- STEP 2: Get plan title of the current website's plan ---
+            // if ($type === 'package') {
+            //     $stmt = $conn->prepare("SELECT title FROM package WHERE id = ?");
+            // } else { // product
+            //     $stmt = $conn->prepare("SELECT title FROM products WHERE id = ?");
+            // }
+            // $stmt->bind_param("i", $planId);
+            // $stmt->execute();
+            // $res = $stmt->get_result();
+            // $currentPlanTitle = $res->fetch_assoc()['title'] ?? '';
+            // $stmt->close();
+
+            // // --- STEP 3: Get all records for durations (new structure) ---
+            // $durationPrices = [];
+
+            // if ($type === 'package') {
+            //     // ✅ Fetch duration, price, preview_price
+            //     $recordsQuery = $conn->prepare("
+            //         SELECT d.duration, d.price, d.preview_price
+            //         FROM durations d
+            //         INNER JOIN package p ON d.package_id = p.id
+            //         WHERE p.cat_id = ? AND p.title = ?
+            //         ORDER BY LENGTH(d.duration), d.duration
+            //     ");
+            // } else { // product
+            //     $recordsQuery = $conn->prepare("
+            //         SELECT duration, price AS price, preview_price AS preview_price
+            //         FROM products
+            //         WHERE cat_id = ? AND title = ?
+            //         ORDER BY LENGTH(duration), duration
+            //     ");
+            // }
+
+            // $recordsQuery->bind_param("is", $catId, $currentPlanTitle);
+            // $recordsQuery->execute();
+            // $recordsResult = $recordsQuery->get_result();
+
+            // $durations = [];
+            // while ($row = $recordsResult->fetch_assoc()) {
+            //     $durations[] = trim($row['duration']);
+            //     $durationPrices[trim(strtolower($row['duration']))] = [
+            //         'price' => (float)$row['price'],
+            //         'preview_price' => (float)$row['preview_price']
+            //     ];
+            // }
+            // $recordsQuery->close();
+
+            // // --- STEP 4: Fallback to current website duration if none found ---
+            // if (empty($durations)) {
+            //     $durations[] = '1 Year';
+            //     $durationPrices['1 year'] = ['price' => $currentPrice, 'preview_price' => $currentPrice * 1.1];
+            // }
+
+            // // ✅ Remove all “monthly” calculations
+            // $showMo = false;
 
             // For Renewal..
             // === Get current plan price ===
@@ -343,8 +419,9 @@
                     ORDER BY LENGTH(d.duration), d.duration
                 ");
             } else { // product
+                // ✅ Removed preview_price — not available in products table
                 $recordsQuery = $conn->prepare("
-                    SELECT duration, price AS price, preview_price AS preview_price
+                    SELECT duration, price
                     FROM products
                     WHERE cat_id = ? AND title = ?
                     ORDER BY LENGTH(duration), duration
@@ -358,10 +435,20 @@
             $durations = [];
             while ($row = $recordsResult->fetch_assoc()) {
                 $durations[] = trim($row['duration']);
-                $durationPrices[trim(strtolower($row['duration']))] = [
-                    'price' => (float)$row['price'],
-                    'preview_price' => (float)$row['preview_price']
-                ];
+                $durationKey = trim(strtolower($row['duration']));
+
+                if ($type === 'package') {
+                    $durationPrices[$durationKey] = [
+                        'price' => (float)$row['price'],
+                        'preview_price' => (float)$row['preview_price']
+                    ];
+                } else {
+                    // ✅ Products table has no preview_price, so fallback to price
+                    $durationPrices[$durationKey] = [
+                        'price' => (float)$row['price'],
+                        'preview_price' => (float)$row['price']
+                    ];
+                }
             }
             $recordsQuery->close();
 

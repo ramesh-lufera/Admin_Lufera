@@ -1,7 +1,11 @@
 <?php include './partials/layouts/layoutTop.php'; 
+
 ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
-error_reporting(E_ALL);?>
+error_reporting(E_ALL);
+
+?>
+
 <style>
     .form-check {
         padding: 10px;
@@ -34,17 +38,14 @@ error_reporting(E_ALL);?>
             <div class="table-responsive scroll-sm">
                 <table class="table bordered-table mb-0" id="role-table">
                     <thead>
-    <tr>
-        <th scope="col">Tax Name</th>
-        <th scope="col">Region</th>
-        <th scope="col">Rate (%)</th>
-        <th scope="col">Type</th>
-        <th scope="col">Applies To</th>
-        <th scope="col" class="text-center">Default</th>
-        <th scope="col" class="text-center">Actions</th>
-    </tr>
-</thead>
-
+                        <tr>
+                            <th scope="col">Tax name</th>
+                            <th scope="col">Country / Region</th>
+                            <th scope="col">Rate (%)</th>
+                            <th scope="col" class="text-center">Type</th>
+                            <th scope="col" class="text-center">Apply to</th>
+                        </tr>
+                    </thead>
                     <tbody>
                         <?php 
                             $service = "SELECT * FROM `add-on-service`"; 
@@ -96,270 +97,326 @@ error_reporting(E_ALL);?>
 </div>
 
 <!-- Modal Start -->
-<div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+<!-- <div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="modalTitle">Add New Tax</h5>
+                <h5 class="modal-title" id="modalTitle">Add New Service</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-    <form id="serviceForm">
-        <input type="hidden" id="serviceId" name="id">
-
-        <!-- Tax Name -->
-        <div class="mb-3">
-            <label for="serviceName" class="form-label">Tax Name</label>
-            <input type="text" class="form-control" id="serviceName" name="name" placeholder="e.g., GST" required>
-        </div>
-
-        <!-- Country / Region -->
-        <div class="mb-3">
-            <label for="serviceRegion" class="form-label">Country / Region</label>
-            <select class="form-control" id="serviceRegion" name="region" required>
-                <option value="All">All (Fallback)</option>
-                <option value="India">India</option>
-                <option value="United States">United States</option>
-                <option value="United Kingdom">United Kingdom</option>
-                <option value="Canada">Canada</option>
-                <option value="Australia">Australia</option>
-            </select>
-        </div>
-
-        <!-- Rate -->
-        <div class="mb-3">
-            <label for="serviceCost" class="form-label">Rate (%)</label>
-            <input type="number" class="form-control" id="serviceCost" name="cost" placeholder="e.g., 18" min="0" step="0.01" required>
-        </div>
-
-        <!-- Type -->
-        <div class="mb-3">
-            <label for="serviceType" class="form-label">Type</label>
-            <select class="form-control" id="serviceType" name="type" required>
-                <option value="Exclusive">Exclusive (Add-on)</option>
-                <option value="Inclusive">Inclusive (Included in price)</option>
-            </select>
-        </div>
-
-        <!-- Applies To -->
-        <div class="mb-3">
-            <label class="form-label">Applies To</label>
-            <div class="form-check">
-                <input class="form-check-input" type="checkbox" id="applyProducts" name="applies[]" value="Products">
-                <label class="form-check-label" for="applyProducts">Products</label>
+                <form id="serviceForm">
+                    <input type="hidden" id="serviceId" name="id">
+                    <div class="mb-3">
+                        <label for="serviceName" class="form-label">Service Name</label>
+                        <input type="text" class="form-control" id="serviceName" name="name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="serviceDescription" class="form-label">Description</label>
+                        <textarea class="form-control" id="serviceDescription" name="description" rows="4"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="serviceCost" class="form-label">Cost</label>
+                        <input type="number" class="form-control" id="serviceCost" name="cost" onkeydown="return event.key !== 'e'" required maxlength="10">
+                    </div>
+                    <div class="mb-3">
+                        <label for="serviceDuration" class="form-label">Duration</label>
+                        <input type="text" class="form-control" id="serviceDuration" name="duration" required>
+                        <div class="d-flex gap-2">
+                            <input type="number" name="duration_value" class="form-control radius-8" required min="1" style="width: 50%;">
+                            <select name="duration_unit" class="form-control radius-8" required style="width: 50%;">
+                                <option value="days">Days</option>
+                                <option value="months">Months</option>
+                                <option value="years">Years</option>
+                                <option value="hours">Hours</option>
+                            </select>
+                        </div>
+                                
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="isActive" name="isActive" checked>
+                        <label class="form-check-label" for="isActive">Active</label>
+                    </div>
+                </form>
             </div>
-            <div class="form-check">
-                <input class="form-check-input" type="checkbox" id="applyPackages" name="applies[]" value="Packages">
-                <label class="form-check-label" for="applyPackages">Packages</label>
-            </div>
-            <div class="form-check">
-                <input class="form-check-input" type="checkbox" id="applyServices" name="applies[]" value="Services">
-                <label class="form-check-label" for="applyServices">Services</label>
-            </div>
-        </div>
-
-        <!-- Active -->
-        <div class="form-check mt-3">
-            <input class="form-check-input" type="checkbox" id="isActive" name="isActive" checked>
-            <label class="form-check-label" for="isActive">Active</label>
-        </div>
-    </form>
-</div>
-
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                <button type="button" id="submitService" class="btn lufera-bg">Save Tax</button>
+                <button type="button" id="submitService" class="btn lufera-bg">Save Service</button>
             </div>
         </div>
     </div>
+</div> -->
+<!-- Modal End -->
+
+<!-- Modal Start -->
+<div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="modalTitle">Add New Tax</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <form id="serviceForm">
+          <input type="hidden" id="serviceId" name="id">
+
+          <!-- Tax Name -->
+          <div class="mb-3">
+            <label for="serviceName" class="form-label">Tax Name</label>
+            <input type="text" class="form-control" id="serviceName" name="name" required>
+          </div>
+
+          <!-- Country / Region -->
+          <div class="mb-3">
+            <label for="serviceDescription" class="form-label">Country / Region</label>
+            <select class="form-control" id="serviceDescription" name="description" required>
+              <option value="All">All (fallback)</option>
+              <option value="India">India</option>
+              <option value="United States">United States</option>
+              <option value="United Kingdom">United Kingdom</option>
+              <option value="Canada">Canada</option>
+              <option value="Australia">Australia</option>
+            </select>
+          </div>
+
+          <!-- Rate (%) and Type -->
+          <div class="mb-3">
+            <label for="serviceCost" class="form-label">Rate (%)</label>
+            <div class="d-flex gap-2">
+              <input type="number" class="form-control radius-8" id="serviceCost" name="cost" onkeydown="return event.key !== 'e'" required maxlength="10" style="width: 50%;">
+              <select name="type" class="form-control radius-8" required style="width: 50%;">
+                <option value="exclusive">Exclusive (add on)</option>
+                <option value="inclusive">Inclusive (included in price)</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Apply To -->
+          <div class="mb-3">
+            <label class="form-label d-block mb-2">Apply to:</label>
+            <div class="d-flex align-items-center gap-4 flex-wrap">
+              <div class="form-check mb-0">
+                <input class="form-check-input" type="checkbox" id="applyPackages" name="apply_to[]" value="packages">
+                <label class="form-check-label" for="applyPackages">Packages</label>
+              </div>
+              <div class="form-check mb-0">
+                <input class="form-check-input" type="checkbox" id="applyProducts" name="apply_to[]" value="products">
+                <label class="form-check-label" for="applyProducts">Products</label>
+              </div>
+              <div class="form-check mb-0">
+                <input class="form-check-input" type="checkbox" id="applyAddons" name="apply_to[]" value="add-on-services">
+                <label class="form-check-label" for="applyAddons">Add-on Services</label>
+              </div>
+            </div>
+          </div>
+
+          <!-- Set as Default Tax -->
+          <div class="form-check mb-2">
+            <input class="form-check-input" type="checkbox" id="setDefaultTax" name="set_default">
+            <label class="form-check-label" for="setDefaultTax">Set as default tax</label>
+          </div>
+          <p class="text-muted" style="font-size: 0.9rem; margin-top: -5px;">
+            Default tax will be pre-selected on new invoices for matching region.
+          </p>
+
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        <button type="button" id="submitService" class="btn lufera-bg">Save Service</button>
+      </div>
+    </div>
+  </div>
 </div>
 <!-- Modal End -->
 
+
+
+
 <script>
-$(document).ready(function() {
-    $('#role-table').DataTable();
-});
-
-document.addEventListener('DOMContentLoaded', function() {
-    
-    // Edit button click handler
-    document.querySelectorAll('.edit-role-btn').forEach(button => {
-        button.addEventListener('click', function() {
-            const id = this.getAttribute('data-id');
-            console.log('Fetching service with ID:', id); // Debug log
-            
-            fetch(`service_crud.php?action=get&id=${id}`, {
-                method: 'GET',
-                headers: {
-                    'Accept': 'application/json'
-                }
-            })
-            .then(response => {
-                console.log('Response status:', response.status); // Debug log
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-                return response.json();
-            })
-            .then(data => {
-                if (data.status === 'success' && data.data) {
-                    document.getElementById('modalTitle').textContent = 'Edit Service';
-                    document.getElementById('submitService').textContent = 'Update Service';
-                    document.getElementById('serviceId').value = data.data.id;
-                    document.getElementById('serviceName').value = data.data.name || '';
-                    document.getElementById('serviceDescription').value = data.data.description || '';
-                    document.getElementById('serviceCost').value = data.data.cost || '';
-
-                    // ✅ Only set duration_value and duration_unit
-                    document.querySelector('[name="duration_value"]').value = data.data.duration_value || '';
-                    document.querySelector('[name="duration_unit"]').value = data.data.duration_unit || '';
-
-                    document.getElementById('isActive').checked = data.data.is_Active == 1;
-                } else {
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Error',
-                        text: data.message || 'Failed to fetch service data.',
-                        confirmButtonColor: '#3085d6'
-                    });
-                }
-            })
-
-            .catch(error => {
-                console.error('Fetch error:', error); // Debug log
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Error',
-                    text: 'An error occurred while fetching the service: ' + error.message,
-                    confirmButtonColor: '#3085d6'
-                });
-            });
-        });
+    $(document).ready(function() {
+        $('#role-table').DataTable();
     });
 
-    // Delete button click handler
-    document.querySelectorAll('.remove-item-btn').forEach(button => {
-        button.addEventListener('click', function() {
-            const id = this.getAttribute('data-id');
-            
-            Swal.fire({
-                title: 'Are you sure?',
-                text: "You won't be able to revert this!",
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonColor: '#3085d6',
-                cancelButtonColor: '#d33',
-                confirmButtonText: 'Yes, delete it!'
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    fetch('service_crud.php', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/x-www-form-urlencoded',
-                        },
-                        body: `action=delete&id=${id}`
-                    })
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.status === 'success') {
-                            Swal.fire({
-                                icon: 'success',
-                                title: 'Deleted!',
-                                text: data.message,
-                                confirmButtonColor: '#3085d6'
-                            }).then(() => {
-                                location.reload();
-                            });
-                        } else {
-                            Swal.fire({
-                                icon: 'error',
-                                title: 'Error',
-                                text: data.message,
-                                confirmButtonColor: '#3085d6'
-                            });
-                        }
-                    })
-                    .catch(error => {
+    document.addEventListener('DOMContentLoaded', function() {
+        
+        // Edit button click handler
+        document.querySelectorAll('.edit-role-btn').forEach(button => {
+            button.addEventListener('click', function() {
+                const id = this.getAttribute('data-id');
+                console.log('Fetching service with ID:', id); // Debug log
+                
+                fetch(`service_crud.php?action=get&id=${id}`, {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json'
+                    }
+                })
+                .then(response => {
+                    console.log('Response status:', response.status); // Debug log
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.status === 'success' && data.data) {
+                        document.getElementById('modalTitle').textContent = 'Edit Service';
+                        document.getElementById('submitService').textContent = 'Update Service';
+                        document.getElementById('serviceId').value = data.data.id;
+                        document.getElementById('serviceName').value = data.data.name || '';
+                        document.getElementById('serviceDescription').value = data.data.description || '';
+                        document.getElementById('serviceCost').value = data.data.cost || '';
+
+                        // ✅ Only set duration_value and duration_unit
+                        document.querySelector('[name="duration_value"]').value = data.data.duration_value || '';
+                        document.querySelector('[name="duration_unit"]').value = data.data.duration_unit || '';
+
+                        document.getElementById('isActive').checked = data.data.is_Active == 1;
+                    } else {
                         Swal.fire({
                             icon: 'error',
                             title: 'Error',
-                            text: 'An error occurred while deleting the service.',
+                            text: data.message || 'Failed to fetch service data.',
                             confirmButtonColor: '#3085d6'
                         });
-                        console.error('Error:', error);
+                    }
+                })
+
+                .catch(error => {
+                    console.error('Fetch error:', error); // Debug log
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: 'An error occurred while fetching the service: ' + error.message,
+                        confirmButtonColor: '#3085d6'
                     });
-                }
+                });
             });
         });
-    });
 
-    // Submit form handler
-document.getElementById('submitService').addEventListener('click', function() {
-    const form = document.getElementById('serviceForm');
-    if (!form.checkValidity()) {
-        form.reportValidity();
-        return;
-    }
-
-    const formData = new FormData(form);
-
-    // Concatenate duration value + unit into one string
-    const durationValue = formData.get('duration_value');
-    const durationUnit = formData.get('duration_unit');
-    const duration = durationValue + ' ' + durationUnit;
-
-    // Remove separate values and append combined one
-    formData.delete('duration_value');
-    formData.delete('duration_unit');
-    formData.append('duration', duration);
-
-    // Detect action
-    const id = document.getElementById('serviceId').value;
-    formData.append('action', id ? 'update' : 'create');
-
-    fetch('service_crud.php', {
-        method: 'POST',
-        body: new URLSearchParams(formData)
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.status === 'success') {
-            Swal.fire({
-                icon: 'success',
-                title: 'Success',
-                text: data.message,
-                confirmButtonColor: '#3085d6'
-            }).then(() => {
-                location.reload();
+        // Delete button click handler
+        document.querySelectorAll('.remove-item-btn').forEach(button => {
+            button.addEventListener('click', function() {
+                const id = this.getAttribute('data-id');
+                
+                Swal.fire({
+                    title: 'Are you sure?',
+                    text: "You won't be able to revert this!",
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#3085d6',
+                    cancelButtonColor: '#d33',
+                    confirmButtonText: 'Yes, delete it!'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        fetch('service_crud.php', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/x-www-form-urlencoded',
+                            },
+                            body: `action=delete&id=${id}`
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.status === 'success') {
+                                Swal.fire({
+                                    icon: 'success',
+                                    title: 'Deleted!',
+                                    text: data.message,
+                                    confirmButtonColor: '#3085d6'
+                                }).then(() => {
+                                    location.reload();
+                                });
+                            } else {
+                                Swal.fire({
+                                    icon: 'error',
+                                    title: 'Error',
+                                    text: data.message,
+                                    confirmButtonColor: '#3085d6'
+                                });
+                            }
+                        })
+                        .catch(error => {
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Error',
+                                text: 'An error occurred while deleting the service.',
+                                confirmButtonColor: '#3085d6'
+                            });
+                            console.error('Error:', error);
+                        });
+                    }
+                });
             });
-        } else {
+        });
+
+        // Submit form handler
+        document.getElementById('submitService').addEventListener('click', function() {
+        const form = document.getElementById('serviceForm');
+        if (!form.checkValidity()) {
+            form.reportValidity();
+            return;
+        }
+
+        const formData = new FormData(form);
+
+        // Concatenate duration value + unit into one string
+        const durationValue = formData.get('duration_value');
+        const durationUnit = formData.get('duration_unit');
+        const duration = durationValue + ' ' + durationUnit;
+
+        // Remove separate values and append combined one
+        formData.delete('duration_value');
+        formData.delete('duration_unit');
+        formData.append('duration', duration);
+
+        // Detect action
+        const id = document.getElementById('serviceId').value;
+        formData.append('action', id ? 'update' : 'create');
+
+        fetch('service_crud.php', {
+            method: 'POST',
+            body: new URLSearchParams(formData)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Success',
+                    text: data.message,
+                    confirmButtonColor: '#3085d6'
+                }).then(() => {
+                    location.reload();
+                });
+            } else {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: data.message,
+                    confirmButtonColor: '#3085d6'
+                });
+            }
+        })
+        .catch(error => {
             Swal.fire({
                 icon: 'error',
                 title: 'Error',
-                text: data.message,
+                text: 'An error occurred while saving the service: ' + error.message,
                 confirmButtonColor: '#3085d6'
             });
-        }
-    })
-    .catch(error => {
-        Swal.fire({
-            icon: 'error',
-            title: 'Error',
-            text: 'An error occurred while saving the service: ' + error.message,
-            confirmButtonColor: '#3085d6'
+            console.error('Error:', error);
         });
-        console.error('Error:', error);
+        });
     });
-});
 
-});
-
-$(document).ready(function() {
-    $('[data-bs-target="#exampleModal"]').on('click', function() {
-        // Replace '#add-category-form' with your actual form's ID
-        $('#serviceForm')[0].reset();
+    $(document).ready(function() {
+        $('[data-bs-target="#exampleModal"]').on('click', function() {
+            // Replace '#add-category-form' with your actual form's ID
+            $('#serviceForm')[0].reset();
+        });
     });
-});
 </script>
 
 <?php include './partials/layouts/layoutBottom.php' ?>

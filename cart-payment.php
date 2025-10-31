@@ -73,7 +73,13 @@
         $package_ids = array_map('intval', explode(",", $get_packages));
         if (!empty($package_ids)) {
             $ids_str = implode(",", $package_ids);
-            $sql_packages = "SELECT package_name, price FROM package WHERE id IN ($ids_str)";
+            $sql_packages = "
+                SELECT p.package_name, d.price
+                FROM package p
+                LEFT JOIN durations d ON p.id = d.package_id
+                WHERE p.id IN ($ids_str)
+                GROUP BY p.id
+            ";
             $result_packages = $conn->query($sql_packages);
 
             while ($row_pkg = $result_packages->fetch_assoc()) {
@@ -154,33 +160,70 @@
         if ($is_renewal) {
             $renewal_duration = $_POST['period'];
 
-            // Fetch current expired_at from DB
-            $query = $conn->prepare("SELECT plan, type, expired_at FROM websites WHERE id = ?");
+            // // Fetch current expired_at from DB
+            // $query = $conn->prepare("SELECT plan, type, expired_at FROM websites WHERE id = ?");
+            // $query->bind_param("i", $id);
+            // $query->execute();
+            // $result = $query->get_result();
+            // $row = $result->fetch_assoc();
+            // $query->close();
+
+            // $plan_id = $row['plan'];
+            // $type = $row['type'];
+
+            // // Determine base date for renewal
+            // if (!empty($row['expired_at']) && strtotime($row['expired_at']) > time()) {
+            //     // If previous expiration exists and is in the future, add renewal on top of it
+            //     $baseDate = new DateTime($row['expired_at']);
+            // } else {
+            //     // Otherwise, use created_at + original duration
+            //     $baseDate = new DateTime($created_at);
+
+            //     if (!empty($duration)) {
+            //         $baseDate->modify($duration); // e.g., "1 year"
+            //     }
+            // }
+
+            // // Add current renewal duration
+            // if (!empty($renewal_duration)) {
+            //     $baseDate->modify($renewal_duration);
+            // }
+
+            // $expiredAt = $baseDate->format('Y-m-d H:i:s');
+
+            // Fetch current expired_at and created_at and duration from DB
+            $query = $conn->prepare("SELECT plan, type, expired_at, created_at, duration FROM websites WHERE id = ?");
             $query->bind_param("i", $id);
             $query->execute();
             $result = $query->get_result();
             $row = $result->fetch_assoc();
             $query->close();
 
+            $expiredAtDB = $row['expired_at'] ?? null;
+            $createdAtDB = $row['created_at'] ?? null;
+            $durationDB  = $row['duration'] ?? null;
+
             $plan_id = $row['plan'];
             $type = $row['type'];
 
             // Determine base date for renewal
-            if (!empty($row['expired_at']) && strtotime($row['expired_at']) > time()) {
-                // If previous expiration exists and is in the future, add renewal on top of it
-                $baseDate = new DateTime($row['expired_at']);
-            } else {
-                // Otherwise, use created_at + original duration
-                $baseDate = new DateTime($created_at);
-
-                if (!empty($duration)) {
-                    $baseDate->modify($duration); // e.g., "1 year"
+            if (!empty($expiredAtDB)) {
+                // Case 1: expired_at exists → add renewal_duration to it
+                $baseDate = new DateTime($expiredAtDB);
+                if (!empty($renewal_duration)) {
+                    $baseDate->modify('+' . $renewal_duration);
                 }
-            }
+            } else {
+                // Case 2: expired_at is empty → created_at + duration + renewal_duration
+                $baseDate = new DateTime($createdAtDB);
 
-            // Add current renewal duration
-            if (!empty($renewal_duration)) {
-                $baseDate->modify($renewal_duration);
+                if (!empty($durationDB)) {
+                    $baseDate->modify('+' . $durationDB);
+                }
+
+                if (!empty($renewal_duration)) {
+                    $baseDate->modify('+' . $renewal_duration);
+                }
             }
 
             $expiredAt = $baseDate->format('Y-m-d H:i:s');
@@ -351,13 +394,34 @@
                 if (!empty($get_packages)) {
                     $package_ids = array_map('intval', explode(',', $get_packages));
                     foreach ($package_ids as $pkg_id) {
-                        $pkg_sql = "SELECT package_name, price, duration, cat_id FROM package WHERE id = $pkg_id";
+                        // $pkg_sql = "SELECT package_name, price, duration, cat_id FROM package WHERE id = $pkg_id";
+                        // $pkg_res = mysqli_query($conn, $pkg_sql);
+                        // if ($pkg_res && $pkg = mysqli_fetch_assoc($pkg_res)) {
+                        //     $pkg_name     = $pkg['package_name'];  // ✅ package name for websites table
+                        //     $pkg_price    = floatval($pkg['price']);
+                        //     $pkg_duration = $pkg['duration'];
+                        //     $pkg_cat_id   = $pkg['cat_id']; // ✅ package category
+
+                        // Step 1: Fetch package name & category (same as before)
+                        $pkg_sql = "SELECT id, package_name, cat_id FROM package WHERE id = $pkg_id";
                         $pkg_res = mysqli_query($conn, $pkg_sql);
+
                         if ($pkg_res && $pkg = mysqli_fetch_assoc($pkg_res)) {
-                            $pkg_name     = $pkg['package_name'];  // ✅ package name for websites table
-                            $pkg_price    = floatval($pkg['price']);
-                            $pkg_duration = $pkg['duration'];
-                            $pkg_cat_id   = $pkg['cat_id']; // ✅ package category
+                            $pkg_name   = $pkg['package_name'];  // ✅ Package name
+                            $pkg_cat_id = $pkg['cat_id'];        // ✅ Category
+
+                            // Step 2: Fetch duration & price from durations table
+                            $dur_sql = "SELECT duration, price FROM durations WHERE package_id = $pkg_id ORDER BY id ASC LIMIT 1";
+                            $dur_res = mysqli_query($conn, $dur_sql);
+
+                            if ($dur_res && $dur = mysqli_fetch_assoc($dur_res)) {
+                                $pkg_duration = $dur['duration'];           // ✅ From durations table
+                                $pkg_price    = floatval($dur['price']);    // ✅ From durations table
+                            } else {
+                                // Fallback if no durations found
+                                $pkg_duration = '1 month';
+                                $pkg_price    = 0.00;
+                            }
 
                             // calculations
                             $pkg_subtotal = $pkg_price;
@@ -713,26 +777,26 @@
     .payment-detail { display:none; }
 
     .coupon-item {
-    background: #f8f9fa;
-    transition: background-color 0.2s ease;
-}
-.coupon-item:hover {
-    background: #fff8dc;
-}
-.coupon-item .btn {
-    padding: 6px 12px;
-    font-size: 0.9rem;
-}
-.modal-content {
-    border-radius: 8px;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.08);
-}
-.modal-header {
-    border-bottom: 1px solid #eaeaea;
-}
-.modal-footer {
-    border-top: 1px solid #eaeaea;
-}
+        background: #f8f9fa;
+        transition: background-color 0.2s ease;
+    }
+    .coupon-item:hover {
+        background: #fff8dc;
+    }
+    .coupon-item .btn {
+        padding: 6px 12px;
+        font-size: 0.9rem;
+    }
+    .modal-content {
+        border-radius: 8px;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+    }
+    .modal-header {
+        border-bottom: 1px solid #eaeaea;
+    }
+    .modal-footer {
+        border-top: 1px solid #eaeaea;
+    }
 </style>
 
 <div class="dashboard-main-body">
