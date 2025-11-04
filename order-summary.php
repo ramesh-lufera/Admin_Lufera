@@ -367,6 +367,12 @@
                                     <td>Tax (GST 18%)</td>
                                     <td class="text-end" id="currency-symbol-display"><?= htmlspecialchars($symbol) ?><?= number_format($gst, 2) ?></td>
                                 </tr>
+                                <?php if ($row['coupon_code']) { ?>
+                                <tr>
+                                    <td>Coupon Applied (<b><?php echo $row['coupon_code']; ?></b>)</td>
+                                    <td class="text-end" id="currency-symbol-display"><?= htmlspecialchars($symbol) ?><?= number_format($row['discount_amount'], 2) ?></td>
+                                </tr>
+                                <?php } ?>
                                 <tr>
                                     <td class="fw-bold">Payments</td>
                                     <td class="text-end fw-bold" id="currency-symbol-display"><?= htmlspecialchars($symbol) ?><?= number_format($row['payment_made'], 2) ?></td>

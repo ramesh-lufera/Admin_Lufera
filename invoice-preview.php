@@ -16,7 +16,7 @@
 <style>
     .invoice_table {
         font-size:16px !important;
-        width:300px;
+        /* width:300px; */
     }
 </style>
 
@@ -232,6 +232,14 @@
                                                                 <span class="text-primary-light" id="currency-symbol-display"><?= htmlspecialchars($symbol) ?> <?php echo $row['gst']; ?></span>
                                                             </td>
                                                         </tr>
+                                                        <?php if ($row['coupon_code']) { ?>
+                                                        <tr>
+                                                            <td class="pe-64 p-8 fw-semibold">Coupon Applied (<?php echo $row['coupon_code']; ?>)</td>
+                                                            <td class=" p-8">
+                                                            <span class="text-primary-light" id="currency-symbol-display"><?= htmlspecialchars($symbol) ?> <?php echo $row['discount_amount']; ?></span>
+                                                            </td>
+                                                        </tr>
+                                                        <?php } ?>
                                                         <tr>
                                                             <td class="pe-64 p-8 fw-semibold">
                                                                 <span class="text-primary-light">Total</span>
