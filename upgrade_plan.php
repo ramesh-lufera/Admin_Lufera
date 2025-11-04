@@ -271,35 +271,33 @@
                                                         <?php
                                                         // Fetch the selected/current package
                                                         $plan_sql = "
-    SELECT p.*, d.price, d.duration 
-    FROM package p
-    INNER JOIN durations d ON d.package_id = p.id
-    WHERE p.id = ? AND d.duration = ?
-";
-$stmt = $conn->prepare($plan_sql);
-$stmt->bind_param("is", $package_id, $duration_get);
-$stmt->execute();
-$plan_fetch = $stmt->get_result();
-$plan_row = $plan_fetch->fetch_assoc();
-
-
+                                                            SELECT p.*, d.price, d.duration 
+                                                            FROM package p
+                                                            INNER JOIN durations d ON d.package_id = p.id
+                                                            WHERE p.id = ? AND d.duration = ?
+                                                        ";
+                                                        $stmt = $conn->prepare($plan_sql);
+                                                        $stmt->bind_param("is", $package_id, $duration_get);
+                                                        $stmt->execute();
+                                                        $plan_fetch = $stmt->get_result();
+                                                        $plan_row = $plan_fetch->fetch_assoc();
                                                         $current_price = $plan_row['price'];
-$current_cat = $plan_row['cat_id'];
-$current_duration = $plan_row['duration'];
+                                                        $current_cat = $plan_row['cat_id'];
+                                                        $current_duration = $plan_row['duration'];
 
 
                                                         // Fetch all packages with price greater than the current plan
                                                         $upgrade_sql = "
-    SELECT p.id, p.package_name, d.price, d.duration
-    FROM package p
-    INNER JOIN durations d ON d.package_id = p.id
-    WHERE d.price > ? AND p.cat_id = ? AND d.duration = ?
-    ORDER BY d.price ASC
-";
-$stmt2 = $conn->prepare($upgrade_sql);
-$stmt2->bind_param("dis", $current_price, $current_cat, $current_duration);
-$stmt2->execute();
-$upgrade_result = $stmt2->get_result();
+                                                            SELECT p.id, p.package_name, d.price, d.duration
+                                                            FROM package p
+                                                            INNER JOIN durations d ON d.package_id = p.id
+                                                            WHERE d.price > ? AND p.cat_id = ? AND d.duration = ?
+                                                            ORDER BY d.price ASC
+                                                        ";
+                                                        $stmt2 = $conn->prepare($upgrade_sql);
+                                                        $stmt2->bind_param("dis", $current_price, $current_cat, $current_duration);
+                                                        $stmt2->execute();
+                                                        $upgrade_result = $stmt2->get_result();
 
 
                                                         // Check if there are any upgrade options
@@ -401,7 +399,7 @@ $upgrade_result = $stmt2->get_result();
                                         </li>
                                         <li class="details-item">
                                             <div class="details-item__left">
-                                                <h4 class="details-item__text ">Balance</h4>
+                                                <h4 class="details-item__text ">Exisitng Plan Balance</h4>
                                             </div>
                                             <div class="details-item__right">
                                             <?php
@@ -415,21 +413,21 @@ $upgrade_result = $stmt2->get_result();
                                             $webs_id = $website['id'];
                                             $cat_id = $website['cat_id'];
                                             $invoice_id = $website['invoice_id'];
+                                            $receipt_id = rand(10000000, 99999999);
 
                                             $start_date = $website ? new DateTime($website['created_at']) : new DateTime();
                                             $today = new DateTime();
 
                                             // Get plan info
                                             $plan_sql = "
-    SELECT d.price, d.duration 
-    FROM durations d
-    WHERE d.package_id = ? AND d.duration = ?
-";
-$stmt_plan = $conn->prepare($plan_sql);
-$stmt_plan->bind_param("is", $package_id, $duration_get);
-$stmt_plan->execute();
-$plan_result = $stmt_plan->get_result();
-$plan = $plan_result->fetch_assoc();
+                                                SELECT d.price, d.duration 
+                                                FROM durations d
+                                                WHERE d.package_id = ? AND d.duration = ?";
+                                            $stmt_plan = $conn->prepare($plan_sql);
+                                            $stmt_plan->bind_param("is", $package_id, $duration_get);
+                                            $stmt_plan->execute();
+                                            $plan_result = $stmt_plan->get_result();
+                                            $plan = $plan_result->fetch_assoc();
 
 
                                             $price = floatval($plan['price']);
@@ -466,18 +464,27 @@ $plan = $plan_result->fetch_assoc();
                                         </li>
                                     </ul>                            
                                 </div>
-                                <form action="upgrade-payment.php" method="POST">
+                                <form action="cart-payment.php" method="POST">
                                     <input type="hidden" name="web_id" value="<?= htmlspecialchars($web_id) ?>">
                                     <input type="hidden" name="user_id" value="<?= htmlspecialchars($_SESSION['user_id']) ?>">
-                                    <input type="hidden" name="upgrade_package_id" id="upgrade_package_id" value="">
-                                    <input type="hidden" name="total_amount" id="total_amount" value="">
+                                    <!-- <input type="hidden" name="total_amount" id="total_amount" value=""> -->
                                     <input type="hidden" name="hostinger_balance" id="hostinger_balance" value="">
-                                    <input type="hidden" name="amount_to_pay" id="amount_to_pay" value="">
-                                    <input type="hidden" name="duration" id="duration" value="<?php echo $duration; ?>">
+                                    <input type="hidden" name="subtotal-display" id="amount_to_pay" value="">
+                                    <!-- <input type="hidden" name="duration" id="duration" value="<?php echo $duration; ?>"> -->
                                     <input type="hidden" name="cat_id" id="cat_id" value="<?php echo $current_cat; ?>">
                                     <input type="hidden" name="current_plan_id" id="current_plan_id" value="<?php echo $current_plan_id ?>">
-                                    <input type="hidden" name="invoice_id" id="invoice_id" value="<?php echo $invoice_id ?>">
+                                    <!-- <input type="hidden" name="invoice_id" id="invoice_id" value="<?php echo $invoice_id ?>"> -->
     
+                                    <input type="hidden" name="id" id="upgrade_package_id" value="">
+                                    <input type="hidden" name="plan_name" id="plan_name" value="">
+                                    <input type="hidden" name="invoice_id" id="invoice_id" value="<?php echo $invoice_id ?>">
+                                    <input type="hidden" name="duration" id="duration" value="<?php echo $duration; ?>">
+                                    <input type="hidden" name="price" id="total_amount" value="">
+                                    <input type="hidden" name="gst" id="amount_tax" value="">
+                                    <input type="hidden" name="total_price" id="total_price" value="">
+                                    <input type="hidden" name="type" value="package">  
+                                    <input type="hidden" name="receipt_id" value="<?php echo $receipt_id; ?>"> 
+
                                     <button type="submit" class="lufera-bg btn w-100 text-white">Complete upgrade payment</button>
                                 </form>
                             </div>  
@@ -502,6 +509,7 @@ function updateUpgradeDisplay() {
     const price = parseFloat(selected.getAttribute('data-price'));
     const duration = selected.getAttribute('data-duration')?.toLowerCase() || '';
     const packageId = selected.value;
+    const packageName = selected.textContent.trim();
 
     const priceDisplay = document.querySelector('.upgrade_price');
     const totalElement = document.querySelector('.details-item__price.total-amount');
@@ -551,6 +559,9 @@ function updateUpgradeDisplay() {
 
     const balance = parseFloat(balanceElement?.textContent.replace(/,/g, '')) || 0;
     const amountToPay = totalPrice - balance;
+    const amountTax = amountToPay * 0.18;
+    const total_price = amountToPay + amountTax;
+
     if (amountToPayElement) amountToPayElement.textContent = amountToPay.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
     // ✅ Update hidden fields
@@ -558,6 +569,9 @@ function updateUpgradeDisplay() {
     document.getElementById('total_amount').value = totalPrice.toFixed(2);
     document.getElementById('hostinger_balance').value = balance.toFixed(2);
     document.getElementById('amount_to_pay').value = amountToPay.toFixed(2);
+    document.getElementById('plan_name').value = packageName;
+    document.getElementById('amount_tax').value = amountTax.toFixed(2);
+    document.getElementById('total_price').value = total_price.toFixed(2);
 
     // --- Fetch updated features ---
     fetch('get_features.php?package_id=' + packageId)

@@ -39,6 +39,9 @@
         $get_packages = $_POST['get_packages'] ?? '';
         $get_products = $_POST['get_products'] ?? '';
         $addon_total = $_POST['addon-total'];
+        $hostinger_balance = $_POST['hostinger_balance'];
+        $subtotal_display = $_POST['subtotal-display'];
+        $invoice_id = $_POST['invoice_id'];
 
         // For Renewal..
         if (isset($_POST['renewal']) && $_POST['renewal'] == 1 && !empty($id)) {
@@ -946,65 +949,73 @@
                     <div class="card h-100 radius-12">
                         <div class="card-header py-10 border-none d-flex justify-content-between card-shadow">
                             <div>
-                                <h6 class="mb-0">Price</h6>
+                                <h6 class="mb-0">Sub Total</h6>
                                 <!-- <p class="mb-0">Sub total does not include applicable taxes</p> -->
                             </div>
                             <div class="align-content-center">
-                                <h6 class="mb-0" id="currency-symbol-display"><?php echo htmlspecialchars($symbol) . number_format($price, 2); ?></h6>
+                                <h6 class="mb-0" id="currency-symbol-display ss"><?php echo htmlspecialchars($symbol) . number_format($subtotal_display, 2); ?></h6>
                             </div>
                         </div>
                         <div class="card-body p-16">
-    <table class="table plan-details-table mb-0 w-100">
-        <tbody>
-           
-                <p class="fw-semibold px-10 mb-0">Add-ons :</p>
-            
-            
-            <!-- Plan Price -->
-            <!-- <tr>
-                <td><?php echo htmlspecialchars($plan_name); ?></td>
-                <td class="text-end" id="currency-symbol-display"><?php echo htmlspecialchars($symbol) . number_format($price, 2); ?></td>
-            </tr> -->
-            <!-- Packages -->
-            <?php if (!empty($package_details)): ?>
-                <?php foreach ($package_details as $package): ?>
-                    <tr>
-                        <td><?php echo htmlspecialchars($package['name']); ?> (Package)</td>
-                        <td class="text-end" id="currency-symbol-display"><?php echo htmlspecialchars($symbol) . number_format($package['price'], 2); ?></td>
-                    </tr>
-                <?php endforeach; ?>
-            <?php endif; ?>
-            <!-- Products -->
-            <?php if (!empty($product_details)): ?>
-                <?php foreach ($product_details as $product): ?>
-                    <tr>
-                        <td><?php echo htmlspecialchars($product['name']); ?> (Product)</td>
-                        <td class="text-end" id="currency-symbol-display"><?php echo htmlspecialchars($symbol) . number_format($product['price'], 2); ?></td>
-                    </tr>
-                <?php endforeach; ?>
-            <?php endif; ?>
-            <!-- Add-On Services -->
-            <?php if (!empty($addon_details)): ?>
-                <?php foreach ($addon_details as $addon): ?>
-                    <tr>
-                        <td><?php echo htmlspecialchars($addon['name']); ?> (Service)</td>
-                        <td class="text-end" id="currency-symbol-display"><?php echo htmlspecialchars($symbol) . number_format($addon['price'], 2); ?></td>
-                    </tr>
-                <?php endforeach; ?>
-            <?php endif; ?>
-            <!-- Tax (GST 18%) -->
-            <tr>
-                <td>Tax (GST 18%)</td>
-                <td class="text-end" id="currency-symbol-display"><?php echo htmlspecialchars($symbol) . number_format($gst, 2); ?></td>
-            </tr>
-            <!-- Estimated Total -->
-            <tr>
-                <td class="border-0 fw-semibold">Total</td>
-                <td class="border-0 text-end fw-semibold text-xl" id="currency-symbol-display"><?php echo htmlspecialchars($symbol) . number_format($total_price, 2); ?></td>
-            </tr>
-        </tbody>
-    </table>
-</div>
+                            <div class="d-flex justify-content-between" style="padding: 15px .5rem; font-weight: 500; color: #000; border-bottom: 1px solid #dadada;">
+                                <div><?php echo $plan_name; ?></div>
+                                <div><?php echo htmlspecialchars($symbol) . number_format($price, 2); ?></div>
+                            </div>
+                            
+                            <table class="table plan-details-table mb-0 w-100">
+                                <tbody>
+                                <?php if (!empty($package_details) && !empty($product_details) && !empty($addon_details)): ?>
+                                    <p class="fw-semibold px-10 mb-0">Add-ons :</p>
+                                <?php endif; ?>
+                                    <!-- Plan Price -->
+                                    <!-- <tr>
+                                        <td><?php echo htmlspecialchars($plan_name); ?></td>
+                                        <td class="text-end" id="currency-symbol-display"><?php echo htmlspecialchars($symbol) . number_format($price, 2); ?></td>
+                                    </tr> -->
+                                    <!-- Packages -->
+                                    <?php if (!empty($package_details)): ?>
+                                        <?php foreach ($package_details as $package): ?>
+                                            <tr>
+                                                <td><?php echo htmlspecialchars($package['name']); ?> (Package)</td>
+                                                <td class="text-end"><?php echo htmlspecialchars($symbol) . number_format($package['price'], 2); ?></td>
+                                            </tr>
+                                        <?php endforeach; ?>
+                                    <?php endif; ?>
+                                    <!-- Products -->
+                                    <?php if (!empty($product_details)): ?>
+                                        <?php foreach ($product_details as $product): ?>
+                                            <tr>
+                                                <td><?php echo htmlspecialchars($product['name']); ?> (Product)</td>
+                                                <td class="text-end"><?php echo htmlspecialchars($symbol) . number_format($product['price'], 2); ?></td>
+                                            </tr>
+                                        <?php endforeach; ?>
+                                    <?php endif; ?>
+                                    <!-- Add-On Services -->
+                                    <?php if (!empty($addon_details)): ?>
+                                        <?php foreach ($addon_details as $addon): ?>
+                                            <tr>
+                                                <td><?php echo htmlspecialchars($addon['name']); ?> (Service)</td>
+                                                <td class="text-end"><?php echo htmlspecialchars($symbol) . number_format($addon['price'], 2); ?></td>
+                                            </tr>
+                                        <?php endforeach; ?>
+                                    <?php endif; ?>
+                                    <tr>
+                                        <td>Exisitng Plan Balance</td>
+                                        <td class="text-end"><?php echo htmlspecialchars($symbol) . number_format($hostinger_balance, 2); ?></td>
+                                    </tr>
+                                    <!-- Tax (GST 18%) -->
+                                    <tr>
+                                        <td>Tax (GST 18%)</td>
+                                        <td class="text-end"><?php echo htmlspecialchars($symbol) . number_format($gst, 2); ?></td>
+                                    </tr>
+                                    <!-- Estimated Total -->
+                                    <tr>
+                                        <td class="border-0 fw-semibold">Total</td>
+                                        <td class="border-0 text-end fw-semibold text-xl"><?php echo htmlspecialchars($symbol) . number_format($total_price, 2); ?></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
             </div>

@@ -362,7 +362,7 @@
 
         if ($check->num_rows > 0) {
             $update = $conn->prepare("UPDATE json SET name = ?, prefill_name = ? WHERE user_id = ? AND website_id = ? AND template = ?");
-            $update->bind_param("sssis", $data, $prefill_name, $user_id, $website_id, $template);
+            $update->bind_param("ssiis", $data, $prefill_name, $user_id, $website_id, $template);
             $success = $update->execute();
             $update->close();
         } else {
@@ -724,12 +724,11 @@
                                                 '',
                                                 'text'
                                             );
-                                        }
                                             ?>
                                         </div>
                                     </div>
 
-                                    <?php if (in_array($user_role, [8])): ?>
+                                    <?php } if (in_array($user_role, [8])): ?>
                                         <input type="submit" name="save" class="lufera-bg bg-hover-warning-400 text-white text-md px-56 py-11 radius-8 m-auto d-block mt-4" value="Save" >
                                     <?php endif; ?>
                                 </form>
@@ -1189,11 +1188,11 @@ document.addEventListener('DOMContentLoaded', function () {
                     document.getElementById('prefill_name_wrapper').style.display = 'block';
                 }
                 if (typeof updateProgressBar === 'function') updateProgressBar();
-            } else {
-                form.reset();
-                document.querySelectorAll('.record-preview').forEach(el => el.remove());
-                if (typeof updateProgressBar === 'function') updateProgressBar();
-            }
+                } else {
+                    form.reset();
+                    document.querySelectorAll('.record-preview').forEach(el => el.remove());
+                    if (typeof updateProgressBar === 'function') updateProgressBar();
+                }
         });
     });
 });

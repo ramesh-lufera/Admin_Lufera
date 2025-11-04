@@ -189,7 +189,12 @@
         height:45px;
     }
 </style>
-
+<div class="dashboard-main-body">
+    <div class="d-flex flex-wrap align-items-center gap-3 mb-24 justify-content-between">
+        <div class="d-flex align-self-end">
+            <a class="cursor-pointer fw-bold" onclick="history.back()"><span class="fa fa-arrow-left"></span>&nbsp; </a>     
+            <h6 class="fw-semibold mb-0">Mobile App Development Onboarding Form</h6>
+        </div>
 <?php
     $session_user_id = $_SESSION['user_id'];
     $prod_id = intval($_GET['prod_id']);
@@ -215,7 +220,8 @@
 
     // Fetch all past records of this user
     $prevRecords = [];
-    $stmt = $conn->prepare("SELECT id, name FROM json WHERE user_id = ? AND template = ?");
+    //$stmt = $conn->prepare("SELECT id, name FROM json WHERE user_id = ? AND template = ?");
+    $stmt = $conn->prepare("SELECT id, name, prefill_name FROM json WHERE user_id = ? AND template = ? AND prefill_name IS NOT NULL AND prefill_name != ''");
     $stmt->bind_param("is", $session_user_id, $template);
     $stmt->execute();
     $result = $stmt->get_result();
@@ -225,7 +231,8 @@
         if ($decoded && isset($decoded['company_name']['value'])) {
             $prevRecords[] = [
                 'id' => $row['id'],
-                'data' => $decoded
+                'data' => $decoded,
+                'prefill_name'=> $row['prefill_name']
             ];
         }
     }
@@ -306,7 +313,10 @@
         $timeline_constraints = $_POST['timeline_constraints'] ?? '';
     
         $extra_notes = $_POST['extra_notes'] ?? '';
-    
+
+        $allow_prefill = isset($_POST['allow_prefill']) && $_POST['allow_prefill'] === 'on';
+        $prefill_name = $allow_prefill ? ($_POST['prefill_name'] ?? '') : '';
+
         // Handle file upload for screenshots
         if (!empty($_FILES['screenshots']['name'])) {
             $uploadDir = 'Uploads/';
@@ -354,6 +364,7 @@
             'launch_date' => createField($launch_date),
             'timeline_constraints' => createField($timeline_constraints),
             'extra_notes' => createField($extra_notes),
+            'prefill_name' => createField($prefill_name),
         ]);
     
         $website_id = isset($_GET['id']) ? intval($_GET['id']) : 0;
@@ -364,13 +375,13 @@
         $check->store_result();
     
         if ($check->num_rows > 0) {
-            $update = $conn->prepare("UPDATE json SET name = ? WHERE user_id = ? AND website_id = ? AND template = ?");
-            $update->bind_param("siis", $data, $user_id, $website_id, $template);
+            $update = $conn->prepare("UPDATE json SET name = ?, prefill_name = ? WHERE user_id = ? AND website_id = ? AND template = ?");
+            $update->bind_param("ssiis", $data, $prefill_name, $user_id, $website_id, $template);
             $success = $update->execute();
             $update->close();
         } else {
-            $insert = $conn->prepare("INSERT INTO json (name, user_id, website_id, template) VALUES (?, ?, ?, ?)");
-            $insert->bind_param("siis", $data, $user_id, $website_id, $template);
+            $insert = $conn->prepare("INSERT INTO json (name, user_id, website_id, template, prefill_name) VALUES (?, ?, ?, ?, ?)");
+            $insert->bind_param("siiss", $data, $user_id, $website_id, $template, $prefill_name);
             $success = $insert->execute();
             $insert->close();
         }
@@ -390,7 +401,7 @@
     }
 
     if (!empty($prevRecords)): ?>
-        <div class="d-flex justify-content-center justify-content-md-end mt-3 me-md-5" style="margin-bottom:0;">
+        <div class="d-flex justify-content-center justify-content-md-end" style="margin-bottom:0;">
             <div class="p-3 rounded shadow-sm w-100 w-md-40" 
                 style="font-size: 0.85rem; background-color: #fffbea; max-width: 600px; text-align:left;">
                 <h6 class="fw-bold text-dark mb-3" style="font-size: 0.9rem;">
@@ -405,7 +416,7 @@
                                 data-record='<?php echo json_encode($record['data']); ?>'
                                 id="rec_<?php echo $record['id']; ?>">
                             <label for="rec_<?php echo $record['id']; ?>" class="form-check-label ms-1" style="font-size: 0.9rem;">
-                                <?php echo htmlspecialchars($record['data']['company_name']['value']); ?>
+                                <?php echo htmlspecialchars($record['prefill_name']); ?>
                             </label>
                         </div>
                     <?php endforeach; ?>
@@ -489,10 +500,10 @@
 
         if ($isAdmin) {
             echo '<div class="btn-group ms-1">';
-            echo '<button type="button" class="btn btn-sm edit-icon" style="background-color: #FEC700; color: black;" data-field="' . htmlspecialchars($fieldName) . '" title="Edit">&#9998;</button>';
-            echo '<button type="button" class="btn btn-sm update-icon d-none" style="background-color: #00B4D8; color: white;" data-field="' . htmlspecialchars($fieldName) . '" title="Update">&#128190;</button>';
-            echo '<button type="button" class="btn btn-success btn-sm approve-btn" data-field="' . htmlspecialchars($fieldName) . '" title="Approve">&#10004;</button>';
-            echo '<button type="button" class="btn btn-danger btn-sm reject-btn" data-field="' . htmlspecialchars($fieldName) . '" title="Reject">&#10006;</button>';
+            echo '<button type="button" class="btn btn-sm edit-icon" style="background-color: #FEC700; color: black;" data-field="' . htmlspecialchars($fieldName) . '" title="Edit">Edit</button>';
+            echo '<button type="button" class="btn btn-sm update-icon d-none" style="background-color: #00B4D8; color: white;" data-field="' . htmlspecialchars($fieldName) . '" title="Update">Update</button>';
+            echo '<button type="button" class="btn btn-success btn-sm approve-btn" data-field="' . htmlspecialchars($fieldName) . '" title="Approve">Approve</button>';
+            echo '<button type="button" class="btn btn-danger btn-sm reject-btn" data-field="' . htmlspecialchars($fieldName) . '" title="Reject">Reject</button>';
             echo '</div>';
         }
 
@@ -609,10 +620,6 @@
     }
 ?>
 
-<div class="dashboard-main-body">
-    <div class="d-flex flex-wrap align-items-center gap-3 mb-24">
-    <a class="cursor-pointer fw-bold" onclick="history.back()"><span class="fa fa-arrow-left"></span>&nbsp; </a>     
-        <h6 class="fw-semibold mb-0">Mobile App Development Onboarding Form</h6>
     </div>
 
     <div class="card h-100 p-0 radius-12 overflow-hidden">               
@@ -701,9 +708,36 @@
                                     <?php
                                     renderFieldExtended('extra_notes', $savedData, $user_role, 'Anything else you want to share?', '', 'textarea');
                                     ?>
+                                        <!-- NEW: Allow Prefill Data -->
+                                        <?php
+                                        if ($user_role != 1 && $user_role != 2) {
+                                        $prefillName = $savedData['prefill_name']['value'] ?? '';
+                                        $allowPrefill = !empty($prefillName);
+                                        ?>
+                                        <div class="mt-5 p-20">
+                                            <div class="form-check">
+                                                <input class="form-check-input mt-4 me-4" type="checkbox" id="allow_prefill" name="allow_prefill" <?= $allowPrefill ? 'checked' : '' ?>>
+                                                <label class="form-check-label fw-bold" for="allow_prefill">
+                                                    Allow users to save prefill data
+                                                </label>
+                                            </div>
 
+                                            <div id="prefill_name_wrapper" class="mt-3" style="display:<?= $allowPrefill ? 'block' : 'none' ?>;">
+                                                <?php
+                                                renderFieldExtended(
+                                                    'prefill_name',
+                                                    $savedData,
+                                                    $user_role,
+                                                    'Prefill name (will appear in “Fill Values From Previous Wizards”)',
+                                                    '',
+                                                    'text'
+                                                );
+                                            }
+                                                ?>
+                                            </div>
+                                        </div>
                                     <?php if (in_array($user_role, [8])): ?>
-                                        <input type="submit" name="save" class="lufera-bg bg-hover-warning-400 text-white text-md px-56 py-11 radius-8 m-auto d-block" value="Save" >
+                                        <input type="submit" name="save" class="lufera-bg bg-hover-warning-400 text-white text-md px-56 py-11 radius-8 m-auto d-block mt-4" value="Save" >
                                     <?php endif; ?>
                                 </form>
                             </div>
@@ -724,7 +758,15 @@
         <button type="button" class="btn lufera-bg btn-warning w-100" id="saveEditBtn">Save</button>
     </div>
 </div>
-
+<script>
+    document.getElementById('allow_prefill').addEventListener('change', function () {
+        document.getElementById('prefill_name_wrapper').style.display = this.checked ? 'block' : 'none';
+        if (!this.checked) {
+            const inp = document.getElementById('field_prefill_name');
+            if (inp) inp.value = '';
+        }
+    });
+</script>
 <script>
     document.addEventListener('DOMContentLoaded', function () {
     let currentField = '';
@@ -1082,7 +1124,7 @@
                     fields.forEach(field => {
                         const input = document.getElementById(`field_${field.id}`);
                         const value = data[field.id]?.value || '';
-
+                        
                         if (field.type !== 'file' && input) {
                             input.value = value;
                         } else if (field.id === 'screenshots' && value) {
