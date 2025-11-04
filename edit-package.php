@@ -119,6 +119,11 @@ $addonsQuery = $conn->query("SELECT id, name FROM `add-on-service` ORDER BY name
 $addons_list = [];
 while ($row = $addonsQuery->fetch_assoc()) $addons_list[] = $row;
 
+// ✅ Fetch available GST rates from taxes table
+$gstQuery = $conn->query("SELECT id, tax_name, rate FROM taxes ORDER BY rate ASC");
+$gst_list = [];
+while ($row = $gstQuery->fetch_assoc()) $gst_list[] = $row;
+
 // Existing selections
 $selectedPackages = !empty($package['addon_package']) ? explode(',', $package['addon_package']) : [];
 $selectedProducts = !empty($package['addon_product']) ? explode(',', $package['addon_product']) : [];
@@ -134,16 +139,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save'])) {
     $updated_at = date("Y-m-d H:i:s");
     $cat_id = $_POST['cat_id'];
     $module = $_POST['module'];
+    $gst_id = $_POST['gst_id']; // ✅ added gst_id field
     $addon_package = isset($_POST['packages']) && is_array($_POST['packages']) ? implode(',', $_POST['packages']) : '';
     $addon_product = isset($_POST['products']) && is_array($_POST['products']) ? implode(',', $_POST['products']) : '';
     $addon_service = isset($_POST['addons']) && is_array($_POST['addons']) ? implode(',', $_POST['addons']) : '';
 
     // Update package
-    $stmt = $conn->prepare("UPDATE package SET package_name=?, title=?, subtitle=?, description=?, cat_id=?, template=?, created_at=?, addon_package=?, addon_product=?, addon_service=? WHERE id=?");
+    $stmt = $conn->prepare("UPDATE package SET package_name=?, title=?, subtitle=?, description=?, cat_id=?, template=?, created_at=?, addon_package=?, addon_product=?, addon_service=?, gst_id=? WHERE id=?");
     if ($stmt === false) {
         die("Prepare failed for update package: " . $conn->error);
     }
-    $stmt->bind_param("ssssisssssi", $package_name, $title, $subtitle, $description, $cat_id, $module, $updated_at, $addon_package, $addon_product, $addon_service, $package_id);
+    $stmt->bind_param("ssssisssssii", $package_name, $title, $subtitle, $description, $cat_id, $module, $updated_at, $addon_package, $addon_product, $addon_service, $gst_id, $package_id);
 
     if ($stmt->execute()) {
         $stmt->close();
@@ -420,6 +426,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save'])) {
                                         <p>No add-on services available.</p>
                                     <?php endif; ?>
                                 </div>
+                            </div>
+                        </div>
+
+                        <!-- ✅ GST Dropdown (new section) -->
+                        <div class="mb-2">
+                            <label class="form-label fw-semibold text-primary-light text-sm mb-8">
+                                GST <span class="text-danger-600">*</span>
+                            </label>
+                            <select class="form-control radius-8" name="gst_id" required>
+                                <option value="">Select GST</option>
+                                <?php foreach ($gst_list as $gst): ?>
+                                    <option value="<?php echo $gst['id']; ?>"
+                                        <?php echo ($package['gst_id'] == $gst['id']) ? 'selected' : ''; ?>>
+                                        <?php echo htmlspecialchars($gst['rate']) . '% (' . htmlspecialchars($gst['tax_name']) . ')'; ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                            <div class="invalid-feedback">
+                                Please select a GST.
                             </div>
                         </div>
 
