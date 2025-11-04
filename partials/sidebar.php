@@ -95,6 +95,15 @@
                             \$addons_list[] = \$row;
                         }
                     }
+
+                    // ✅ Fetch GST (Taxes)
+                    \$gst_list = [];
+                    \$result = \$conn->query("SELECT id, tax_name, rate FROM taxes");
+                    if (\$result && \$result->num_rows > 0) {
+                        while (\$row = \$result->fetch_assoc()) {
+                            \$gst_list[] = \$row;
+                        }
+                    }
                     
                     if (\$_SERVER['REQUEST_METHOD'] == 'POST') {
                         \$package_name = \$_POST['package_name'];                           
@@ -111,8 +120,10 @@
                         \$cat_id = $product_category;
                         \$template = "$template";
 
-                        \$stmt = \$conn->prepare("INSERT INTO package (package_name, title, subtitle, description, cat_id, created_at, template, addon_service, addon_package, addon_product) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-                        \$stmt->bind_param("ssssisssss", \$package_name, \$title, \$subtitle, \$description, \$cat_id, \$created_at, \$template, \$addons, \$addon_packages, \$addon_products);
+                        \$gst_id = !empty(\$_POST['gst_id']) ? \$_POST['gst_id'] : NULL;
+
+                        \$stmt = \$conn->prepare("INSERT INTO package (package_name, title, subtitle, description, cat_id, created_at, template, addon_service, addon_package, addon_product, gst_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                        \$stmt->bind_param("ssssissssss", \$package_name, \$title, \$subtitle, \$description, \$cat_id, \$created_at, \$template, \$addons, \$addon_packages, \$addon_products, \$gst_id);
 
                         if (\$stmt->execute()) {
                             \$package_id = \$conn->insert_id;
@@ -367,6 +378,23 @@
                                                 </div>
                                             </div>
                                         </div>
+
+                                        <!-- ✅ GST Dropdown -->
+                                        <div class="mb-2">
+                                            <label class="form-label fw-semibold text-primary-light text-sm mb-8">GST (Tax)</label>
+                                            <select class="form-control radius-8" name="gst_id">
+                                                <option value="">Select GST</option>
+                                                <?php if (!empty(\$gst_list)): ?>
+                                                    <?php foreach (\$gst_list as \$gst): ?>
+                                                        <option value="<?= \$gst['id']; ?>">
+                                                            <?= htmlspecialchars(\$gst['rate']) . '% (' . htmlspecialchars(\$gst['tax_name']) . ')'; ?>
+                                                        </option>
+                                                    <?php endforeach; ?>
+                                                <?php else: ?>
+                                                    <option value="">No taxes found</option>
+                                                <?php endif; ?>
+                                            </select>
+                                        </div>
                                         
                                         <div class="d-flex align-items-center justify-content-center gap-3">
                                             <button type="button" class="border border-danger-600 bg-hover-danger-200 text-danger-600 text-md px-56 py-11 radius-8">
@@ -420,35 +448,33 @@
                         });
                     });
             
-            // Add/remove duration+price rows with value/unit combination
-            const durationWrapper = document.getElementById("duration-wrapper");
-            durationWrapper.addEventListener("click", function (e) {
-                if (e.target && e.target.classList.contains("add-duration")) {
-                    e.preventDefault();
-                    const newGroup = document.createElement("div");
-                    newGroup.className = "duration-group mb-10 d-flex gap-2 align-items-center";
-                    newGroup.innerHTML = `
-                        <input type="number" name="duration_values[]" class="form-control radius-8" placeholder="Value" required min="1" style="width: 25%;" onkeydown="return event.key !== 'e'">
-                        <select name="duration_units[]" class="form-control radius-8" required style="width: 25%;">
-                            <option value="">Select Unit</option>
-                            <option value="days">Days</option>
-                            <option value="months">Months</option>
-                            <option value="years">Years</option>
-                        </select>
-                        <input type="number" name="prices[]" class="form-control radius-8" placeholder="Enter price" required min="0" style="width: 25%;" onkeydown="return event.key !== 'e'">
-                        <input type="number" name="pre_prices[]" class="form-control radius-8" placeholder="Enter preview price" required min="0" style="width: 25%;" onkeydown="return event.key !== 'e'">
-                        <button type="button" class="btn btn-sm btn-danger remove-duration">−</button>
-                    `;
-                    durationWrapper.appendChild(newGroup);
-                }
-                if (e.target && e.target.classList.contains("remove-duration")) {
-                    e.preventDefault();
-                    e.target.parentElement.remove();
-                }
-            });
-            
-            
-            </script>
+                    // Add/remove duration+price rows with value/unit combination
+                    const durationWrapper = document.getElementById("duration-wrapper");
+                    durationWrapper.addEventListener("click", function (e) {
+                        if (e.target && e.target.classList.contains("add-duration")) {
+                            e.preventDefault();
+                            const newGroup = document.createElement("div");
+                            newGroup.className = "duration-group mb-10 d-flex gap-2 align-items-center";
+                            newGroup.innerHTML = `
+                                <input type="number" name="duration_values[]" class="form-control radius-8" placeholder="Value" required min="1" style="width: 25%;" onkeydown="return event.key !== 'e'">
+                                <select name="duration_units[]" class="form-control radius-8" required style="width: 25%;">
+                                    <option value="">Select Unit</option>
+                                    <option value="days">Days</option>
+                                    <option value="months">Months</option>
+                                    <option value="years">Years</option>
+                                </select>
+                                <input type="number" name="prices[]" class="form-control radius-8" placeholder="Enter price" required min="0" style="width: 25%;" onkeydown="return event.key !== 'e'">
+                                <input type="number" name="pre_prices[]" class="form-control radius-8" placeholder="Enter preview price" required min="0" style="width: 25%;" onkeydown="return event.key !== 'e'">
+                                <button type="button" class="btn btn-sm btn-danger remove-duration">−</button>
+                            `;
+                            durationWrapper.appendChild(newGroup);
+                        }
+                        if (e.target && e.target.classList.contains("remove-duration")) {
+                            e.preventDefault();
+                            e.target.parentElement.remove();
+                        }
+                    });
+                </script>
 
                 <?php include './partials/layouts/layoutBottom.php' ?>
             PHP;

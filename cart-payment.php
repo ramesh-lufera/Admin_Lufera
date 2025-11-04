@@ -29,10 +29,33 @@
         $id = $_POST['id'];
         $type = $_POST['type'];
         $plan_name = $_POST['plan_name'];
-        $gst = $_POST['gst'];
+        // $gst = $_POST['gst'];
         $price = $_POST['price'];
+
+        // --- Fetch Tax Info from taxes table using gst_id ---
+        $gst_id = $_POST['gst_id'] ?? null;
+        $tax_name = "Tax";
+        $tax_rate = 0;
+
+        if (!empty($gst_id)) {
+            $tax_query = $conn->prepare("SELECT tax_name, rate FROM taxes WHERE id = ?");
+            $tax_query->bind_param("i", $gst_id);
+            $tax_query->execute();
+            $tax_result = $tax_query->get_result();
+            if ($tax_result && $tax_result->num_rows > 0) {
+                $tax_row = $tax_result->fetch_assoc();
+                $tax_name = $tax_row['tax_name'];
+                $tax_rate = floatval($tax_row['rate']);
+            }
+            $tax_query->close();
+        }
+
+        // --- Calculate GST dynamically based on rate ---
+        $gst = round($price * ($tax_rate / 100), 2);
+        $total_price = round($price + $gst, 2);
+
         $duration = $_POST['duration'];
-        $total_price = $_POST['total_price'];
+        // $total_price = $_POST['total_price'];
         $receipt_id = $_POST['receipt_id'];
         $created_on = $_POST['created_on'];
         $get_addon = $_POST['get_addon'];
@@ -156,6 +179,8 @@
         $user_id = $_SESSION['user_id'];
         // $subtotal = $total_price;
         $subtotal = $price + $addon_total;
+        $discount_amount = floatval($_POST['discount_amount'] ?? 0);
+        $coupon_code = $_POST['coupon_code'];
 
         $is_renewal = isset($_POST['renewal']) && $_POST['renewal'] == 1;
 
@@ -386,11 +411,11 @@
             $main_subtotal = $price + floatval($insert_addon_price);
             $main_discount = $discount ?? 0;
             $main_gst      = $main_subtotal * 0.18; // 18% GST
-            $main_amount   = $main_subtotal - $main_discount + $main_gst;
+            $main_amount   = $main_subtotal - $main_discount + $main_gst - $discount_amount;
             $main_balance_due  = $main_amount - $payment_made;
 
-            $sql = "INSERT INTO orders (user_id, invoice_id, plan, duration, amount, gst, price, addon_price, status, payment_method, discount, payment_made, created_on, subtotal, balance_due, addon_service, type) VALUES 
-                    ('$client_id', '$receipt_id', '$plan_id', '$duration' ,'$main_amount', '$main_gst', '$price', '$insert_addon_price', 'Pending', '$pay_method', '$main_discount', '$payment_made', '$created_at', '$main_subtotal', '$main_amount', '$get_addon', '$type')";
+            $sql = "INSERT INTO orders (user_id, invoice_id, plan, duration, amount, gst, price, addon_price, status, payment_method, discount, payment_made, created_on, subtotal, balance_due, addon_service, type, coupon_code, discount_amount) VALUES 
+                    ('$client_id', '$receipt_id', '$plan_id', '$duration' ,'$main_amount', '$main_gst', '$price', '$insert_addon_price', 'Pending', '$pay_method', '$main_discount', '$payment_made', '$created_at', '$main_subtotal', '$main_amount', '$get_addon', '$type', '$coupon_code', '$discount_amount')";
 
             if (mysqli_query($conn, $sql)) {
                 // ================= Packages =================
@@ -817,6 +842,10 @@
         <input type="hidden" value="<?php echo $get_packages ?? ''; ?>" name="get_packages">
         <input type="hidden" value="<?php echo $get_products ?? ''; ?>" name="get_products">
         <input type="hidden" value="<?php echo $addon_total; ?>" name="addon-total">
+        <input type="hidden" name="gst_id" value="<?php echo $_POST['gst_id'] ?? ''; ?>">
+        <input type="hidden" name="original_total_price" value="<?php echo $total_price; ?>">
+        <input type="hidden" id="coupon_code_hidden" name="coupon_code" value="<?php echo isset($_POST['coupon_code']) ? htmlspecialchars($_POST['coupon_code']) : ''; ?>">
+        <input type="hidden" id="discount_amount" name="discount_amount" value="0.00">
 
         <?php if (isset($_POST['renewal']) && $_POST['renewal'] == 1): ?>
             <input type="hidden" name="renewal" value="1">
@@ -1004,10 +1033,17 @@
                                         <td class="text-end"><?php echo htmlspecialchars($symbol) . number_format($hostinger_balance, 2); ?></td>
                                     </tr>
                                     <!-- Tax (GST 18%) -->
-                                    <tr>
+                                    <!-- <tr>
                                         <td>Tax (GST 18%)</td>
                                         <td class="text-end"><?php echo htmlspecialchars($symbol) . number_format($gst, 2); ?></td>
+                                    </tr> -->
+
+                                    <!-- Tax (Dynamic from taxes table) -->
+                                    <tr>
+                                        <td><?php echo htmlspecialchars($tax_name) . " (" . number_format($tax_rate, 2) . "%)"; ?></td>
+                                        <td class="text-end gst-display"><?php echo htmlspecialchars($symbol) . number_format($gst, 2); ?></td>
                                     </tr>
+
                                     <!-- Estimated Total -->
                                     <tr>
                                         <td class="border-0 fw-semibold">Total</td>
@@ -1033,7 +1069,7 @@
                             <div class="mb-3">
                                 <label for="coupon_code" class="fw-medium mb-2">Coupon Code</label>
                                 <div class="d-flex gap-2 align-items-center">
-                                    <input type="text" id="coupon_code" name="coupon_code" class="form-control" placeholder="Enter coupon code" value="<?php echo isset($_POST['coupon_code']) ? htmlspecialchars($_POST['coupon_code']) : ''; ?>">
+                                    <input type="text" id="coupon_code" name="coupon_code" class="form-control" readonly value="<?php echo isset($_POST['coupon_code']) ? htmlspecialchars($_POST['coupon_code']) : ''; ?>">
                                     <button type="button" class="btn custom-pay-btn" data-bs-toggle="modal" data-bs-target="#couponModal">View Coupons</button>
                                 </div>
                             </div>
@@ -1323,97 +1359,93 @@
     });
 
 </script>
+
 <script>
-document.addEventListener('DOMContentLoaded', function () {
-    const symbol = '<?php echo htmlspecialchars($symbol); ?>';
-    const totalCell = document.querySelector('.plan-details-table tr:last-child td.text-end');
-    const totalValueInitial = parseFloat(<?php echo json_encode($total_price); ?>);
-    const gstValue = parseFloat(<?php echo json_encode($gst); ?>);
-    const tableBody = document.querySelector('.plan-details-table tbody');
-
-    // Find GST row safely
-    let gstRow = null;
-    document.querySelectorAll('.plan-details-table tbody tr').forEach(tr => {
-        const firstTd = tr.querySelector('td');
-        if (firstTd && firstTd.textContent.trim() === 'Tax (GST 18%)') {
-            gstRow = tr;
-        }
-    });
-
-    let currentDiscountRow = null;
-
-    document.querySelectorAll('.apply-coupon').forEach(button => {
-        button.addEventListener('click', function () {
-            const couponCode = this.getAttribute('data-coupon-code');
-            const discountValueRaw = parseFloat(this.getAttribute('data-discount-value')) || 0;
-            const discountType = this.getAttribute('data-discount-type') || ''; 
-            // Expected values: "Flat Amount" or "Percentage"
-
-            const couponInput = document.getElementById('coupon_code');
-            couponInput.value = couponCode;
-
-            // Hide modal
-            const modal = bootstrap.Modal.getInstance(document.getElementById('couponModal'));
-            modal.hide();
-
-            // Calculate discount based on type
-            let discountValue = 0;
-            if (discountType.toLowerCase().includes('percentage')) {
-                discountValue = totalValueInitial * discountValueRaw / 100;
-            } else if (discountType.toLowerCase().includes('flat')) {
-                discountValue = discountValueRaw;
-            } else {
-                discountValue = 0; // fallback
-            }
-
-            // Remove previous discount row if any
-            if (currentDiscountRow) currentDiscountRow.remove();
-
-            // Insert new discount row below GST
-            const discountRow = document.createElement('tr');
-            discountRow.innerHTML = `
-                <td>Discount (${couponCode})</td>
-                <td class="text-end text-success">- ${symbol}${discountValue.toFixed(2)}</td>
-            `;
-            if (gstRow) gstRow.insertAdjacentElement('afterend', discountRow);
-            else tableBody.appendChild(discountRow);
-
-            currentDiscountRow = discountRow;
-
-            // Update total
-            const newTotal = totalValueInitial - discountValue;
-            totalCell.textContent = symbol + newTotal.toFixed(2);
-
-            // Update hidden inputs for backend
-            let discountInput = document.querySelector('input[name="discount_value"]');
-            let finalTotalInput = document.querySelector('input[name="final_total"]');
-            if (!discountInput) {
-                discountInput = document.createElement('input');
-                discountInput.type = 'hidden';
-                discountInput.name = 'discount_value';
-                document.querySelector('form').appendChild(discountInput);
-            }
-            if (!finalTotalInput) {
-                finalTotalInput = document.createElement('input');
-                finalTotalInput.type = 'hidden';
-                finalTotalInput.name = 'final_total';
-                document.querySelector('form').appendChild(finalTotalInput);
-            }
-            discountInput.value = discountValue.toFixed(2);
-            finalTotalInput.value = newTotal.toFixed(2);
-
-            // SweetAlert confirmation
-            Swal.fire({
-                icon: 'success',
-                title: 'Coupon Applied',
-                html: `Discount of <b>${symbol}${discountValue.toFixed(2)}</b> applied!<br>New total: <b>${symbol}${newTotal.toFixed(2)}</b>`,
-                confirmButtonColor: '#fec700',
-                timer: 2500,
-                timerProgressBar: true
+    document.addEventListener('DOMContentLoaded', function () {
+        const symbol          = '<?php echo htmlspecialchars($symbol); ?>';
+        const originalTotal   = parseFloat(<?php echo json_encode($total_price); ?>);
+        const gstValue        = parseFloat(<?php echo json_encode($gst); ?>);
+        const totalCell       = document.querySelector('.plan-details-table tr:last-child td.text-end');
+        const hiddenTotal     = document.querySelector('input[name="total_price"]');
+        const hiddenDiscount  = document.getElementById('discount_amount'); // <-- NEW
+        const tableBody       = document.querySelector('.plan-details-table tbody');
+    
+        let gstRow = null;
+        document.querySelectorAll('.plan-details-table tbody tr').forEach(tr => {
+            const td = tr.querySelector('td');
+            if (td && td.textContent.trim() === 'Tax (GST 18%)') gstRow = tr;
+        });
+    
+        let currentDiscountRow = null;
+    
+        document.querySelectorAll('.apply-coupon').forEach(btn => {
+            btn.addEventListener('click', function () {
+                const couponCode      = this.dataset.couponCode;
+                const discountRaw     = parseFloat(this.dataset.discountValue) || 0;
+                const discountType    = (this.dataset.discountType || '').toLowerCase();
+    
+                // Sync visible + hidden coupon fields
+                document.getElementById('coupon_code').value = couponCode;
+                document.getElementById('coupon_code_hidden').value = couponCode;
+    
+                // Close modal
+                bootstrap.Modal.getInstance(document.getElementById('couponModal')).hide();
+    
+                // Calculate discount
+                let discount = 0;
+                if (discountType.includes('percentage')) {
+                    discount = originalTotal * discountRaw / 100;
+                } else if (discountType.includes('flat')) {
+                    discount = discountRaw;
+                }
+    
+                // Remove old discount row
+                if (currentDiscountRow) currentDiscountRow.remove();
+    
+                // Insert new discount row
+                const discountRow = document.createElement('tr');
+                discountRow.innerHTML = `
+                    <td>Discount (${couponCode})</td>
+                    <td class="text-end text-success">- ${symbol}${discount.toFixed(2)}</td>
+                `;
+                if (gstRow) {
+                    gstRow.insertAdjacentElement('afterend', discountRow);
+                } else {
+                    tableBody.appendChild(discountRow);
+                }
+                currentDiscountRow = discountRow;
+    
+                // NEW: Update hidden discount field
+                hiddenDiscount.value = discount.toFixed(2);
+    
+                // Update total
+                const newTotal = originalTotal - discount;
+                totalCell.textContent = `${symbol}${newTotal.toFixed(2)}`;
+                hiddenTotal.value = newTotal.toFixed(2);
+    
+                // Optional: visual feedback
+                document.getElementById('coupon_code').style.color = '#28a745';
+    
+                // Success message
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Coupon Applied',
+                    html: `Discount <b>${symbol}${discount.toFixed(2)}</b> applied!<br>New total: <b>${symbol}${newTotal.toFixed(2)}</b>`,
+                    confirmButtonColor: '#fec700',
+                    timer: 2500,
+                    timerProgressBar: true
+                });
             });
         });
+    
+        // Optional: Sync on page load
+        const initDiscount = parseFloat(hiddenDiscount.value) || 0;
+        if (initDiscount > 0) {
+            const initTotal = originalTotal - initDiscount;
+            totalCell.textContent = `${symbol}${initTotal.toFixed(2)}`;
+            hiddenTotal.value = initTotal.toFixed(2);
+        }
     });
-});
 </script>
 
 <?php include './partials/layouts/layoutBottom.php' ?>

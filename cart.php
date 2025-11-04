@@ -24,7 +24,29 @@
         $price = $_POST['price'];
         $duration = $_POST['duration'];
         $created_on = $_POST['created_on'];
-        $gst = $price * 0.18; // 10% GST
+
+        // $gst = $price * 0.18; // 10% GST
+
+        $gst_rate = 18; // Default GST rate
+        $gst_id = isset($_POST['gst_id']) ? intval($_POST['gst_id']) : 0;
+
+        if ($gst_id > 0) {
+            $gst_query = $conn->prepare("SELECT rate, tax_name FROM taxes WHERE id = ?");
+            $gst_query->bind_param("i", $gst_id);
+            $gst_query->execute();
+            $gst_result = $gst_query->get_result();
+            if ($gst_row = $gst_result->fetch_assoc()) {
+                $gst_rate = floatval($gst_row['rate']);
+                $gst_name = $gst_row['tax_name'];
+            }
+            $gst_query->close();
+        } else {
+            $gst_name = "GST";
+        }
+
+        $gst = $price * ($gst_rate / 100);
+        // $total_price = $price + $gst;
+
         $total_price = $price + $gst;
         $auto_id = rand(10000000, 99999999);
         $get_addon = $_POST['addon_service'];
@@ -113,9 +135,15 @@
                                     <td>Discount</td>
                                     <td class="text-end">N/A</td>
                                 </tr> -->
-                                <tr>
+                                <!-- <tr>
                                     <td>Tax (GST 18%)</td>
                                     <td class="text-end gst-display"><?= htmlspecialchars($symbol) ?><?php echo number_format($gst, 2); ?></td>
+                                </tr> -->
+                                <tr>
+                                    <td>Tax (<?= htmlspecialchars($gst_name) ?> <?= number_format($gst_rate, 2) ?>%)</td>
+                                    <td class="text-end gst-display">
+                                        <?= htmlspecialchars($symbol) ?><?= number_format($gst, 2) ?>
+                                    </td>
                                 </tr>
                                 <tr>
                                     <td class="border-0">Estimated Total</td>
@@ -437,39 +465,43 @@
             );
     ?>
     <?php if ($profileComplete) { ?>
-    <form action="cart-payment.php" method="POST" style="display:block;" id="checkoutForm">
-        <input type="hidden" name="type" value="<?php echo $type; ?>">    
-        <input type="hidden" name="id" value="<?php echo $id; ?>">
-        <input type="hidden" name="plan_name" value="<?php echo $plan_name; ?>">
-        <input type="hidden" name="price" value="<?php echo $price; ?>">
-        <input type="hidden" name="duration" value="<?php echo $duration; ?>">
-        <input type="hidden" name="total_price" value="<?php echo $total_price; ?>">
-        <input type="hidden" name="receipt_id" value="<?php echo $auto_id; ?>">
-        <input type="hidden" name="created_on" value="<?php echo $created_on; ?>">
-        <input type="hidden" name="get_addon" id="get_addon_input" value="">
-        <input type="hidden" name="addon-total" id="addon-total" value="">
-        <input type="hidden" class="gst-hidden" name="gst" value="<?php echo $gst; ?>">
-        <input type="hidden" class="subtotal-display-hidden" name="subtotal-display" value="<?php echo $price; ?>">
-        <button type="submit" class="lufera-bg text-center btn-sm px-12 py-10 float-end" style="width:150px; border: 1px solid #000">Continue</button>   
-    </form>
+        <form action="cart-payment.php" method="POST" style="display:block;" id="checkoutForm">
+            <input type="hidden" name="type" value="<?php echo $type; ?>">    
+            <input type="hidden" name="id" value="<?php echo $id; ?>">
+            <input type="hidden" name="plan_name" value="<?php echo $plan_name; ?>">
+            <input type="hidden" name="price" value="<?php echo $price; ?>">
+            <input type="hidden" name="duration" value="<?php echo $duration; ?>">
+            <input type="hidden" name="total_price" value="<?php echo $total_price; ?>">
+            <input type="hidden" name="receipt_id" value="<?php echo $auto_id; ?>">
+            <input type="hidden" name="created_on" value="<?php echo $created_on; ?>">
+            <input type="hidden" name="get_addon" id="get_addon_input" value="">
+            <input type="hidden" name="addon-total" id="addon-total" value="">
+            <input type="hidden" class="gst-hidden" name="gst" value="<?php echo $gst; ?>">
+            <input type="hidden" class="subtotal-display-hidden" name="subtotal-display" value="<?php echo $price; ?>">
+            <input type="hidden" name="gst_id" value="<?php echo $gst_id; ?>">
+
+            <button type="submit" class="lufera-bg text-center btn-sm px-12 py-10 float-end" style="width:150px; border: 1px solid #000">Continue</button>   
+        </form>
 
     <?php } else { ?>
-    <form action="cart-payment.php" method="POST" style="display:none;" id="checkoutForm">
-        <input type="hidden" name="type" value="<?php echo $type; ?>">    
-        <input type="hidden" name="id" value="<?php echo $id; ?>">
-        <input type="hidden" name="plan_name" value="<?php echo $plan_name; ?>">
-        <input type="hidden" name="price" value="<?php echo $price; ?>">
-        <input type="hidden" name="duration" value="<?php echo $duration; ?>">
-        <input type="hidden" name="total_price" value="<?php echo $total_price; ?>">
-        <input type="hidden" name="receipt_id" value="<?php echo $auto_id; ?>">
-        <input type="hidden" name="created_on" value="<?php echo $created_on; ?>">
-        <input type="hidden" name="get_addon" id="get_addon_input" value="">
-        <input type="hidden" name="addon-total" id="addon-total" value="">
-        <input type="hidden" class="gst-hidden" name="gst" value="<?php echo $gst; ?>">
-        <input type="hidden" class="subtotal-display-hidden" name="subtotal-display" value="<?php echo $price; ?>">
-        <button type="submit" class="lufera-bg text-center btn-sm px-12 py-10 float-end" 
-            style="width:150px; border: 1px solid #000">Continue</button>
-    </form>
+        <form action="cart-payment.php" method="POST" style="display:none;" id="checkoutForm">
+            <input type="hidden" name="type" value="<?php echo $type; ?>">    
+            <input type="hidden" name="id" value="<?php echo $id; ?>">
+            <input type="hidden" name="plan_name" value="<?php echo $plan_name; ?>">
+            <input type="hidden" name="price" value="<?php echo $price; ?>">
+            <input type="hidden" name="duration" value="<?php echo $duration; ?>">
+            <input type="hidden" name="total_price" value="<?php echo $total_price; ?>">
+            <input type="hidden" name="receipt_id" value="<?php echo $auto_id; ?>">
+            <input type="hidden" name="created_on" value="<?php echo $created_on; ?>">
+            <input type="hidden" name="get_addon" id="get_addon_input" value="">
+            <input type="hidden" name="addon-total" id="addon-total" value="">
+            <input type="hidden" class="gst-hidden" name="gst" value="<?php echo $gst; ?>">
+            <input type="hidden" class="subtotal-display-hidden" name="subtotal-display" value="<?php echo $price; ?>">
+            <input type="hidden" name="gst_id" value="<?php echo $gst_id; ?>">
+
+            <button type="submit" class="lufera-bg text-center btn-sm px-12 py-10 float-end" 
+                style="width:150px; border: 1px solid #000">Continue</button>
+        </form>
         <button class="lufera-bg text-center btn-sm px-12 py-10 float-end" data-bs-toggle="modal" data-bs-target="#exampleModal" style="width:250px; border: 1px solid #000">Update Profile & Continue</button>
     <?php
     }
@@ -582,7 +614,8 @@
         }
     
         const basePrice = Number(<?= json_encode(floatval($price)) ?>) || 0;
-        const gstRate = 0.18;
+        // const gstRate = 0.18;
+        let gstRate = <?= json_encode(floatval($gst_rate / 100)) ?>; // GST rate from DB (converted to decimal)
         const symbol = <?= json_encode($symbol) ?>;
     
         // state

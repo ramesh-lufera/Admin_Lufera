@@ -41,7 +41,7 @@
 
         $duration_sql = "
             SELECT d.*, p.title, p.subtitle, p.description, p.package_name, 
-                   p.addon_service, p.addon_package, p.addon_product, p.is_active AS pkg_active
+                   p.addon_service, p.addon_package, p.addon_product, p.gst_id, p.is_active AS pkg_active
             FROM durations d
             INNER JOIN package p ON d.package_id = p.id
             WHERE d.package_id IN ($package_ids)
@@ -171,6 +171,7 @@
                                                     <input type="hidden" name="addon_service" value="<?= htmlspecialchars($package['addon_service']) ?>">
                                                     <input type="hidden" name="addon_package" value="<?= htmlspecialchars($package['addon_package']) ?>">
                                                     <input type="hidden" name="addon_product" value="<?= htmlspecialchars($package['addon_product']) ?>">
+                                                    <input type="hidden" name="gst_id" value="<?= htmlspecialchars($package['gst_id']) ?>">
 
                                                     <button type="submit" class="lufera-bg text-center text-white text-sm btn-sm px-12 py-10 w-100 radius-8 mt-28" <?= !$isActive ? 'disabled' : '' ?>>Get started</button>
                                                 </form>
