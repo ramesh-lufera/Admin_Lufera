@@ -353,6 +353,8 @@
 
                 // Update subtotal display
                 $('.subtotal-display').text("<?= $symbol ?>" + subtotal.toFixed(2));
+                $('.subtotal-display-hidden').val(subtotal.toFixed(2));
+
 
                 // Calculate GST and total
                 let gst = subtotal * gstRate;
@@ -447,6 +449,7 @@
         <input type="hidden" name="get_addon" id="get_addon_input" value="">
         <input type="hidden" name="addon-total" id="addon-total" value="">
         <input type="hidden" class="gst-hidden" name="gst" value="<?php echo $gst; ?>">
+        <input type="hidden" class="subtotal-display-hidden" name="subtotal-display" value="<?php echo $price; ?>">
         <button type="submit" class="lufera-bg text-center btn-sm px-12 py-10 float-end" style="width:150px; border: 1px solid #000">Continue</button>   
     </form>
 
@@ -463,6 +466,7 @@
         <input type="hidden" name="get_addon" id="get_addon_input" value="">
         <input type="hidden" name="addon-total" id="addon-total" value="">
         <input type="hidden" class="gst-hidden" name="gst" value="<?php echo $gst; ?>">
+        <input type="hidden" class="subtotal-display-hidden" name="subtotal-display" value="<?php echo $price; ?>">
         <button type="submit" class="lufera-bg text-center btn-sm px-12 py-10 float-end" 
             style="width:150px; border: 1px solid #000">Continue</button>
     </form>
