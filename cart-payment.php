@@ -65,6 +65,7 @@
         $hostinger_balance = $_POST['hostinger_balance'];
         $subtotal_display = $_POST['subtotal-display'];
         $invoice_id = $_POST['invoice_id'];
+        $web_id = $_POST['invoice_id'];
 
         // For Renewal..
         if (isset($_POST['renewal']) && $_POST['renewal'] == 1 && !empty($id)) {
@@ -707,7 +708,7 @@
 ?>
 
 <style>
-    .plan-details-table tbody tr td {
+    .plan-details-table tbody tr td, .plan-details-tables tbody tr td {
         padding: 15px .5rem;
         border-bottom: 1px solid #dadada;
         width: 50%;
@@ -873,7 +874,7 @@
                             <!-- <p class="mb-0">Perfect plan to get started for your own Website</p> -->
                         </div>
                         <div class="card-body p-16">
-                            <table class="plan-details-table mb-0 w-100">
+                            <table class="plan-details-tables mb-0 w-100">
                                 <tbody>
                                     <!-- <tr>
                                         <td>Period</td>
@@ -1028,10 +1029,12 @@
                                             </tr>
                                         <?php endforeach; ?>
                                     <?php endif; ?>
+                                    <?php if($hostinger_balance !="") { ?>
                                     <tr>
                                         <td>Exisitng Plan Balance</td>
                                         <td class="text-end"><?php echo htmlspecialchars($symbol) . number_format($hostinger_balance, 2); ?></td>
                                     </tr>
+                                    <?php } ?>
                                     <!-- Tax (GST 18%) -->
                                     <!-- <tr>
                                         <td>Tax (GST 18%)</td>
@@ -1065,64 +1068,36 @@
                             <p class="mb-0 text-muted">Order Summary includes discounts & taxes</p>
                         </div>
                         <div class="card-body p-16">
-                            <!-- Coupon Code Section -->
+                            <!-- ==================== COUPON CODE SECTION ==================== -->
                             <div class="mb-3">
                                 <label for="coupon_code" class="fw-medium mb-2">Coupon Code</label>
                                 <div class="d-flex gap-2 align-items-center">
-                                    <input type="text" id="coupon_code" name="coupon_code" class="form-control" readonly value="<?php echo isset($_POST['coupon_code']) ? htmlspecialchars($_POST['coupon_code']) : ''; ?>">
-                                    <button type="button" class="btn custom-pay-btn" data-bs-toggle="modal" data-bs-target="#couponModal">View Coupons</button>
-                                </div>
-                            </div>
+                                    <input type="text"
+                                        id="coupon_code"
+                                        name="coupon_code"
+                                        class="form-control"
+                                        placeholder="Enter coupon code"
+                                        value="<?php echo isset($_POST['coupon_code']) ? htmlspecialchars($_POST['coupon_code']) : ''; ?>">
 
-                            <!-- Coupon List Modal -->
-                            <div class="modal fade" id="couponModal" tabindex="-1" aria-labelledby="couponModalLabel" aria-hidden="true">
-                                <div class="modal-dialog modal-dialog-centered">
-                                    <div class="modal-content">
-                                        <div class="modal-header">
-                                            <h5 class="modal-title" id="couponModalLabel">Available Coupons</h5>
-                                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                                        </div>
-                                        <div class="modal-body">
-                                            <?php
-                                            // Fetch active coupons
-                                            $coupon_sql = "SELECT `id`, `promo_name`, `coupon_code`, `description`, `discount`, `type`, `start_date`, `end_date`, `apply_to`, `applied_packages`, `applied_products`, `applied_services`, `is_Active` 
-                                                        FROM `promotion` 
-                                                        WHERE `is_Active` = 1 AND `end_date` >= CURDATE() AND `start_date` <= CURDATE()";
-                                            $coupon_result = $conn->query($coupon_sql);
-                                            if ($coupon_result->num_rows > 0) {
-                                                while ($coupon = $coupon_result->fetch_assoc()) {
-                                                    $coupon_code = htmlspecialchars($coupon['coupon_code']);
-                                                    $promo_name = htmlspecialchars($coupon['promo_name']);
-                                                    $description = htmlspecialchars($coupon['description']);
-                                                    $discount = htmlspecialchars($coupon['discount']);
-                                                    $type = htmlspecialchars($coupon['type']);
-                                                    ?>
-                                                    <div class="coupon-item mb-3 p-3 border rounded">
-                                                        <h6 class="mb-1"><?php echo $promo_name; ?> (<?php echo $coupon_code; ?>)</h6>
-                                                        <p class="mb-1 small text-muted"><?php echo $description; ?></p>
-                                                        <p class="mb-2 small">Discount: <?php echo $discount . $type; ?></p>
-                                                        <!-- <button type="button" class="btn btn-sm custom-pay-btn apply-coupon w-auto" data-coupon-code="<?php echo $coupon_code; ?>">Apply</button> -->
-                                                        <button type="button" class="btn btn-sm btn-warning apply-coupon"
-                                                        data-coupon-code="<?php echo htmlspecialchars($coupon_code); ?>"
-                                                        data-discount-value="<?php echo htmlspecialchars($discount); ?>"
-                                                        data-discount-type="<?php echo htmlspecialchars($type); ?>"
-                                                        >
-                                                        Apply
-                                                        </button>
+                                    <button type="button"
+                                            id="apply_coupon_btn"
+                                            class="btn custom-pay-btn px-4 lufera-bg">
+                                        Apply
+                                    </button>
 
-                                                    </div>
-                                                    <?php
-                                                }
-                                            } else {
-                                                echo '<p class="text-muted">No active coupons available.</p>';
-                                            }
-                                            ?>
-                                        </div>
-                                        <div class="modal-footer">
-                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                                        </div>
-                                    </div>
+                                    <!-- Optional “View Coupons” button (keeps the old modal) -->
+                                    <!-- <button type="button"
+                                            class="btn btn-outline-secondary"
+                                            data-bs-toggle="modal"
+                                            data-bs-target="#couponModal">
+                                        View Coupons
+                                    </button> -->
                                 </div>
+
+                                <!-- hidden fields (already in your form) -->
+                                <input type="hidden" id="coupon_code_hidden" name="coupon_code"
+                                    value="<?php echo isset($_POST['coupon_code']) ? htmlspecialchars($_POST['coupon_code']) : ''; ?>">
+                                <input type="hidden" id="discount_amount" name="discount_amount" value="0.00">
                             </div>
 
                             <p class="text-muted fw-medium mb-3">How would you like to make the payment? <span class="text-danger-600">*</span></p>
@@ -1361,91 +1336,114 @@
 </script>
 
 <script>
-    document.addEventListener('DOMContentLoaded', function () {
-        const symbol          = '<?php echo htmlspecialchars($symbol); ?>';
-        const originalTotal   = parseFloat(<?php echo json_encode($total_price); ?>);
-        const gstValue        = parseFloat(<?php echo json_encode($gst); ?>);
-        const totalCell       = document.querySelector('.plan-details-table tr:last-child td.text-end');
-        const hiddenTotal     = document.querySelector('input[name="total_price"]');
-        const hiddenDiscount  = document.getElementById('discount_amount'); // <-- NEW
-        const tableBody       = document.querySelector('.plan-details-table tbody');
-    
-        let gstRow = null;
-        document.querySelectorAll('.plan-details-table tbody tr').forEach(tr => {
-            const td = tr.querySelector('td');
-            if (td && td.textContent.trim() === 'Tax (GST 18%)') gstRow = tr;
-        });
-    
-        let currentDiscountRow = null;
-    
-        document.querySelectorAll('.apply-coupon').forEach(btn => {
-            btn.addEventListener('click', function () {
-                const couponCode      = this.dataset.couponCode;
-                const discountRaw     = parseFloat(this.dataset.discountValue) || 0;
-                const discountType    = (this.dataset.discountType || '').toLowerCase();
-    
-                // Sync visible + hidden coupon fields
-                document.getElementById('coupon_code').value = couponCode;
-                document.getElementById('coupon_code_hidden').value = couponCode;
-    
-                // Close modal
-                bootstrap.Modal.getInstance(document.getElementById('couponModal')).hide();
-    
-                // Calculate discount
-                let discount = 0;
-                if (discountType.includes('percentage')) {
-                    discount = originalTotal * discountRaw / 100;
-                } else if (discountType.includes('flat')) {
-                    discount = discountRaw;
-                }
-    
-                // Remove old discount row
-                if (currentDiscountRow) currentDiscountRow.remove();
-    
-                // Insert new discount row
-                const discountRow = document.createElement('tr');
-                discountRow.innerHTML = `
-                    <td>Discount (${couponCode})</td>
-                    <td class="text-end text-success">- ${symbol}${discount.toFixed(2)}</td>
-                `;
-                if (gstRow) {
-                    gstRow.insertAdjacentElement('afterend', discountRow);
-                } else {
-                    tableBody.appendChild(discountRow);
-                }
-                currentDiscountRow = discountRow;
-    
-                // NEW: Update hidden discount field
-                hiddenDiscount.value = discount.toFixed(2);
-    
-                // Update total
-                const newTotal = originalTotal - discount;
-                totalCell.textContent = `${symbol}${newTotal.toFixed(2)}`;
-                hiddenTotal.value = newTotal.toFixed(2);
-    
-                // Optional: visual feedback
-                document.getElementById('coupon_code').style.color = '#28a745';
-    
-                // Success message
-                Swal.fire({
-                    icon: 'success',
-                    title: 'Coupon Applied',
-                    html: `Discount <b>${symbol}${discount.toFixed(2)}</b> applied!<br>New total: <b>${symbol}${newTotal.toFixed(2)}</b>`,
-                    confirmButtonColor: '#fec700',
-                    timer: 2500,
-                    timerProgressBar: true
-                });
-            });
-        });
-    
-        // Optional: Sync on page load
-        const initDiscount = parseFloat(hiddenDiscount.value) || 0;
-        if (initDiscount > 0) {
-            const initTotal = originalTotal - initDiscount;
-            totalCell.textContent = `${symbol}${initTotal.toFixed(2)}`;
-            hiddenTotal.value = initTotal.toFixed(2);
-        }
+document.addEventListener('DOMContentLoaded', function () {
+    const symbol          = '<?php echo htmlspecialchars($symbol); ?>';
+    const originalTotal   = parseFloat(<?php echo json_encode($total_price); ?>);
+    const gstValue        = parseFloat(<?php echo json_encode($gst); ?>);
+    const totalCell       = document.querySelector('.plan-details-table tr:last-child td.text-end');
+    const hiddenTotal     = document.querySelector('input[name="total_price"]');
+    const hiddenDiscount  = document.getElementById('discount_amount');
+    const couponInput     = document.getElementById('coupon_code');
+    const couponHidden    = document.getElementById('coupon_code_hidden');
+    const applyBtn        = document.getElementById('apply_coupon_btn');
+    const tableBody       = document.querySelector('.plan-details-table tbody');
+
+    /* --------------------------------------------------------------
+       INSERT DISCOUNT ROW (same as before)
+       -------------------------------------------------------------- */
+    let gstRow = null;
+    document.querySelectorAll('.plan-details-table tbody tr').forEach(tr => {
+        const td = tr.querySelector('td');
+        if (td && td.textContent.trim().startsWith('<?php echo $tax_name; ?>')) gstRow = tr;
     });
+    let currentDiscountRow = null;
+
+    function insertDiscountRow(code, amount) {
+        if (currentDiscountRow) currentDiscountRow.remove();
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td>Discount (${code})</td>
+            <td class="text-end text-dark">- ${symbol}${amount.toFixed(2)}</td>
+        `;
+        if (gstRow) {
+            gstRow.insertAdjacentElement('afterend', tr);
+        } else {
+            tableBody.prepend(tr);
+        }
+        currentDiscountRow = tr;
+    }
+
+    /* --------------------------------------------------------------
+       APPLY COUPON BUTTON
+       -------------------------------------------------------------- */
+    applyBtn.addEventListener('click', function () {
+        const code = couponInput.value.trim().toUpperCase();
+        if (!code) {
+            Swal.fire({icon:'warning',title:'Enter a code',confirmButtonColor:'#fec700'});
+            return;
+        }
+
+        /* ---- SEND BOTH coupon_code AND the plan id ---- */
+        const formData = new URLSearchParams();
+        formData.append('coupon_code', code);
+        formData.append('id', <?php echo json_encode($id); ?>);   // <-- NEW
+
+        fetch('validate_coupon.php', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+            body: formData
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (!data.valid) {
+                Swal.fire({icon:'error',title:'Invalid Coupon',text:data.message,confirmButtonColor:'#d33'});
+                return;
+            }
+
+            const discountRaw  = parseFloat(data.discount);
+            const discountType = data.type.toLowerCase();
+
+            let discount = 0;
+            if (discountType.includes('percentage')) {
+                discount = originalTotal * discountRaw / 100;
+            } else {
+                discount = discountRaw;
+            }
+
+            couponHidden.value = code;
+            hiddenDiscount.value = discount.toFixed(2);
+            insertDiscountRow(code, discount);
+
+            const newTotal = originalTotal - discount;
+            totalCell.textContent = `${symbol}${newTotal.toFixed(2)}`;
+            hiddenTotal.value = newTotal.toFixed(2);
+
+            Swal.fire({
+                icon: 'success',
+                title: 'Coupon Applied',
+                html: `Discount <b>${symbol}${discount.toFixed(2)}</b> applied!<br>New total: <b>${symbol}${newTotal.toFixed(2)}</b>`,
+                confirmButtonColor: '#fec700',
+                timer: 3000,
+                timerProgressBar: true
+            });
+        })
+        .catch(() => {
+            Swal.fire({icon:'error',title:'Server Error',text:'Could not validate coupon.',confirmButtonColor:'#d33'});
+        });
+    });
+
+    /* --------------------------------------------------------------
+       RE-APPLY COUPON THAT WAS ALREADY POSTED (page reload)
+       -------------------------------------------------------------- */
+    const initDiscount = parseFloat(hiddenDiscount.value) || 0;
+    if (initDiscount > 0) {
+        const initCode = couponHidden.value;
+        insertDiscountRow(initCode, initDiscount);
+        const initTotal = originalTotal - initDiscount;
+        totalCell.textContent = `${symbol}${initTotal.toFixed(2)}`;
+        hiddenTotal.value = initTotal.toFixed(2);
+    }
+});
 </script>
 
 <?php include './partials/layouts/layoutBottom.php' ?>
