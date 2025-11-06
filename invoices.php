@@ -354,7 +354,7 @@
     // ";
 
     // JOIN orders + renewal_invoices with users + websites
-    $query = "
+    /*$query = "
         SELECT
             combined.*,
             combined.username,
@@ -402,7 +402,98 @@
             LEFT JOIN products ON (renewal_invoices.type = 'product' AND renewal_invoices.plan = products.id)
             LEFT JOIN websites ON (renewal_invoices.user_id = websites.user_id AND renewal_invoices.plan = websites.plan)
         ) AS combined
-    ";
+    ";*/
+    $query = "
+    SELECT
+        combined.*,
+        combined.username,
+        combined.first_name,
+        combined.last_name,
+        combined.photo,
+        combined.plan_name,
+        combined.expired_at
+    FROM (
+        SELECT
+            orders.id,
+            orders.user_id,
+            orders.invoice_id,
+            orders.plan,
+            orders.duration,
+            orders.price,
+            orders.addon_price,
+            orders.subtotal,
+            orders.gst,
+            orders.discount,
+            orders.amount,
+            orders.balance_due,
+            orders.payment_made,
+            orders.payment_method,
+            orders.addon_service,
+            orders.type,
+            orders.discount_type,
+            orders.status,
+            orders.created_on,
+            orders.is_Active,
+            orders.coupon_code,
+            orders.discount_amount,
+            users.username,
+            users.first_name,
+            users.last_name,
+            users.photo,
+            websites.expired_at,
+            CASE 
+                WHEN orders.type = 'package' THEN package.package_name
+                WHEN orders.type = 'product' THEN products.name
+                ELSE orders.plan
+            END AS plan_name
+        FROM orders
+        INNER JOIN users ON orders.user_id = users.id
+        LEFT JOIN package ON (orders.type = 'package' AND orders.plan = package.id)
+        LEFT JOIN products ON (orders.type = 'product' AND orders.plan = products.id)
+        LEFT JOIN websites ON orders.invoice_id = websites.invoice_id
+
+        UNION ALL
+
+        SELECT
+            renewal_invoices.id,
+            renewal_invoices.user_id,
+            renewal_invoices.invoice_id,
+            renewal_invoices.plan,
+            renewal_invoices.duration,
+            renewal_invoices.price,
+            renewal_invoices.addon_price,
+            renewal_invoices.subtotal,
+            renewal_invoices.gst,
+            renewal_invoices.discount,
+            renewal_invoices.amount,
+            renewal_invoices.balance_due,
+            renewal_invoices.payment_made,
+            renewal_invoices.payment_method,
+            renewal_invoices.addon_service,
+            renewal_invoices.type,
+            renewal_invoices.discount_type,
+            renewal_invoices.status,
+            renewal_invoices.created_on,
+            renewal_invoices.is_Active,
+            NULL AS coupon_code,
+            NULL AS discount_amount,
+            users.username,
+            users.first_name,
+            users.last_name,
+            users.photo,
+            websites.expired_at,
+            CASE 
+                WHEN renewal_invoices.type = 'package' THEN package.package_name
+                WHEN renewal_invoices.type = 'product' THEN products.name
+                ELSE renewal_invoices.plan
+            END AS plan_name
+        FROM renewal_invoices
+        INNER JOIN users ON renewal_invoices.user_id = users.id
+        LEFT JOIN package ON (renewal_invoices.type = 'package' AND renewal_invoices.plan = package.id)
+        LEFT JOIN products ON (renewal_invoices.type = 'product' AND renewal_invoices.plan = products.id)
+        LEFT JOIN websites ON (renewal_invoices.user_id = websites.user_id AND renewal_invoices.plan = websites.plan)
+    ) AS combined
+";
 
     // if ($role !== '1' && $role !== '2') {
     //     if (!empty($UserId)) {
