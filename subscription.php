@@ -430,22 +430,36 @@
         $invoice_no = $_POST['invoice_no'];
         $payment_method = $_POST['payment_method'];
         $amount = $_POST['amount'];
-
         $payment_made = $_POST['payment_made'];
-
         $total_amount = $amount + $payment_made;
         $created_at = date("Y-m-d H:i:s");
         $remarks = $_POST['remarks'];
         $balance_due = $_POST['balance_due'];
         $payment_id = generatePaymentID($conn);
+
         $sql = "INSERT INTO record_payment (payment_id, orders_id, invoice_no, payment_method, amount, balance, remarks, paid_date) 
                         VALUES ('$payment_id', '$order_id', '$invoice_no', '$payment_method', '$amount', '$balance_due', '$remarks', '$created_at')";
+            
             if (mysqli_query($conn, $sql)) {
 
-                $siteInsert = "UPDATE orders
-                                SET payment_made = $total_amount, balance_due = $balance_due
-                                WHERE invoice_id = '$invoice_no'";
-                    mysqli_query($conn, $siteInsert);
+                // ✅ Check whether this invoice belongs to renewal_invoices or orders
+                $renewalCheck = $conn->query("SELECT id FROM renewal_invoices WHERE invoice_id = '$invoice_no' LIMIT 1");
+
+                   if ($renewalCheck && $renewalCheck->num_rows > 0) {
+                        // 🔁 Renewal Payment → update renewal_invoices
+                        $updateSql = "
+                            UPDATE renewal_invoices
+                            SET payment_made = '$total_amount', balance_due = '$balance_due'
+                            WHERE invoice_id = '$invoice_no'
+                        ";
+                        mysqli_query($conn, $updateSql);
+                    } else {
+                        $updateSql = "UPDATE orders
+                                        SET payment_made = $total_amount, balance_due = $balance_due
+                                        WHERE invoice_id = '$invoice_no'";
+                        mysqli_query($conn, $updateSql);
+                    }
+
                 echo "
                 <script>
                     Swal.fire({
@@ -692,15 +706,56 @@
 
                                         <div class="mt-20">
                                             <?php if($role == "1" || $role == "2") {?>  
-                                                <button class="btn text-white btn-primary text-sm mb-10 record-payment-btn"
+                                                <!-- <button class="btn text-white btn-primary text-sm mb-10 record-payment-btn"
                                                         data-bs-toggle="modal" data-bs-target="#exampleModal"
                                                         data-invoice="<?=htmlspecialchars($row['invoice_id'])?>"
                                                         data-order="<?=htmlspecialchars($row['id'])?>"
                                                         data-balance="<?=htmlspecialchars($row['balance_due'])?>"
                                                         data-payment="<?=htmlspecialchars($row['payment_made'])?>">
                                                     Record Payment
+                                                </button> -->
+
+                                                <?php
+                                                    // ✅ Determine if renewal period is active
+                                                    $expiredAt = $row['expired_at'] ?? null;
+                                                    $todayDate = date('Y-m-d');
+
+                                                    // Default (normal)
+                                                    $invoiceToUse = $row['invoice_id'];
+                                                    $paymentMadeToUse = $row['payment_made'];
+                                                    $balanceDueToUse = $row['balance_due'];
+
+                                                    // ✅ If renewal time started, use renewal invoice & reset payment values
+                                                    if (!empty($expiredAt) && $todayDate > $expiredAt) {
+                                                        $renewalCheck = $conn->query("
+                                                            SELECT invoice_id 
+                                                            FROM renewal_invoices 
+                                                            WHERE user_id = '{$row['user_id']}' 
+                                                            AND plan = '{$row['plan']}'
+                                                            ORDER BY id DESC 
+                                                            LIMIT 1
+                                                        ");
+
+                                                        if ($renewalCheck && $renewalCheck->num_rows > 0) {
+                                                            $renewal = $renewalCheck->fetch_assoc();
+                                                            $invoiceToUse = $renewal['invoice_id'];
+
+                                                            // Fresh payment info for renewal
+                                                            $paymentMadeToUse = 0;
+                                                            $balanceDueToUse = $row['amount']; // assuming same as plan amount
+                                                        }
+                                                    }
+                                                ?>
+                                                <button class="btn text-white btn-primary text-sm mb-10 record-payment-btn"
+                                                        data-bs-toggle="modal" data-bs-target="#exampleModal"
+                                                        data-invoice="<?= htmlspecialchars($invoiceToUse) ?>"
+                                                        data-order="<?= htmlspecialchars($row['id']) ?>"
+                                                        data-balance="<?= htmlspecialchars($balanceDueToUse) ?>"
+                                                        data-payment="<?= htmlspecialchars($paymentMadeToUse) ?>">
+                                                    Record Payment
                                                 </button>
                                             <?php } ?>
+
                                             <button class="btn text-white lufera-bg text-sm mb-10">Renew</button>
 
                                             <!-- *** UPGRADE BUTTON *** -->
