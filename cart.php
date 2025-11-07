@@ -27,7 +27,7 @@
 
         // $gst = $price * 0.18; // 10% GST
 
-        $gst_rate = 18; // Default GST rate
+        $gst_rate = 0; // Default GST rate
         $gst_id = isset($_POST['gst_id']) ? intval($_POST['gst_id']) : 0;
 
         if ($gst_id > 0) {
