@@ -1,9 +1,5 @@
 <?php include './partials/layouts/layoutTop.php';
 
-    // ini_set('display_errors', 1);
-    // ini_set('display_startup_errors', 1);
-    // error_reporting(E_ALL);
-
     use PHPMailer\PHPMailer\PHPMailer;
     use PHPMailer\PHPMailer\Exception;
 
@@ -25,12 +21,23 @@
     $username = $row['username'];
     $photo = !empty($row['photo']) ? $row['photo'] : 'assets/images/user1.png';
 
+    // Initialize variables with default values
+    $id = 0;
+    $type = '';
+    $plan_name = '';
+    $price = 0;
+    $gst = 0;
+    $total_price = 0;
+    $addon_total = 0;
+    $tax_rate = 0;
+    $tax_name = 'Tax';
+
     if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-        $id = $_POST['id'];
-        $type = $_POST['type'];
-        $plan_name = $_POST['plan_name'];
+        $id = $_POST['id'] ?? 0;
+        $type = $_POST['type'] ?? '';
+        $plan_name = $_POST['plan_name'] ?? '';
         // $gst = $_POST['gst'];
-        $price = $_POST['price'];
+        $price = floatval($_POST['price'] ?? 0);
 
         // --- Fetch Tax Info from taxes table using gst_id ---
         $gst_id = $_POST['gst_id'] ?? null;
@@ -61,7 +68,7 @@
         $get_addon = $_POST['get_addon'];
         $get_packages = $_POST['get_packages'] ?? '';
         $get_products = $_POST['get_products'] ?? '';
-        $addon_total = $_POST['addon-total'];
+        $addon_total = floatval($_POST['addon-total'] ?? 0);
         $hostinger_balance = $_POST['hostinger_balance'];
         $subtotal_display = $_POST['subtotal-display'];
         $invoice_id = $_POST['invoice_id'];
@@ -182,6 +189,21 @@
         $subtotal = $price + $addon_total;
         $discount_amount = floatval($_POST['discount_amount'] ?? 0);
         $coupon_code = $_POST['coupon_code'];
+        
+        // Fetch tax rate for proper calculation
+        $gst_id = $_POST['gst_id'] ?? null;
+        $tax_rate = 0;
+        if (!empty($gst_id)) {
+            $tax_query = $conn->prepare("SELECT rate FROM taxes WHERE id = ?");
+            $tax_query->bind_param("i", $gst_id);
+            $tax_query->execute();
+            $tax_result = $tax_query->get_result();
+            if ($tax_result && $tax_result->num_rows > 0) {
+                $tax_row = $tax_result->fetch_assoc();
+                $tax_rate = floatval($tax_row['rate']);
+            }
+            $tax_query->close();
+        }
 
         $is_renewal = isset($_POST['renewal']) && $_POST['renewal'] == 1;
 
@@ -272,8 +294,8 @@
 
                 $main_subtotal = $price + floatval($insert_addon_price);
                 $main_discount = $discount ?? 0;
-                $main_gst      = $main_subtotal * 0.18; // 18% GST
-                $main_amount   = $main_subtotal - $main_discount + $main_gst;
+                $main_gst      = round($main_subtotal * ($tax_rate / 100), 2);
+                $main_amount   = round($main_subtotal - $main_discount + $main_gst, 2);
                 $main_balance_due  = $main_amount - $payment_made;
 
                 $auto_id = rand(10000000, 99999999);
@@ -411,8 +433,11 @@
 
             $main_subtotal = $price + floatval($insert_addon_price);
             $main_discount = $discount ?? 0;
-            $main_gst      = $main_subtotal * 0.18; // 18% GST
-            $main_amount   = $main_subtotal - $main_discount + $main_gst - $discount_amount;
+            
+            // Apply discount to subtotal first, then calculate GST on discounted amount
+            $discounted_subtotal = $main_subtotal - $discount_amount;
+            $main_gst = round($discounted_subtotal * ($tax_rate / 100), 2);
+            $main_amount = round($discounted_subtotal + $main_gst, 2);
             $main_balance_due  = $main_amount - $payment_made;
 
             $sql = "INSERT INTO orders (user_id, invoice_id, plan, duration, amount, gst, price, addon_price, status, payment_method, discount, payment_made, created_on, subtotal, balance_due, addon_service, type, coupon_code, discount_amount) VALUES 
@@ -983,7 +1008,7 @@
                                 <!-- <p class="mb-0">Sub total does not include applicable taxes</p> -->
                             </div>
                             <div class="align-content-center">
-                                <h6 class="mb-0" id="currency-symbol-display ss"><?php echo htmlspecialchars($symbol) . number_format($subtotal_display, 2); ?></h6>
+                                <h6 class="mb-0"><?php echo htmlspecialchars($symbol) . number_format($subtotal_display, 2); ?></h6>
                             </div>
                         </div>
                         <div class="card-body p-16">
@@ -1338,9 +1363,13 @@
 <script>
 document.addEventListener('DOMContentLoaded', function () {
     const symbol          = '<?php echo htmlspecialchars($symbol); ?>';
-    const originalTotal   = parseFloat(<?php echo json_encode($total_price); ?>);
-    const gstValue        = parseFloat(<?php echo json_encode($gst); ?>);
+    const basePrice       = parseFloat(<?php echo json_encode(floatval($price ?? 0)); ?>) || 0;
+    const addonTotal      = parseFloat(<?php echo json_encode(floatval($addon_total ?? 0)); ?>) || 0;
+    const taxRate         = parseFloat(<?php echo json_encode(floatval($tax_rate ?? 0)); ?>) || 0;
+    const originalTotal   = parseFloat(<?php echo json_encode(floatval($total_price ?? 0)); ?>) || 0;
+    const originalGst     = parseFloat(<?php echo json_encode(floatval($gst ?? 0)); ?>) || 0;
     const totalCell       = document.querySelector('.plan-details-table tr:last-child td.text-end');
+    const gstCell         = document.querySelector('.gst-display');
     const hiddenTotal     = document.querySelector('input[name="total_price"]');
     const hiddenDiscount  = document.getElementById('discount_amount');
     const couponInput     = document.getElementById('coupon_code');
@@ -1386,7 +1415,10 @@ document.addEventListener('DOMContentLoaded', function () {
         /* ---- SEND BOTH coupon_code AND the plan id ---- */
         const formData = new URLSearchParams();
         formData.append('coupon_code', code);
-        formData.append('id', <?php echo json_encode($id); ?>);   // <-- NEW
+        const planId = document.querySelector('input[name="id"]')?.value || <?php echo json_encode($id ?? null); ?>;
+        if (planId) {
+            formData.append('id', planId);
+        }
 
         fetch('validate_coupon.php', {
             method: 'POST',
@@ -1400,23 +1432,51 @@ document.addEventListener('DOMContentLoaded', function () {
                 return;
             }
 
-            const discountRaw  = parseFloat(data.discount);
-            const discountType = data.type.toLowerCase();
+            const discountRaw  = parseFloat(data.discount) || 0;
+            const discountType = (data.type || '').toLowerCase();
 
+            // Calculate base amount (price + addons) before GST
+            const baseAmount = (basePrice || 0) + (addonTotal || 0);
+
+            // Calculate discount on base amount
             let discount = 0;
             if (discountType.includes('percentage')) {
-                discount = originalTotal * discountRaw / 100;
+                discount = baseAmount * (discountRaw / 100);
             } else {
-                discount = discountRaw;
+                discount = discountRaw || 0;
+            }
+
+            // Apply discount to base amount
+            const discountedBaseAmount = Math.max(0, baseAmount - discount);
+
+            // Calculate GST on discounted amount
+            const newGst = discountedBaseAmount * ((taxRate || 0) / 100);
+
+            // Calculate new total
+            const newTotal = discountedBaseAmount + newGst;
+
+            // Validate all values are numbers
+            if (isNaN(discount) || isNaN(newGst) || isNaN(newTotal)) {
+                Swal.fire({icon:'error',title:'Calculation Error',text:'Invalid values detected. Please refresh the page.',confirmButtonColor:'#d33'});
+                return;
             }
 
             couponHidden.value = code;
             hiddenDiscount.value = discount.toFixed(2);
             insertDiscountRow(code, discount);
 
-            const newTotal = originalTotal - discount;
-            totalCell.textContent = `${symbol}${newTotal.toFixed(2)}`;
-            hiddenTotal.value = newTotal.toFixed(2);
+            // Update GST display
+            if (gstCell) {
+                gstCell.textContent = `${symbol}${newGst.toFixed(2)}`;
+            }
+
+            // Update total display
+            if (totalCell) {
+                totalCell.textContent = `${symbol}${newTotal.toFixed(2)}`;
+            }
+            if (hiddenTotal) {
+                hiddenTotal.value = newTotal.toFixed(2);
+            }
 
             Swal.fire({
                 icon: 'success',
@@ -1435,13 +1495,38 @@ document.addEventListener('DOMContentLoaded', function () {
     /* --------------------------------------------------------------
        RE-APPLY COUPON THAT WAS ALREADY POSTED (page reload)
        -------------------------------------------------------------- */
-    const initDiscount = parseFloat(hiddenDiscount.value) || 0;
+    const initDiscount = parseFloat(hiddenDiscount?.value) || 0;
     if (initDiscount > 0) {
-        const initCode = couponHidden.value;
+        const initCode = couponHidden?.value || '';
         insertDiscountRow(initCode, initDiscount);
-        const initTotal = originalTotal - initDiscount;
-        totalCell.textContent = `${symbol}${initTotal.toFixed(2)}`;
-        hiddenTotal.value = initTotal.toFixed(2);
+        
+        // Calculate base amount (price + addons) before GST
+        const baseAmount = (basePrice || 0) + (addonTotal || 0);
+        
+        // Apply discount to base amount
+        const discountedBaseAmount = Math.max(0, baseAmount - initDiscount);
+        
+        // Calculate GST on discounted amount
+        const newGst = discountedBaseAmount * ((taxRate || 0) / 100);
+        
+        // Calculate new total
+        const initTotal = discountedBaseAmount + newGst;
+        
+        // Validate all values are numbers
+        if (!isNaN(newGst) && !isNaN(initTotal)) {
+            // Update GST display
+            if (gstCell) {
+                gstCell.textContent = `${symbol}${newGst.toFixed(2)}`;
+            }
+            
+            // Update total display
+            if (totalCell) {
+                totalCell.textContent = `${symbol}${initTotal.toFixed(2)}`;
+            }
+            if (hiddenTotal) {
+                hiddenTotal.value = initTotal.toFixed(2);
+            }
+        }
     }
 });
 </script>
