@@ -155,6 +155,8 @@ img {
                   <input type="hidden" name="price" value="<?= htmlspecialchars($row['price']) ?>">
                   <input type="hidden" name="duration" value="<?= htmlspecialchars($row['duration']) ?>">
                   <input type="hidden" name="created_on" value="<?= date("Y-m-d") ?>">
+                  <input type="hidden" name="gst" value="<?= htmlspecialchars($row['gst']) ?>">
+
                   <button type="submit" class="lufera-bg bg-hover-warning-400 text-white text-md px-56 py-11 radius-8">Get started</button>
               </form>
 							<!-- <button class="like btn btn-default" type="button"><span class="fa fa-heart"></span></button> -->
