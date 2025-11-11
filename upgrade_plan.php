@@ -524,6 +524,9 @@
                                     <input type="hidden" name="invoice_id" id="invoice_id" value="<?php echo $invoice_id ?>">
                                     <input type="hidden" name="duration" id="duration" value="<?php echo $duration; ?>">
                                     <input type="hidden" name="price" id="total_amount" value="">
+                                    <input type="hidden" name="total_breakdown_price" id="total_breakdown_price" value="">
+                                    <input type="hidden" name="total_breakdown_tax" id="total_breakdown_tax" value="">
+                                    <input type="hidden" name="total_breakdown_gst" id="total_breakdown_gst" value="">
                                     <input type="hidden" name="gst" id="amount_tax" value="">
                                     <input type="hidden" name="total_price" id="total_price" value="">
                                     <input type="hidden" name="type" value="package">  
@@ -651,11 +654,24 @@ function updateUpgradeDisplay() {
             document.getElementById('upgrade_package_id').value = packageId;
             // Set hidden price equal to displayed Total (base price + GST)
             document.getElementById('total_amount').value = totalWithTax.toFixed(2);
+            const breakdownPriceInput = document.getElementById('total_breakdown_price');
+            const breakdownTaxInput = document.getElementById('total_breakdown_tax');
+            const breakdownGstInput = document.getElementById('total_breakdown_gst');
+
             document.getElementById('hostinger_balance').value = balance.toFixed(2);
             document.getElementById('amount_to_pay').value = amountToPay.toFixed(2);
             document.getElementById('plan_name').value = packageName;
             document.getElementById('amount_tax').value = amountTax.toFixed(2);
             document.getElementById('total_price').value = grandTotal.toFixed(2);
+            if (breakdownPriceInput) {
+                breakdownPriceInput.value = totalPrice.toFixed(2);
+            }
+            if (breakdownTaxInput) {
+                breakdownTaxInput.value = gstAmt.toFixed(2);
+            }
+            if (breakdownGstInput) {
+                breakdownGstInput.value = taxRate.toFixed(2);
+            }
         })
         .catch(() => {
             // Fallback: show base price without tax
