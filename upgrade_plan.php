@@ -181,6 +181,10 @@
     height:43px;
     align-content: center;
 }
+.text-breakdown{
+    font-size:13px;
+    color: gray;
+}
 </style>
 
 </head>
@@ -292,8 +296,7 @@
                                                             FROM package p
                                                             INNER JOIN durations d ON d.package_id = p.id
                                                             WHERE d.price > ? AND p.cat_id = ? AND d.duration = ?
-                                                            ORDER BY d.price ASC
-                                                        ";
+                                                            ORDER BY d.price ASC";
                                                         $stmt2 = $conn->prepare($upgrade_sql);
                                                         $stmt2->bind_param("dis", $current_price, $current_cat, $current_duration);
                                                         $stmt2->execute();
@@ -389,15 +392,33 @@
                                             <p class="details-item__price expiration-date"></p> 
                                             </div>
                                         </li>
-                                        <li class="details-item">
+                                        <li class="details-item mb-0">
                                             <div class="details-item__left">
-                                                <h4 class="details-item__text">Total</h4>
+                                                <h4 class="details-item__text">Total
+                                                    <button type="button"
+                                                        class="btn btn-link p-0 ms-2 align-baseline text-decoration-none total-toggle"
+                                                        id="totalToggle"
+                                                        aria-expanded="false"
+                                                        aria-controls="totalBreakdown">
+                                                        <i class="fa fa-chevron-down text-secondary" id="totalToggleIcon"></i>
+                                                    </button>
+                                                </h4>
                                             </div>
                                             <div class="details-item__right">
-                                            <p class="details-item__price total-amount"></p> 
+                                                <p class="details-item__price total-amount"></p>
                                             </div>
                                         </li>
-                                        <li class="details-item">
+                                        <div class="total-breakdown d-none mb-20" id="totalBreakdown">
+                                            <div class="d-flex justify-content-between">
+                                                <span class="text-breakdown">Price</span>
+                                                <span class="text-end text-breakdown" id="totalBreakdownPrice"></span>
+                                            </div>
+                                            <div class="d-flex justify-content-between">
+                                                <span class="text-breakdown">Tax <span id="totalBreakdownTaxLabel"></span></span>
+                                                <span class="text-end text-breakdown" id="totalBreakdownTax"></span>
+                                            </div>
+                                        </div>
+                                        <li class="details-item mt-20">
                                             <div class="details-item__left">
                                                 <h4 class="details-item__text ">Exisitng Plan Balance</h4>
                                             </div>
@@ -445,13 +466,36 @@
                                                 $end_date->modify("+1 month"); // default fallback
                                             }
 
-                                            // Calculate balance
+                                            // Calculate balance (base amount)
                                             $total_days = $start_date->diff($end_date)->days;
                                             $remaining_days = $today < $end_date ? $today->diff($end_date)->days : 0;
                                             $hostinger_balance = ($total_days > 0) ? ($remaining_days / $total_days) * $price : 0;
 
+                                            // Include GST for the current plan balance (Option C)
+                                            $current_gst_rate = 0.0;
+                                            $pkg_stmt = $conn->prepare("SELECT gst_id FROM package WHERE id = ? LIMIT 1");
+                                            $pkg_stmt->bind_param("i", $package_id);
+                                            $pkg_stmt->execute();
+                                            $pkg_res = $pkg_stmt->get_result();
+                                            if ($pkg_row = $pkg_res->fetch_assoc()) {
+                                                $gst_id_current = $pkg_row['gst_id'] ?? null;
+                                                if (!empty($gst_id_current)) {
+                                                    $tax_stmt = $conn->prepare("SELECT rate FROM taxes WHERE id = ? LIMIT 1");
+                                                    $tax_stmt->bind_param("i", $gst_id_current);
+                                                    $tax_stmt->execute();
+                                                    $tax_res = $tax_stmt->get_result();
+                                                    if ($tax_row = $tax_res->fetch_assoc()) {
+                                                        $current_gst_rate = floatval($tax_row['rate']);
+                                                    }
+                                                    $tax_stmt->close();
+                                                }
+                                            }
+                                            $pkg_stmt->close();
+
+                                            $hostinger_balance_tax = round($hostinger_balance * ($current_gst_rate / 100), 2);
+                                            $hostinger_balance_with_tax = round($hostinger_balance + $hostinger_balance_tax, 2);
                                             ?>
-                                            <p class="details-item__price hostinger-balance"><?= number_format($hostinger_balance, 2) ?></p>
+                                            <p class="details-item__price hostinger-balance"><?php echo $symbol; ?> <?= number_format($hostinger_balance_with_tax, 2) ?></p>
                                             </div>
                                         </li>
                                         <li class="details-item">
@@ -467,24 +511,29 @@
                                 <form action="cart-payment.php" method="POST">
                                     <input type="hidden" name="web_id" value="<?= htmlspecialchars($web_id) ?>">
                                     <input type="hidden" name="user_id" value="<?= htmlspecialchars($_SESSION['user_id']) ?>">
-                                    <!-- <input type="hidden" name="total_amount" id="total_amount" value=""> -->
+                                   
                                     <input type="hidden" name="hostinger_balance" id="hostinger_balance" value="">
                                     <input type="hidden" name="subtotal-display" id="amount_to_pay" value="">
-                                    <!-- <input type="hidden" name="duration" id="duration" value="<?php echo $duration; ?>"> -->
+                                    
                                     <input type="hidden" name="cat_id" id="cat_id" value="<?php echo $current_cat; ?>">
                                     <input type="hidden" name="current_plan_id" id="current_plan_id" value="<?php echo $current_plan_id ?>">
-                                    <!-- <input type="hidden" name="invoice_id" id="invoice_id" value="<?php echo $invoice_id ?>"> -->
+                                    
     
                                     <input type="hidden" name="id" id="upgrade_package_id" value="">
                                     <input type="hidden" name="plan_name" id="plan_name" value="">
                                     <input type="hidden" name="invoice_id" id="invoice_id" value="<?php echo $invoice_id ?>">
                                     <input type="hidden" name="duration" id="duration" value="<?php echo $duration; ?>">
                                     <input type="hidden" name="price" id="total_amount" value="">
+                                    <input type="hidden" name="total_breakdown_price" id="total_breakdown_price" value="">
+                                    <input type="hidden" name="total_breakdown_tax" id="total_breakdown_tax" value="">
+                                    <input type="hidden" name="total_breakdown_gst" id="total_breakdown_gst" value="">
                                     <input type="hidden" name="gst" id="amount_tax" value="">
                                     <input type="hidden" name="total_price" id="total_price" value="">
                                     <input type="hidden" name="type" value="package">  
                                     <input type="hidden" name="receipt_id" value="<?php echo $receipt_id; ?>"> 
-
+                                    <!-- <input type="hidden" name="duration" id="duration" value="<?php echo $duration; ?>"> -->
+                                    <!-- <input type="hidden" name="total_amount" id="total_amount" value=""> -->
+                                    <!-- <input type="hidden" name="invoice_id" id="invoice_id" value="<?php echo $invoice_id ?>"> -->
                                     <button type="submit" class="lufera-bg btn w-100 text-white">Complete upgrade payment</button>
                                 </form>
                             </div>  
@@ -528,8 +577,8 @@ function updateUpgradeDisplay() {
         months = m;
     }
 
-    const monthlyPrice = price / months;
-    const totalPrice = price;
+    let monthlyPrice = price / months;
+    let totalPrice = price; // will update after fetching tax rate
 
     // --- Expiration date calculation ---
     const currentDate = new Date();
@@ -552,26 +601,83 @@ function updateUpgradeDisplay() {
 
     const formattedExpiration = expirationDate.toISOString().split('T')[0];
 
-    // --- Update UI ---
-    priceDisplay.textContent = '<?= htmlspecialchars($symbol) ?> ' + monthlyPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-    if (totalElement) totalElement.textContent = totalPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    // --- Update expiration UI early ---
     if (expirationElement) expirationElement.textContent = formattedExpiration;
 
-    const balance = parseFloat(balanceElement?.textContent.replace(/,/g, '')) || 0;
-    const amountToPay = totalPrice - balance;
-    const amountTax = amountToPay * 0.18;
-    const total_price = amountToPay + amountTax;
+    // Fetch price+tax rate for selected package/duration
+    const params = new URLSearchParams({ package_id: packageId, duration: duration });
+    fetch('get_package_pricing.php?' + params.toString())
+        .then(resp => resp.json())
+        .then(data => {
+            if (!data || data.ok !== true) {
+                throw new Error('Pricing not available');
+            }
 
-    if (amountToPayElement) amountToPayElement.textContent = amountToPay.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            // Server authoritative values
+            totalPrice = parseFloat(data.price) || 0; // base price for duration
+            const taxRate = parseFloat(data.tax_rate) || 0;
+            const gstAmt  = parseFloat(data.gst) || 0;
+            const totalWithTax = parseFloat(data.total) || (totalPrice + gstAmt);
 
-    // ✅ Update hidden fields
-    document.getElementById('upgrade_package_id').value = packageId;
-    document.getElementById('total_amount').value = totalPrice.toFixed(2);
-    document.getElementById('hostinger_balance').value = balance.toFixed(2);
-    document.getElementById('amount_to_pay').value = amountToPay.toFixed(2);
-    document.getElementById('plan_name').value = packageName;
-    document.getElementById('amount_tax').value = amountTax.toFixed(2);
-    document.getElementById('total_price').value = total_price.toFixed(2);
+            // Recompute monthly based on returned base price
+            monthlyPrice = (totalPrice / months) || 0;
+
+            // Balance (includes GST) and amount-to-pay = total-amount (incl GST) - hostinger-balance (incl GST)
+            const balance = parseFloat((balanceElement?.textContent || '').replace(/[^\d.]/g, '')) || 0;
+            const amountToPay = Math.max(0, (parseFloat(totalWithTax) || 0) - balance);
+            const amountTax   = (amountToPay * (taxRate / 100));
+            const grandTotal  = amountToPay + amountTax;
+
+            // --- Update UI ---
+            priceDisplay.textContent = '<?= htmlspecialchars($symbol) ?> ' + monthlyPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            if (totalElement) totalElement.textContent = (<?= json_encode($symbol) ?> + ' ' + totalWithTax.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+            if (amountToPayElement) amountToPayElement.textContent = <?= json_encode($symbol) ?> + ' ' + amountToPay.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+            // --- Update inline breakdown ---
+            const breakdownPriceEl = document.getElementById('totalBreakdownPrice');
+            const breakdownTaxEl = document.getElementById('totalBreakdownTax');
+            const breakdownTaxLabel = document.getElementById('totalBreakdownTaxLabel');
+            const basePriceFormatted = totalPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            const taxAmountFormatted = gstAmt.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+            if (breakdownPriceEl) {
+                breakdownPriceEl.textContent = <?= json_encode($symbol) ?> + ' ' + basePriceFormatted;
+            }
+            if (breakdownTaxEl) {
+                breakdownTaxEl.textContent = <?= json_encode($symbol) ?> + ' ' + taxAmountFormatted;
+            }
+            if (breakdownTaxLabel) {
+                breakdownTaxLabel.textContent = `(${taxRate.toFixed(2)}%)`;
+            }
+
+            // ✅ Update hidden fields
+            document.getElementById('upgrade_package_id').value = packageId;
+            // Set hidden price equal to displayed Total (base price + GST)
+            document.getElementById('total_amount').value = totalWithTax.toFixed(2);
+            const breakdownPriceInput = document.getElementById('total_breakdown_price');
+            const breakdownTaxInput = document.getElementById('total_breakdown_tax');
+            const breakdownGstInput = document.getElementById('total_breakdown_gst');
+
+            document.getElementById('hostinger_balance').value = balance.toFixed(2);
+            document.getElementById('amount_to_pay').value = amountToPay.toFixed(2);
+            document.getElementById('plan_name').value = packageName;
+            document.getElementById('amount_tax').value = amountTax.toFixed(2);
+            document.getElementById('total_price').value = grandTotal.toFixed(2);
+            if (breakdownPriceInput) {
+                breakdownPriceInput.value = totalPrice.toFixed(2);
+            }
+            if (breakdownTaxInput) {
+                breakdownTaxInput.value = gstAmt.toFixed(2);
+            }
+            if (breakdownGstInput) {
+                breakdownGstInput.value = taxRate.toFixed(2);
+            }
+        })
+        .catch(() => {
+            // Fallback: show base price without tax
+            priceDisplay.textContent = '<?= htmlspecialchars($symbol) ?> ' + monthlyPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            if (totalElement) totalElement.textContent = (<?= json_encode($symbol) ?> + ' ' + totalPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+        });
 
     // --- Fetch updated features ---
     fetch('get_features.php?package_id=' + packageId)
@@ -600,7 +706,28 @@ function updateUpgradeDisplay() {
         });
 }
 
-document.addEventListener('DOMContentLoaded', updateUpgradeDisplay);
+document.addEventListener('DOMContentLoaded', () => {
+    updateUpgradeDisplay();
+
+    const toggleBtn = document.getElementById('totalToggle');
+    const breakdown = document.getElementById('totalBreakdown');
+    const toggleIcon = document.getElementById('totalToggleIcon');
+
+    if (toggleBtn && breakdown && toggleIcon) {
+        toggleBtn.addEventListener('click', () => {
+            const isHidden = breakdown.classList.toggle('d-none');
+            toggleBtn.setAttribute('aria-expanded', (!isHidden).toString());
+            if (isHidden) {
+                toggleIcon.classList.remove('fa-chevron-up');
+                toggleIcon.classList.add('fa-chevron-down');
+            } else {
+                toggleIcon.classList.remove('fa-chevron-down');
+                toggleIcon.classList.add('fa-chevron-up');
+            }
+        });
+    }
+});
+
 if (hasUpgrades) {
     document.getElementById('upgradePackage').addEventListener('change', updateUpgradeDisplay);
 }
