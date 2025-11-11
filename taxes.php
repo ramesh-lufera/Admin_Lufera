@@ -64,7 +64,44 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $stmt->bind_param('ssdssii', $tax_name, $country, $rate, $type, $services_json, $set_default, $id);
         }
 
+        // if ($stmt->execute()) {
+        //     $msg = ($action === 'create') ? 'Tax Added' : 'Tax Updated';
+        //     echo json_encode(['status' => 'success', 'message' => $msg]);
+        // } else {
         if ($stmt->execute()) {
+            // Get current tax ID (insert or update)
+            $tax_id = ($action === 'create') ? $stmt->insert_id : $id;
+
+            // If applying to products, update gst column for selected products
+            if (in_array('products', $apply_to) && !empty($product_items)) {
+                // First clear gst for products not selected
+                $conn->query("UPDATE `products` SET `gst` = NULL WHERE `gst` = $tax_id");
+
+                // Set gst for selected products
+                foreach ($product_items as $pid) {
+                    $pid = intval($pid);
+                    $conn->query("UPDATE `products` SET `gst` = $tax_id WHERE `id` = $pid");
+                }
+            } else {
+                // If products unchecked completely, remove this tax from all products
+                $conn->query("UPDATE `products` SET `gst` = NULL WHERE `gst` = $tax_id");
+            }
+
+            // If applying to add-on services, update gst column for selected addons
+            if (in_array('add-on-services', $apply_to) && !empty($addon_items)) {
+                // First clear gst for addons not selected
+                $conn->query("UPDATE `add-on-service` SET `gst` = NULL WHERE `gst` = $tax_id");
+
+                // Set gst for selected addons
+                foreach ($addon_items as $aid) {
+                    $aid = intval($aid);
+                    $conn->query("UPDATE `add-on-service` SET `gst` = $tax_id WHERE `id` = $aid");
+                }
+            } else {
+                // If addons unchecked completely, remove this tax from all addons
+                $conn->query("UPDATE `add-on-service` SET `gst` = NULL WHERE `gst` = $tax_id");
+            }
+
             $msg = ($action === 'create') ? 'Tax Added' : 'Tax Updated';
             echo json_encode(['status' => 'success', 'message' => $msg]);
         } else {

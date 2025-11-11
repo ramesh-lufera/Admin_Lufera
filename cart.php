@@ -26,10 +26,15 @@
         $created_on = $_POST['created_on'];
 
         // $gst = $price * 0.18; // 10% GST
-
         $gst_rate = 0; // Default GST rate
-        $gst_id = isset($_POST['gst_id']) ? intval($_POST['gst_id']) : 0;
-
+        // $gst_id = isset($_POST['gst_id']) ? intval($_POST['gst_id']) : 0;
+        // If product type, use gst column value from products table form post
+        if ($type === 'product') {
+            $gst_id = isset($_POST['gst']) ? intval($_POST['gst']) : 0;
+        } else {
+            // For packages and others, keep the existing posted gst_id
+            $gst_id = isset($_POST['gst_id']) ? intval($_POST['gst_id']) : 0;
+        }
         if ($gst_id > 0) {
             $gst_query = $conn->prepare("SELECT rate, tax_name FROM taxes WHERE id = ?");
             $gst_query->bind_param("i", $gst_id);
@@ -43,7 +48,6 @@
         } else {
             $gst_name = "GST";
         }
-
         $gst = $price * ($gst_rate / 100);
         // $total_price = $price + $gst;
 
