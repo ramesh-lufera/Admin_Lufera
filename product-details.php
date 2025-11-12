@@ -151,6 +151,7 @@ img {
                   <input type="hidden" name="type" value="product">  
                   <input type="hidden" name="id" value="<?= htmlspecialchars($id) ?>">
                   <input type="hidden" name="plan_name" value="<?= htmlspecialchars($row['name']) ?>">
+                  <input type="hidden" name="title" value="<?= htmlspecialchars($row['title']) ?>">
                   <input type="hidden" name="subtitle" value="<?= htmlspecialchars($row['subtitle']) ?>">
                   <input type="hidden" name="price" value="<?= htmlspecialchars($row['price']) ?>">
                   <input type="hidden" name="duration" value="<?= htmlspecialchars($row['duration']) ?>">
