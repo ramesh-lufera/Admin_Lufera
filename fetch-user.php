@@ -23,6 +23,10 @@ if (isset($_POST['id'])) {
                             <span class='w-70 text-secondary-light fw-medium'>: " . htmlspecialchars($user['business_name']) . "</span>
                         </li>
                         <li class='d-flex align-items-center gap-1 mb-12'>
+                            <span class='w-30 text-md fw-semibold text-primary-light'>GSTIN</span>
+                            <span class='w-70 text-secondary-light fw-medium'>: " . htmlspecialchars($user['gst_in']) . "</span>
+                        </li>
+                        <li class='d-flex align-items-center gap-1 mb-12'>
                             <span class='w-30 text-md fw-semibold text-primary-light'>Email</span>
                             <span class='w-70 text-secondary-light fw-medium'>: " . htmlspecialchars($user['email']) . "</span>
                         </li>

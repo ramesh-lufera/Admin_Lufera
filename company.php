@@ -1,7 +1,7 @@
 <?php include './partials/layouts/layoutTop.php' ?>
 <?php
     $id = 0;
-    $full_name = $email = $phone_no = $website = $country = $city = $state = $zip_code = $address = "";
+    $full_name = $email = $phone_no = $website = $country = $city = $state = $zip_code = $address = $gst_in = "";
     
     // Fetch existing data (assuming only one record)
     $sql = "SELECT * FROM company LIMIT 1";
@@ -18,6 +18,7 @@
         $city = $row['city'];
         $state = $row['state'];
         $zip_code = $_POST['zip_code'];
+        $gst_in = $_POST['gst_in'];
         $address = $_POST['address'];
     }
     
@@ -31,6 +32,8 @@
         $city = $_POST['city'];
         $state = $_POST['state'];
         $zip_code = $_POST['zip_code'];
+        $gst_in = $_POST['gst_in'];
+
         $address = $_POST['address'];
     
         if ($id > 0) {
@@ -44,6 +47,8 @@
                 city='$city',
                 state='$state',
                 zip_code='$zip_code',
+                gst_in='$gst_in',
+
                 address='$address'
                 WHERE id=$id";
             if ($conn->query($update_sql) === TRUE) {
@@ -63,8 +68,8 @@
             }
         } else {
             // Insert new record
-            $insert_sql = "INSERT INTO company (full_name, email, phone_no, website, country, city, state, zip_code, address) 
-                VALUES ('$full_name', '$email', '$phone_no', '$website', '$country', '$city', '$state' ,'$zip_code', '$address')";
+            $insert_sql = "INSERT INTO company (full_name, email, phone_no, website, country, city, state, zip_code, address, gst_in) 
+                VALUES ('$full_name', '$email', '$phone_no', '$website', '$country', '$city', '$state' ,'$zip_code', '$address', '$gst_in')";
             if ($conn->query($insert_sql) === TRUE) {
                 echo "<script>
                     Swal.fire({
@@ -142,10 +147,16 @@
                                     <input type="text" class="form-control radius-8" name="zip_code" value="<?php echo htmlspecialchars($zip_code); ?>" required>
                                 </div>
                             </div>
-                            <div class="col-sm-12">
+                            <div class="col-sm-6">
                                 <div class="mb-20">
                                     <label for="address" class="form-label fw-semibold text-primary-light text-sm mb-8"> Address <span class="text-danger-600">*</span></label>
                                     <input type="text" class="form-control radius-8" name="address" value="<?php echo htmlspecialchars($address); ?>" required>
+                                </div>
+                            </div>
+                            <div class="col-sm-6">
+                                <div class="mb-20">
+                                    <label for="address" class="form-label fw-semibold text-primary-light text-sm mb-8"> GSTIN <span class="text-danger-600">*</span></label>
+                                    <input type="text" class="form-control radius-8" name="gst_in" value="<?php echo htmlspecialchars($gst_in); ?>" required>
                                 </div>
                             </div>
                             <div class="d-flex align-items-center justify-content-center gap-3 mt-24">

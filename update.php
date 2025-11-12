@@ -7,6 +7,8 @@ $fname  = $_POST['fname'];
 $lname  = $_POST['lname'];
 $uname  = $_POST['uname'];
 $bname  = $_POST['bname'];
+$gst_in  = $_POST['gst_in'];
+$client_id  = $_POST['client_id'];
 $email  = $_POST['email'];
 $phone  = $_POST['phone'];
 $dob  = $_POST['dob'];
@@ -57,8 +59,8 @@ if (isset($_FILES['photo']) && $_FILES['photo']['error'] == 0) {
  
 //
 //$stmt = $conn->prepare("UPDATE users SET name=?, email=? WHERE id=?");
-$stmt = $conn->prepare("UPDATE users SET first_name = ?, last_name = ?, username = ?, business_name = ?, email = ?, phone = ?, address = ?, city = ?, state = ?, country = ?, pincode = ?, dob = ?  WHERE id = ?");
-$stmt->bind_param("ssssssssssssi", $fname, $lname, $uname, $bname, $email, $phone, $address, $city, $state, $country, $pin, $dob, $id);
+$stmt = $conn->prepare("UPDATE users SET user_id = ?, first_name = ?, last_name = ?, username = ?, business_name = ?, gst_in = ?, email = ?, phone = ?, address = ?, city = ?, state = ?, country = ?, pincode = ?, dob = ?  WHERE id = ?");
+$stmt->bind_param("ssssssssssssssi", $client_id, $fname, $lname, $uname, $bname, $gst_in, $email, $phone, $address, $city, $state, $country, $pin, $dob, $id);
 if ($stmt->execute()) {
     echo "updated";
 } else {

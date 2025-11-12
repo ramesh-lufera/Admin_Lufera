@@ -80,6 +80,10 @@ $row['username'] = explode('@', $row['email'])[0];
                                         <span class="w-70 text-secondary-light fw-medium">: <?php echo $row['business_name']; ?> </span>
                                     </li>
                                     <li class="d-flex align-items-center gap-1 mb-12">
+                                        <span class="w-30 text-md fw-semibold text-primary-light">GSTIN</span>
+                                        <span class="w-70 text-secondary-light fw-medium">: <?php echo $row['gst_in']; ?> </span>
+                                    </li>
+                                    <li class="d-flex align-items-center gap-1 mb-12">
                                         <span class="w-30 text-md fw-semibold text-primary-light"> Email</span>
                                         <span class="w-70 text-secondary-light fw-medium">: <?php echo $row['email']; ?></span>
                                     </li>
@@ -195,8 +199,20 @@ $row['username'] = explode('@', $row['email'])[0];
                                             </div>
                                             <div class="col-sm-6">
                                                 <div class="mb-20">
+                                                    <label for="" class="form-label fw-semibold text-primary-light text-sm mb-8">Client ID <span class="text-danger-600">*</span></label>
+                                                    <input type="text" class="form-control radius-8" id="" name="client_id" value="<?php echo $row['user_id']; ?>" <?php echo !empty($row['user_id']) ? 'readonly' : ''; ?> required>
+                                                </div>
+                                            </div>
+                                            <div class="col-sm-6">
+                                                <div class="mb-20">
                                                     <label for="" class="form-label fw-semibold text-primary-light text-sm mb-8">Bussiness Name <span class="text-danger-600">*</span></label>
                                                     <input type="text" class="form-control radius-8" id="" name="bname" value="<?php echo $row['business_name']; ?>" <?php echo !empty($row['business_name']) ? 'readonly' : ''; ?> required>
+                                                </div>
+                                            </div>
+                                            <div class="col-sm-6">
+                                                <div class="mb-20">
+                                                    <label for="" class="form-label fw-semibold text-primary-light text-sm mb-8">GSTIN <span class="text-danger-600">*</span></label>
+                                                    <input type="text" class="form-control radius-8" id="" name="gst_in" value="<?php echo $row['gst_in']; ?>" <?php echo !empty($row['gst_in']) ? 'readonly' : ''; ?> required>
                                                 </div>
                                             </div>
                                             <div class="col-sm-6">
