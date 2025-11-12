@@ -111,7 +111,7 @@
         if (!empty($package_ids)) {
             $ids_str = implode(",", $package_ids);
             $sql_packages = "
-                SELECT p.package_name, d.price
+                SELECT p.package_name, d.price, p.gst_id
                 FROM package p
                 LEFT JOIN durations d ON p.id = d.package_id
                 WHERE p.id IN ($ids_str)
@@ -122,7 +122,8 @@
             while ($row_pkg = $result_packages->fetch_assoc()) {
                 $package_details[] = [
                     'name' => $row_pkg['package_name'],
-                    'price' => floatval($row_pkg['price'])
+                    'price' => floatval($row_pkg['price']),
+                    'gst_id' => intval($row_pkg['gst_id'])
                 ];
             }
         }
@@ -134,13 +135,14 @@
         $product_ids = array_map('intval', explode(",", $get_products));
         if (!empty($product_ids)) {
             $ids_str = implode(",", $product_ids);
-            $sql_products = "SELECT name, price FROM products WHERE id IN ($ids_str)";
+            $sql_products = "SELECT name, price, gst FROM products WHERE id IN ($ids_str)";
             $result_products = $conn->query($sql_products);
 
             while ($row_prod = $result_products->fetch_assoc()) {
                 $product_details[] = [
                     'name' => $row_prod['name'],
-                    'price' => floatval($row_prod['price'])
+                    'price' => floatval($row_prod['price']),
+                    'gst_id' => intval($row_prod['gst']) // ✅ store tax id
                 ];
             }
         }
@@ -152,13 +154,14 @@
         $addon_ids = array_map('intval', explode(",", $get_addon));
         if (!empty($addon_ids)) {
             $ids_str = implode(",", $addon_ids);
-            $sql_addons = "SELECT name, cost FROM `add-on-service` WHERE id IN ($ids_str)";
+            $sql_addons = "SELECT name, cost, gst FROM `add-on-service` WHERE id IN ($ids_str)";
             $result_addons = $conn->query($sql_addons);
 
             while ($row_addon = $result_addons->fetch_assoc()) {
                 $addon_details[] = [
                     'name' => $row_addon['name'],
-                    'price' => floatval($row_addon['cost'])
+                    'price' => floatval($row_addon['cost']),
+                    'gst_id' => intval($row_addon['gst'])
                 ];
             }
         }
@@ -431,20 +434,78 @@
             $username  = $row['username'];  // purchaser username
             $toName    = $row['username'];
 
-            // Only set addon_price if this is an addon row
-            $insert_addon_price = !empty($get_addon) ? $addon_total : '';
+            // // Only set addon_price if this is an addon row
+            // $insert_addon_price = !empty($get_addon) ? $addon_total : '';
 
-            $main_subtotal = $price + floatval($insert_addon_price);
-            $main_discount = $discount ?? 0;
+            // $main_subtotal = $price + floatval($insert_addon_price);
+            // $main_discount = $discount ?? 0;
             
-            // Apply discount to subtotal first, then calculate GST on discounted amount
-            $discounted_subtotal = $main_subtotal - $discount_amount;
-            $main_gst = round($discounted_subtotal * ($tax_rate / 100), 2);
-            $main_amount = round($discounted_subtotal + $main_gst, 2);
+            // // Apply discount to subtotal first, then calculate GST on discounted amount
+            // $discounted_subtotal = $main_subtotal - $discount_amount;
+            // $main_gst = round($discounted_subtotal * ($tax_rate / 100), 2);
+            // $main_amount = round($discounted_subtotal + $main_gst, 2);
+            // $main_balance_due  = $main_amount - $payment_made;
+
+            // ✅ Only set addon_price and addon_gst if this is an addon row
+            $insert_addon_price = 0;
+            $insert_addon_gst   = 0;
+
+            if (!empty($get_addon)) {
+                $insert_addon_price = floatval($addon_total);
+
+                // --- Calculate addon GST (using each add-on's GST ID) ---
+                $total_addon_gst = 0;
+                if (!empty($addon_details)) {
+                    foreach ($addon_details as $addon_item) {
+                        $addon_tax_rate = 0;
+                        if (!empty($addon_item['gst_id'])) {
+                            $tax_stmt = $conn->prepare("SELECT rate FROM taxes WHERE id = ?");
+                            $tax_stmt->bind_param("i", $addon_item['gst_id']);
+                            $tax_stmt->execute();
+                            $tax_res = $tax_stmt->get_result();
+                            if ($tax_res && $tax_res->num_rows > 0) {
+                                $tax_row = $tax_res->fetch_assoc();
+                                $addon_tax_rate = floatval($tax_row['rate']);
+                            }
+                            $tax_stmt->close();
+                        }
+                        $addon_base_price = floatval($addon_item['price']);
+                        $addon_gst_amount = round($addon_base_price * ($addon_tax_rate / 100), 2);
+                        $total_addon_gst += $addon_gst_amount;
+                    }
+                }
+
+                $insert_addon_gst = round($total_addon_gst, 2);
+            }
+
+            // // ✅ Calculate subtotal, GST, discount and total
+            // $main_subtotal = $price + floatval($insert_addon_price) + floatval($insert_addon_gst);
+            // $main_discount = $discount ?? 0;
+
+            // // Apply discount to subtotal first, then calculate GST on discounted amount
+            // $discounted_subtotal = $main_subtotal - $discount_amount;
+            // $main_gst = round($discounted_subtotal * ($tax_rate / 100), 2);
+            // $main_amount = round($discounted_subtotal + $main_gst, 2);
+            // $main_balance_due  = $main_amount - $payment_made;
+
+            // ✅ Calculate subtotal, GST, discount and total
+
+            // Subtotal = plan price + add-on base + add-on GST (to get full gross)
+            $main_subtotal = $price + floatval($insert_addon_price) + floatval($insert_addon_gst);
+            $main_discount = $discount ?? 0;
+
+            // Apply discount before tax (discount applies to plan only)
+            $discounted_plan_price = max(0, $price - $discount_amount);
+
+            // Calculate GST only for the main plan (❌ exclude add-on GST)
+            $main_gst = round($discounted_plan_price * ($tax_rate / 100), 2);
+
+            // Grand total = plan (after discount + GST) + addon base + addon GST
+            $main_amount = round($discounted_plan_price + $main_gst + floatval($insert_addon_price) + floatval($insert_addon_gst), 2);
             $main_balance_due  = $main_amount - $payment_made;
 
-            $sql = "INSERT INTO orders (user_id, invoice_id, plan, duration, amount, gst, price, addon_price, status, payment_method, discount, payment_made, created_on, subtotal, balance_due, addon_service, type, coupon_code, discount_amount) VALUES 
-                    ('$client_id', '$receipt_id', '$plan_id', '$duration' ,'$main_amount', '$main_gst', '$price', '$insert_addon_price', 'Pending', '$pay_method', '$main_discount', '$payment_made', '$created_at', '$main_subtotal', '$main_amount', '$get_addon', '$type', '$coupon_code', '$discount_amount')";
+            $sql = "INSERT INTO orders (user_id, invoice_id, plan, duration, amount, gst, price, addon_price, addon_gst, status, payment_method, discount, payment_made, created_on, subtotal, balance_due, addon_service, type, coupon_code, discount_amount) VALUES 
+                    ('$client_id', '$receipt_id', '$plan_id', '$duration' ,'$main_amount', '$main_gst', '$price', '$insert_addon_price', '$insert_addon_gst', 'Pending', '$pay_method', '$main_discount', '$payment_made', '$created_at', '$main_subtotal', '$main_amount', '$get_addon', '$type', '$coupon_code', '$discount_amount')";
 
             if (mysqli_query($conn, $sql)) {
                 // ================= Packages =================
@@ -1065,83 +1126,250 @@
                                         <td><?php echo htmlspecialchars($plan_name); ?></td>
                                         <td class="text-end" id="currency-symbol-display"><?php echo htmlspecialchars($symbol) . number_format($price, 2); ?></td>
                                     </tr> -->
+                                    
                                     <!-- Packages -->
+                                    <!-- <?php if (!empty($package_details)): ?>
+                                        <?php foreach ($package_details as $pkg_index => $package): ?>
+                                                <?php
+                                                    $package_base_price   = floatval($package['price'] ?? 0);
+                                                    $package_tax_amount   = round($package_base_price * (floatval($tax_rate ?? 0) / 100), 2);
+                                                    $package_total_amount = round($package_base_price + $package_tax_amount, 2);
+                                                    $package_breakdown_id = 'packageBreakdown-' . $pkg_index;
+                                                ?>
+                                                <tr>
+                                                    <td>
+                                                        <div class="d-flex align-items-center" style="gap: 10px;">
+                                                            <span><?php echo htmlspecialchars($package['name']); ?> (Package)</span>
+                                                            <button type="button" class="btn btn-link p-0 border-0 plan-breakdown-toggle" data-target="#<?php echo $package_breakdown_id; ?>" data-display="table-row" aria-expanded="false" style="color: inherit;">
+                                                                <i class="fas fa-chevron-down"></i>
+                                                            </button>
+                                                        </div>
+                                                    </td>
+                                                    <td class="text-end"><?php echo htmlspecialchars($symbol) . number_format($package_total_amount, 2); ?></td>
+                                                </tr>
+                                                <tr id="<?php echo $package_breakdown_id; ?>" class="plan-breakdown-details" style="display: none; background-color: #f9f9f9;">
+                                                    <td colspan="2" style="border-top: none;">
+                                                        <div class="d-flex justify-content-between" style="font-size: 0.85rem; color: #555;">
+                                                            <span>Price</span>
+                                                            <span><?php echo htmlspecialchars($symbol) . number_format($package_base_price, 2); ?></span>
+                                                        </div>
+                                                        <div class="d-flex justify-content-between" style="font-size: 0.85rem; color: #555;">
+                                                            <span>Taxs (<?php echo number_format(floatval($tax_rate ?? 0), 2); ?>%)</span>
+                                                            <span><?php echo htmlspecialchars($symbol) . number_format($package_tax_amount, 2); ?></span>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                        <?php endforeach; ?>
+                                    <?php endif; ?> -->
                                     <?php if (!empty($package_details)): ?>
-                                    <?php foreach ($package_details as $pkg_index => $package): ?>
+                                        <?php foreach ($package_details as $pkg_index => $package): ?>
+
                                             <?php
+                                                // ✅ Fetch individual GST rate for this package
+                                                $package_tax_rate = 0;
+                                                if (!empty($package['gst_id'])) {
+                                                    $tax_stmt = $conn->prepare("SELECT rate FROM taxes WHERE id = ?");
+                                                    $tax_stmt->bind_param("i", $package['gst_id']);
+                                                    $tax_stmt->execute();
+                                                    $tax_res = $tax_stmt->get_result();
+                                                    if ($tax_res && $tax_res->num_rows > 0) {
+                                                        $tax_row = $tax_res->fetch_assoc();
+                                                        $package_tax_rate = floatval($tax_row['rate']);
+                                                    }
+                                                    $tax_stmt->close();
+                                                }
+
                                                 $package_base_price   = floatval($package['price'] ?? 0);
-                                                $package_tax_amount   = round($package_base_price * (floatval($tax_rate ?? 0) / 100), 2);
+                                                $package_tax_amount   = round($package_base_price * ($package_tax_rate / 100), 2);
                                                 $package_total_amount = round($package_base_price + $package_tax_amount, 2);
                                                 $package_breakdown_id = 'packageBreakdown-' . $pkg_index;
                                             ?>
+
                                             <tr>
                                                 <td>
                                                     <div class="d-flex align-items-center" style="gap: 10px;">
                                                         <span><?php echo htmlspecialchars($package['name']); ?> (Package)</span>
-                                                        <button type="button" class="btn btn-link p-0 border-0 plan-breakdown-toggle" data-target="#<?php echo $package_breakdown_id; ?>" data-display="table-row" aria-expanded="false" style="color: inherit;">
+                                                        <button type="button" class="btn btn-link p-0 border-0 plan-breakdown-toggle"
+                                                            data-target="#<?php echo $package_breakdown_id; ?>" data-display="table-row"
+                                                            aria-expanded="false" style="color: inherit;">
                                                             <i class="fas fa-chevron-down"></i>
                                                         </button>
                                                     </div>
                                                 </td>
                                                 <td class="text-end"><?php echo htmlspecialchars($symbol) . number_format($package_total_amount, 2); ?></td>
                                             </tr>
-                                            <tr id="<?php echo $package_breakdown_id; ?>" class="plan-breakdown-details" style="display: none; background-color: #f9f9f9;">
+
+                                            <tr id="<?php echo $package_breakdown_id; ?>" class="plan-breakdown-details"
+                                                style="display: none; background-color: #f9f9f9;">
                                                 <td colspan="2" style="border-top: none;">
                                                     <div class="d-flex justify-content-between" style="font-size: 0.85rem; color: #555;">
                                                         <span>Price</span>
                                                         <span><?php echo htmlspecialchars($symbol) . number_format($package_base_price, 2); ?></span>
                                                     </div>
                                                     <div class="d-flex justify-content-between" style="font-size: 0.85rem; color: #555;">
-                                                        <span>Taxs (<?php echo number_format(floatval($tax_rate ?? 0), 2); ?>%)</span>
+                                                        <span>Tax (<?php echo number_format($package_tax_rate, 2); ?>%)</span>
                                                         <span><?php echo htmlspecialchars($symbol) . number_format($package_tax_amount, 2); ?></span>
                                                     </div>
                                                 </td>
                                             </tr>
+
                                         <?php endforeach; ?>
                                     <?php endif; ?>
+
+                                    <!-- Products -->
+                                    <!-- <?php if (!empty($product_details)): ?>
+                                        <?php foreach ($product_details as $product): ?>
+                                                <tr>
+                                                    <td><?php echo htmlspecialchars($product['name']); ?> (Product)</td>
+                                                    <td class="text-end"><?php echo htmlspecialchars($symbol) . number_format($product['price'], 2); ?></td>
+                                                </tr>
+                                        <?php endforeach; ?>
+                                    <?php endif; ?> -->
                                     <!-- Products -->
                                     <?php if (!empty($product_details)): ?>
-                                        <?php foreach ($product_details as $product): ?>
+                                        <?php foreach ($product_details as $prod_index => $product): ?>
+
+                                            <?php
+                                                // ✅ Fetch individual GST rate for product
+                                                $product_tax_rate = 0;
+                                                if (!empty($product['gst_id'])) {
+                                                    $tax_stmt = $conn->prepare("SELECT rate FROM taxes WHERE id = ?");
+                                                    $tax_stmt->bind_param("i", $product['gst_id']);
+                                                    $tax_stmt->execute();
+                                                    $tax_res = $tax_stmt->get_result();
+                                                    if ($tax_res && $tax_res->num_rows > 0) {
+                                                        $tax_row = $tax_res->fetch_assoc();
+                                                        $product_tax_rate = floatval($tax_row['rate']);
+                                                    }
+                                                    $tax_stmt->close();
+                                                }
+
+                                                $product_base_price   = floatval($product['price']);
+                                                $product_tax_amount   = round($product_base_price * ($product_tax_rate / 100), 2);
+                                                $product_total_amount = round($product_base_price + $product_tax_amount, 2);
+                                                $product_breakdown_id = 'productBreakdown-' . $prod_index;
+                                            ?>
+
                                             <tr>
-                                                <td><?php echo htmlspecialchars($product['name']); ?> (Product)</td>
-                                                <td class="text-end"><?php echo htmlspecialchars($symbol) . number_format($product['price'], 2); ?></td>
+                                                <td>
+                                                    <div class="d-flex align-items-center" style="gap: 10px;">
+                                                        <span><?php echo htmlspecialchars($product['name']); ?> (Product)</span>
+                                                        <button type="button" class="btn btn-link p-0 border-0 plan-breakdown-toggle"
+                                                                data-target="#<?php echo $product_breakdown_id; ?>" data-display="table-row"
+                                                                aria-expanded="false" style="color: inherit;">
+                                                            <i class="fas fa-chevron-down"></i>
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                                <td class="text-end"><?php echo htmlspecialchars($symbol) . number_format($product_total_amount, 2); ?></td>
                                             </tr>
+
+                                            <tr id="<?php echo $product_breakdown_id; ?>" class="plan-breakdown-details"
+                                                style="display: none; background-color: #f9f9f9;">
+                                                <td colspan="2" style="border-top: none;">
+                                                    <div class="d-flex justify-content-between" style="font-size: 0.85rem; color: #555;">
+                                                        <span>Price</span>
+                                                        <span><?php echo htmlspecialchars($symbol) . number_format($product_base_price, 2); ?></span>
+                                                    </div>
+                                                    <div class="d-flex justify-content-between" style="font-size: 0.85rem; color: #555;">
+                                                        <span>Tax (<?php echo number_format($product_tax_rate, 2); ?>%)</span>
+                                                        <span><?php echo htmlspecialchars($symbol) . number_format($product_tax_amount, 2); ?></span>
+                                                    </div>
+                                                </td>
+                                            </tr>
+
                                         <?php endforeach; ?>
                                     <?php endif; ?>
+
                                     <!-- Add-On Services -->
+                                    <!-- <?php if (!empty($addon_details)): ?>
+                                        <?php foreach ($addon_details as $addon_index => $addon): ?>
+                                                <?php
+                                                    $addon_base_price     = floatval($addon['price'] ?? 0);
+                                                    $addon_tax_amount     = round($addon_base_price * (floatval($tax_rate ?? 0) / 100), 2);
+                                                    $addon_total_amount   = round($addon_base_price + $addon_tax_amount, 2);
+                                                    $addon_breakdown_id   = 'addonBreakdown-' . $addon_index;
+                                                ?>
+                                                <tr>
+                                                    <td>
+                                                        <div class="d-flex align-items-center" style="gap: 10px;">
+                                                            <span><?php echo htmlspecialchars($addon['name']); ?> (Service)</span>
+                                                            <button type="button" class="btn btn-link p-0 border-0 plan-breakdown-toggle" data-target="#<?php echo $addon_breakdown_id; ?>" data-display="table-row" aria-expanded="false" style="color: inherit;">
+                                                                <i class="fas fa-chevron-down"></i>
+                                                            </button>
+                                                        </div>
+                                                    </td>
+                                                    <td class="text-end"><?php echo htmlspecialchars($symbol) . number_format($addon_total_amount, 2); ?></td>
+                                                </tr>
+                                                <tr id="<?php echo $addon_breakdown_id; ?>" class="plan-breakdown-details" style="display: none; background-color: #f9f9f9;">
+                                                    <td colspan="2" style="border-top: none;">
+                                                        <div class="d-flex justify-content-between" style="font-size: 0.85rem; color: #555;">
+                                                            <span>Price</span>
+                                                            <span><?php echo htmlspecialchars($symbol) . number_format($addon_base_price, 2); ?></span>
+                                                        </div>
+                                                        <div class="d-flex justify-content-between" style="font-size: 0.85rem; color: #555;">
+                                                            <span>Tax (<?php echo number_format(floatval($tax_rate ?? 0), 2); ?>%)</span>
+                                                            <span><?php echo htmlspecialchars($symbol) . number_format($addon_tax_amount, 2); ?></span>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                        <?php endforeach; ?>
+                                    <?php endif; ?> -->
                                     <?php if (!empty($addon_details)): ?>
                                         <?php foreach ($addon_details as $addon_index => $addon): ?>
+
                                             <?php
-                                                $addon_base_price     = floatval($addon['price'] ?? 0);
-                                                $addon_tax_amount     = round($addon_base_price * (floatval($tax_rate ?? 0) / 100), 2);
-                                                $addon_total_amount   = round($addon_base_price + $addon_tax_amount, 2);
-                                                $addon_breakdown_id   = 'addonBreakdown-' . $addon_index;
+                                                // Fetch individual tax rate for this addon
+                                                $addon_tax_rate = 0;
+                                                if (!empty($addon['gst_id'])) {
+                                                    $tax_stmt = $conn->prepare("SELECT rate FROM taxes WHERE id = ?");
+                                                    $tax_stmt->bind_param("i", $addon['gst_id']);
+                                                    $tax_stmt->execute();
+                                                    $tax_res = $tax_stmt->get_result();
+                                                    if ($tax_res && $tax_res->num_rows > 0) {
+                                                        $tax_row = $tax_res->fetch_assoc();
+                                                        $addon_tax_rate = floatval($tax_row['rate']);
+                                                    }
+                                                    $tax_stmt->close();
+                                                }
+
+                                                $addon_base_price   = floatval($addon['price']);
+                                                $addon_tax_amount   = round($addon_base_price * ($addon_tax_rate / 100), 2);
+                                                $addon_total_amount = round($addon_base_price + $addon_tax_amount, 2);
+                                                $addon_breakdown_id = 'addonBreakdown-' . $addon_index;
                                             ?>
+
                                             <tr>
                                                 <td>
                                                     <div class="d-flex align-items-center" style="gap: 10px;">
                                                         <span><?php echo htmlspecialchars($addon['name']); ?> (Service)</span>
-                                                        <button type="button" class="btn btn-link p-0 border-0 plan-breakdown-toggle" data-target="#<?php echo $addon_breakdown_id; ?>" data-display="table-row" aria-expanded="false" style="color: inherit;">
+                                                        <button type="button" class="btn btn-link p-0 border-0 plan-breakdown-toggle"
+                                                                data-target="#<?php echo $addon_breakdown_id; ?>" data-display="table-row" aria-expanded="false"
+                                                                style="color: inherit;">
                                                             <i class="fas fa-chevron-down"></i>
                                                         </button>
                                                     </div>
                                                 </td>
                                                 <td class="text-end"><?php echo htmlspecialchars($symbol) . number_format($addon_total_amount, 2); ?></td>
                                             </tr>
-                                            <tr id="<?php echo $addon_breakdown_id; ?>" class="plan-breakdown-details" style="display: none; background-color: #f9f9f9;">
+
+                                            <tr id="<?php echo $addon_breakdown_id; ?>" class="plan-breakdown-details"
+                                                style="display: none; background-color: #f9f9f9;">
                                                 <td colspan="2" style="border-top: none;">
                                                     <div class="d-flex justify-content-between" style="font-size: 0.85rem; color: #555;">
                                                         <span>Price</span>
                                                         <span><?php echo htmlspecialchars($symbol) . number_format($addon_base_price, 2); ?></span>
                                                     </div>
                                                     <div class="d-flex justify-content-between" style="font-size: 0.85rem; color: #555;">
-                                                        <span>Tax (<?php echo number_format(floatval($tax_rate ?? 0), 2); ?>%)</span>
+                                                        <span>Tax (<?php echo number_format($addon_tax_rate, 2); ?>%)</span>
                                                         <span><?php echo htmlspecialchars($symbol) . number_format($addon_tax_amount, 2); ?></span>
                                                     </div>
                                                 </td>
                                             </tr>
+
                                         <?php endforeach; ?>
                                     <?php endif; ?>
+
                                     <?php if($hostinger_balance !="") { ?>
                                     <tr>
                                         <td>Exisitng Plan Balance</td>
@@ -1161,7 +1389,7 @@
                                     </tr> -->
 
                                     <!-- Estimated Total -->
-                                    <tr>
+                                    <!-- <tr>
                                         <td class="border-0 fw-semibold">Total</td>
                                         <?php
                                             // Recalculate total_price as sum of all tax-inclusive items
@@ -1208,7 +1436,109 @@
                                         <td class="border-0 text-end fw-semibold text-xl">
                                             <?php echo htmlspecialchars($symbol) . number_format($total_price, 2); ?>
                                         </td>
+                                    </tr> -->
+                                    <tr>
+                                        <td class="border-0 fw-semibold">Total</td>
+                                        <?php
+                                            // Recalculate total_price as sum of all tax-inclusive items
+                                            $final_total = 0;
+
+                                            // 1. Plan (uses global tax rate)
+                                            $plan_base = floatval($price ?? 0);
+                                            $plan_gst  = round($plan_base * ($tax_rate / 100), 2);
+                                            $final_total += round($plan_base + $plan_gst, 2);
+
+                                            // 2. Packages (uses global tax rate)
+                                            if (!empty($package_details)) {
+                                                foreach ($package_details as $pkg) {
+                                                    $pkg_base = floatval($pkg['price'] ?? 0);
+                                                    // $pkg_gst  = round($pkg_base * ($tax_rate / 100), 2);
+                                                    // $final_total += round($pkg_base + $pkg_gst, 2);
+                                                    $package_tax_rate = 0;
+                                                    if (!empty($pkg['gst_id'])) {
+                                                        $tax_stmt = $conn->prepare("SELECT rate FROM taxes WHERE id = ?");
+                                                        $tax_stmt->bind_param("i", $pkg['gst_id']);
+                                                        $tax_stmt->execute();
+                                                        $tax_res = $tax_stmt->get_result();
+                                                        if ($tax_res && $tax_res->num_rows > 0) {
+                                                            $tax_row = $tax_res->fetch_assoc();
+                                                            $package_tax_rate = floatval($tax_row['rate']);
+                                                        }
+                                                        $tax_stmt->close();
+                                                    }
+
+                                                    $pkg_gst = round($pkg_base * ($package_tax_rate / 100), 2);
+                                                    $final_total += round($pkg_base + $pkg_gst, 2);
+
+                                                }
+                                            }
+
+                                            // 3. Add-ons (✅ now uses each add-on's own GST rate)
+                                            if (!empty($addon_details)) {
+                                                foreach ($addon_details as $addon) {
+
+                                                    $addon_tax_rate = 0;
+                                                    if (!empty($addon['gst_id'])) {
+                                                        $tax_stmt = $conn->prepare("SELECT rate FROM taxes WHERE id = ?");
+                                                        $tax_stmt->bind_param("i", $addon['gst_id']);
+                                                        $tax_stmt->execute();
+                                                        $tax_res = $tax_stmt->get_result();
+                                                        if ($tax_res && $tax_res->num_rows > 0) {
+                                                            $tax_row = $tax_res->fetch_assoc();
+                                                            $addon_tax_rate = floatval($tax_row['rate']);
+                                                        }
+                                                        $tax_stmt->close();
+                                                    }
+
+                                                    $add_base = floatval($addon['price'] ?? 0);
+                                                    $add_gst  = round($add_base * ($addon_tax_rate / 100), 2);
+                                                    $final_total += round($add_base + $add_gst, 2);
+                                                }
+                                            }
+
+                                            // // 4. Products (no GST)
+                                            // if (!empty($product_details)) {
+                                            //     foreach ($product_details as $prod) {
+                                            //         $final_total += floatval($prod['price'] ?? 0);
+                                            //     }
+                                            // }
+                                            // 4. Products (✅ now uses individual product GST)
+                                            if (!empty($product_details)) {
+                                                foreach ($product_details as $prod) {
+
+                                                    $product_tax_rate = 0;
+                                                    if (!empty($prod['gst_id'])) {
+                                                        $tax_stmt = $conn->prepare("SELECT rate FROM taxes WHERE id = ?");
+                                                        $tax_stmt->bind_param("i", $prod['gst_id']);
+                                                        $tax_stmt->execute();
+                                                        $tax_res = $tax_stmt->get_result();
+                                                        if ($tax_res && $tax_res->num_rows > 0) {
+                                                            $tax_row = $tax_res->fetch_assoc();
+                                                            $product_tax_rate = floatval($tax_row['rate']);
+                                                        }
+                                                        $tax_stmt->close();
+                                                    }
+
+                                                    $prod_base = floatval($prod['price'] ?? 0);
+                                                    $prod_gst  = round($prod_base * ($product_tax_rate / 100), 2);
+                                                    $final_total += round($prod_base + $prod_gst, 2);
+                                                }
+                                            }
+
+
+                                            // 5. Apply coupon discount (if exists)
+                                            $discount_amount = floatval($_POST['discount_amount'] ?? 0);
+                                            $final_total = max(0, $final_total - $discount_amount);
+
+                                            // Final total value
+                                            $total_price = round($final_total, 2);
+                                        ?>
+                                        <input type="hidden" name="total_price" value="<?php echo $total_price; ?>">
+                                        <td class="border-0 text-end fw-semibold text-xl">
+                                            <?php echo htmlspecialchars($symbol) . number_format($total_price, 2); ?>
+                                        </td>
                                     </tr>
+
                                 </tbody>
                             </table>
                         </div>
