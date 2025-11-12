@@ -7,6 +7,7 @@ if (isset($_POST['id'])) {
     $lname  = $_POST['lname'];
     $uname  = $_POST['uname'];
     $bname  = $_POST['bname'];
+    $gst_in  = $_POST['gst_in'];
     $email  = $_POST['email'];
     $phone  = $_POST['phone'];
     $dob  = $_POST['dob'];
@@ -18,8 +19,8 @@ if (isset($_POST['id'])) {
     $pass = $_POST['pass'];
     $role = $_POST['role'];
 
-    $stmt = $conn->prepare("UPDATE users SET first_name = ?, last_name = ?, username = ?, business_name = ?, email = ?, phone = ?, password = ?, address = ?, city = ?, state = ?, country = ?, pincode = ?, dob = ?, role = ?  WHERE id = ?");
-    $stmt->bind_param("ssssssssssssssi", $fname, $lname, $uname, $bname, $email, $phone, $pass, $address, $city, $state, $country, $pin, $dob, $role, $id);
+    $stmt = $conn->prepare("UPDATE users SET first_name = ?, last_name = ?, username = ?, business_name = ?, gst_in = ?, email = ?, phone = ?, password = ?, address = ?, city = ?, state = ?, country = ?, pincode = ?, dob = ?, role = ?  WHERE id = ?");
+    $stmt->bind_param("sssssssssssssssi", $fname, $lname, $uname, $bname, $gst_in, $email, $phone, $pass, $address, $city, $state, $country, $pin, $dob, $role, $id);
 
     if ($stmt->execute()) {
         echo json_encode(["success" => true]);

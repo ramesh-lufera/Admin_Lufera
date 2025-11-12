@@ -49,7 +49,7 @@ if (isset($_POST['id'])) {
                     <input type="password" class="form-control radius-8" id="" name="pass" value="<?php echo htmlspecialchars($user['password']); ?>" required>
                 </div>
             </div>
-            <div class="col-sm-6">
+            <!-- <div class="col-sm-6">
                 <div class="mb-20">
                     <label for="" class="form-label fw-semibold text-primary-light text-sm mb-8">Role <span class="text-danger-600">*</span></label>
                     <?php
@@ -73,11 +73,17 @@ if (isset($_POST['id'])) {
                         ?>
                     </select>
                 </div>
-            </div>
+            </div> -->
             <div class="col-sm-6">
                 <div class="mb-20">
                     <label for="" class="form-label fw-semibold text-primary-light text-sm mb-8">Bussiness Name <span class="text-danger-600">*</span></label>
                     <input type="text" class="form-control radius-8" id="" name="bname" value="<?php echo htmlspecialchars($user['business_name']); ?>" required>
+                </div>
+            </div>
+            <div class="col-sm-6">
+                <div class="mb-20">
+                    <label for="" class="form-label fw-semibold text-primary-light text-sm mb-8">GSTIN <span class="text-danger-600">*</span></label>
+                    <input type="text" class="form-control radius-8" id="" name="gst_in" value="<?php echo htmlspecialchars($user['gst_in']); ?>" required>
                 </div>
             </div>
             <div class="col-sm-6">

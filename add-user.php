@@ -66,6 +66,7 @@ error_reporting(E_ALL);
         $fname = $_POST['fname'];
         $lname = $_POST['lname'];
         $business_name = $_POST['bname'];
+        $gst_in = $_POST['gst_in'];
         $email = $_POST['email'];
         $phone = $_POST['phone'];
         $address = $_POST['address'];
@@ -90,8 +91,8 @@ error_reporting(E_ALL);
         // $sql = "INSERT INTO users (user_id,first_name, last_name, business_name, email, phone, address, city, state, country, pincode, dob, created_at)
         //         VALUES ('$newUserId', '$first_name', '$last_name', '$business_name', '$email', '$phone', '$address', '$city', '$state', '$country', '$pincode', '$dob', NOW())";
 
-        $stmt = $conn->prepare("INSERT INTO users (user_id, username, email, phone, password, first_name,last_name,business_name,address,city,state,country,pincode,dob,created_at,method,role,photo ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-        $stmt->bind_param("ssssssssssssssssss", $newUserId, $username, $email, $phone, $password, $fname, $lname, $business_name, $address, $city, $state, $country, $pincode, $dob, $created_at, $method, $role, $photo);
+        $stmt = $conn->prepare("INSERT INTO users (user_id, username, email, phone, password, first_name,last_name,business_name,gst_in,address,city,state,country,pincode,dob,created_at,method,role,photo ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+        $stmt->bind_param("sssssssssssssssssss", $newUserId, $username, $email, $phone, $password, $fname, $lname, $business_name, $gst_in, $address, $city, $state, $country, $pincode, $dob, $created_at, $method, $role, $photo);
             
         if ($stmt->execute()) {
             echo "
@@ -162,6 +163,18 @@ error_reporting(E_ALL);
                                 <input type="text" class="form-control radius-8" name="bname" placeholder="Enter Business Name" required maxlength="20">
                                 <div class="invalid-feedback">
                                     Business name is required
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mb-2">
+                            <label for="name" class="form-label fw-semibold text-primary-light text-sm mb-8">GSTIN <span class="text-danger-600">*</span></label>
+                            <div class="icon-field has-validation">
+                                <span class="icon" style="top: 12px !important">
+                                    <iconify-icon icon="mdi:business"></iconify-icon>
+                                </span>
+                                <input type="text" class="form-control radius-8" name="gst_in" placeholder="Enter GSTIN" required maxlength="50">
+                                <div class="invalid-feedback">
+                                    GSTIN is required
                                 </div>
                             </div>
                         </div>
