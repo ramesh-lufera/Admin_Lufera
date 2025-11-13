@@ -72,7 +72,7 @@
         $hostinger_balance = $_POST['hostinger_balance'];
         $subtotal_display = $_POST['subtotal-display'];
         $invoice_id = $_POST['invoice_id'];
-        $web_id = $_POST['invoice_id'];
+        $web_id = $_POST['web_id'];
         $total_breakdown_price = $_POST['total_breakdown_price'];
         $total_breakdown_tax = $_POST['total_breakdown_tax'];
         $total_breakdown_gst = $_POST['total_breakdown_gst'];
@@ -95,8 +95,30 @@
             $renewal_period = $_POST['period'] ?? '';
             $duration = $renewal_period ?: $duration;
             $price = isset($_POST['total']) ? floatval($_POST['total']) : floatval($price);
-            $gst = round($price * 0.18, 2);
+
+            // $gst = round($price * 0.18, 2);
+            // $total_price = round($price + $gst, 2);
+
+            // ✅ Calculate GST dynamically using plan's own gst_id (same as normal flow)
+            $renewal_tax_name = $tax_name; // default to existing
+            $renewal_tax_rate = $tax_rate; // fallback to existing rate
+
+            if (!empty($gst_id)) {
+                $renewal_tax_query = $conn->prepare("SELECT tax_name, rate FROM taxes WHERE id = ?");
+                $renewal_tax_query->bind_param("i", $gst_id);
+                $renewal_tax_query->execute();
+                $renewal_tax_result = $renewal_tax_query->get_result();
+                if ($renewal_tax_result && $renewal_tax_result->num_rows > 0) {
+                    $renewal_tax_row = $renewal_tax_result->fetch_assoc();
+                    $renewal_tax_name = $renewal_tax_row['tax_name'];
+                    $renewal_tax_rate = floatval($renewal_tax_row['rate']);
+                }
+                $renewal_tax_query->close();
+            }
+
+            $gst = round($price * ($renewal_tax_rate / 100), 2);
             $total_price = round($price + $gst, 2);
+
             $created_on = $_POST['expiration_date'] ?? $CreatedAt;
             $receipt_id = $_POST['receipt_id'] ?? $receipt_id;
         } else {
@@ -179,6 +201,7 @@
         $type = $_POST['type'];
         $pay_method = $_POST['pay_method'];
         $receipt_id = $_POST['receipt_id'];
+        $invoice_id = $_POST['invoice_id'];
         $plan_name = $_POST['plan_name'];
         $duration = $_POST['duration'];
         $total_price = $_POST['total_price'];
@@ -195,6 +218,8 @@
         $subtotal = $price + $addon_total;
         $discount_amount = floatval($_POST['discount_amount'] ?? 0);
         $coupon_code = $_POST['coupon_code'];
+        $hostinger_balance = $_POST['hostinger_balance'];
+        $web_id = $_POST['web_id'];
         
         // Fetch tax rate for proper calculation
         $gst_id = $_POST['gst_id'] ?? null;
@@ -298,11 +323,65 @@
                 // Only set addon_price if this is an addon row
                 $insert_addon_price = !empty($get_addon) ? $addon_total : '';
 
+                // $main_subtotal = $price + floatval($insert_addon_price);
+                // $main_discount = $discount ?? 0;
+                // $main_gst      = round($main_subtotal * ($tax_rate / 100), 2);
+                // $main_amount   = round($main_subtotal - $main_discount + $main_gst, 2);
+                // $main_balance_due  = $main_amount - $payment_made;
+
                 $main_subtotal = $price + floatval($insert_addon_price);
                 $main_discount = $discount ?? 0;
-                $main_gst      = round($main_subtotal * ($tax_rate / 100), 2);
-                $main_amount   = round($main_subtotal - $main_discount + $main_gst, 2);
-                $main_balance_due  = $main_amount - $payment_made;
+
+                // ✅ Fetch correct GST rate for renewal (from taxes table)
+                $renewal_tax_rate = 0;
+
+                if (!empty($gst_id)) {
+                    // Case 1: GST ID comes from POST or earlier code
+                    $stmt = $conn->prepare("SELECT rate FROM taxes WHERE id = ?");
+                    $stmt->bind_param("i", $gst_id);
+                    $stmt->execute();
+                    $res = $stmt->get_result();
+                    if ($res && $res->num_rows > 0) {
+                        $row_tax = $res->fetch_assoc();
+                        $renewal_tax_rate = floatval($row_tax['rate']);
+                    }
+                    $stmt->close();
+                } else {
+                    // Case 2: Fallback → try fetching GST ID from websites/package/product
+                    $stmt = $conn->prepare("
+                        SELECT 
+                            COALESCE(p.gst_id, pr.gst) AS gst_id
+                        FROM websites w
+                        LEFT JOIN package p ON w.plan = p.id
+                        LEFT JOIN products pr ON w.plan = pr.id
+                        WHERE w.id = ?
+                        LIMIT 1
+                    ");
+                    $stmt->bind_param("i", $id);
+                    $stmt->execute();
+                    $res = $stmt->get_result();
+                    if ($res && $res->num_rows > 0) {
+                        $row = $res->fetch_assoc();
+                        $fetched_gst_id = (int) ($row['gst_id'] ?? 0);
+                        if ($fetched_gst_id) {
+                            $stmt2 = $conn->prepare("SELECT rate FROM taxes WHERE id = ?");
+                            $stmt2->bind_param("i", $fetched_gst_id);
+                            $stmt2->execute();
+                            $res2 = $stmt2->get_result();
+                            if ($res2 && $res2->num_rows > 0) {
+                                $tax_row = $res2->fetch_assoc();
+                                $renewal_tax_rate = floatval($tax_row['rate']);
+                            }
+                            $stmt2->close();
+                        }
+                    }
+                    $stmt->close();
+                }
+
+                // ✅ Calculate GST and totals using correct renewal tax rate
+                $main_gst     = round($main_subtotal * ($renewal_tax_rate / 100), 2);
+                $main_amount  = round($main_subtotal - $main_discount + $main_gst, 2);
+                $main_balance_due = $main_amount - $payment_made;
 
                 $auto_id = rand(10000000, 99999999);
 
@@ -508,25 +587,89 @@
                     ('$client_id', '$receipt_id', '$plan_id', '$duration' ,'$main_amount', '$main_gst', '$price', '$insert_addon_price', '$insert_addon_gst', 'Pending', '$pay_method', '$main_discount', '$payment_made', '$created_at', '$main_subtotal', '$main_amount', '$get_addon', '$type', '$coupon_code', '$discount_amount')";
 
             if (mysqli_query($conn, $sql)) {
+                // === DEACTIVATE OLD ORDERS IF HOSTINGER BALANCE EXISTS ===
+                if (!empty($hostinger_balance)) {
+                    $updateActiveQuery = $conn->prepare("
+                        UPDATE orders
+                        SET is_Active = 0
+                        WHERE invoice_id = ?
+                       
+                    ");
+                    $updateActiveQuery->bind_param("i", $invoice_id);
+                    $updateActiveQuery->execute();
+                    $updateActiveQuery->close();
+                }
+
+                // ================= Packages =================
+                // if (!empty($get_packages)) {
+                //     $package_ids = array_map('intval', explode(',', $get_packages));
+                //     foreach ($package_ids as $pkg_id) {
+                //         // $pkg_sql = "SELECT package_name, price, duration, cat_id FROM package WHERE id = $pkg_id";
+                //         // $pkg_res = mysqli_query($conn, $pkg_sql);
+                //         // if ($pkg_res && $pkg = mysqli_fetch_assoc($pkg_res)) {
+                //         //     $pkg_name     = $pkg['package_name'];  // ✅ package name for websites table
+                //         //     $pkg_price    = floatval($pkg['price']);
+                //         //     $pkg_duration = $pkg['duration'];
+                //         //     $pkg_cat_id   = $pkg['cat_id']; // ✅ package category
+
+                //         // Step 1: Fetch package name & category (same as before)
+                //         $pkg_sql = "SELECT id, package_name, cat_id FROM package WHERE id = $pkg_id";
+                //         $pkg_res = mysqli_query($conn, $pkg_sql);
+
+                //         if ($pkg_res && $pkg = mysqli_fetch_assoc($pkg_res)) {
+                //             $pkg_name   = $pkg['package_name'];  // ✅ Package name
+                //             $pkg_cat_id = $pkg['cat_id'];        // ✅ Category
+
+                //             // Step 2: Fetch duration & price from durations table
+                //             $dur_sql = "SELECT duration, price FROM durations WHERE package_id = $pkg_id ORDER BY id ASC LIMIT 1";
+                //             $dur_res = mysqli_query($conn, $dur_sql);
+
+                //             if ($dur_res && $dur = mysqli_fetch_assoc($dur_res)) {
+                //                 $pkg_duration = $dur['duration'];           // ✅ From durations table
+                //                 $pkg_price    = floatval($dur['price']);    // ✅ From durations table
+                //             } else {
+                //                 // Fallback if no durations found
+                //                 $pkg_duration = '1 month';
+                //                 $pkg_price    = 0.00;
+                //             }
+
+                //             // calculations
+                //             $pkg_subtotal = $pkg_price;
+                //             $pkg_discount = 0;
+                //             //$pkg_gst      = $pkg_subtotal * 0.18;
+                //             $pkg_gst = round($pkg_subtotal * ($tax_rate / 100), 2);
+                //             $pkg_amount   = $pkg_subtotal - $pkg_discount + $pkg_gst;
+                //             $pkg_balance  = $pkg_amount - $payment_made;
+                            
+                //             // Generate unique invoice id for package
+                //             $pkg_invoice_id = rand(10000000, 99999999);
+                //             // Insert into orders (plan = ID)
+                //             $sql_package = "INSERT INTO orders 
+                //                 (user_id, invoice_id, plan, duration, amount, gst, price, addon_price, status, payment_method, discount, payment_made, created_on, subtotal, balance_due, addon_service, type) 
+                //                 VALUES 
+                //                 ('$client_id', '$pkg_invoice_id', '$pkg_id', '$pkg_duration', '$pkg_amount', '$pkg_gst', '$pkg_price', '$pkg_price', 'Pending', '$pay_method', '$pkg_discount', '$payment_made', '$created_at', '$pkg_subtotal', '$pkg_balance', '$pkg_id', 'package')";
+                //             mysqli_query($conn, $sql_package);
+
+                //             // Insert into websites (plan = NAME ✅)
+                //             $siteInsertPkg = "INSERT INTO websites (user_id, domain, plan, duration, renewal_duration, expired_at, status, cat_id, invoice_id, product_id, type) 
+                //                             VALUES ('$client_id', 'N/A', '$pkg_id', '$pkg_duration', '', NULL, 'Pending', '$pkg_cat_id', '$pkg_invoice_id', '$pkg_id', 'package')";
+                //             mysqli_query($conn, $siteInsertPkg);
+                //         }
+                //     }
+                // }
                 // ================= Packages =================
                 if (!empty($get_packages)) {
                     $package_ids = array_map('intval', explode(',', $get_packages));
                     foreach ($package_ids as $pkg_id) {
-                        // $pkg_sql = "SELECT package_name, price, duration, cat_id FROM package WHERE id = $pkg_id";
-                        // $pkg_res = mysqli_query($conn, $pkg_sql);
-                        // if ($pkg_res && $pkg = mysqli_fetch_assoc($pkg_res)) {
-                        //     $pkg_name     = $pkg['package_name'];  // ✅ package name for websites table
-                        //     $pkg_price    = floatval($pkg['price']);
-                        //     $pkg_duration = $pkg['duration'];
-                        //     $pkg_cat_id   = $pkg['cat_id']; // ✅ package category
 
-                        // Step 1: Fetch package name & category (same as before)
-                        $pkg_sql = "SELECT id, package_name, cat_id FROM package WHERE id = $pkg_id";
+                        // Step 1: Fetch package name, category, and gst_id
+                        $pkg_sql = "SELECT id, package_name, cat_id, gst_id FROM package WHERE id = $pkg_id";
                         $pkg_res = mysqli_query($conn, $pkg_sql);
 
                         if ($pkg_res && $pkg = mysqli_fetch_assoc($pkg_res)) {
                             $pkg_name   = $pkg['package_name'];  // ✅ Package name
                             $pkg_cat_id = $pkg['cat_id'];        // ✅ Category
+                            $pkg_gst_id = $pkg['gst_id'];        // ✅ GST ID for individual GST fetch
 
                             // Step 2: Fetch duration & price from durations table
                             $dur_sql = "SELECT duration, price FROM durations WHERE package_id = $pkg_id ORDER BY id ASC LIMIT 1";
@@ -541,24 +684,38 @@
                                 $pkg_price    = 0.00;
                             }
 
-                            // calculations
+                            // ✅ Fetch the correct GST rate for this package
+                            $pkg_tax_rate = 0;
+                            if (!empty($pkg_gst_id)) {
+                                $gst_stmt = $conn->prepare("SELECT rate FROM taxes WHERE id = ?");
+                                $gst_stmt->bind_param("i", $pkg_gst_id);
+                                $gst_stmt->execute();
+                                $gst_result = $gst_stmt->get_result();
+                                if ($gst_result && $gst_result->num_rows > 0) {
+                                    $gst_row = $gst_result->fetch_assoc();
+                                    $pkg_tax_rate = floatval($gst_row['rate']);
+                                }
+                                $gst_stmt->close();
+                            }
+
+                            // ✅ Individual package calculations using its own GST
                             $pkg_subtotal = $pkg_price;
                             $pkg_discount = 0;
-                            //$pkg_gst      = $pkg_subtotal * 0.18;
-                            $pkg_gst = round($pkg_subtotal * ($tax_rate / 100), 2);
+                            $pkg_gst      = round($pkg_subtotal * ($pkg_tax_rate / 100), 2);
                             $pkg_amount   = $pkg_subtotal - $pkg_discount + $pkg_gst;
                             $pkg_balance  = $pkg_amount - $payment_made;
-                            
+
                             // Generate unique invoice id for package
                             $pkg_invoice_id = rand(10000000, 99999999);
-                            // Insert into orders (plan = ID)
+
+                            // ✅ Insert into orders (addon_price, addon_gst kept empty)
                             $sql_package = "INSERT INTO orders 
-                                (user_id, invoice_id, plan, duration, amount, gst, price, addon_price, status, payment_method, discount, payment_made, created_on, subtotal, balance_due, addon_service, type) 
+                                (user_id, invoice_id, plan, duration, amount, gst, price, addon_price, addon_gst, status, payment_method, discount, payment_made, created_on, subtotal, balance_due, addon_service, type) 
                                 VALUES 
-                                ('$client_id', '$pkg_invoice_id', '$pkg_id', '$pkg_duration', '$pkg_amount', '$pkg_gst', '$pkg_price', '$pkg_price', 'Pending', '$pay_method', '$pkg_discount', '$payment_made', '$created_at', '$pkg_subtotal', '$pkg_balance', '$pkg_id', 'hi')";
+                                ('$client_id', '$pkg_invoice_id', '$pkg_id', '$pkg_duration', '$pkg_amount', '$pkg_gst', '$pkg_price', '', '', 'Pending', '$pay_method', '$pkg_discount', '$payment_made', '$created_at', '$pkg_subtotal', '$pkg_balance', '$pkg_id', 'package')";
                             mysqli_query($conn, $sql_package);
 
-                            // Insert into websites (plan = NAME ✅)
+                            // Insert into websites (plan = ID ✅)
                             $siteInsertPkg = "INSERT INTO websites (user_id, domain, plan, duration, renewal_duration, expired_at, status, cat_id, invoice_id, product_id, type) 
                                             VALUES ('$client_id', 'N/A', '$pkg_id', '$pkg_duration', '', NULL, 'Pending', '$pkg_cat_id', '$pkg_invoice_id', '$pkg_id', 'package')";
                             mysqli_query($conn, $siteInsertPkg);
@@ -567,32 +724,86 @@
                 }
 
                 // ================= Products =================
+                // if (!empty($get_products)) {
+                //     $product_ids = array_map('intval', explode(',', $get_products));
+                //     foreach ($product_ids as $prod_id) {
+                //         $prod_sql = "SELECT name, price, duration, cat_id FROM products WHERE id = $prod_id";
+                //         $prod_res = mysqli_query($conn, $prod_sql);
+                //         if ($prod_res && $prod = mysqli_fetch_assoc($prod_res)) {
+                //             $prod_name     = $prod['name'];   // ✅ product name for websites table
+                //             $prod_price    = floatval($prod['price']);
+                //             $prod_duration = $prod['duration'];
+                //             $prod_cat_id   = $prod['cat_id']; // ✅ product category
+
+                //             // calculations
+                //             $prod_subtotal = $prod_price;
+                //             $prod_discount = 0;
+                //             $prod_gst      = $prod_subtotal * 0.18;
+                //             $prod_amount   = $prod_subtotal - $prod_discount + $prod_gst;
+                //             $prod_balance  = $prod_amount - $payment_made;
+
+                //             // Generate unique invoice id for product
+                //             $prod_invoice_id = rand(10000000, 99999999);
+
+                //             // Insert into orders (plan = ID)
+                //             $sql_product = "INSERT INTO orders 
+                //                 (user_id, invoice_id, plan, duration, amount, gst, price, addon_price, status, payment_method, discount, payment_made, created_on, subtotal, balance_due, addon_service, type) 
+                //                 VALUES 
+                //                 ('$client_id', '$prod_invoice_id', '$prod_id', '$prod_duration', '$prod_amount', '$prod_gst', '$prod_price', '$prod_price', 'Pending', '$pay_method', '$prod_discount', '$payment_made', '$created_at', '$prod_subtotal', '$prod_balance', '$prod_id', 'product')";
+                //             mysqli_query($conn, $sql_product);
+
+                //             // Insert into websites (plan = NAME ✅)
+                //             $siteInsertProd = "INSERT INTO websites (user_id, domain, plan, duration, renewal_duration, expired_at, status, cat_id, invoice_id, product_id, type) 
+                //                             VALUES ('$client_id', 'N/A', '$prod_id', '$prod_duration', '', NULL, 'Pending', '$prod_cat_id', '$prod_invoice_id', '$prod_id', 'product')";
+                //             mysqli_query($conn, $siteInsertProd);
+                //         }
+                //     }
+                // }
+                // ================= Products =================
                 if (!empty($get_products)) {
                     $product_ids = array_map('intval', explode(',', $get_products));
                     foreach ($product_ids as $prod_id) {
-                        $prod_sql = "SELECT name, price, duration, cat_id FROM products WHERE id = $prod_id";
+
+                        // Fetch product details including gst_id
+                        $prod_sql = "SELECT name, price, duration, cat_id, gst FROM products WHERE id = $prod_id";
                         $prod_res = mysqli_query($conn, $prod_sql);
+
                         if ($prod_res && $prod = mysqli_fetch_assoc($prod_res)) {
                             $prod_name     = $prod['name'];   // ✅ product name for websites table
                             $prod_price    = floatval($prod['price']);
                             $prod_duration = $prod['duration'];
                             $prod_cat_id   = $prod['cat_id']; // ✅ product category
+                            $prod_gst_id   = $prod['gst'];    // ✅ product-specific GST ID
 
-                            // calculations
+                            // ✅ Fetch GST rate for this specific product
+                            $prod_tax_rate = 0;
+                            if (!empty($prod_gst_id)) {
+                                $tax_stmt = $conn->prepare("SELECT rate FROM taxes WHERE id = ?");
+                                $tax_stmt->bind_param("i", $prod_gst_id);
+                                $tax_stmt->execute();
+                                $tax_result = $tax_stmt->get_result();
+                                if ($tax_result && $tax_result->num_rows > 0) {
+                                    $tax_row = $tax_result->fetch_assoc();
+                                    $prod_tax_rate = floatval($tax_row['rate']);
+                                }
+                                $tax_stmt->close();
+                            }
+
+                            // ✅ Use product's own GST rate
                             $prod_subtotal = $prod_price;
                             $prod_discount = 0;
-                            $prod_gst      = $prod_subtotal * 0.18;
+                            $prod_gst      = round($prod_subtotal * ($prod_tax_rate / 100), 2);
                             $prod_amount   = $prod_subtotal - $prod_discount + $prod_gst;
                             $prod_balance  = $prod_amount - $payment_made;
 
                             // Generate unique invoice id for product
                             $prod_invoice_id = rand(10000000, 99999999);
 
-                            // Insert into orders (plan = ID)
+                            // ✅ Insert into orders (addon_price and addon_gst kept empty)
                             $sql_product = "INSERT INTO orders 
-                                (user_id, invoice_id, plan, duration, amount, gst, price, addon_price, status, payment_method, discount, payment_made, created_on, subtotal, balance_due, addon_service, type) 
+                                (user_id, invoice_id, plan, duration, amount, gst, price, addon_price, addon_gst, status, payment_method, discount, payment_made, created_on, subtotal, balance_due, addon_service, type) 
                                 VALUES 
-                                ('$client_id', '$prod_invoice_id', '$prod_id', '$prod_duration', '$prod_amount', '$prod_gst', '$prod_price', '$prod_price', 'Pending', '$pay_method', '$prod_discount', '$payment_made', '$created_at', '$prod_subtotal', '$prod_balance', '$prod_id', 'product')";
+                                ('$client_id', '$prod_invoice_id', '$prod_id', '$prod_duration', '$prod_amount', '$prod_gst', '$prod_price', '', '', 'Pending', '$pay_method', '$prod_discount', '$payment_made', '$created_at', '$prod_subtotal', '$prod_balance', '$prod_id', 'product')";
                             mysqli_query($conn, $sql_product);
 
                             // Insert into websites (plan = NAME ✅)
@@ -606,9 +817,27 @@
                 $domain = "N/A";
 
                 // Insert new website record
-                $siteInsert = "INSERT INTO websites (user_id, domain, plan, duration, renewal_duration, expired_at, status, cat_id, invoice_id, product_id, type) 
+                // $siteInsert = "INSERT INTO websites (user_id, domain, plan, duration, renewal_duration, expired_at, status, cat_id, invoice_id, product_id, type) 
+                //             VALUES ('$client_id', '$domain', '$plan_id', '$duration', '', NULL, 'Pending', '$cat_id', '$receipt_id', '$plan_id', '$type')";
+                // mysqli_query($conn, $siteInsert);
+
+                $siteInsert = "INSERT INTO websites (user_id, domain, plan, duration, renewal_duration, expired_at, status, cat_id, invoice_id, product_id, type)
                             VALUES ('$client_id', '$domain', '$plan_id', '$duration', '', NULL, 'Pending', '$cat_id', '$receipt_id', '$plan_id', '$type')";
-                mysqli_query($conn, $siteInsert);
+                $siteInsertResult = mysqli_query($conn, $siteInsert);
+                // === DEACTIVATE OLD WEBSITE IF INSERT SUCCEEDED ===
+                if ($siteInsertResult) {
+                    $updateActiveQuerys = $conn->prepare("
+                        UPDATE websites
+                        SET is_Active = 0
+                        WHERE id = ?
+                      
+                    ");
+                    $updateActiveQuerys->bind_param("i", $web_id);
+                    $updateActiveQuerys->execute();
+                    $updateActiveQuerys->close();
+                } else {
+                    echo "<script>alert('Error inserting website: " . mysqli_error($conn) . "');</script>";
+                }
 
                 // Show loader immediately
                 echo "
@@ -936,6 +1165,9 @@
         <input type="hidden" name="original_total_price" value="<?php echo $total_price; ?>">
         <input type="hidden" id="coupon_code_hidden" name="coupon_code" value="<?php echo isset($_POST['coupon_code']) ? htmlspecialchars($_POST['coupon_code']) : ''; ?>">
         <input type="hidden" id="discount_amount" name="discount_amount" value="0.00">
+        <input type="hidden" value="<?php echo $web_id; ?>" name="web_id">
+        <input type="hidden" value="<?php echo $invoice_id; ?>" name="invoice_id">
+        <input type="hidden" value="<?php echo $hostinger_balance; ?>" name="hostinger_balance">
 
         <?php if (isset($_POST['renewal']) && $_POST['renewal'] == 1): ?>
             <input type="hidden" name="renewal" value="1">
@@ -1071,21 +1303,115 @@
                                 <h6 class="mb-0">Sub Total</h6>
                                 <!-- <p class="mb-0">Sub total does not include applicable taxes</p> -->
                             </div>
-                            <div class="align-content-center">
+                            <!-- <div class="align-content-center">
                                 <?php if($hostinger_balance != 0){ ?>
                                     <h6 class="mb-0"><?php echo htmlspecialchars($symbol) . number_format($total_breakdown_price, 2); ?></h6>
                                 <?php } else { ?>
                                     <h6 class="mb-0"><?php echo htmlspecialchars($symbol) . number_format($subtotal_display, 2); ?></h6>
                                 <?php } ?>
+                            </div> -->
+                            <div class="align-content-center">
+                                <?php if (isset($_POST['renewal']) && $_POST['renewal'] == 1) { ?>
+                                    <!-- 🧾 Renewal case: show total_price -->
+                                    <h6 class="mb-0"><?php echo htmlspecialchars($symbol) . number_format($total_price, 2); ?></h6>
+                                <?php } elseif ($hostinger_balance != 0) { ?>
+                                    <!-- Existing Plan Balance Case -->
+                                    <h6 class="mb-0"><?php echo htmlspecialchars($symbol) . number_format($total_breakdown_price, 2); ?></h6>
+                                <?php } else { ?>
+                                    <!-- Normal Purchase Case -->
+                                    <h6 class="mb-0"><?php echo htmlspecialchars($symbol) . number_format($subtotal_display, 2); ?></h6>
+                                <?php } ?>
                             </div>
                         </div>
                         <div class="card-body p-16">
-                            <?php
+                            
+                            <!-- <?php
                                 $plan_base_price      = floatval($price ?? 0);
                                 $plan_tax_amount      = floatval($gst ?? ($tax_rate ?? 0) * $plan_base_price / 100);
                                 $plan_total_amount    = round($plan_base_price + $plan_tax_amount, 2);
                                 $plan_tax_rate_display = isset($tax_rate) ? floatval($tax_rate) : 0;
+                            ?> -->
+                            <?php
+                                // Base plan price
+                                $plan_base_price = floatval($price ?? 0);
+
+                                // Default tax values
+                                $plan_tax_rate_display = isset($tax_rate) ? floatval($tax_rate) : 0;
+                                $plan_tax_amount = 0;
+
+                                // // Renewal case: fetch plan's own tax rate dynamically
+                                // if (isset($_POST['renewal']) && $_POST['renewal'] == 1) {
+                                //     $renewal_gst_id = $_POST['gst_id'] ?? null;
+
+                                //     // ✅ Fallback: if gst_id not in POST, reuse plan's gst_id variable
+                                //     if (empty($renewal_gst_id) && !empty($gst_id)) {
+                                //         $renewal_gst_id = $gst_id;
+                                //     }
+
+                                //     if (!empty($renewal_gst_id)) {
+                                //         $stmt = $conn->prepare("SELECT rate FROM taxes WHERE id = ?");
+                                //         $stmt->bind_param("i", $renewal_gst_id);
+                                //         $stmt->execute();
+                                //         $result = $stmt->get_result();
+                                //         if ($result && $result->num_rows > 0) {
+                                //             $tax_row = $result->fetch_assoc();
+                                //             $plan_tax_rate_display = floatval($tax_row['rate']);
+                                //         }
+                                //         $stmt->close();
+                                //     }
+                                // }
+                                // Renewal case: fetch plan's own tax rate dynamically
+                                if (isset($_POST['renewal']) && $_POST['renewal'] == 1) {
+                                    $renewal_gst_id = null;
+
+                                    // 1️⃣ Try from POST
+                                    if (!empty($_POST['gst_id'])) {
+                                        $renewal_gst_id = (int) $_POST['gst_id'];
+                                    }
+
+                                    // 2️⃣ Try from variable loaded earlier
+                                    elseif (!empty($gst_id)) {
+                                        $renewal_gst_id = (int) $gst_id;
+                                    }
+
+                                    // 3️⃣ Final fallback — fetch from websites or plans table
+                                    if (empty($renewal_gst_id) && !empty($id)) {
+                                        $stmt = $conn->prepare("
+                                            SELECT p.gst_id
+                                            FROM websites w
+                                            LEFT JOIN package p ON w.plan = p.id
+                                            WHERE w.id = ?
+                                            LIMIT 1
+                                        ");
+                                        $stmt->bind_param("i", $id);
+                                        $stmt->execute();
+                                        $result = $stmt->get_result();
+                                        if ($result && $result->num_rows > 0) {
+                                            $row = $result->fetch_assoc();
+                                            $renewal_gst_id = (int) $row['gst_id'];
+                                        }
+                                        $stmt->close();
+                                    }
+
+                                    // 4️⃣ Finally fetch tax rate from taxes
+                                    if (!empty($renewal_gst_id)) {
+                                        $stmt = $conn->prepare("SELECT rate FROM taxes WHERE id = ?");
+                                        $stmt->bind_param("i", $renewal_gst_id);
+                                        $stmt->execute();
+                                        $result = $stmt->get_result();
+                                        if ($result && $result->num_rows > 0) {
+                                            $tax_row = $result->fetch_assoc();
+                                            $plan_tax_rate_display = floatval($tax_row['rate']);
+                                        }
+                                        $stmt->close();
+                                    }
+                                }
+
+                                // ✅ Calculate GST amount (works for both renewal & normal)
+                                $plan_tax_amount = round($plan_base_price * ($plan_tax_rate_display / 100), 2);
+                                $plan_total_amount = round($plan_base_price + $plan_tax_amount, 2);
                             ?>
+
                             <div class="d-flex justify-content-between align-items-center" style="padding: 15px .5rem; font-weight: 500; color: #000; border-bottom: 1px solid #dadada;">
                                 <div class="d-flex align-items-center" style="gap: 10px;">
                                     <span><?php echo htmlspecialchars($plan_name); ?></span>
@@ -1437,6 +1763,60 @@
                                             <?php echo htmlspecialchars($symbol) . number_format($total_price, 2); ?>
                                         </td>
                                     </tr> -->
+                                    <!-- For Renewal Total -->
+                                    <?php
+                                        // --- Renewal Case: Override plan GST with its own tax rate ---
+                                        if (isset($_POST['renewal']) && $_POST['renewal'] == 1) {
+
+                                            $renewal_gst_rate = $tax_rate; // fallback
+
+                                            // Try POST first
+                                            if (!empty($_POST['gst_id'])) {
+                                                $gst_id_lookup = (int) $_POST['gst_id'];
+                                            }
+                                            // Try previously loaded gst_id variable
+                                            elseif (!empty($gst_id)) {
+                                                $gst_id_lookup = (int) $gst_id;
+                                            }
+                                            // Fallback: pull gst_id from websites -> plan (package/product)
+                                            else {
+                                                $gst_id_lookup = 0;
+                                                $stmt = $conn->prepare("
+                                                    SELECT 
+                                                        COALESCE(p.gst_id, pr.gst) AS gst_id
+                                                    FROM websites w
+                                                    LEFT JOIN package p ON w.plan = p.id
+                                                    LEFT JOIN products pr ON w.plan = pr.id
+                                                    WHERE w.id = ?
+                                                    LIMIT 1
+                                                ");
+                                                $stmt->bind_param("i", $id);
+                                                $stmt->execute();
+                                                $res = $stmt->get_result();
+                                                if ($res && $res->num_rows > 0) {
+                                                    $r = $res->fetch_assoc();
+                                                    $gst_id_lookup = (int) $r['gst_id'];
+                                                }
+                                                $stmt->close();
+                                            }
+
+                                            // Fetch actual tax % from taxes table
+                                            if (!empty($gst_id_lookup)) {
+                                                $stmt = $conn->prepare("SELECT rate FROM taxes WHERE id = ?");
+                                                $stmt->bind_param("i", $gst_id_lookup);
+                                                $stmt->execute();
+                                                $rs = $stmt->get_result();
+                                                if ($rs && $rs->num_rows > 0) {
+                                                    $row = $rs->fetch_assoc();
+                                                    $renewal_gst_rate = floatval($row['rate']);
+                                                }
+                                                $stmt->close();
+                                            }
+
+                                            // Override plan GST rate ONLY for renewal
+                                            $tax_rate = $renewal_gst_rate;
+                                        }
+                                    ?>
                                     <tr>
                                         <td class="border-0 fw-semibold">Total</td>
                                         <?php
@@ -1525,7 +1905,6 @@
                                                 }
                                             }
 
-
                                             // 5. Apply coupon discount (if exists)
                                             $discount_amount = floatval($_POST['discount_amount'] ?? 0);
                                             $final_total = max(0, $final_total - $discount_amount);
@@ -1552,11 +1931,10 @@
                     <div class="card h-100 radius-12">
                         <div class="card-header py-10 border-none card-shadow">
                             <h6 class="mb-0">Select Payment Mode</h6>
-                            <p class="mb-0 text-muted">Order Summary includes discounts & taxes</p>
                         </div>
                         <div class="card-body p-16">
                             <!-- ==================== COUPON CODE SECTION ==================== -->
-                            <div class="mb-3">
+                            <!-- <div class="mb-3">
                                 <label for="coupon_code" class="fw-medium mb-2">Coupon Code</label>
                                 <div class="d-flex gap-2 align-items-center">
                                     <input type="text"
@@ -1572,20 +1950,18 @@
                                         Apply
                                     </button>
 
-                                    <!-- Optional “View Coupons” button (keeps the old modal) -->
-                                    <!-- <button type="button"
+                                    <button type="button"
                                             class="btn btn-outline-secondary"
                                             data-bs-toggle="modal"
                                             data-bs-target="#couponModal">
                                         View Coupons
-                                    </button> -->
+                                    </button>
                                 </div>
 
-                                <!-- hidden fields (already in your form) -->
                                 <input type="hidden" id="coupon_code_hidden" name="coupon_code"
                                     value="<?php echo isset($_POST['coupon_code']) ? htmlspecialchars($_POST['coupon_code']) : ''; ?>">
                                 <input type="hidden" id="discount_amount" name="discount_amount" value="0.00">
-                            </div>
+                            </div> -->
 
                             <p class="text-muted fw-medium mb-3">How would you like to make the payment? <span class="text-danger-600">*</span></p>
 
