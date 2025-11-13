@@ -173,11 +173,23 @@
         if (!empty($get_addon)) {
             $addon_ids = explode(",", $get_addon);
             $ids_str = implode(",", array_map('intval', $addon_ids));
-            $sql_addons = "SELECT id, name, cost FROM `add-on-service` WHERE id IN ($ids_str)";
+            $sql_addons = "
+                SELECT 
+                    a.id, 
+                    a.name, 
+                    a.cost, 
+                    a.gst, 
+                    COALESCE(t.rate, 0) AS gst_rate,
+                    COALESCE(t.tax_name, 'GST') AS gst_name
+                FROM `add-on-service` a
+                LEFT JOIN taxes t ON t.id = a.gst
+                WHERE a.id IN ($ids_str)
+            ";
             $result_addons = $conn->query($sql_addons);
             while ($row = $result_addons->fetch_assoc()) {
                 $selected_addons[] = $row;
             }
+
         }
 
         $selected_packages = [];
@@ -300,26 +312,32 @@
                     <i class="bi bi-cart-check me-2 text-secondary"></i> Products
                 </div>
                 <div class="card-body">
-                    <?php foreach($selected_products as $p):
-                        $pid = (int)$p['id'];
-                    ?>
-                    <div class="mb-3 border rounded p-3">
-                        <h6 class="mb-1"><?= htmlspecialchars($p['name']) ?></h6>
-                        <small class="d-block">Period: N/A</small>
-                        <small class="d-block">Validity: One-time</small>
-                        <div class="d-flex justify-content-between align-items-center mt-3">
-                            <div class="fw-bold text-dark">Price: <?= $symbol . number_format($p['price'], 2) ?></div>
-                            <button type="button" 
-                                    class="btn btn-sm fw-bold toggle-btn add"
-                                    style="background-color:#fec700; border:none;"
-                                    data-id="<?= $pid ?>" 
-                                    data-cost="<?= $p['price'] ?>"
-                                    data-name="<?= htmlspecialchars($p['name']) ?>"
-                                    data-type="product"
-                                    data-gst-rate="0">+ Add</button>
-                        </div>
+                <?php foreach($selected_products as $p):
+                    $pid = (int)$p['id'];
+                    $gst_rate_prod = floatval($p['gst_rate']);
+                    $gst_name_prod = htmlspecialchars($p['gst_name']);
+                ?>
+                <div class="mb-3 border rounded p-3">
+                    <h6 class="mb-1"><?= htmlspecialchars($p['name']) ?></h6>
+                    <small class="d-block">Period: N/A</small>
+                    <small class="d-block">Validity: One-time</small>
+                    <small class="d-block text-success fw-semibold">
+                        <?= $gst_name_prod ?> (<?= number_format($gst_rate_prod, 2) ?>%)
+                    </small>
+                    <div class="d-flex justify-content-between align-items-center mt-3">
+                        <div class="fw-bold text-dark">Price: <?= $symbol . number_format($p['price'], 2) ?></div>
+                        <button type="button" 
+                                class="btn btn-sm fw-bold toggle-btn add"
+                                style="background-color:#fec700; border:none;"
+                                data-id="<?= $pid ?>" 
+                                data-cost="<?= $p['price'] ?>"
+                                data-name="<?= htmlspecialchars($p['name']) ?>"
+                                data-type="product"
+                                data-gst-rate="<?= $gst_rate_prod ?>">+ Add</button>
                     </div>
-                    <?php endforeach; ?>
+                </div>
+                <?php endforeach; ?>
+
                 </div>
             </div>
             <?php endif; ?>
@@ -331,26 +349,32 @@
                     <i class="bi bi-plus-circle me-2 text-secondary"></i> Add-on Services
                 </div>
                 <div class="card-body">
-                    <?php foreach($selected_addons as $a):
-                        $aid = (int)$a['id'];
-                    ?>
-                    <div class="mb-3 border rounded p-3">
-                        <h6 class="mb-1"><?= htmlspecialchars($a['name']) ?></h6>
-                        <small class="d-block">Period: N/A</small>
-                        <small class="d-block">Validity: One-time</small>
-                        <div class="d-flex justify-content-between align-items-center mt-3">
-                            <div class="fw-bold text-dark">Price: <?= $symbol . number_format($a['cost'], 2) ?></div>
-                            <button type="button" 
-                                    class="btn btn-sm fw-bold toggle-btn add"
-                                    style="background-color:#fec700; border:none;"
-                                    data-id="<?= $aid ?>" 
-                                    data-cost="<?= $a['cost'] ?>"
-                                    data-name="<?= htmlspecialchars($a['name']) ?>"
-                                    data-type="addon"
-                                    data-gst-rate="0">+ Add</button>
-                        </div>
+                <?php foreach($selected_addons as $a):
+                    $aid = (int)$a['id'];
+                    $gst_rate_addon = floatval($a['gst_rate']);
+                    $gst_name_addon = htmlspecialchars($a['gst_name']);
+                ?>
+                <div class="mb-3 border rounded p-3">
+                    <h6 class="mb-1"><?= htmlspecialchars($a['name']) ?></h6>
+                    <small class="d-block">Period: N/A</small>
+                    <small class="d-block">Validity: One-time</small>
+                    <small class="d-block text-success fw-semibold">
+                        <?= $gst_name_addon ?> (<?= number_format($gst_rate_addon, 2) ?>%)
+                    </small>
+                    <div class="d-flex justify-content-between align-items-center mt-3">
+                        <div class="fw-bold text-dark">Price: <?= $symbol . number_format($a['cost'], 2) ?></div>
+                        <button type="button" 
+                                class="btn btn-sm fw-bold toggle-btn add"
+                                style="background-color:#fec700; border:none;"
+                                data-id="<?= $aid ?>" 
+                                data-cost="<?= $a['cost'] ?>"
+                                data-name="<?= htmlspecialchars($a['name']) ?>"
+                                data-type="addon"
+                                data-gst-rate="<?= $gst_rate_addon ?>">+ Add</button>
                     </div>
-                    <?php endforeach; ?>
+                </div>
+                <?php endforeach; ?>
+
                 </div>
             </div>
             <?php endif; ?>

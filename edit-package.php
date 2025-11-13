@@ -364,15 +364,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save'])) {
                             <label class="form-label fw-semibold">Add-Ons <span class="text-danger-600">*</span></label>
                             <div class="d-flex flex-wrap gap-4 mb-3">
                                 <div class="form-check d-flex align-items-center">
-                                    <input class="form-check-input toggle-section" type="checkbox" id="showPackages" data-target="#packagesSection">
+                                    <input class="form-check-input toggle-section" type="checkbox" id="showPackages" data-target="#packagesSection"
+                                        <?php echo (!empty($package['addon_package']) && $package['addon_package'] != '0') ? 'checked' : ''; ?>>
                                     <label class="form-check-label ms-2 mb-0" for="showPackages">Packages</label>
                                 </div>
+
                                 <div class="form-check d-flex align-items-center">
-                                    <input class="form-check-input toggle-section" type="checkbox" id="showProducts" data-target="#productsSection">
+                                    <input class="form-check-input toggle-section" type="checkbox" id="showProducts" data-target="#productsSection"
+                                        <?php echo (!empty($package['addon_product']) && $package['addon_product'] != '0') ? 'checked' : ''; ?>>
                                     <label class="form-check-label ms-2 mb-0" for="showProducts">Products</label>
                                 </div>
+
                                 <div class="form-check d-flex align-items-center">
-                                    <input class="form-check-input toggle-section" type="checkbox" id="showAddons" data-target="#addonsSection">
+                                    <input class="form-check-input toggle-section" type="checkbox" id="showAddons" data-target="#addonsSection"
+                                        <?php echo (!empty($package['addon_service']) && $package['addon_service'] != '0') ? 'checked' : ''; ?>>
                                     <label class="form-check-label ms-2 mb-0" for="showAddons">Add-on Services</label>
                                 </div>
                             </div>
@@ -519,6 +524,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save'])) {
                         target.querySelectorAll("input[type=checkbox]").forEach(ch => ch.checked = false);
                     }
                 });
+            });
+            // ✅ Auto-show sections that are already checked on page load
+            document.querySelectorAll(".toggle-section").forEach(checkbox => {
+                const target = document.querySelector(checkbox.dataset.target);
+                if (checkbox.checked && target) {
+                    target.classList.remove("d-none");
+                }
             });
         });
     </script>
