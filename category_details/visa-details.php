@@ -526,18 +526,17 @@
         <iconify-icon icon="mdi:home-outline" class="text-lg icon-black"></iconify-icon>
         </div>
         <div class="d-flex gap-2">
-        <?php if ($role == '1' || $role == '2'): 
-            include 'record_payment.php'; 
-        endif; ?>
+            <?php if ($role == '1' || $role == '2'): 
+                include 'record_payment.php'; 
+            endif; ?>
             <?php if (strtolower($Status) === 'approved'): ?>
-
         <button type="button" class="btn btn-sm btn-renewal" data-bs-toggle="modal" data-bs-target="#renewal-modal">
-                    Renewal
-                </button>
-                <?php include 'renewal.php'; ?>
-                <?php endif; ?>
-                <a href="upgrade_plan.php?web_id=<?= $websiteId ?>&prod_id=<?= $productId?>&duration=<?= $Duration ?>"><button type="button" class="btn btn-sm btn-upgrade">Upgrade</button></a>
-                <a href="./visa-wizard.php?id=<?= $websiteId ?>&prod_id=<?= $productId ?>"><button type="button" class="btn btn-sm btn-edit-website">Wizard</button></a>
+            Renewal
+        </button>
+            <?php include 'renewal.php'; ?>
+        <a href="upgrade_plan.php?web_id=<?= $websiteId ?>&prod_id=<?= $productId?>&duration=<?= $Duration ?>"><button type="button" class="btn btn-sm btn-upgrade">Upgrade</button></a>
+            <?php endif; ?>
+        <a href="./visa-wizard.php?id=<?= $websiteId ?>&prod_id=<?= $productId ?>"><button type="button" class="btn btn-sm btn-edit-website">Wizard</button></a>
         </div>
     </div>
     <form method="post" autocomplete="off">
