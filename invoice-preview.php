@@ -119,6 +119,7 @@
                                             <p class="mb-0 text-xl"><b><?php echo $company_row['full_name']; ?></b></p>
                                             <p class="mb-0 text-sm"><?php echo $company_row['address']; ?>, <?php echo $company_row['city']; ?>,<?php echo $company_row['state']; ?>,<?php echo $company_row['zip_code']; ?>, <?php echo $company_row['country']; ?></p>
                                             <p class="mb-0 text-sm"><?php echo $company_row['phone_no']; ?></p>
+                                            <p class="mb-0 text-sm">GSTIN: <?php echo $company_row['gst_in']; ?></p>
                                             <p class="mb-0 text-sm"><?php echo $company_row['website']; ?></p>
                                         </div>
                                     </div>
@@ -134,6 +135,7 @@
                                         <p class="text-md mb-0">Bill To:</p>
                                         <p class="text-md mb-0"><?php echo $rows['business_name']; ?> </p>
                                         <p class="text-md mb-0"><?php echo $rows['address']; ?></p>
+                                        <p class="text-md mb-0">GSTIN: <?php echo $rows['gst_in']; ?></p>
                                         <p class="text-md mb-0"><?php echo $rows['city']; ?> <?php echo $rows['pincode']; ?></p>
                                         <p class="text-md mb-0"><?php echo $rows['state']; ?>, <?php echo $rows['country']; ?></p>
                                     </div>
@@ -268,7 +270,7 @@
                                                             </td>
                                                         </tr> -->
                                                         
-                                                        <?php
+                                                        <!-- <?php
                                                             // ✅ GST logic reused (same as above)
                                                             $tax_rate = 0;
                                                             $tax_name = "No Tax";
@@ -303,51 +305,124 @@
                                                                 }
                                                             }
 
-                                                                // ✅ Compute GST amount and new totals
-                                                                $gst_amount = $row['subtotal'] * ($tax_rate / 100);
-                                                                $total_after_gst = $row['subtotal'] + $gst_amount - $row['discount_amount'];
-                                                                $balance_due = $total_after_gst - $row['payment_made'];
-                                                            ?>
+                                                            // ✅ Compute GST amount and new totals
+                                                            $gst_amount = $row['subtotal'] * ($tax_rate / 100);
+                                                            $total_after_gst = $row['subtotal'] + $gst_amount - $row['discount_amount'];
+                                                            $balance_due = $total_after_gst - $row['payment_made'];
+                                                        ?> -->
+                                                        <?php
+                                                            // ✅ GST logic reused (same as above)
+                                                            $tax_rate = 0;
+                                                            $tax_name = "No Tax";
+
+                                                            if (!empty($row['plan'])) {
+                                                                $plan_id = intval($row['plan']);
+
+                                                                // ================================
+                                                                //   RENEWAL TIME (PACKAGE ONLY)
+                                                                // ================================
+                                                                if ($type === 'renewal') {
+
+                                                                    $tax_query = $conn->query("
+                                                                        SELECT t.tax_name, t.rate
+                                                                        FROM package p
+                                                                        LEFT JOIN taxes t ON p.gst_id = t.id
+                                                                        INNER JOIN renewal_invoices r ON r.plan = p.id
+                                                                        WHERE r.plan = $plan_id
+                                                                        LIMIT 1
+                                                                    ");
+
+                                                                } else {
+
+                                                                    // ================================
+                                                                    //   NORMAL TIME (PACKAGE + PRODUCT)
+                                                                    // ================================
+
+                                                                    if ($row['type'] === 'package') {
+
+                                                                        // ⭐ Normal Time → Package Logic (Already working)
+                                                                        $tax_query = $conn->query("
+                                                                            SELECT t.tax_name, t.rate
+                                                                            FROM package p
+                                                                            LEFT JOIN taxes t ON p.gst_id = t.id
+                                                                            INNER JOIN orders o ON o.plan = p.id
+                                                                            WHERE o.plan = $plan_id
+                                                                            LIMIT 1
+                                                                        ");
+
+                                                                    } else if ($row['type'] === 'product') {
+
+                                                                        // ⭐ Normal Time → PRODUCT Logic (NEW)
+                                                                        // products.gst column contains tax ID
+                                                                        $tax_query = $conn->query("
+                                                                            SELECT t.tax_name, t.rate
+                                                                            FROM products pr
+                                                                            LEFT JOIN taxes t ON pr.gst = t.id
+                                                                            INNER JOIN orders o ON o.plan = pr.id
+                                                                            WHERE o.plan = $plan_id
+                                                                            LIMIT 1
+                                                                        ");
+
+                                                                    }
+                                                                }
+
+                                                                // ================================
+                                                                //   Fetch the tax details
+                                                                // ================================
+                                                                if (!empty($tax_query) && $tax_query->num_rows > 0) {
+                                                                    $tax_row = $tax_query->fetch_assoc();
+                                                                    if (!empty($tax_row['rate'])) $tax_rate = floatval($tax_row['rate']);
+                                                                    if (!empty($tax_row['tax_name'])) $tax_name = $tax_row['tax_name'];
+                                                                }
+                                                            }
+
+                                                            // ================================
+                                                            // Compute GST + Totals
+                                                            // ================================
+                                                            $gst_amount = $row['subtotal'] * ($tax_rate / 100);
+                                                            $total_after_gst = $row['subtotal'] + $gst_amount - $row['discount_amount'];
+                                                            $balance_due = $total_after_gst - $row['payment_made'];
+                                                        ?>
+                                                        <tr>
+                                                            <td class="pe-64 p-8 fw-semibold"><?php echo htmlspecialchars($tax_name); ?> (<?php echo $tax_rate; ?>%)</td>
+                                                            <td class="p-8">
+                                                                <span class="text-primary-light" id="currency-symbol-display"><?= htmlspecialchars($symbol) ?> <?= number_format($gst_amount, 2); ?></span>
+                                                            </td>
+                                                        </tr>
+                                                        <?php if ($row['coupon_code']) { ?>
                                                             <tr>
-                                                                <td class="pe-64 p-8 fw-semibold"><?php echo htmlspecialchars($tax_name); ?> (<?php echo $tax_rate; ?>%)</td>
+                                                                <td class="pe-64 p-8 fw-semibold">Coupon Applied (<?php echo $row['coupon_code']; ?>)</td>
                                                                 <td class="p-8">
-                                                                    <span class="text-primary-light" id="currency-symbol-display"><?= htmlspecialchars($symbol) ?> <?= number_format($gst_amount, 2); ?></span>
+                                                                    <span class="text-primary-light" id="currency-symbol-display"><?= htmlspecialchars($symbol) ?> <?php echo number_format($row['discount_amount'], 2); ?></span>
                                                                 </td>
                                                             </tr>
-                                                            <?php if ($row['coupon_code']) { ?>
-                                                                <tr>
-                                                                    <td class="pe-64 p-8 fw-semibold">Coupon Applied (<?php echo $row['coupon_code']; ?>)</td>
-                                                                    <td class="p-8">
-                                                                        <span class="text-primary-light" id="currency-symbol-display"><?= htmlspecialchars($symbol) ?> <?php echo number_format($row['discount_amount'], 2); ?></span>
-                                                                    </td>
-                                                                </tr>
-                                                            <?php } ?>
+                                                        <?php } ?>
+                                                        <tr>
+                                                            <td class="pe-64 p-8 fw-semibold">
+                                                                <span class="text-primary-light">Total</span>
+                                                            </td>
+                                                            <td class="p-8">
+                                                                <span class="text-primary-light" id="currency-symbol-display"><?= htmlspecialchars($symbol) ?> <?= number_format($total_after_gst, 2); ?></span>
+                                                            </td>
+                                                        </tr>
+                                                        <?php if ($row['payment_made'] != null) { ?>
                                                             <tr>
                                                                 <td class="pe-64 p-8 fw-semibold">
-                                                                    <span class="text-primary-light">Total</span>
+                                                                    <span class="text-primary-light">Payment Made</span>
                                                                 </td>
                                                                 <td class="p-8">
-                                                                    <span class="text-primary-light" id="currency-symbol-display"><?= htmlspecialchars($symbol) ?> <?= number_format($total_after_gst, 2); ?></span>
+                                                                    <span class="text-primary-light" id="currency-symbol-display"><?= htmlspecialchars($symbol) ?> <?= number_format($row['payment_made'], 2); ?></span>
                                                                 </td>
                                                             </tr>
-                                                            <?php if ($row['payment_made'] != null) { ?>
-                                                                <tr>
-                                                                    <td class="pe-64 p-8 fw-semibold">
-                                                                        <span class="text-primary-light">Payment Made</span>
-                                                                    </td>
-                                                                    <td class="p-8">
-                                                                        <span class="text-primary-light" id="currency-symbol-display"><?= htmlspecialchars($symbol) ?> <?= number_format($row['payment_made'], 2); ?></span>
-                                                                    </td>
-                                                                </tr>
-                                                            <?php } ?>
-                                                            <tr>
-                                                                <td class="pe-64 p-8 fw-semibold">
-                                                                    <span class="text-primary-light">Balance Due</span>
-                                                                </td>
-                                                                <td class="p-8">
-                                                                    <span class="text-primary-light" id="currency-symbol-display"><?= htmlspecialchars($symbol) ?> <?= number_format($balance_due, 2); ?></span>
-                                                                </td>
-                                                            </tr>
+                                                        <?php } ?>
+                                                        <tr>
+                                                            <td class="pe-64 p-8 fw-semibold">
+                                                                <span class="text-primary-light">Balance Due</span>
+                                                            </td>
+                                                            <td class="p-8">
+                                                                <span class="text-primary-light" id="currency-symbol-display"><?= htmlspecialchars($symbol) ?> <?= number_format($balance_due, 2); ?></span>
+                                                            </td>
+                                                        </tr>
 
                                                     </tbody>
                                                 </table>
