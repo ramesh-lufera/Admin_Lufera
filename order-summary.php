@@ -229,7 +229,7 @@
         <div class="row gy-4">
             <div class="col-xxl-6 col-sm-6">
                 <div class="card h-100 radius-12">
-                    <div class="card-header py-20 border-none" style="box-shadow: 0px 3px 3px 0px lightgray">
+                    <div class="card-header border-none" style="box-shadow: 0px 3px 3px 0px lightgray">
                         <h6>Plan Details</h6>
                     </div>
                     <div class="card-body p-16">
@@ -309,70 +309,89 @@
                 <div class="card h-100 radius-12">
                     <div class="card-header py-10 border-none d-flex justify-content-between" style="box-shadow: 0px 3px 3px 0px lightgray">
                         <div class="">
-                            <h6 class="mb-0">Order Summary</h6>
-                            <p class="mb-0">Order Summary includes discounts & taxes</p>
+                            <h6 class="mb-0">Sub Total</h6>
                         </div>
                         <div class="align-content-center">
-                            <h4 class="mb-0" id="currency-symbol-display"><?= htmlspecialchars($symbol) ?><?= number_format($row['amount'], 2) ?></h4>
+                            <h4 class="mb-0" id="currency-symbol-display"><?= htmlspecialchars($symbol) ?><?= number_format($row['price'] + $row['addon_price'], 2) ?></h4>
                         </div>
                         
                     </div>
                     <div class="card-body p-16">
-                        <!-- <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
-                            <label>Plan Name</label>
-                            <label><?php echo $row['plan']; ?></label>
-                        </div> -->
+                        
                         <table class="w-100 plan-details-table mb-0">
                             <tbody>
+                            <tr>
+                                <td onclick="toggleBreakdowns()" style="cursor:pointer; user-select:none;">
+                                    <?php echo htmlspecialchars($row['plan_name']); ?>
+                                    &nbsp;
+                                    <span id="breakdown-arrow">▼</span>
+                                </td>
+                                <td class="text-end" id="currency-symbol-display">
+                                    <?= htmlspecialchars($symbol) ?><?= number_format($row['price'] + $row['gst'], 2) ?>
+                                </td>
+                            </tr>
+
+                            <!-- Hidden Breakdown (only Base Price + Tax) -->
+                            <tbody id="breakdown-rows" style="display:none;">
                                 <tr>
-                                    <td><?php echo htmlspecialchars($row['plan_name']); ?></td>
-                                    <td class="text-end" id="currency-symbol-display"><?= htmlspecialchars($symbol) ?><?= number_format($row['price'], 2) ?></td>
+                                    <td>Base Price</td>
+                                    <td class="text-end" id="currency-symbol-display">
+                                        <?= htmlspecialchars($symbol) ?><?= number_format($row['price'], 2) ?>
+                                    </td>
                                 </tr>
-                                <?php
-                                    // Base price (plan price)
-                                    $base_price = (float)$row['price'];
 
-                                    // Addon cost calculation
-                                    $addon_total = 0;
-                                    if (!empty($row['addon_service'])) {
-                                        $addon_ids = explode(',', $row['addon_service']);
-                                        $addon_ids = array_map('intval', $addon_ids); // sanitize IDs
-
-                                        if (!empty($addon_ids)) {
-                                            $addon_id_list = implode(',', $addon_ids);
-                                            $addon_query = "SELECT name, cost FROM `add-on-service` WHERE id IN ($addon_id_list)";
-                                            $addon_result = $conn->query($addon_query);
-
-                                            while ($addon_row = $addon_result->fetch_assoc()) {
-                                                $addon_cost = (float)$addon_row['cost'];
-                                                $addon_total += $addon_cost;
-
-                                                echo "<tr>
-                                                        <td>" . htmlspecialchars($addon_row['name']) . " (Add-on)</td>
-                                                        <td class='text-end' id='currency-symbol-display'>" . htmlspecialchars($symbol) . number_format($addon_cost, 2) . "</td>
-                                                    </tr>";
-                                            }
-                                        }
-                                    }
-                                    // Subtotal before GST
-                                    $subtotal = $base_price + $addon_total;
-
-                                    // GST 18%
-                                    $gst = $subtotal * 0.18;
-
-                                    // Total amount = subtotal + GST
-                                    $grand_total = $subtotal + $gst;
-                                ?>
                                 <tr>
-                                    <td>Tax (GST 18%)</td>
-                                    <td class="text-end" id="currency-symbol-display"><?= htmlspecialchars($symbol) ?><?= number_format($gst, 2) ?></td>
+                                    <td>Tax</td>
+                                    <td class="text-end" id="currency-symbol-display">
+                                        <?= htmlspecialchars($symbol) ?><?= number_format($row['gst'], 2) ?>
+                                    </td>
                                 </tr>
-                                <?php if ($row['coupon_code']) { ?>
-                                <tr>
-                                    <td>Coupon Applied (<b><?php echo $row['coupon_code']; ?></b>)</td>
-                                    <td class="text-end" id="currency-symbol-display"><?= htmlspecialchars($symbol) ?><?= number_format($row['discount_amount'], 2) ?></td>
-                                </tr>
-                                <?php } ?>
+                            </tbody>
+
+                            <?php
+$addon_ids = !empty($row['addon_service']) ? array_map('intval', explode(',', $row['addon_service'])) : [];
+
+if (!empty($addon_ids)) {
+    $addon_id_list = implode(',', $addon_ids);
+    $addon_query = "SELECT id, name, cost, gst FROM `add-on-service` WHERE id IN ($addon_id_list)";
+    $addon_result = $conn->query($addon_query);
+
+    while ($addon_row = $addon_result->fetch_assoc()) {
+        $addonId = $addon_row['id'];
+?>
+    <!-- Add-on Row -->
+    <tr>
+        <td onclick="toggleBreakdown('addon-<?= $addonId ?>')" style="cursor:pointer; user-select:none;">
+            <?= htmlspecialchars($addon_row['name']) ?> (Add-on)
+            &nbsp;
+            <span id="arrow-addon-<?= $addonId ?>">▼</span>
+        </td>
+        <td class="text-end">
+            <?= htmlspecialchars($symbol) ?><?= number_format($row['addon_price'] + $row['addon_gst'], 2) ?>
+        </td>
+    </tr>
+
+    <!-- Add-on Breakdown -->
+    <tbody id="addon-<?= $addonId ?>" style="display:none;">
+        <tr>
+            <td>Addon Price</td>
+            <td class="text-end">
+                <?= htmlspecialchars($symbol) ?><?= number_format($row['addon_price'], 2) ?>
+            </td>
+        </tr>
+        <tr>
+            <td>Addon Tax</td>
+            <td class="text-end">
+                <?= htmlspecialchars($symbol) ?><?= number_format($row['addon_gst'], 2) ?>
+            </td>
+        </tr>
+    </tbody>
+
+<?php
+    }
+}
+?>
+
                                 <tr>
                                     <td class="fw-bold">Payments</td>
                                     <td class="text-end fw-bold" id="currency-symbol-display"><?= htmlspecialchars($symbol) ?><?= number_format($row['payment_made'], 2) ?></td>
@@ -485,17 +504,34 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     });
 });
+function toggleBreakdowns() {
+    let box = document.getElementById("breakdown-rows");
+    let arrow = document.getElementById("breakdown-arrow");
 
-function togglePayments() {
-    let table = document.getElementById("paymentTable");
-    let arrow = document.getElementById("arrow");
-    if (table.style.display === "none") {
-        table.style.display = "block";
-        arrow.textContent = "▼"; // down arrow
+    if (box.style.display === "none") {
+        box.style.display = "table-row-group";
+        arrow.textContent = "▲";
     } else {
-        table.style.display = "none";
-        arrow.textContent = "►"; // right arrow
+        box.style.display = "none";
+        arrow.textContent = "▼";
     }
 }
 </script>
+<script>
+function toggleBreakdown(id) {
+    let box = document.getElementById(id);
+    let arrow = document.getElementById(
+        id === 'plan-breakdown' ? 'arrow-plan' : 'arrow-' + id.replace('addon-', 'addon-')
+    );
+
+    if (box.style.display === "none") {
+        box.style.display = "table-row-group";
+        arrow.textContent = "▲";
+    } else {
+        box.style.display = "none";
+        arrow.textContent = "▼";
+    }
+}
+</script>
+
 <?php include './partials/layouts/layoutBottom.php' ?>

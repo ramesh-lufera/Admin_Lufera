@@ -321,9 +321,9 @@
                     <h6 class="mb-1"><?= htmlspecialchars($p['name']) ?></h6>
                     <small class="d-block">Period: N/A</small>
                     <small class="d-block">Validity: One-time</small>
-                    <small class="d-block text-success fw-semibold">
+                    <!-- <small class="d-block text-success fw-semibold">
                         <?= $gst_name_prod ?> (<?= number_format($gst_rate_prod, 2) ?>%)
-                    </small>
+                    </small> -->
                     <div class="d-flex justify-content-between align-items-center mt-3">
                         <div class="fw-bold text-dark">Price: <?= $symbol . number_format($p['price'], 2) ?></div>
                         <button type="button" 
@@ -358,9 +358,9 @@
                     <h6 class="mb-1"><?= htmlspecialchars($a['name']) ?></h6>
                     <small class="d-block">Period: N/A</small>
                     <small class="d-block">Validity: One-time</small>
-                    <small class="d-block text-success fw-semibold">
+                    <!-- <small class="d-block text-success fw-semibold">
                         <?= $gst_name_addon ?> (<?= number_format($gst_rate_addon, 2) ?>%)
-                    </small>
+                    </small> -->
                     <div class="d-flex justify-content-between align-items-center mt-3">
                         <div class="fw-bold text-dark">Price: <?= $symbol . number_format($a['cost'], 2) ?></div>
                         <button type="button" 
