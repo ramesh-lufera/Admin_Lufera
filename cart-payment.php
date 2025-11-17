@@ -81,7 +81,7 @@
 
         $total_amount = $_POST['total_amount'];
         $upgrade_amount = $_POST['upgrade_amount'];
-
+        $current_plan_id = $_POST['current_plan_id'];
 
         // For Renewal..
         if (isset($_POST['renewal']) && $_POST['renewal'] == 1 && !empty($id)) {
@@ -225,6 +225,7 @@
         $discount_amount = floatval($_POST['discount_amount'] ?? 0);
         $coupon_code = $_POST['coupon_code'];
         $hostinger_balance = $_POST['hostinger_balance'];
+        $current_plan_id = $_POST['current_plan_id'];
         $web_id = $_POST['web_id'];
 
         $upgrade_gst = $_POST['amount_tax'];
@@ -579,7 +580,7 @@
             // ✅ Calculate subtotal, GST, discount and total
 
             // Subtotal = plan price + add-on base + add-on GST (to get full gross)
-            $main_subtotal = $price + floatval($insert_addon_price) + floatval($insert_addon_gst);
+            $main_subtotal = $price + floatval($insert_addon_price);
             $main_discount = $discount ?? 0;
 
             // Apply discount before tax (discount applies to plan only)
@@ -594,8 +595,8 @@
 
             
             if (!empty($hostinger_balance)) {
-                $sql = "INSERT INTO orders (user_id, invoice_id, plan, duration, amount, gst, price, addon_price, addon_gst, status, payment_method, discount, payment_made, created_on, subtotal, balance_due, addon_service, type, coupon_code, discount_amount, existing_balance) VALUES 
-                    ('$client_id', '$receipt_id', '$plan_id', '$duration' ,'$upgrade_amount', '$upgrade_gst', '$price', '$insert_addon_price', '$insert_addon_gst', 'Pending', '$pay_method', '$main_discount', '$payment_made', '$created_at', '$main_subtotal', '$upgrade_amount', '$get_addon', '$type', '$coupon_code', '$discount_amount', '$hostinger_balance')";
+                $sql = "INSERT INTO orders (user_id, invoice_id, plan, duration, amount, gst, price, addon_price, addon_gst, status, payment_method, discount, payment_made, created_on, subtotal, balance_due, addon_service, type, coupon_code, discount_amount, existing_balance, existing_plan) VALUES 
+                    ('$client_id', '$receipt_id', '$plan_id', '$duration' ,'$upgrade_amount', '$upgrade_gst', '$price', '$insert_addon_price', '$insert_addon_gst', 'Pending', '$pay_method', '$main_discount', '$payment_made', '$created_at', '$main_subtotal', '$upgrade_amount', '$get_addon', '$type', '$coupon_code', '$discount_amount', '$hostinger_balance', '$current_plan_id')";
             }
             else{
                 $sql = "INSERT INTO orders (user_id, invoice_id, plan, duration, amount, gst, price, addon_price, addon_gst, status, payment_method, discount, payment_made, created_on, subtotal, balance_due, addon_service, type, coupon_code, discount_amount) VALUES 
@@ -1191,6 +1192,7 @@
         <input type="hidden" value="<?php echo $web_id; ?>" name="web_id">
         <input type="hidden" value="<?php echo $invoice_id; ?>" name="invoice_id">
         <input type="hidden" value="<?php echo $hostinger_balance; ?>" name="hostinger_balance">
+        <input type="hidden" value="<?php echo $current_plan_id; ?>" name="current_plan_id">
 
         <?php if (isset($_POST['renewal']) && $_POST['renewal'] == 1): ?>
             <input type="hidden" name="renewal" value="1">

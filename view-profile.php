@@ -268,7 +268,11 @@ $row['username'] = explode('@', $row['email'])[0];
                                             <button type="button" class="border border-danger-600 bg-hover-danger-200 text-danger-600 text-md px-56 py-11 radius-8">
                                                 Cancel
                                             </button>
-                                            <button type="submit" class="lufera-bg bg-hover-warning-400 text-white text-md px-56 py-11 radius-8">Update</button> 
+                                            <?= ($row['first_name'] != "" && $row['last_name'] != "" && $row['username'] != "" && $row['user_id'] != "" && $row['business_name'] != "" && $row['gst_in'] != "" && $row['email'] != "" && $row['phone'] != "" && $row['dob'] != "" && $row['address'] != "" && $row['city'] != "" && $row['state'] != "" && $row['country'] != "" && $row['pincode'] != "") 
+                                                ? '<button type="submit" class="lufera-bg bg-hover-warning-400 text-white text-md px-56 py-11 radius-8" disabled>Update</button>' 
+                                                : '<button type="submit" class="lufera-bg bg-hover-warning-400 text-white text-md px-56 py-11 radius-8">Update</button>';
+                                            ?>
+
                                         </div>
                                     </form>
                                     <div id="result"></div>

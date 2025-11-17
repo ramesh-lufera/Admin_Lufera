@@ -759,7 +759,7 @@
                                             <button class="btn text-white lufera-bg text-sm mb-10">Renew</button>
 
                                             <!-- *** UPGRADE BUTTON *** -->
-                                            <a href="upgrade_plan.php?web_id=<?= $webId ?>&prod_id=<?= $prodId ?>&duration=<?= urlencode($durationStr) ?>">
+                                            <a href="upgrade_plan.php?web_id=<?= $webId ?>&prod_id=<?= $prodId ?>&duration=<?= $duration ?>">
                                                 <button class="btn text-white btn-warning text-sm mb-10">Upgrade</button>
                                             </a>
 
@@ -1032,7 +1032,7 @@
                                             <button class="btn text-white lufera-bg text-sm mb-10">Renew</button>
 
                                             <!-- *** UPGRADE BUTTON *** -->
-                                            <a href="upgrade_plan.php?web_id=<?= $webId ?>&prod_id=<?= $prodId ?>&duration=<?= urlencode($durationStr) ?>">
+                                            <a href="upgrade_plan.php?web_id=<?= $webId ?>&prod_id=<?= $prodId ?>&duration=<?= $duration ?>">
                                                 <button class="btn text-white btn-warning text-sm mb-10">Upgrade</button>
                                             </a>
 

@@ -511,24 +511,20 @@
                                 <form action="cart-payment.php" method="POST">
                                     <input type="hidden" name="web_id" value="<?= htmlspecialchars($web_id) ?>">
                                     <input type="hidden" name="user_id" value="<?= htmlspecialchars($_SESSION['user_id']) ?>">
-                                   
                                     <input type="hidden" name="hostinger_balance" id="hostinger_balance" value="">
-                                    <input type="hidden" name="subtotal-display" id="amount_to_pay" value="">
-                                    
+                                    <input type="hidden" name="amount_to_pay" id="amount_to_pay" value="">
                                     <input type="hidden" name="cat_id" id="cat_id" value="<?php echo $current_cat; ?>">
                                     <input type="hidden" name="current_plan_id" id="current_plan_id" value="<?php echo $current_plan_id ?>">
-                                    
-    
                                     <input type="hidden" name="id" id="upgrade_package_id" value="">
                                     <input type="hidden" name="plan_name" id="plan_name" value="">
                                     <input type="hidden" name="invoice_id" id="invoice_id" value="<?php echo $invoice_id ?>">
                                     <input type="hidden" name="duration" id="duration" value="<?php echo $duration; ?>">
-                                    <input type="hidden" name="price" id="total_amount" value="">
-                                    <input type="hidden" name="total_breakdown_price" id="total_breakdown_price" value="">
-                                    <input type="hidden" name="total_breakdown_tax" id="total_breakdown_tax" value="">
+                                    <input type="hidden" name="total_amount" id="total_amount" value="">
+                                    <input type="hidden" name="price" id="total_breakdown_price" value="">
+                                    <!-- <input type="hidden" name="gst" id="total_breakdown_tax" value=""> -->
                                     <input type="hidden" name="total_breakdown_gst" id="total_breakdown_gst" value="">
-                                    <input type="hidden" name="gst" id="amount_tax" value="">
-                                    <input type="hidden" name="total_price" id="total_price" value="">
+                                    <input type="hidden" name="amount_tax" id="amount_tax" value="">
+                                    <input type="hidden" name="upgrade_amount" id="total_price" value="">
                                     <input type="hidden" name="type" value="package">  
                                     <input type="hidden" name="receipt_id" value="<?php echo $receipt_id; ?>"> 
                                     <!-- <input type="hidden" name="duration" id="duration" value="<?php echo $duration; ?>"> -->
@@ -625,8 +621,8 @@ function updateUpgradeDisplay() {
             // Balance (includes GST) and amount-to-pay = total-amount (incl GST) - hostinger-balance (incl GST)
             const balance = parseFloat((balanceElement?.textContent || '').replace(/[^\d.]/g, '')) || 0;
             const amountToPay = Math.max(0, (parseFloat(totalWithTax) || 0) - balance);
-            const amountTax   = (amountToPay * (taxRate / 100));
-            const grandTotal  = amountToPay + amountTax;
+            const amountTax   = (price * (taxRate / 100));
+            const grandTotal  = amountToPay;
 
             // --- Update UI ---
             priceDisplay.textContent = '<?= htmlspecialchars($symbol) ?> ' + monthlyPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });

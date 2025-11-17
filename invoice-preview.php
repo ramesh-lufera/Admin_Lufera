@@ -167,14 +167,16 @@
                                             </table> -->
                                             <table class="table table-bordered mb-0">
                                                 <thead>
-                                                    <th class="w-50">Description</th>
+                                                    <th class="w-25">Description</th>
+                                                    <th class="w-25">Price</th>
                                                     <th class="w-25">Tax</th>
-                                                    <th class="text-end w-25">Price</th>
+                                                    <th class="text-end w-25">Total</th>
                                                 </thead>
                                                 <tbody>
-                                                    <td class="w-50"><?php echo $row['plan_name']; ?></td>
-                                                    <td class="w-25"><?php echo number_format($row['gst'], 2); ?></td>
-                                                    <td class="text-end w-25"><?= htmlspecialchars($symbol) ?> <?php echo $row['price']; ?> </td>
+                                                    <td class="w-25"><?php echo $row['plan_name']; ?></td>
+                                                    <td class="w-25"><?= htmlspecialchars($symbol) ?> <?php echo number_format($row['price'], 2); ?> </td>
+                                                    <td class="w-25"><?= htmlspecialchars($symbol) ?> <?php echo number_format($row['gst'], 2); ?></td>
+                                                    <td class="text-end w-25"><?= htmlspecialchars($symbol) ?> <?php echo number_format(floatval($row['price']) + floatval($row['gst']), 2); ?></td>
                                                 </tbody>
                                             </table>
                                         </div>
@@ -197,11 +199,12 @@
 
                                                     while ($addon_row = $addon_result->fetch_assoc()) {
                                                         echo "<tr>
-                                                                <td class='w-50'>" . htmlspecialchars($addon_row['name']) . "</td>
-                                                                <td class='w-25'>" . htmlspecialchars($row['addon_gst']) . "</td>
+                                                                <td class='w-25'>" . htmlspecialchars($addon_row['name']) . "</td>
+                                                                <td class='w-25'>" . htmlspecialchars($symbol) . " " . number_format($row['addon_price'], 2) . "</td>
+                                                                <td class='w-25'>" . htmlspecialchars($symbol) . " " . htmlspecialchars($row['addon_gst']) . "</td>
                                                                 <td class='w-25 text-end'>
                                                                     <span class='text-primary-light'>"
-                                                                    . htmlspecialchars($symbol) . " " . htmlspecialchars($addon_row['cost']) .
+                                                                    . htmlspecialchars($symbol) . " " . number_format(floatval($row['addon_price']) + floatval($row['addon_gst']), 2) .
                                                                     "</span>
                                                                 </td>
                                                             </tr>";
@@ -225,8 +228,8 @@
                                                                 </td>
                                                             </tr> -->
                                                         <?php } ?>
-                                                        <tr>
-                                                            <td class="pe-64 p-8 fw-semibold">Subtotal</td>
+                                                        <!-- <tr>
+                                                            <td class="pe-64 p-8 fw-semibold">Sub Total</td>
                                                             <td class=" p-8">
                                                             <?php
                                                                 $total = floatval($row['price']) + floatval($row['addon_price']);
@@ -235,7 +238,7 @@
                                                                     <?= htmlspecialchars($symbol) ?> <?= number_format($total, 2); ?>
                                                                 </span>
                                                             </td>
-                                                        </tr>
+                                                        </tr> -->
 
                                                         <!-- <tr>
                                                             <td class="pe-64 p-8 fw-semibold">GST 18%</td>
@@ -315,7 +318,7 @@
 
                                                             // ✅ Compute GST amount and new totals
                                                             $gst_amount = $row['subtotal'] * ($tax_rate / 100);
-                                                            $total_after_gst = $row['subtotal'] + $gst_amount - $row['discount_amount'];
+                                                            $total_after_gst = floatval($row['subtotal']) + floatval($row['gst_amount']) - floatval($row['discount_amount']);
                                                             $balance_due = $total_after_gst - $row['payment_made'];
                                                         ?> -->
                                                         <?php
@@ -388,7 +391,7 @@
                                                             // Compute GST + Totals
                                                             // ================================
                                                             $gst_amount = $row['subtotal'] * ($tax_rate / 100);
-                                                            $total_after_gst = $row['subtotal'] + $gst_amount - $row['discount_amount'];
+                                                            $total_after_gst = floatval($row['subtotal']) + floatval($row['gst_amount']) - floatval($row['discount_amount']);
                                                             $balance_due = $total_after_gst - $row['payment_made'];
                                                         ?>
                                                         <!-- <tr>
@@ -397,11 +400,11 @@
                                                                 <span class="text-primary-light" id="currency-symbol-display"><?= htmlspecialchars($symbol) ?> <?= number_format($gst_amount, 2); ?></span>
                                                             </td>
                                                         </tr> -->
-                                                        <?php if ($row['coupon_code']) { ?>
+                                                        <?php if ($row['existing_balance']) { ?>
                                                             <tr>
-                                                                <td class="pe-64 p-8 fw-semibold">Coupon Applied (<?php echo $row['coupon_code']; ?>)</td>
+                                                                <td class="pe-64 p-8 fw-semibold">Existing Plan</td>
                                                                 <td class="p-8">
-                                                                    <span class="text-primary-light" id="currency-symbol-display"><?= htmlspecialchars($symbol) ?> <?php echo number_format($row['discount_amount'], 2); ?></span>
+                                                                    <span class="text-primary-light" id="currency-symbol-display"><?= htmlspecialchars($symbol) ?> <?php echo number_format($row['existing_balance'], 2); ?></span>
                                                                 </td>
                                                             </tr>
                                                         <?php } ?>
