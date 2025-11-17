@@ -62,25 +62,11 @@ if (isset($_FILES['photo']) && $_FILES['photo']['error'] == 0) {
 $stmt = $conn->prepare("UPDATE users SET user_id = ?, first_name = ?, last_name = ?, username = ?, business_name = ?, gst_in = ?, email = ?, phone = ?, address = ?, city = ?, state = ?, country = ?, pincode = ?, dob = ?  WHERE id = ?");
 $stmt->bind_param("ssssssssssssssi", $client_id, $fname, $lname, $uname, $bname, $gst_in, $email, $phone, $address, $city, $state, $country, $pin, $dob, $id);
 if ($stmt->execute()) {
-    echo "<script>
-        Swal.fire({
-            icon: 'success',
-            title: 'Updated!',
-            text: 'User updated successfully!',
-        }).then(() => {
-            window.location.href='';
-        });
-    </script>";
+    echo "updated";
 } else {
-    echo "<script>
-        Swal.fire({
-            icon: 'error',
-            title: 'Error!',
-            text: '" . $stmt->error . "'
-        });
-    </script>";
+    echo "Error updating user: " . $stmt->error;
 }
-
+ 
 $stmt->close();
 $conn->close();
 ?>

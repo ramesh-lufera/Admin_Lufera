@@ -73,9 +73,15 @@
         $subtotal_display = $_POST['subtotal-display'];
         $invoice_id = $_POST['invoice_id'];
         $web_id = $_POST['web_id'];
-        $total_breakdown_price = $_POST['total_breakdown_price'];
         $total_breakdown_tax = $_POST['total_breakdown_tax'];
         $total_breakdown_gst = $_POST['total_breakdown_gst'];
+
+        $amount_to_pay = $_POST['amount_to_pay'];
+        $amount_tax = $_POST['amount_tax'];
+
+        $total_amount = $_POST['total_amount'];
+        $upgrade_amount = $_POST['upgrade_amount'];
+        $current_plan_id = $_POST['current_plan_id'];
 
         // For Renewal..
         if (isset($_POST['renewal']) && $_POST['renewal'] == 1 && !empty($id)) {
@@ -219,7 +225,11 @@
         $discount_amount = floatval($_POST['discount_amount'] ?? 0);
         $coupon_code = $_POST['coupon_code'];
         $hostinger_balance = $_POST['hostinger_balance'];
+        $current_plan_id = $_POST['current_plan_id'];
         $web_id = $_POST['web_id'];
+
+        $upgrade_gst = $_POST['amount_tax'];
+        $upgrade_amount = $_POST['upgrade_amount'];
         
         // Fetch tax rate for proper calculation
         $gst_id = $_POST['gst_id'] ?? null;
@@ -570,7 +580,7 @@
             // ✅ Calculate subtotal, GST, discount and total
 
             // Subtotal = plan price + add-on base + add-on GST (to get full gross)
-            $main_subtotal = $price + floatval($insert_addon_price) + floatval($insert_addon_gst);
+            $main_subtotal = $price + floatval($insert_addon_price);
             $main_discount = $discount ?? 0;
 
             // Apply discount before tax (discount applies to plan only)
@@ -583,9 +593,15 @@
             $main_amount = round($discounted_plan_price + $main_gst + floatval($insert_addon_price) + floatval($insert_addon_gst), 2);
             $main_balance_due  = $main_amount - $payment_made;
 
-            $sql = "INSERT INTO orders (user_id, invoice_id, plan, duration, amount, gst, price, addon_price, addon_gst, status, payment_method, discount, payment_made, created_on, subtotal, balance_due, addon_service, type, coupon_code, discount_amount) VALUES 
+            
+            if (!empty($hostinger_balance)) {
+                $sql = "INSERT INTO orders (user_id, invoice_id, plan, duration, amount, gst, price, addon_price, addon_gst, status, payment_method, discount, payment_made, created_on, subtotal, balance_due, addon_service, type, coupon_code, discount_amount, existing_balance, existing_plan) VALUES 
+                    ('$client_id', '$receipt_id', '$plan_id', '$duration' ,'$upgrade_amount', '$upgrade_gst', '$price', '$insert_addon_price', '$insert_addon_gst', 'Pending', '$pay_method', '$main_discount', '$payment_made', '$created_at', '$main_subtotal', '$upgrade_amount', '$get_addon', '$type', '$coupon_code', '$discount_amount', '$hostinger_balance', '$current_plan_id')";
+            }
+            else{
+                $sql = "INSERT INTO orders (user_id, invoice_id, plan, duration, amount, gst, price, addon_price, addon_gst, status, payment_method, discount, payment_made, created_on, subtotal, balance_due, addon_service, type, coupon_code, discount_amount) VALUES 
                     ('$client_id', '$receipt_id', '$plan_id', '$duration' ,'$main_amount', '$main_gst', '$price', '$insert_addon_price', '$insert_addon_gst', 'Pending', '$pay_method', '$main_discount', '$payment_made', '$created_at', '$main_subtotal', '$main_amount', '$get_addon', '$type', '$coupon_code', '$discount_amount')";
-
+            }
             if (mysqli_query($conn, $sql)) {
                 // === DEACTIVATE OLD ORDERS IF HOSTINGER BALANCE EXISTS ===
                 if (!empty($hostinger_balance)) {
@@ -717,7 +733,7 @@
 
                             // Insert into websites (plan = ID ✅)
                             $siteInsertPkg = "INSERT INTO websites (user_id, domain, plan, duration, renewal_duration, expired_at, status, cat_id, invoice_id, product_id, type) 
-                                            VALUES ('$client_id', 'N/A', '$pkg_id', '$pkg_duration', '', NULL, 'Pending', '$pkg_cat_id', '$pkg_invoice_id', '$pkg_id', 'package')";
+                                            VALUES ('$client_id', 'N/A', '$pkg_id', '$pkg_duration', '', '', 'Pending', '$pkg_cat_id', '$pkg_invoice_id', '$pkg_id', 'package')";
                             mysqli_query($conn, $siteInsertPkg);
                         }
                     }
@@ -1154,20 +1170,29 @@
         <input type="hidden" value="<?php echo $receipt_id; ?>" name="receipt_id">
         <input type="hidden" value="<?php echo $plan_name; ?>" name="plan_name">
         <input type="hidden" value="<?php echo $price; ?>" name="price">
-        <input type="hidden" value="<?php echo $gst; ?>" name="gst">
-        <input type="hidden" value="<?php echo $total_price; ?>" name="total_price">
+        <input type="hidden" value="<?php echo $upgrade_amount; ?>" name="upgrade_amount">
+        <?php if($hostinger_balance != ""){ ?>
+            <input type="hidden" value="<?php echo $amount_tax; ?>" name="amount_tax">
+        <?php }  else { ?>
+            <input type="hidden" value="<?php echo $gst; ?>" name="gst">
+        <?php } ?>
+        <?php if($hostinger_balance != ""){ ?>
+            <input type="hidden" value="<?php echo $amount_to_pay; ?>" name="total_price">
+        <?php }  else { ?>
+            <input type="hidden" value="<?php echo $total_price; ?>" name="total_price">
+        <?php } ?>
         <input type="hidden" value="<?php echo $created_on; ?>" name="created_on">
         <input type="hidden" value="<?php echo $get_addon; ?>" name="get_addon">
         <input type="hidden" value="<?php echo $get_packages ?? ''; ?>" name="get_packages">
         <input type="hidden" value="<?php echo $get_products ?? ''; ?>" name="get_products">
         <input type="hidden" value="<?php echo $addon_total; ?>" name="addon-total">
         <input type="hidden" name="gst_id" value="<?php echo $_POST['gst_id'] ?? ''; ?>">
-        <input type="hidden" name="original_total_price" value="<?php echo $total_price; ?>">
         <input type="hidden" id="coupon_code_hidden" name="coupon_code" value="<?php echo isset($_POST['coupon_code']) ? htmlspecialchars($_POST['coupon_code']) : ''; ?>">
         <input type="hidden" id="discount_amount" name="discount_amount" value="0.00">
         <input type="hidden" value="<?php echo $web_id; ?>" name="web_id">
         <input type="hidden" value="<?php echo $invoice_id; ?>" name="invoice_id">
         <input type="hidden" value="<?php echo $hostinger_balance; ?>" name="hostinger_balance">
+        <input type="hidden" value="<?php echo $current_plan_id; ?>" name="current_plan_id">
 
         <?php if (isset($_POST['renewal']) && $_POST['renewal'] == 1): ?>
             <input type="hidden" name="renewal" value="1">
@@ -1178,8 +1203,11 @@
         <?php endif; ?>
 
         <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-24">
-            <h6 class="fw-semibold mb-0">Your Cart</h6>
-            <button type="submit" name="save" id="continuePayBtn" class="lufera-bg text-center btn-sm px-12 py-10 float-end" style="width:150px; border: 1px solid #000" value="Submit">Continue to Pay</button>
+        
+                <a class="cursor-pointer fw-bold" onclick="history.back()"><span class="fa fa-arrow-left"></span>&nbsp; Back</a>    
+                <h6 class="fw-semibold mb-0">Your Cart</h6>
+                <button type="submit" name="save" id="continuePayBtn" class="lufera-bg text-center btn-sm px-12 py-10 float-end" style="width:150px; border: 1px solid #000" value="Submit">Continue to Pay</button>
+            
         </div>
         
         <div class="mb-40">
@@ -1316,7 +1344,7 @@
                                     <h6 class="mb-0"><?php echo htmlspecialchars($symbol) . number_format($total_price, 2); ?></h6>
                                 <?php } elseif ($hostinger_balance != 0) { ?>
                                     <!-- Existing Plan Balance Case -->
-                                    <h6 class="mb-0"><?php echo htmlspecialchars($symbol) . number_format($total_breakdown_price, 2); ?></h6>
+                                    <h6 class="mb-0"><?php echo htmlspecialchars($symbol) . number_format($price, 2); ?></h6>
                                 <?php } else { ?>
                                     <!-- Normal Purchase Case -->
                                     <h6 class="mb-0"><?php echo htmlspecialchars($symbol) . number_format($subtotal_display, 2); ?></h6>
@@ -1419,13 +1447,18 @@
                                         <i class="fas fa-chevron-down"></i>
                                     </button>
                                 </div>
-                                <div><?php echo htmlspecialchars($symbol) . number_format($plan_total_amount, 2); ?></div>
+                                
+                                <?php if($hostinger_balance != 0){ ?>
+                                    <div><?php echo htmlspecialchars($symbol) . number_format($total_amount, 2); ?></div>
+                                    <?php } else{ ?>
+                                        <div><?php echo htmlspecialchars($symbol) . number_format($plan_total_amount, 2); ?></div>
+                                    <?php } ?>
                             </div>
                             <div id="planBreakdown" class="plan-breakdown-details" style="display: none; padding: 10px .5rem 15px; border-bottom: 1px solid #dadada; background-color: #f9f9f9;">
                                 <div class="d-flex justify-content-between" style="font-size: 0.9rem; color: #555;">
                                     <span>Price</span>
                                     <?php if($hostinger_balance != 0){ ?>
-                                        <span><?php echo htmlspecialchars($symbol) . number_format($total_breakdown_price, 2); ?></span>
+                                        <span><?php echo htmlspecialchars($symbol) . number_format($price, 2); ?></span>
                                     <?php } else{ ?>
                                         <span><?php echo htmlspecialchars($symbol) . number_format($plan_base_price, 2); ?></span>
                                     <?php } ?>
@@ -1434,7 +1467,7 @@
                                     
                                     <?php if($hostinger_balance != 0){ ?>
                                         <span>Tax (<?php echo number_format($total_breakdown_gst, 2); ?>%)</span>
-                                        <span><?php echo htmlspecialchars($symbol) . number_format($total_breakdown_tax, 2); ?></span>
+                                        <span><?php echo htmlspecialchars($symbol) . number_format($amount_tax, 2); ?></span>
                                     <?php } else{ ?>
                                         <span>Tax (<?php echo number_format($plan_tax_rate_display, 2); ?>%)</span>
                                         <span><?php echo htmlspecialchars($symbol) . number_format($plan_tax_amount, 2); ?></span>
@@ -1444,8 +1477,8 @@
                             
                             <table class="table plan-details-table mb-0 w-100">
                                 <tbody>
-                                <?php if (!empty($package_details) && !empty($product_details) && !empty($addon_details)): ?>
-                                    <p class="fw-semibold px-10 mb-0">Add-ons :</p>
+                                <?php if (!empty($package_details) || !empty($product_details) || !empty($addon_details)): ?>
+                                    <p class="fw-semibold px-6 mb-0 mt-10">Add-ons :</p>
                                 <?php endif; ?>
                                     <!-- Plan Price -->
                                     <!-- <tr>
@@ -1912,10 +1945,16 @@
                                             // Final total value
                                             $total_price = round($final_total, 2);
                                         ?>
-                                        <input type="hidden" name="total_price" value="<?php echo $total_price; ?>">
-                                        <td class="border-0 text-end fw-semibold text-xl">
-                                            <?php echo htmlspecialchars($symbol) . number_format($total_price, 2); ?>
-                                        </td>
+
+                                        <?php if($hostinger_balance != 0){ ?>
+                                            <td class="border-0 text-end fw-semibold text-xl">
+                                                <?php echo htmlspecialchars($symbol) . number_format($amount_to_pay, 2); ?>
+                                            </td>
+                                        <?php } else { ?>
+                                            <td class="border-0 text-end fw-semibold text-xl">
+                                                <?php echo htmlspecialchars($symbol) . number_format($total_price, 2); ?>
+                                            </td>
+                                        <?php } ?>
                                     </tr>
 
                                 </tbody>

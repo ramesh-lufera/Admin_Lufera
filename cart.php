@@ -321,9 +321,9 @@
                     <h6 class="mb-1"><?= htmlspecialchars($p['name']) ?></h6>
                     <small class="d-block">Period: N/A</small>
                     <small class="d-block">Validity: One-time</small>
-                    <small class="d-block text-success fw-semibold">
+                    <!-- <small class="d-block text-success fw-semibold">
                         <?= $gst_name_prod ?> (<?= number_format($gst_rate_prod, 2) ?>%)
-                    </small>
+                    </small> -->
                     <div class="d-flex justify-content-between align-items-center mt-3">
                         <div class="fw-bold text-dark">Price: <?= $symbol . number_format($p['price'], 2) ?></div>
                         <button type="button" 
@@ -358,9 +358,9 @@
                     <h6 class="mb-1"><?= htmlspecialchars($a['name']) ?></h6>
                     <small class="d-block">Period: N/A</small>
                     <small class="d-block">Validity: One-time</small>
-                    <small class="d-block text-success fw-semibold">
+                    <!-- <small class="d-block text-success fw-semibold">
                         <?= $gst_name_addon ?> (<?= number_format($gst_rate_addon, 2) ?>%)
-                    </small>
+                    </small> -->
                     <div class="d-flex justify-content-between align-items-center mt-3">
                         <div class="fw-bold text-dark">Price: <?= $symbol . number_format($a['cost'], 2) ?></div>
                         <button type="button" 
@@ -524,7 +524,7 @@
             $row["username"] && $row["email"] && $row["phone"] && 
             $row["first_name"] && $row["last_name"] && $row["business_name"] && 
             $row["address"] && $row["city"] && $row["state"] && 
-            $row["country"] && $row["pincode"]
+            $row["country"] && $row["pincode"] && $row["user_id"] && $row["gst_in"]
         );
     ?>
 
@@ -581,16 +581,102 @@
                 </div>
                 <div class="modal-body">
                     <form id="updateForm">
-                        <input type="hidden" name="id" value="<?php echo $_SESSION['user_id']; ?>">
                         <div class="row">
-                            <!-- Your fields here -->
+                            <div class="col-sm-6">
+                                <div class="mb-20">
+                                    <label for="" class="form-label fw-semibold text-primary-light text-sm mb-8">First Name <span class="text-danger-600">*</span></label>
+                                    <input type="hidden" name="id" value="<?php echo $_SESSION['user_id']; ?>">
+                                    <!-- <input type="text" class="form-control radius-8" id="" name="fname" value="<?php echo $row['first_name']; ?>" required> -->
+                                    <input type="text" class="form-control radius-8" name="fname" value="<?php echo $row['first_name']; ?>" <?php echo !empty($row['first_name']) ? 'readonly' : ''; ?> required>
+                                </div>
+                            </div>
+                            <div class="col-sm-6">
+                                <div class="mb-20">
+                                    <label for="" class="form-label fw-semibold text-primary-light text-sm mb-8">Last Name <span class="text-danger-600">*</span></label>
+                                    <input type="text" class="form-control radius-8" name="lname" value="<?php echo $row['last_name']; ?>" <?php echo !empty($row['last_name']) ? 'readonly' : ''; ?> required>
+                                </div>
+                            </div>
+                            <div class="col-sm-6">
+                                <div class="mb-20">
+                                    <label for="" class="form-label fw-semibold text-primary-light text-sm mb-8">Username <span class="text-danger-600">*</span></label>
+                                    <input type="text" class="form-control radius-8" name="uname" value="<?php echo $row['username']; ?>" <?php echo !empty($row['username']) ? 'readonly' : ''; ?> required>
+                                </div>
+                            </div>
+                            <div class="col-sm-6">
+                                <div class="mb-20">
+                                    <label for="" class="form-label fw-semibold text-primary-light text-sm mb-8">Client ID <span class="text-danger-600">*</span></label>
+                                    <input type="text" class="form-control radius-8" name="client_id" value="<?php echo $row['user_id']; ?>" <?php echo !empty($row['user_id']) ? 'readonly' : ''; ?> required>
+                                </div>
+                            </div>
+                            <div class="col-sm-6">
+                                <div class="mb-20">
+                                    <label for="" class="form-label fw-semibold text-primary-light text-sm mb-8">Bussiness Name <span class="text-danger-600">*</span></label>
+                                    <input type="text" class="form-control radius-8" name="bname" value="<?php echo $row['business_name']; ?>" <?php echo !empty($row['business_name']) ? 'readonly' : ''; ?> required>
+                                </div>
+                            </div>
+                            <div class="col-sm-6">
+                                <div class="mb-20">
+                                    <label for="" class="form-label fw-semibold text-primary-light text-sm mb-8">GSTIN <span class="text-danger-600">*</span></label>
+                                    <input type="text" class="form-control radius-8" name="gst_in" value="<?php echo $row['gst_in']; ?>" <?php echo !empty($row['gst_in']) ? 'readonly' : ''; ?> required>
+                                </div>
+                            </div>
+                            <div class="col-sm-6">
+                                <div class="mb-20">
+                                    <label for="" class="form-label fw-semibold text-primary-light text-sm mb-8">Email <span class="text-danger-600">*</span></label>
+                                    <input type="text" class="form-control radius-8" name="email" value="<?php echo $row['email']; ?>" <?php echo !empty($row['email']) ? 'readonly' : ''; ?> required>
+                                </div>
+                            </div>
+                            <div class="col-sm-6">
+                                <div class="mb-20">
+                                    <label for="" class="form-label fw-semibold text-primary-light text-sm mb-8">Phone <span class="text-danger-600">*</span></label>
+                                    <input type="text" class="form-control radius-8" name="phone" value="<?php echo $row['phone']; ?>" <?php echo !empty($row['phone']) ? 'readonly' : ''; ?> required>
+                                </div>
+                            </div>
+                            <div class="col-sm-6">
+                                <div class="mb-20">
+                                    <label for="" class="form-label fw-semibold text-primary-light text-sm mb-8">Date of Birth <span class="text-danger-600">*</span></label>
+                                    <input type="date" class="form-control radius-8" name="dob" value="<?php echo $row['dob']; ?>" <?php echo !empty($row['dob']) ? 'readonly' : ''; ?> required>
+                                </div>
+                            </div>
+                            <div class="col-sm-6">
+                                <div class="mb-20">
+                                    <label for="" class="form-label fw-semibold text-primary-light text-sm mb-8">Address <span class="text-danger-600">*</span></label>
+                                    <input type="text" class="form-control radius-8" name="address" value="<?php echo $row['address']; ?>" <?php echo !empty($row['address']) ? 'readonly' : ''; ?> required>
+                                </div>
+                            </div>
+                            <div class="col-sm-6">
+                                <div class="mb-20">
+                                    <label for="" class="form-label fw-semibold text-primary-light text-sm mb-8">City <span class="text-danger-600">*</span></label>
+                                    <input type="text" class="form-control radius-8" name="city" value="<?php echo $row['city']; ?>" <?php echo !empty($row['city']) ? 'readonly' : ''; ?> required>
+                                </div>
+                            </div>
+                            <div class="col-sm-6">
+                                <div class="mb-20">
+                                    <label for="" class="form-label fw-semibold text-primary-light text-sm mb-8">State <span class="text-danger-600">*</span></label>
+                                    <input type="text" class="form-control radius-8" name="state" value="<?php echo $row['state']; ?>" <?php echo !empty($row['state']) ? 'readonly' : ''; ?> required>
+                                </div>
+                            </div>
+                            <div class="col-sm-6">
+                                <div class="mb-20">
+                                    <label for="" class="form-label fw-semibold text-primary-light text-sm mb-8">Country <span class="text-danger-600">*</span></label>
+                                    <input type="text" class="form-control radius-8" name="country" value="<?php echo $row['country']; ?>" <?php echo !empty($row['country']) ? 'readonly' : ''; ?> required>
+                                </div>
+                            </div>
+                            <div class="col-sm-6">
+                                <div class="mb-20">
+                                    <label for="" class="form-label fw-semibold text-primary-light text-sm mb-8">Pin <span class="text-danger-600">*</span></label>
+                                    <input type="text" class="form-control radius-8" name="pin" value="<?php echo $row['pincode']; ?>" <?php echo !empty($row['pincode']) ? 'readonly' : ''; ?> required>
+                                </div>
+                            </div>
+                        </div>
+                        </div>
+                        <div class="modal-footer d-flex align-items-center justify-content-center gap-3">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                            <button type="submit" class="btn lufera-bg text-white">Save</button>
                         </div>
                     </form>
                 </div>
-                <div class="modal-footer d-flex justify-content-center gap-3">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                    <button type="submit" form="updateForm" class="btn lufera-bg text-white">Save</button>
-                </div>
+                
                 <div id="result"></div>
             </div>
         </div>
@@ -601,7 +687,7 @@
     $('#updateForm').submit(function(e) {
         e.preventDefault();
         $.ajax({
-            url: 'update.php',
+            url: 'update-cart.php',
             type: 'POST',
             data: new FormData(this),
             processData: false,

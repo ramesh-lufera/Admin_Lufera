@@ -216,14 +216,14 @@ $amountInWords = numberToWords($amount);
                             <thead class="thead">
                                 <tr>
                                     <th scope="col" class="">Services</th>
-                                    <th scope="col" class="">Period</th>
-                                    <th scope="col" class="text-end">Amount</th>
+                                    <th scope="col" class="">Tax</th>
+                                    <th scope="col" class="text-end">Price</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <tr class="tbody">
                                     <td class="w-40"><?php echo $plan_name; ?> </td>
-                                    <td><?php echo $row['duration']; ?> </td>
+                                    <td><?= htmlspecialchars($symbol) ?> <?= number_format($row['gst'], 2, '.', ''); ?> </td>
                                     <td class="text-end "><?= htmlspecialchars($symbol) ?> <?= number_format($row['price'], 2, '.', ''); ?> </td>
                                 </tr>
                             </tbody>
@@ -249,7 +249,7 @@ $amountInWords = numberToWords($amount);
                                 while ($addon_row = $addon_result->fetch_assoc()) {
                                     echo "<tr class='tbody'>
                                             <td class='w-40'>" . htmlspecialchars($addon_row['name']) . "</td>
-                                            <td class=''>" . htmlspecialchars($addon_row['duration']) . "</td>
+                                            <td class=''>" . htmlspecialchars($symbol) . " " . htmlspecialchars($row['addon_gst']) . "</td>
                                             <td class='text-end'>
                                                 <span class='text-primary-light'>"
                                                 . htmlspecialchars($symbol) . " " . number_format($addon_row['cost'], 2, '.', '') .
@@ -283,12 +283,6 @@ $amountInWords = numberToWords($amount);
                                         <td class="pe-64 border-bottom p-16">Subtotal</td>
                                         <td class="border-bottom p-16 text-end">
                                             <span class="text-primary-light fw-semibold"> <?= htmlspecialchars($symbol) ?> <?php echo number_format($row['subtotal'], 2, '.', ''); ?></span>
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td class="pe-64 border-bottom p-16">GST 18%</td>
-                                        <td class="border-bottom p-16 text-end">
-                                            <span class="text-primary-light fw-semibold"><?= htmlspecialchars($symbol) ?> <?php echo number_format($row['gst'], 2, '.', ''); ?> </span>
                                         </td>
                                     </tr>
                                     <tr>

@@ -45,7 +45,7 @@
 
         $payment_made = $_POST['payment_made'];
 
-        $total_amount = $amount + $payment_made;
+        $total_amount = floatval($amount) + floatval($payment_made);
         $created_at = date("Y-m-d H:i:s");
         $remarks = $_POST['remarks'];
         $balance_due = $_POST['balance_due'];
@@ -92,6 +92,18 @@
         border-bottom: 1px solid #dadada;
         width:50%;
     }
+    .plan-details-table2 tbody tr td{
+        padding: 15px .5rem;
+        width:50%;
+    }
+    .border-top{
+        border-top: 1px solid #dadada;
+    }
+    .add-ons{
+        font-size: 0.9rem;
+        color: #555;
+        padding: 3px 0.5rem !important;
+    }
 </style>
 <div class="dashboard-main-body">
     <div class="gap-3 mb-24">
@@ -111,7 +123,7 @@
                         Record Payment
                     </button>
                     <?php } ?>
-                    <button type="button" class="btn btn-sm btn-success radius-8 d-inline-flex align-items-center gap-1" data-bs-toggle="modal" data-bs-target="#Payment" id="currency-symbol-display">
+                    <button type="button" class="btn btn-sm btn-success radius-8 d-inline-flex align-items-center gap-1" data-bs-toggle="modal" data-bs-target="#Payment">
                         <?= htmlspecialchars($symbol) ?> Payment History
                     </button>
                 </div>
@@ -147,7 +159,7 @@
                             echo '<tr>
                                     <td>' . htmlspecialchars($row_history['invoice_no']) . '</td>
                                     <td>' . htmlspecialchars($row_history['payment_method']) . '</td>
-                                    <td id="currency-symbol-display">' . htmlspecialchars($symbol) . htmlspecialchars($row_history['amount']) . '</td>
+                                    <td>' . htmlspecialchars($symbol) . htmlspecialchars($row_history['amount']) . '</td>
                                     <td>' . htmlspecialchars($row_history['remarks']) . '</td>
                                     <td>' . date('d/m/Y', strtotime($row_history['paid_date'])) . '</td>
                                 </tr>';
@@ -229,8 +241,8 @@
         <div class="row gy-4">
             <div class="col-xxl-6 col-sm-6">
                 <div class="card h-100 radius-12">
-                    <div class="card-header py-20 border-none" style="box-shadow: 0px 3px 3px 0px lightgray">
-                        <h6>Plan Details</h6>
+                    <div class="card-header border-none py-10" style="box-shadow: 0px 3px 3px 0px lightgray">
+                        <h6 class="mb-0">Plan Details</h6>
                     </div>
                     <div class="card-body p-16">
                         <!-- <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
@@ -309,77 +321,102 @@
                 <div class="card h-100 radius-12">
                     <div class="card-header py-10 border-none d-flex justify-content-between" style="box-shadow: 0px 3px 3px 0px lightgray">
                         <div class="">
-                            <h6 class="mb-0">Order Summary</h6>
-                            <p class="mb-0">Order Summary includes discounts & taxes</p>
+                            <h6 class="mb-0">Sub Total</h6>
                         </div>
                         <div class="align-content-center">
-                            <h4 class="mb-0" id="currency-symbol-display"><?= htmlspecialchars($symbol) ?><?= number_format($row['amount'], 2) ?></h4>
+                            <h6 class="mb-0"><?= htmlspecialchars($symbol) ?><?= number_format(floatval($row['price']) + floatval($row['addon_price']), 2) ?></h6>
                         </div>
                         
                     </div>
                     <div class="card-body p-16">
-                        <!-- <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
-                            <label>Plan Name</label>
-                            <label><?php echo $row['plan']; ?></label>
-                        </div> -->
-                        <table class="w-100 plan-details-table mb-0">
+                        <table class="w-100 plan-details-table2 mb-0">
                             <tbody>
+                            <tr>
+                                <td onclick="toggleBreakdowns()" style="cursor:pointer; user-select:none;">
+                                    <?php echo htmlspecialchars($row['plan_name']); ?>
+                                    &nbsp;
+                                    <span id="breakdown-arrow"><i class="fas fa-chevron-down"></i></span>
+                                </td>
+                                <td class="text-end">
+                                    <?= htmlspecialchars($symbol) ?><?= number_format(floatval($row['price']) + floatval($row['gst']), 2) ?>
+                                </td>
+                            </tr>
+
+                            <!-- Hidden Breakdown (only Base Price + Tax) -->
+                            <tbody id="breakdown-rows" style="display:none;">
                                 <tr>
-                                    <td><?php echo htmlspecialchars($row['plan_name']); ?></td>
-                                    <td class="text-end" id="currency-symbol-display"><?= htmlspecialchars($symbol) ?><?= number_format($row['price'], 2) ?></td>
+                                    <td class="add-ons">Base Price</td>
+                                    <td class="text-end add-ons" >
+                                        <?= htmlspecialchars($symbol) ?><?= number_format($row['price'], 2) ?>
+                                    </td>
                                 </tr>
-                                <?php
-                                    // Base price (plan price)
-                                    $base_price = (float)$row['price'];
 
-                                    // Addon cost calculation
-                                    $addon_total = 0;
-                                    if (!empty($row['addon_service'])) {
-                                        $addon_ids = explode(',', $row['addon_service']);
-                                        $addon_ids = array_map('intval', $addon_ids); // sanitize IDs
-
-                                        if (!empty($addon_ids)) {
-                                            $addon_id_list = implode(',', $addon_ids);
-                                            $addon_query = "SELECT name, cost FROM `add-on-service` WHERE id IN ($addon_id_list)";
-                                            $addon_result = $conn->query($addon_query);
-
-                                            while ($addon_row = $addon_result->fetch_assoc()) {
-                                                $addon_cost = (float)$addon_row['cost'];
-                                                $addon_total += $addon_cost;
-
-                                                echo "<tr>
-                                                        <td>" . htmlspecialchars($addon_row['name']) . " (Add-on)</td>
-                                                        <td class='text-end' id='currency-symbol-display'>" . htmlspecialchars($symbol) . number_format($addon_cost, 2) . "</td>
-                                                    </tr>";
-                                            }
-                                        }
-                                    }
-                                    // Subtotal before GST
-                                    $subtotal = $base_price + $addon_total;
-
-                                    // GST 18%
-                                    $gst = $subtotal * 0.18;
-
-                                    // Total amount = subtotal + GST
-                                    $grand_total = $subtotal + $gst;
-                                ?>
                                 <tr>
-                                    <td>Tax (GST 18%)</td>
-                                    <td class="text-end" id="currency-symbol-display"><?= htmlspecialchars($symbol) ?><?= number_format($gst, 2) ?></td>
+                                    <td class="add-ons">Tax</td>
+                                    <td class="text-end add-ons" >
+                                        <?= htmlspecialchars($symbol) ?><?= number_format($row['gst'], 2) ?>
+                                    </td>
                                 </tr>
-                                <?php if ($row['coupon_code']) { ?>
-                                <tr>
-                                    <td>Coupon Applied (<b><?php echo $row['coupon_code']; ?></b>)</td>
-                                    <td class="text-end" id="currency-symbol-display"><?= htmlspecialchars($symbol) ?><?= number_format($row['discount_amount'], 2) ?></td>
+                            </tbody>
+
+                            <?php
+                            $addon_ids = !empty($row['addon_service']) ? array_map('intval', explode(',', $row['addon_service'])) : [];
+
+                            if (!empty($addon_ids)) {
+                                $addon_id_list = implode(',', $addon_ids);
+                                $addon_query = "SELECT id, name, cost, gst FROM `add-on-service` WHERE id IN ($addon_id_list)";
+                                $addon_result = $conn->query($addon_query);
+
+                                while ($addon_row = $addon_result->fetch_assoc()) {
+                                    $addonId = $addon_row['id'];
+                            ?>
+                                <!-- Add-on Row -->
+                                <tr class="border-top">
+                                    <td onclick="toggleBreakdown('addon-<?= $addonId ?>')" style="cursor:pointer; user-select:none;">
+                                        <?= htmlspecialchars($addon_row['name']) ?> (Add-on)
+                                        &nbsp;
+                                        <span id="arrow-addon-<?= $addonId ?>"><i class="fas fa-chevron-down"></i></span>
+                                    </td>
+                                    <td class="text-end">
+                                        <?= htmlspecialchars($symbol) ?><?= number_format(floatval($row['addon_price']) + floatval($row['addon_gst']), 2) ?>
+                                    </td>
                                 </tr>
+
+                                <!-- Add-on Breakdown -->
+                                <tbody id="addon-<?= $addonId ?>" style="display:none;">
+                                    <tr>
+                                        <td class="add-ons">Addon Price</td>
+                                        <td class="text-end add-ons">
+                                            <?= htmlspecialchars($symbol) ?><?= number_format($row['addon_price'], 2) ?>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td class="add-ons">Addon Tax</td>
+                                        <td class="text-end add-ons">
+                                            <?= htmlspecialchars($symbol) ?><?= number_format($row['addon_gst'], 2) ?>
+                                        </td>
+                                    </tr>
+                                </tbody>
+
+                            <?php
+                                }
+                            }
+                            ?>
+                                <?php if ($row['existing_balance']) { ?>    
+                                    <tr class="border-top">
+                                        <td class="fw-semibold">Existing Plan</td>
+                                        <td class="text-end">
+                                            <?= htmlspecialchars($symbol) ?> <?php echo number_format($row['existing_balance'], 2); ?>
+                                        </td>
+                                    </tr>
                                 <?php } ?>
-                                <tr>
+                                <tr class="border-top">
                                     <td class="fw-bold">Payments</td>
-                                    <td class="text-end fw-bold" id="currency-symbol-display"><?= htmlspecialchars($symbol) ?><?= number_format($row['payment_made'], 2) ?></td>
+                                    <td class="text-end fw-bold" ><?= htmlspecialchars($symbol) ?><?= number_format($row['payment_made'], 2) ?></td>
                                 </tr>
-                                <tr>
+                                <tr class="border-top">
                                     <td class="fw-bold border-0">Total Payable</td>
-                                    <td class="text-end fw-bold border-0" id="currency-symbol-display">
+                                    <td class="text-end fw-bold border-0" >
                                         <?= htmlspecialchars($symbol) ?><?= number_format($row['balance_due'], 2) ?>
                                     </td>
                                 </tr>
@@ -398,7 +435,7 @@
     ?>
     <p class="fw-semibold" style="cursor: pointer;" onclick="togglePayments()">
         Payment Received (<?= $paymentCount ?>) 
-        <span id="arrow">▼</span>
+        <span id="arrow"><i class="fas fa-chevron-down"></i></span>
     </p>
     <div id="paymentTable">
     <table class="table mb-20">
@@ -441,18 +478,18 @@ document.getElementById('numericInput').addEventListener('input', function () {
 
     if (!isNaN(amount)) {
         const updatedBalance = originalBalance - amount;
-        document.getElementById('balance_due').value = updatedBalance.toFixed(2);;
+        document.getElementById('balance_due').value = updatedBalance.toFixed(2);
     } else {
         // Reset if input is not a number
-        document.getElementById('balance_due').value = originalBalance.toFixed(2);;
+        document.getElementById('balance_due').value = originalBalance.toFixed(2);
     }
 });
 
 document.addEventListener("DOMContentLoaded", function () {
-    const amountInput = document.getElementById("numericInput").toFixed(2);;
-    const balanceDue = parseFloat(document.getElementById("balance_due").value).toFixed(2);;
-    const errorText = document.getElementById("amountError").toFixed(2);;
-    const submit = document.getElementById("submit").toFixed(2);;
+    const amountInput = document.getElementById("numericInput");
+    const balanceDue = parseFloat(document.getElementById("balance_due").value);
+    const errorText = document.getElementById("amountError");
+    const submit = document.getElementById("submit");
     amountInput.addEventListener("input", function () {
         const enteredAmount = parseFloat(this.value);
 
@@ -485,17 +522,33 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     });
 });
+function toggleBreakdowns() {
+    let box = document.getElementById("breakdown-rows");
+    let arrow = document.getElementById("breakdown-arrow");
 
-function togglePayments() {
-    let table = document.getElementById("paymentTable");
-    let arrow = document.getElementById("arrow");
-    if (table.style.display === "none") {
-        table.style.display = "block";
-        arrow.textContent = "▼"; // down arrow
+    if (box.style.display === "none" || box.style.display === "") {
+        box.style.display = "table-row-group";
+        arrow.innerHTML = '<i class="fas fa-chevron-up"></i>';
     } else {
-        table.style.display = "none";
-        arrow.textContent = "►"; // right arrow
+        box.style.display = "none";
+        arrow.innerHTML = '<i class="fas fa-chevron-down"></i>';
     }
 }
 </script>
+<script>
+function toggleBreakdown(id) {
+    let box = document.getElementById(id);
+    let arrow = document.getElementById('arrow-' + id);
+
+    if (box.style.display === "none" || box.style.display === "") {
+        box.style.display = "table-row-group";
+        arrow.innerHTML = '<i class="fas fa-chevron-up"></i>';
+    } else {
+        box.style.display = "none";
+        arrow.innerHTML = '<i class="fas fa-chevron-down"></i>';
+    }
+}
+
+</script>
+
 <?php include './partials/layouts/layoutBottom.php' ?>
