@@ -45,7 +45,7 @@
 
         $payment_made = $_POST['payment_made'];
 
-        $total_amount = floatval($row['amount']) + floatval($row['payment_made']);
+        $total_amount = floatval($amount) + floatval($payment_made);
         $created_at = date("Y-m-d H:i:s");
         $remarks = $_POST['remarks'];
         $balance_due = $_POST['balance_due'];
