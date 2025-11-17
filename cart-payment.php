@@ -728,12 +728,12 @@
                             $sql_package = "INSERT INTO orders 
                                 (user_id, invoice_id, plan, duration, amount, gst, price, addon_price, addon_gst, status, payment_method, discount, payment_made, created_on, subtotal, balance_due, addon_service, type) 
                                 VALUES 
-                                ('$client_id', '$pkg_invoice_id', '$pkg_id', '$pkg_duration', '$pkg_amount', '$pkg_gst', '$pkg_price', NULL, NULL, 'Pending', '$pay_method', '$pkg_discount', '$payment_made', '$created_at', '$pkg_subtotal', '$pkg_balance', '$pkg_id', 'package')";
+                                ('$client_id', '$pkg_invoice_id', '$pkg_id', '$pkg_duration', '$pkg_amount', '$pkg_gst', '$pkg_price', '', '', 'Pending', '$pay_method', '$pkg_discount', '$payment_made', '$created_at', '$pkg_subtotal', '$pkg_balance', '$pkg_id', 'package')";
                             mysqli_query($conn, $sql_package);
 
                             // Insert into websites (plan = ID ✅)
                             $siteInsertPkg = "INSERT INTO websites (user_id, domain, plan, duration, renewal_duration, expired_at, status, cat_id, invoice_id, product_id, type) 
-                                            VALUES ('$client_id', 'N/A', '$pkg_id', '$pkg_duration', '', NULL, 'Pending', '$pkg_cat_id', '$pkg_invoice_id', '$pkg_id', 'package')";
+                                            VALUES ('$client_id', 'N/A', '$pkg_id', '$pkg_duration', '', '', 'Pending', '$pkg_cat_id', '$pkg_invoice_id', '$pkg_id', 'package')";
                             mysqli_query($conn, $siteInsertPkg);
                         }
                     }
@@ -819,7 +819,7 @@
                             $sql_product = "INSERT INTO orders 
                                 (user_id, invoice_id, plan, duration, amount, gst, price, addon_price, addon_gst, status, payment_method, discount, payment_made, created_on, subtotal, balance_due, addon_service, type) 
                                 VALUES 
-                                ('$client_id', '$prod_invoice_id', '$prod_id', '$prod_duration', '$prod_amount', '$prod_gst', '$prod_price', NULL, NULL, 'Pending', '$pay_method', '$prod_discount', '$payment_made', '$created_at', '$prod_subtotal', '$prod_balance', '$prod_id', 'product')";
+                                ('$client_id', '$prod_invoice_id', '$prod_id', '$prod_duration', '$prod_amount', '$prod_gst', '$prod_price', '', '', 'Pending', '$pay_method', '$prod_discount', '$payment_made', '$created_at', '$prod_subtotal', '$prod_balance', '$prod_id', 'product')";
                             mysqli_query($conn, $sql_product);
 
                             // Insert into websites (plan = NAME ✅)
