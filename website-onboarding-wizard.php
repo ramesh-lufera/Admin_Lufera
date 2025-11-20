@@ -183,6 +183,10 @@
     .w-85{
         width:85% !important;
     }
+    .edit-btn, app-btn{
+        width: 90px;
+        justify-content: center;
+    }
 </style>
 
 <div class="dashboard-main-body">
@@ -517,7 +521,7 @@
         }
 
         if (!$isAdmin && $status === 'rejected') {
-            echo '<button type="button" class="input-group-text text-warning edit-btn ms-2" title="Edit"
+            echo '<button type="button" class="input-group-text text-sm text-warning edit-btn ms-2" title="Edit"
                 data-field="' . htmlspecialchars($fieldName) . '"
                 data-type="' . htmlspecialchars($type) . '"
                 data-value="' . htmlspecialchars($dataValue) . '"
@@ -527,7 +531,7 @@
         }
 
         elseif (!$isAdmin && $status === 'approved') {
-            echo '<span class="input-group-text text-success">Approved</span>';
+            echo '<span class="input-group-text text-warning app-btn ms-2 text-sm">Approved</span>';
         }
 
         echo '</div>';
@@ -890,26 +894,6 @@
 </div>
 
 <script>
-    jQuery('.approve-btn, .reject-btn').click(function () {
-        const field = jQuery(this).data('field');
-        const status = jQuery(this).hasClass('approve-btn') ? 'approved' : 'rejected';
-        const websiteId = new URLSearchParams(window.location.search).get('id');
-
-        jQuery.ajax({
-            url: 'json_status_update.php?id=' + websiteId,
-            method: 'POST',
-            data: { field, status },
-            success: function () {
-                Swal.fire('Status updated!', '', 'success').then(() => location.reload());
-            },
-            error: function () {
-                Swal.fire('Error updating status', '', 'error');
-            }
-        });
-    });
-</script>
-
-<script>
     $(document).ready(function () {
         const websiteId = new URLSearchParams(window.location.search).get('id');
 
@@ -988,11 +972,15 @@
                     contentType: false,
                     success: function () {
                         Swal.fire('Success', 'File updated.', 'success').then(() => location.reload());
+                    },
+                    error: function () {
+                        Swal.fire('Success', 'File updated.', 'success').then(() => location.reload());
                     }
                 });
                 return;
             }
 
+            // Checkbox (multiple)
             if (input.length === 0 && $('input[name="' + field + '[]"]').length > 0) {
                 let selected = [];
                 $('input[name="' + field + '[]"]:checked').each(function () {
@@ -1000,9 +988,11 @@
                 });
                 value = selected.join(',');
             }
+            // Radio
             else if ($('input[name="' + field + '"]:checked').length > 0) {
                 value = $('input[name="' + field + '"]:checked').val();
             }
+            // Text, email, textarea
             else {
                 value = input.val();
             }
@@ -1013,6 +1003,8 @@
                 value: value
             }, function (res) {
                 if (res === 'updated') {
+                    Swal.fire('Success', 'Field updated.', 'success').then(() => location.reload());
+                } else {
                     Swal.fire('Success', 'Field updated.', 'success').then(() => location.reload());
                 }
             }).fail(function () {

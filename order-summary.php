@@ -466,13 +466,14 @@
     </table>
     </div>
 </div>
+
 <script>
-    document.getElementById("numericInput").addEventListener("input", function () {
-    this.value = this.value.replace(/\D/g, ''); // Remove non-digits
-  });
-</script>
-<script>
+    function sanitizeNumberInput(el) {
+            el.value = el.value.replace(/[^0-9.]/g, '');
+            el.value = el.value.replace(/(\..*)\./g, '$1');
+        }
 document.getElementById('numericInput').addEventListener('input', function () {
+    sanitizeNumberInput(this);
     const amount = parseFloat(this.value);
     const originalBalance = parseFloat(<?php echo json_encode($row['balance_due']); ?>);
 

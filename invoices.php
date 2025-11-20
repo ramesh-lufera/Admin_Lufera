@@ -559,49 +559,17 @@
                            
                             <td class="text-center">
                                 <?php 
-                                if ($row['is_Active'] === '0'){ ?>
-                                    <button class="btn btn-danger btn-sm fw-medium text-white me-2">
-                                        In Active
-                                    </button>
+                                if ($row['balance_due'] === '0.00'){ ?>
+                                    Fully Paid
                                 <?php } else { ?>
-                                <?php if (($role === '1' || $role === '2') && $row['status'] === 'Pending'){ ?>
-                                    <input type="hidden" name="approve_id" value="<?= $row['id'] ?>">
-                                    <button class="btn btn-default lufera-bg btn-sm fw-medium text-white me-2">
-                                            New Order
-                                    </button>
-                                <?php } else if(($role != '1' || $role != '2') && $row['status'] === 'Pending'){ ?>
-                                    <button class="btn btn-danger btn-sm fw-medium text-white me-2">
-                                        Pending Confirmation
-                                    </button>
+                                    Proforma Invoice
                                 <?php } ?>
-                                <?php if (($role === '1' || $role === '2') && $row['status'] === 'Approved'){ ?>
-                                    <input type="hidden" name="approve_id" value="<?= $row['id'] ?>">
-                                    <button class="btn btn-success btn-sm fw-medium text-white me-2">
-                                    Approved
-                                    </button>
-                                <?php } else if(($role != '1' || $role != '2') && $row['status'] === 'Approved'){ ?>
-                                    <button class="btn btn-success btn-sm fw-medium text-white me-2">
-                                    Approved
-                                    </button>
-                                <?php } ?>
-                                <?php if ($row['status'] === 'Cancelled'){ ?>
-                                    <button class="btn btn-secondary btn-sm fw-medium text-white me-2">
-                                        Cancelled
-                                    </button>
-                                <?php } }?>
                             </td>
                             <td class="text-center">
                                 <?php
                                     $invoice_id = $row['invoice_id'];
                                     $expiredAt = isset($row['expired_at']) ? $row['expired_at'] : null;
                                     $todayDate = date('Y-m-d');
-
-                                    // // Determine link type based on expiry
-                                    // if (!empty($expiredAt) && $todayDate > $expiredAt) {
-                                    //     $type = 'renewal';
-                                    // } else {
-                                    //     $type = 'normal';
-                                    // }
 
                                     $checkOrder = mysqli_query($conn, "SELECT id FROM orders WHERE invoice_id = '$invoice_id' LIMIT 1");
 
@@ -618,18 +586,6 @@
                                 <!-- <a href="invoice-preview.php?id=<?php echo $row['invoice_id']; ?>" class="fa fa-file view-user-btn bg-warning-focus text-warning-600 bg-hover-warning-200 fw-medium w-32-px h-32-px d-inline-flex justify-content-center align-items-center rounded-circle"> -->
                                 <a href="invoice-preview.php?id=<?php echo $invoice_id; ?>&type=<?php echo $type; ?>" class="fa fa-file view-user-btn bg-warning-focus text-warning-600 bg-hover-warning-200 fw-medium w-32-px h-32-px d-inline-flex justify-content-center align-items-center rounded-circle">
                                 </a>
-                                <!-- <?php if (($role === '1' || $role === '2') && $row['status'] === 'Pending'){ ?>
-                                    <form method="POST" style="display:inline;">
-                                        <input type="hidden" name="approve_id" value="<?= $row['id'] ?>">
-                                        <button type="submit" class="fa fa-check-square view-user-btn bg-success-focus text-success-600 bg-hover-success-200 fw-medium w-32-px h-32-px d-inline-flex justify-content-center align-items-center rounded-circle">
-                                        </button>
-                                    </form>
-
-                                    <form method="POST" style="display:inline;">
-                                        <input type="hidden" name="cancel_id" value="<?= $row['id'] ?>">
-                                        <button type="submit" class="fa fa-times-circle view-user-btn bg-danger-focus text-danger-600 bg-hover-danger-200 fw-medium w-32-px h-32-px d-inline-flex justify-content-center align-items-center rounded-circle" title="Cancel Order"></button>
-                                    </form>
-                                <?php } ?> -->
                             </td>
                         </tr>
                         <?php endwhile; ?>
