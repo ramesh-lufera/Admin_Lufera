@@ -891,11 +891,20 @@
                     $mail->addAddress($toEmail, $toName);
 
                     $mail->isHTML(true);
-                    $mail->Subject = "Purchase Confirmation - Order #$receipt_id";
+                    
+                    if (!empty($hostinger_balance)) {
+                        $mail_text = "Upgrade";
+                    }
+                    else{
+                        $mail_text = "Purchase";
+                    }
+                    
+                        $mail->Subject = "$mail_text Confirmation - Order #$receipt_id";
+                    
                     $mail->Body = '
                         <!DOCTYPE html>
                         <html>
-                        <head><meta charset="UTF-8"><title>Purchase Confirmation</title></head>
+                        <head><meta charset="UTF-8"><title>'.$mail_text.' Confirmation</title></head>
                         <body style="margin:0;padding:0;background:#f5f5f5;font-family:Roboto,Arial,sans-serif;">
                         <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background:#f5f5f5;padding:30px 0;">
                             <tr><td align="center">
@@ -906,7 +915,7 @@
                                     </td></tr>
                                     <tr><td style="border-top:1px solid #eaeaea;"></td></tr>
                                     <tr><td style="padding:30px 40px;text-align:left;font-size:15px;line-height:1.6;color:#101010;">
-                                        <h3 style="margin:0 0 15px;font-size:20px;font-weight:500;">Purchase Confirmation</h3>
+                                        <h3 style="margin:0 0 15px;font-size:20px;font-weight:500;">'.$mail_text.' Confirmation</h3>
                                         <p>Hello <b>' . htmlspecialchars($toName) . '</b>,</p>
                                         <p>Thank you for your purchase! Here are the details of your order:</p>
                                         <table cellpadding="8" cellspacing="0" border="0" width="100%" style="border:1px solid #eaeaea;margin:20px 0;font-size:14px;">
@@ -936,12 +945,17 @@
                 } catch (Exception $e) {
                     error_log("Purchase email failed: " . $mail->ErrorInfo);
                 }
-
+                if (!empty($hostinger_balance)) {
+                        $mail_text = "Upgrade";
+                    }
+                    else{
+                        $mail_text = "Purchase";
+                    }
                 echo "
                 <script>
                     Swal.fire({
                         title: 'Success!',
-                        text: 'Purchased Successfully.',
+                        text: '$mail_text Successfully.',
                         confirmButtonText: 'OK',
                         allowOutsideClick: false
                     }).then((result) => {

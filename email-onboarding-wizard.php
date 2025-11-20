@@ -13,7 +13,7 @@
     }
 
     .form-control, textarea, input[type="file"] {
-        border-radius: 10px !important;
+        /* border-radius: 10px !important; */
         border: 1px solid #ccc !important;
         padding: 12px 15px !important;
         width: 100% !important;
@@ -399,10 +399,18 @@
         $styleClass = $status === 'approved' ? 'field-approved' : ($status === 'rejected' ? 'field-rejected' : '');
         echo '<div class="input-group">';
 
+        $copyButton = '';
+        if (in_array($type, ['text', 'textarea', 'select', 'date'])) {
+            $copyButton = '<button type="button" class="btn btn-outline-secondary btn-sm copy-btn" data-field="' . htmlspecialchars($fieldName) . '" title="Copy Value"><i class="fa fa-copy"></i></button>';
+            if ($copyButton) echo $copyButton;
+        }
+        
         if ($type === 'text' || $type === 'email' || $type === 'url' || $type === 'date') {
             echo '<input type="' . $type . '" class="form-control w-85 ' . $styleClass . '" id="' . $inputId . '" name="' . htmlspecialchars($fieldName) . '" placeholder="' . htmlspecialchars($placeholder) . '" value="' . htmlspecialchars($val) . '" ' . $isReadonly . '>';
+            if ($copyButton) echo $copyButton;
         } elseif ($type === 'textarea') {           
             echo '<textarea class="form-control w-85 ' . $styleClass . '" id="' . $inputId . '" name="' . htmlspecialchars($fieldName) . '" rows="3" placeholder="' . htmlspecialchars($placeholder) . '" ' . $isReadonly . '>' . htmlspecialchars($val) . '</textarea>';
+            if ($copyButton) echo $copyButton;
         } elseif ($type === 'radio') {
             foreach ($options as $option) {
                 $checked = ($val == $option) ? 'checked' : '';
@@ -442,6 +450,7 @@
                 echo '<option value="' . htmlspecialchars($option) . '" ' . $selected . '>' . htmlspecialchars(ucfirst($option)) . '</option>';
             }
             echo '</select>';
+            if ($copyButton) echo $copyButton;
         }
 
         if ($isAdmin) {
@@ -808,26 +817,6 @@
 </div>
 
 <script>
-    jQuery('.approve-btn, .reject-btn').click(function () {
-        const field = jQuery(this).data('field');
-        const status = jQuery(this).hasClass('approve-btn') ? 'approved' : 'rejected';
-        const websiteId = new URLSearchParams(window.location.search).get('id');
-
-        jQuery.ajax({
-            url: 'json_status_update.php?id=' + websiteId,
-            method: 'POST',
-            data: { field, status },
-            success: function () {
-                Swal.fire('Status updated!', '', 'success').then(() => location.reload());
-            },
-            error: function () {
-                Swal.fire('Error updating status', '', 'error');
-            }
-        });
-    });
-</script>
-
-<script>
     $(document).ready(function () {
         const websiteId = new URLSearchParams(window.location.search).get('id');
 
@@ -1096,5 +1085,56 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 });
+</script>
+<script>
+    $(document).ready(function() {
+        $('.copy-btn').click(function() {
+            const field = $(this).data('field');
+            const input = $('#field_' + field);
+            let value = '';
+
+            if (input.is('select')) {
+                value = input.find('option:selected').text() || input.val();
+            } else {
+                value = input.val();
+            }
+
+            if (value) {
+                navigator.clipboard.writeText(value).then(function() {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Copied!',
+                        text: 'Value copied to clipboard.',
+                        timer: 1500,
+                        showConfirmButton: false
+                    });
+                }).catch(function(err) {
+                    console.error('Failed to copy: ', err);
+                    // Fallback for older browsers
+                    const textArea = document.createElement('textarea');
+                    textArea.value = value;
+                    document.body.appendChild(textArea);
+                    textArea.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(textArea);
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Copied!',
+                        text: 'Value copied to clipboard.',
+                        timer: 1500,
+                        showConfirmButton: false
+                    });
+                });
+            } else {
+                Swal.fire({
+                    icon: 'info',
+                    title: 'No value',
+                    text: 'No value to copy.',
+                    timer: 1500,
+                    showConfirmButton: false
+                });
+            }
+        });
+    });
 </script>
 <?php include './partials/layouts/layoutBottom.php'; ?>

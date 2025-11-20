@@ -13,7 +13,7 @@
     }
 
     .form-control, textarea, input[type="file"] {
-        border-radius: 10px !important;
+        /* border-radius: 10px !important; */
         border: 1px solid #ccc !important;
         padding: 12px 15px !important;
         width: 100% !important;
@@ -183,10 +183,6 @@
     }
     .w-85{
         width:85% !important;
-    }
-    .edit-icon, .update-icon, .approve-btn, .reject-btn{
-        width:45px;
-        height:45px;
     }
 </style>
 <div class="dashboard-main-body">
@@ -453,10 +449,17 @@
         $styleClass = $status === 'approved' ? 'field-approved' : ($status === 'rejected' ? 'field-rejected' : '');
         echo '<div class="input-group">';
 
+        $copyButton = '';
+        if (in_array($type, ['text', 'textarea', 'select', 'date'])) {
+            $copyButton = '<button type="button" class="btn btn-outline-secondary btn-sm copy-btn" data-field="' . htmlspecialchars($fieldName) . '" title="Copy Value"><i class="fa fa-copy"></i></button>';
+        }
+
         if ($type === 'text' || $type === 'email' || $type === 'url' || $type === 'date') {
             echo '<input type="' . $type . '" class="form-control w-85 ' . $styleClass . '" id="' . $inputId . '" name="' . htmlspecialchars($fieldName) . '" placeholder="' . htmlspecialchars($placeholder) . '" value="' . htmlspecialchars($val) . '" ' . $isReadonly . '>';
+            if ($copyButton) echo $copyButton;
         } elseif ($type === 'textarea') {           
             echo '<textarea class="form-control w-85 ' . $styleClass . '" id="' . $inputId . '" name="' . htmlspecialchars($fieldName) . '" rows="3" placeholder="' . htmlspecialchars($placeholder) . '" ' . $isReadonly . '>' . htmlspecialchars($val) . '</textarea>';
+            if ($copyButton) echo $copyButton;
         } elseif ($type === 'radio') {
             foreach ($options as $option) {
                 $checked = ($val == $option) ? 'checked' : '';
@@ -496,11 +499,12 @@
                 echo '<option value="' . htmlspecialchars($option) . '" ' . $selected . '>' . htmlspecialchars(ucfirst($option)) . '</option>';
             }
             echo '</select>';
+            if ($copyButton) echo $copyButton;
         }
 
         if ($isAdmin) {
-            echo '<div class="btn-group ms-1">';
-            echo '<button type="button" class="btn btn-sm edit-icon" style="background-color: #FEC700; color: black;" data-field="' . htmlspecialchars($fieldName) . '" title="Edit">Edit</button>';
+            echo '<div class="btn-group ms-1 mt-2">';
+            echo '<button type="button" class="btn btn-sm edit-icon" style="background-color: #FEC700; color: #fff;" data-field="' . htmlspecialchars($fieldName) . '" title="Edit">Edit</button>';
             echo '<button type="button" class="btn btn-sm update-icon d-none" style="background-color: #00B4D8; color: white;" data-field="' . htmlspecialchars($fieldName) . '" title="Update">Update</button>';
             echo '<button type="button" class="btn btn-success btn-sm approve-btn" data-field="' . htmlspecialchars($fieldName) . '" title="Approve">Approve</button>';
             echo '<button type="button" class="btn btn-danger btn-sm reject-btn" data-field="' . htmlspecialchars($fieldName) . '" title="Reject">Reject</button>';
@@ -927,23 +931,7 @@
     });
 
     // Approve/Reject button handlers
-    jQuery('.approve-btn, .reject-btn').click(function () {
-        const field = jQuery(this).data('field');
-        const status = jQuery(this).hasClass('approve-btn') ? 'approved' : 'rejected';
-        const websiteId = new URLSearchParams(window.location.search).get('id');
-
-        jQuery.ajax({
-            url: 'json_status_update.php?id=' + websiteId,
-            method: 'POST',
-            data: { field, status },
-            success: function () {
-                Swal.fire('Status updated!', '', 'success').then(() => location.reload());
-            },
-            error: function () {
-                Swal.fire('Error updating status', '', 'error');
-            }
-        });
-    });
+    
     $(document).ready(function () {
         const websiteId = new URLSearchParams(window.location.search).get('id');
 
@@ -1245,5 +1233,55 @@
     updateProgressBar();
 });
 </script>
+<script>
+    $(document).ready(function() {
+        $('.copy-btn').click(function() {
+            const field = $(this).data('field');
+            const input = $('#field_' + field);
+            let value = '';
 
+            if (input.is('select')) {
+                value = input.find('option:selected').text() || input.val();
+            } else {
+                value = input.val();
+            }
+
+            if (value) {
+                navigator.clipboard.writeText(value).then(function() {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Copied!',
+                        text: 'Value copied to clipboard.',
+                        timer: 1500,
+                        showConfirmButton: false
+                    });
+                }).catch(function(err) {
+                    console.error('Failed to copy: ', err);
+                    // Fallback for older browsers
+                    const textArea = document.createElement('textarea');
+                    textArea.value = value;
+                    document.body.appendChild(textArea);
+                    textArea.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(textArea);
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Copied!',
+                        text: 'Value copied to clipboard.',
+                        timer: 1500,
+                        showConfirmButton: false
+                    });
+                });
+            } else {
+                Swal.fire({
+                    icon: 'info',
+                    title: 'No value',
+                    text: 'No value to copy.',
+                    timer: 1500,
+                    showConfirmButton: false
+                });
+            }
+        });
+    });
+</script>
 <?php include './partials/layouts/layoutBottom.php'; ?>
