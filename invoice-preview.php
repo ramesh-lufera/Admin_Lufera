@@ -318,7 +318,7 @@
 
                                                             // ✅ Compute GST amount and new totals
                                                             $gst_amount = $row['subtotal'] * ($tax_rate / 100);
-                                                            $total_after_gst = floatval($row['subtotal']) + floatval($row['gst_amount']) - floatval($row['discount_amount']);
+                                                            $total_after_gst = floatval($row['subtotal']) + floatval($gst_amount) - floatval($row['discount_amount']);
                                                             $balance_due = $total_after_gst - $row['payment_made'];
                                                         ?> -->
                                                         <?php
@@ -391,7 +391,7 @@
                                                             // Compute GST + Totals
                                                             // ================================
                                                             $gst_amount = $row['subtotal'] * ($tax_rate / 100);
-                                                            $total_after_gst = floatval($row['subtotal']) + floatval($row['gst_amount']) - floatval($row['discount_amount']);
+                                                            $total_after_gst = floatval($row['subtotal']) + floatval($gst_amount) - floatval($row['discount_amount']);
                                                             $balance_due = $total_after_gst - $row['payment_made'];
                                                         ?>
                                                         <!-- <tr>
