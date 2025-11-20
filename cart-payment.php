@@ -99,6 +99,7 @@
 
             // ✅ Update renewal info
             $renewal_period = $_POST['period'] ?? '';
+            $plan_name = $_POST['plan_name'] ?? '';
             $duration = $renewal_period ?: $duration;
             $price = isset($_POST['total']) ? floatval($_POST['total']) : floatval($price);
 
@@ -523,6 +524,13 @@
             $username  = $row['username'];  // purchaser username
             $toName    = $row['username'];
 
+ if (!empty($hostinger_balance)) {
+                        $mail_text = "Upgrade";
+                    }
+                    else{
+                        $mail_text = "Purchase";
+                    }
+
             // // Only set addon_price if this is an addon row
             // $insert_addon_price = !empty($get_addon) ? $addon_total : '';
 
@@ -860,7 +868,7 @@
                 <script>
                     Swal.fire({
                         title: 'Processing...',
-                        text: 'Please wait while we finalize your purchase.',
+                        text: 'Please wait while we finalize your $mail_text.',
                         allowOutsideClick: false,
                         didOpen: () => {
                             Swal.showLoading();
@@ -892,12 +900,7 @@
 
                     $mail->isHTML(true);
                     
-                    if (!empty($hostinger_balance)) {
-                        $mail_text = "Upgrade";
-                    }
-                    else{
-                        $mail_text = "Purchase";
-                    }
+                   
                     
                         $mail->Subject = "$mail_text Confirmation - Order #$receipt_id";
                     
@@ -945,12 +948,7 @@
                 } catch (Exception $e) {
                     error_log("Purchase email failed: " . $mail->ErrorInfo);
                 }
-                if (!empty($hostinger_balance)) {
-                        $mail_text = "Upgrade";
-                    }
-                    else{
-                        $mail_text = "Purchase";
-                    }
+                
                 echo "
                 <script>
                     Swal.fire({

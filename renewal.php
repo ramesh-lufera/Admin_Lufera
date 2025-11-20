@@ -135,6 +135,7 @@
                 <form action="cart-payment.php" method="POST" id="renewalForm">
                     <input type="hidden" name="renewal" value="1">
                     <input type="hidden" name="id" value="<?= htmlspecialchars($websiteId) ?>">
+                    <input type="hidden" name="plan_name" value="<?= htmlspecialchars($Plan) ?>">
                     <input type="hidden" name="period" id="periodInput">
                     <!-- <input type="hidden" name="expiration_date" id="expirationDateInput">  -->
                      <input type="hidden" name="expiration_date" id="expirationDateInput" value="<?= htmlspecialchars($CreatedAt) ?>"> 

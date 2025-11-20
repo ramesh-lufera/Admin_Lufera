@@ -368,31 +368,66 @@ document.addEventListener('DOMContentLoaded', function() {
 
       try {
         const s = JSON.parse(row.services || '{}');
+        // if (s.apply_to) {
+        //   s.apply_to.forEach(v => {
+        //     if (v === 'packages') {
+        //       document.getElementById('applyPackages').checked = true;
+        //       document.getElementById('packageList').classList.remove('d-none');
+        //       if (s.packages) s.packages.forEach(id=>{
+        //         document.querySelector(`.pkg-item[value="${id}"]`)?.setAttribute('checked','checked');
+        //       });
+        //     }
+        //     if (v === 'products') {
+        //       document.getElementById('applyProducts').checked = true;
+        //       document.getElementById('productList').classList.remove('d-none');
+        //       if (s.products) s.products.forEach(id=>{
+        //         document.querySelector(`.prd-item[value="${id}"]`)?.setAttribute('checked','checked');
+        //       });
+        //     }
+        //     if (v === 'add-on-services') {
+        //       document.getElementById('applyAddons').checked = true;
+        //       document.getElementById('addonList').classList.remove('d-none');
+        //       if (s.addons) s.addons.forEach(id=>{
+        //         document.querySelector(`.addon-item[value="${id}"]`)?.setAttribute('checked','checked');
+        //       });
+        //     }
+        //   });
+        // }
+        
+        // Clear all child checkbox selections first
+        document.querySelectorAll('.pkg-item, .prd-item, .addon-item').forEach(cb => cb.checked = false);
+
         if (s.apply_to) {
           s.apply_to.forEach(v => {
             if (v === 'packages') {
               document.getElementById('applyPackages').checked = true;
               document.getElementById('packageList').classList.remove('d-none');
               if (s.packages) s.packages.forEach(id=>{
-                document.querySelector(`.pkg-item[value="${id}"]`)?.setAttribute('checked','checked');
+                const el = document.querySelector(`.pkg-item[value="${id}"]`);
+                if (el) el.checked = true;
               });
             }
+
             if (v === 'products') {
               document.getElementById('applyProducts').checked = true;
               document.getElementById('productList').classList.remove('d-none');
               if (s.products) s.products.forEach(id=>{
-                document.querySelector(`.prd-item[value="${id}"]`)?.setAttribute('checked','checked');
+                const el = document.querySelector(`.prd-item[value="${id}"]`);
+                if (el) el.checked = true;
               });
             }
+
             if (v === 'add-on-services') {
               document.getElementById('applyAddons').checked = true;
               document.getElementById('addonList').classList.remove('d-none');
               if (s.addons) s.addons.forEach(id=>{
-                document.querySelector(`.addon-item[value="${id}"]`)?.setAttribute('checked','checked');
+                const el = document.querySelector(`.addon-item[value="${id}"]`);
+                if (el) el.checked = true;
               });
             }
           });
         }
+
       } catch(e){ console.error(e); }
 
       new bootstrap.Modal(modalEl).show();
