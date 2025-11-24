@@ -932,7 +932,11 @@
                                                 <button class="btn text-white btn-success text-sm mb-10">Invoice</button>
                                             </a>
 
-                                            <a href="order-summary.php?id=<?=$row['invoice_id']?>">
+                                            <!-- <a href="order-summary.php?id=<?=$row['invoice_id']?>">
+                                                <button class="btn text-white btn-danger text-sm mb-10">View More</button>
+                                            </a> -->
+
+                                            <a href="order-summary.php?id=<?php echo $invoice_id; ?>&type=<?php echo $invoiceType; ?>">
                                                 <button class="btn text-white btn-danger text-sm mb-10">View More</button>
                                             </a>
                                         </div>

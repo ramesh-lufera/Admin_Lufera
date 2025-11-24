@@ -1,20 +1,53 @@
 <?php include './partials/layouts/layoutTop.php' ?>
 <?php
     $invoice_id = $_GET['id'];
+    $type = $_GET['type'] ?? 'normal';
     //$invoice = "select * from orders where invoice_id = $invoice_id";
     
-    $invoice = "
-    SELECT
-        orders.*,
-        CASE 
-            WHEN orders.type = 'package' THEN package.package_name
-            WHEN orders.type = 'product' THEN products.name
-            ELSE orders.plan
-        END AS plan_name
-        FROM orders
-        LEFT JOIN package ON (orders.type = 'package' AND orders.plan = package.id)
-        LEFT JOIN products ON (orders.type = 'product' AND orders.plan = products.id)
-    where invoice_id = $invoice_id";
+    // $invoice = "
+    // SELECT
+    //     orders.*,
+    //     CASE 
+    //         WHEN orders.type = 'package' THEN package.package_name
+    //         WHEN orders.type = 'product' THEN products.name
+    //         ELSE orders.plan
+    //     END AS plan_name
+    //     FROM orders
+    //     LEFT JOIN package ON (orders.type = 'package' AND orders.plan = package.id)
+    //     LEFT JOIN products ON (orders.type = 'product' AND orders.plan = products.id)
+    // where invoice_id = $invoice_id";
+
+    if ($type === 'renewal') {
+        // ✅ Fetch from renewal_invoices when renewal invoice
+        $invoice = "
+            SELECT
+                r.*,
+                CASE 
+                    WHEN r.type = 'package' THEN p.package_name
+                    WHEN r.type = 'product' THEN pr.name
+                    ELSE r.plan
+                END AS plan_name
+            FROM renewal_invoices r
+            LEFT JOIN package p ON (r.type = 'package' AND r.plan = p.id)
+            LEFT JOIN products pr ON (r.type = 'product' AND r.plan = pr.id)
+            WHERE r.invoice_id = '$invoice_id'
+        ";
+    } else {
+        $invoice = "
+            SELECT
+                orders.*,
+                CASE 
+                    WHEN orders.type = 'package' THEN package.package_name
+                    WHEN orders.type = 'product' THEN products.name
+                    ELSE orders.plan
+                END AS plan_name
+                FROM orders
+                LEFT JOIN package ON (orders.type = 'package' AND orders.plan = package.id)
+                LEFT JOIN products ON (orders.type = 'product' AND orders.plan = products.id)
+            where invoice_id = $invoice_id
+        ";
+    }
+
     $result = $conn->query($invoice);
     $row = $result->fetch_assoc();
     $user_id = $row['user_id'];
@@ -118,10 +151,10 @@
                 <div>
                     <?php 
                     if($row2['role'] == "1" || $row2['role'] == "2") {?>  
-                    <button type="button" class="btn btn-sm btn-primary radius-8 d-inline-flex align-items-center gap-1" data-bs-toggle="modal" data-bs-target="#exampleModal">
-                        <iconify-icon icon="lucide:edit" class="text-xl"></iconify-icon>
-                        Record Payment
-                    </button>
+                        <button type="button" class="btn btn-sm btn-primary radius-8 d-inline-flex align-items-center gap-1" data-bs-toggle="modal" data-bs-target="#exampleModal">
+                            <iconify-icon icon="lucide:edit" class="text-xl"></iconify-icon>
+                            Record Payment
+                        </button>
                     <?php } ?>
                     <button type="button" class="btn btn-sm btn-success radius-8 d-inline-flex align-items-center gap-1" data-bs-toggle="modal" data-bs-target="#Payment">
                         <?= htmlspecialchars($symbol) ?> Payment History

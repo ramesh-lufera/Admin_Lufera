@@ -387,6 +387,24 @@
                         }
                     }
                     $stmt->close();
+
+                    // ===================== SEND NOTIFICATION FOR RENEWAL =====================
+                    if ($role != '1' && $role != '2') {
+                        date_default_timezone_set('Asia/Kolkata');
+                        $msg = "$username has renewed a plan.";
+
+                        $adminQuery = $conn->query("SELECT user_id, email, username FROM users WHERE role IN ('1', '2')");
+                        while ($adminRow = $adminQuery->fetch_assoc()) {
+                            $adminUserId = $adminRow['user_id'];
+                            $adminEmail  = $adminRow['email'];
+                            $adminName   = $adminRow['username'];
+                            $createdAt = date('Y-m-d H:i:s');
+
+                            $stmt2 = $conn->prepare("INSERT INTO notifications (user_id, message, n_photo, created_at) VALUES (?, ?, ?, ?)");
+                            $stmt2->bind_param("ssss", $adminUserId, $msg, $photo, $createdAt);
+                            $stmt2->execute();
+                        }
+                    }
                 }
 
                 // ✅ Calculate GST and totals using correct renewal tax rate
@@ -524,7 +542,7 @@
             $username  = $row['username'];  // purchaser username
             $toName    = $row['username'];
 
- if (!empty($hostinger_balance)) {
+            if (!empty($hostinger_balance)) {
                         $mail_text = "Upgrade";
                     }
                     else{
