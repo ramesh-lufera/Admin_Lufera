@@ -75,22 +75,30 @@
         $invoice_no = $_POST['invoice_no'];
         $payment_method = $_POST['payment_method'];
         $amount = $_POST['amount'];
-
         $payment_made = $_POST['payment_made'];
-
         $total_amount = floatval($amount) + floatval($payment_made);
         $created_at = date("Y-m-d H:i:s");
         $remarks = $_POST['remarks'];
         $balance_due = $_POST['balance_due'];
         $payment_id = generatePaymentID($conn);
+
         $sql = "INSERT INTO record_payment (payment_id, orders_id, invoice_no, payment_method, amount, balance, remarks, paid_date) 
                         VALUES ('$payment_id', '$order_id', '$invoice_no', '$payment_method', '$amount', '$balance_due', '$remarks', '$created_at')";
+            
             if (mysqli_query($conn, $sql)) {
 
-                $siteInsert = "UPDATE orders
-                                SET payment_made = $total_amount, balance_due = $balance_due
-                                WHERE invoice_id = '$invoice_id'";
-                    mysqli_query($conn, $siteInsert);
+                 if ($type === 'renewal') {
+                    // 👈 Renewal Payment Update
+                    $updateQuery = "UPDATE renewal_invoices 
+                                    SET payment_made = $total_amount, balance_due = $balance_due 
+                                    WHERE invoice_id = '$invoice_id'";
+                } else {
+                    $updateQuery = "UPDATE orders
+                        SET payment_made = $total_amount, balance_due = $balance_due
+                        WHERE invoice_id = '$invoice_id'";
+                }
+                mysqli_query($conn, $updateQuery);
+                
                 echo "
                 <script>
                     Swal.fire({
@@ -104,7 +112,7 @@
                         }
                     });
                 </script>";
-                } else {
+            } else {
                 echo "<script>
                     alert('Error: " . $stmt->error . "');
                     window.history.back();
