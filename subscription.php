@@ -435,7 +435,8 @@
         $payment_method = $_POST['payment_method'];
         $amount = $_POST['amount'];
         $payment_made = $_POST['payment_made'];
-        $total_amount = $amount + $payment_made;
+        // $total_amount = $amount + $payment_made;
+        $total_amount = floatval($payment_made) + floatval($amount);
         $created_at = date("Y-m-d H:i:s");
         $remarks = $_POST['remarks'];
         $balance_due = $_POST['balance_due'];
@@ -449,15 +450,40 @@
                 // ✅ Check whether this invoice belongs to renewal_invoices or orders
                 $renewalCheck = $conn->query("SELECT id FROM renewal_invoices WHERE invoice_id = '$invoice_no' LIMIT 1");
 
-                   if ($renewalCheck && $renewalCheck->num_rows > 0) {
-                        // 🔁 Renewal Payment → update renewal_invoices
+                    // if ($renewalCheck && $renewalCheck->num_rows > 0) {
+                    //     // 🔁 Renewal Payment → update renewal_invoices
+                    //     $updateSql = "
+                    //         UPDATE renewal_invoices
+                    //         SET payment_made = '$total_amount', balance_due = '$balance_due'
+                    //         WHERE invoice_id = '$invoice_no'
+                    //     ";
+                    //     mysqli_query($conn, $updateSql);
+                    // }
+
+                    if ($renewalCheck && $renewalCheck->num_rows > 0) {
+                        // 🔍 Get existing paid
+                        $getOld = $conn->query("SELECT payment_made, balance_due FROM renewal_invoices WHERE invoice_id = '$invoice_no'");
+                        $old = $getOld->fetch_assoc();
+                        $old_paid = floatval($old['payment_made']);
+                        $old_balance = floatval($old['balance_due']);
+
+                        // 🔁 Add new payment
+                        $total_amount = $old_paid + floatval($amount);
+
+                        // 📌 Correct new balance = old balance - new amount paid
+                        $new_balance = $old_balance - floatval($amount);
+                        if ($new_balance < 0) { $new_balance = 0; }  // avoid negative
+
+                        // 🆕 Update payment + balance properly
                         $updateSql = "
                             UPDATE renewal_invoices
-                            SET payment_made = '$total_amount', balance_due = '$balance_due'
+                            SET payment_made = '$total_amount', balance_due = '$new_balance'
                             WHERE invoice_id = '$invoice_no'
                         ";
                         mysqli_query($conn, $updateSql);
-                    } else {
+                    }
+                    
+                    else {
                         $updateSql = "UPDATE orders
                                         SET payment_made = $total_amount, balance_due = $balance_due
                                         WHERE invoice_id = '$invoice_no'";
@@ -477,7 +503,7 @@
                         }
                     });
                 </script>";
-                } else {
+            } else {
                 echo "<script>
                     alert('Error: " . $stmt->error . "');
                     window.history.back();
