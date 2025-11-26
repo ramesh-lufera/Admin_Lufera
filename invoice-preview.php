@@ -622,6 +622,19 @@
                                             </div>
                                         </div>
                                     </div>
+                                    <?php 
+                                        $tc_sql = "SELECT * FROM terms_conditions where apply_for = 'invoice'";
+                                        $tc_result = $conn->query($tc_sql);
+                                        if ($tc_result->num_rows > 0) {
+                                            $tc_row = $tc_result->fetch_assoc();
+                                            $id = $tc_row['id'];
+                                            $title = $tc_row['title'];
+                                            $content = $tc_row['content'];
+                                        }
+                                        if ($tc_result->num_rows > 0) { ?>
+                                        <p>Terms & Conditions</p>
+                                        <?php echo $content; ?>
+                                    <?php } ?>
                                 </div>
                             </div>
                         </div>
