@@ -200,16 +200,16 @@ $amountInWords = numberToWords($amount);
         <a class="cursor-pointer fw-bold back_btn visibility-hidden" onclick="history.back()"><span class="fa fa-arrow-left"></span>&nbsp; Back</a> 
     </div>
     <div class="card container">
-        <div class="card-body py-40">
+        <div class="card-body py-20">
             <div class="row justify-content-center" id="invoice">
                 <div class="col-lg-12">
                 <div class="d-flex my-3 justify-content-between">
                     <p class="mb-0 mt-auto">Payment ID: <b><?php echo $payment_id; ?></b></p>  
                     
-                        <div class="amt-rec w-auto p-20">
+                        <!-- <div class="amt-rec w-auto p-20">
                             <p class="mb-0">Payment Made</p>
                             <p class="mb-0"><?= htmlspecialchars($symbol) ?> <?php echo number_format($amount, 2); ?></p>
-                        </div>
+                        </div> -->
                     </div>
                     <div class="table-responsive scroll-sm">
                         <table class="table mb-0">
@@ -401,6 +401,19 @@ $amountInWords = numberToWords($amount);
                                 </tbody>            
                             </table>
                         </div>
+                        <?php 
+                            $tc_sql = "SELECT * FROM terms_conditions where apply_for = 'receipt'";
+                            $tc_result = $conn->query($tc_sql);
+                            if ($tc_result->num_rows > 0) {
+                                $tc_row = $tc_result->fetch_assoc();
+                                $id = $tc_row['id'];
+                                $title = $tc_row['title'];
+                                $content = $tc_row['content'];
+                            }
+                            if ($tc_result->num_rows > 0) { ?>
+                            <p>Terms & Conditions</p>
+                            <?php echo $content; ?>
+                        <?php } ?>
                     </div>
                 </div>
             </div>                            
