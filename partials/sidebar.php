@@ -758,12 +758,12 @@
                     </ul>
                 </li>
             <?php } ?>
-            <li>
+            <!-- <li>
                 <a href="activity_log.php">
                     <iconify-icon icon="tabler:activity" class="menu-icon"></iconify-icon>
                     <span>Activity Log</span>
                 </a>
-            </li>
+            </li> -->
             <li>
                 <a href="logout.php" class="hover-bg-transparent hover-text-danger">
                     <iconify-icon icon="bi:x-circle" class="menu-icon"></iconify-icon>
