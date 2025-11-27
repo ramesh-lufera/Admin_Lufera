@@ -1,21 +1,21 @@
 <?php
     session_start();
 
-    require_once 'vendor/autoload.php';
-     include './partials/connection.php';
+    // require_once 'vendor/autoload.php';
+    include './partials/connection.php';
 
-    $dotenv = Dotenv\Dotenv::createImmutable(__DIR__);
-    $dotenv->load();
+    // $dotenv = Dotenv\Dotenv::createImmutable(__DIR__);
+    // $dotenv->load();
 
-    // Google Client Configuration
-    require './partials/google-config.php';
-    $redirectUri = rtrim($_ENV['GOOGLE_REDIRECT_URI'], '/') . '/sign-in-redirect.php';
-    $client->setRedirectUri($redirectUri);
+    // // Google Client Configuration
+    // require './partials/google-config.php';
+    // $redirectUri = rtrim($_ENV['GOOGLE_REDIRECT_URI'], '/') . '/sign-in-redirect.php';
+    // $client->setRedirectUri($redirectUri);
 
-    // Force account selection every time
-    $client->setPrompt('select_account');
+    // // Force account selection every time
+    // $client->setPrompt('select_account');
 
-    $loginUrl = $client->createAuthUrl();
+    // $loginUrl = $client->createAuthUrl();
 ?>
 
 <!-- meta tags and other links -->

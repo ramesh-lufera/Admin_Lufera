@@ -1,23 +1,23 @@
 <?php $script = '<script>
-                        (() => {
-                            "use strict"
+            (() => {
+                "use strict"
 
-                            // Fetch all the forms we want to apply custom Bootstrap validation styles to
-                            const forms = document.querySelectorAll(".needs-validation")
+                // Fetch all the forms we want to apply custom Bootstrap validation styles to
+                const forms = document.querySelectorAll(".needs-validation")
 
-                            // Loop over them and prevent submission
-                            Array.from(forms).forEach(form => {
-                                form.addEventListener("submit", event => {
-                                    if (!form.checkValidity()) {
-                                        event.preventDefault()
-                                        event.stopPropagation()
-                                    }
+                // Loop over them and prevent submission
+                Array.from(forms).forEach(form => {
+                    form.addEventListener("submit", event => {
+                        if (!form.checkValidity()) {
+                            event.preventDefault()
+                            event.stopPropagation()
+                        }
 
-                                    form.classList.add("was-validated")
-                                }, false)
-                            })
-                        })()
-            </script>';?>
+                        form.classList.add("was-validated")
+                    }, false)
+                })
+            })()
+</script>';?>
 <style>
     .toggle-icon-pass {
         position: absolute;
@@ -55,7 +55,10 @@ function generateRandomPassword($length = 10) {
 $generatedPassword = generateRandomPassword();
 ?>
 <?php include './partials/layouts/layoutTop.php' ?>
+
 <?php
+include './log.php';         // Log function
+$user_id = isset($_SESSION['user_id']) ? $_SESSION['user_id'] : 0;
 
 ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
@@ -95,6 +98,13 @@ error_reporting(E_ALL);
         $stmt->bind_param("sssssssssssssssssss", $newUserId, $username, $email, $phone, $password, $fname, $lname, $business_name, $gst_in, $address, $city, $state, $country, $pincode, $dob, $created_at, $method, $role, $photo);
             
         if ($stmt->execute()) {
+            logActivity(
+                $conn,
+                $user_id,
+                "Users",                   // module
+                "User Creation",                   // action
+                "New User Added - $fname $lname"  // description
+            );
             echo "
             <script>
                 Swal.fire({

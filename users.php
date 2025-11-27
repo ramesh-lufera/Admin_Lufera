@@ -17,7 +17,7 @@ FROM
 LEFT JOIN 
     roles ON users.role = roles.id
 WHERE 
-    users.role != '1'" ;
+    users.role != '1' AND users.is_deleted != '1'" ;
     $result = mysqli_query($conn, $sql);
 ?>
 
@@ -193,48 +193,38 @@ WHERE
 $(document).ready(function() {
     $('#userTable').DataTable();
 } );
-$(document).ready(function () {
-    $('.remove-item-btn').click(function () {
-        var userId = $(this).data('id');
-        var row = $(this).closest('tr'); // to remove the row on success
 
-        Swal.fire({
-            title: 'Are you sure?',
-            text: "You want to delete the user?",
-            icon: 'warning',
-            showCancelButton: true,
-            cancelButtonColor: '#d5d7d9',
-            confirmButtonText: 'Yes, delete it!'
-        }).then((result) => {
-            if (result.isConfirmed) {
-                $.ajax({
-                    url: 'delete-user.php',
-                    type: 'POST',
-                    data: { id: userId },
-                    success: function (response) {
-                        var result = JSON.parse(response);
-                        if (result.success) {
-                            Swal.fire(
+$(document).on('click', '.remove-item-btn', function () {
+    var userId = $(this).data('id');
+    var row = $(this).closest('tr');
+
+    Swal.fire({
+        title: 'Are you sure?',
+        text: "You want to delete the user?",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Yes, delete it!'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            $.ajax({
+                url: 'delete-user.php',
+                type: 'POST',
+                data: { id: userId },
+                success: function (response) {
+                    const result = JSON.parse(response);
+                    if (result.success) {
+                        Swal.fire(
                                 'Deleted!',
                                 'User has been deleted.',
                                 'success'
                             );
-                            row.fadeOut(500, function () {
-                                $(this).remove(); // remove the row after fade
-                            });
-                        } else {
-                            Swal.fire('Error', result.error || 'Could not delete user.', 'error');
-                        }
-                    },
-                    error: function () {
-                        Swal.fire('Error', 'Server error occurred.', 'error');
+                        row.fadeOut(500, function(){ $(this).remove(); });
                     }
-                });
-            }
-        });
+                }
+            });
+        }
     });
 });
-
 
 $(document).ready(function () {
     // Load form data into modal

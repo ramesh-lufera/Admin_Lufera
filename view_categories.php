@@ -14,7 +14,7 @@
 
 <?php 
     include './partials/layouts/layoutTop.php';
-
+    include './log.php';         // Log function
     ini_set('display_errors', 1);
     ini_set('display_startup_errors', 1);
     error_reporting(E_ALL);
@@ -611,7 +611,14 @@
                     file_put_contents($view_file_path, $view_content);
                 }
             }
-
+            // Log the action
+            logActivity(
+                $conn,
+                $Id,
+                "Category",                   // module
+                "New Category Created",      // action
+                "Category creation completed - $cat_name has been added."  // description
+            );
             //$_SESSION['swal_success'] = "Category created";
             echo "
                 <script>
@@ -1151,6 +1158,14 @@
     
         //$_SESSION['swal_success'] = "Category updated";
 
+        logActivity(
+            $conn,
+            $Id,
+            "Category",                   // module
+            "Category Updated",      // action
+            "Category updated - name changed to $edit_cat_name."  // description
+        );
+
         echo "
         <script>
         Swal.fire({
@@ -1168,12 +1183,12 @@
     if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_cat_id'])) {
         $cat_id = intval($_POST['delete_cat_id']);
 
-        $stmt = $conn->prepare("SELECT cat_url FROM categories WHERE cat_id = ?");
+        $stmt = $conn->prepare("SELECT cat_url, cat_name FROM categories WHERE cat_id = ?");
         $stmt->bind_param("i", $cat_id);
         $stmt->execute();
         $result = $stmt->get_result();
         $cat = $result->fetch_assoc();
-
+        $catName = $cat['cat_name'];
         $catUrlRaw = $cat['cat_url'] ?? null;
 
         if ($catUrlRaw) {
@@ -1202,6 +1217,14 @@
         $stmt->execute();
 
         //$_SESSION['swal_success'] = "Category deleted";
+
+        logActivity(
+            $conn,
+            $Id,
+            "Category",               // module
+            "Category Deleted",      // action
+            "Category Deleted - $catName has been removed."  // description
+        );
 
         echo "
         <script>

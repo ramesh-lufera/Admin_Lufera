@@ -186,6 +186,9 @@
     }
 </style>
 
+<!-- jsPDF CDN Link -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
 <?php
     $session_user_id = $_SESSION['user_id'];
     $prod_id = intval($_GET['prod_id']);
@@ -585,6 +588,11 @@
     }
 ?>
 
+<script>
+    // Make saved data available to JavaScript
+    var savedFormData = <?php echo json_encode($savedData); ?>;
+</script>
+
 <div class="dashboard-main-body">
     <div class="d-flex flex-wrap align-items-center gap-3 mb-24">
     <a class="cursor-pointer fw-bold" onclick="history.back()"><span class="fa fa-arrow-left"></span>&nbsp; </a>     
@@ -640,6 +648,13 @@
                                             <input type="submit" name="save" class="lufera-bg bg-hover-warning-400 text-white text-md px-56 py-11 radius-8 m-auto d-block" value="Save" >
                                         <?php endif; ?>
                                 </form>
+
+                                <!-- PDF Download Button -->
+                                <div class="text-center mt-4">
+                                    <button type="button" id="downloadPdfBtn" class="lufera-bg bg-hover-warning-400 text-white text-md px-56 py-11 radius-8 d-block mx-auto">
+                                        Download Sample PDF
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -649,6 +664,83 @@
         </div>
     </div>
 </div>
+
+<script>
+    // PDF Download Functionality
+    document.addEventListener('DOMContentLoaded', function() {
+        document.getElementById('downloadPdfBtn').addEventListener('click', function() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            
+            // Enhanced content with better formatting and current date
+            const currentDate = new Date().toLocaleDateString('en-US', { 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric' 
+            });
+            
+            // Title
+            doc.setFontSize(22);
+            doc.setFont(undefined, 'bold');
+            doc.text('Website Wizard Form Summary', 20, 25);
+            
+            // Subtitle with date
+            doc.setFontSize(12);
+            doc.setFont(undefined, 'normal');
+            doc.text(`Generated on: ${currentDate}`, 20, 35);
+            
+            // Line separator
+            doc.setLineWidth(0.5);
+            doc.line(20, 40, 190, 40);
+            
+            // Form fields with improved layout using saved data
+            let yPosition = 55;
+            const fieldData = [
+                { label: 'Name', value: savedFormData.name?.value || 'Not provided' },
+                { label: 'Email', value: savedFormData.email?.value || 'Not provided' },
+                { label: 'Has Phone', value: savedFormData.has_phone?.value || 'Not provided' },
+                { 
+                    label: 'Website Name', 
+                    value: Array.isArray(savedFormData.website_name?.value) 
+                        ? savedFormData.website_name.value.join(', ') 
+                        : (savedFormData.website_name?.value || 'Not provided') 
+                },
+                { label: 'Address', value: savedFormData.address?.value || 'Not provided' },
+                { 
+                    label: 'Logo', 
+                    value: savedFormData.logo?.value ? `File uploaded: ${savedFormData.logo.value}` : 'No logo uploaded' 
+                }
+            ];
+            
+            doc.setFontSize(14);
+            doc.setFont(undefined, 'bold');
+            doc.text('Form Details:', 20, yPosition);
+            yPosition += 10;
+            
+            doc.setFontSize(11);
+            doc.setFont(undefined, 'normal');
+            fieldData.forEach(field => {
+                doc.text(`${field.label}:`, 25, yPosition);
+                // Wrap long text if necessary
+                const splitText = doc.splitTextToSize(field.value, 120);
+                doc.text(splitText, 60, yPosition);
+                yPosition += (splitText.length * 6); // Approximate line height
+                if (yPosition > 270) { // Add new page if needed
+                    doc.addPage();
+                    yPosition = 25;
+                }
+            });
+            
+            // Footer
+            doc.setFontSize(10);
+            doc.setFont(undefined, 'italic');
+            doc.text('This document was generated from the Website Wizard form.', 20, 290);
+            
+            // Save the PDF
+            doc.save(`website-wizard-summary-${currentDate.replace(/\s+/g, '-')}.pdf`);
+        });
+    });
+</script>
 
 <script>
     document.addEventListener('DOMContentLoaded', () => {

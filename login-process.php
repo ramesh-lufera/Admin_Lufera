@@ -1,13 +1,14 @@
 <?php
 session_start();
 include './partials/connection.php';
+include './log.php';
 
 $response = [
     'success' => false,
     'errors' => []
 ];
 
-if (isset($_POST['email']) && isset($_POST['password'])) {
+if (!empty($_POST['email']) && !empty($_POST['password'])) {
     $email = $_POST['email'];
     $password = $_POST['password'];
 
@@ -21,11 +22,21 @@ if (isset($_POST['email']) && isset($_POST['password'])) {
         $stmt->fetch();
 
         if ($password === $db_password) {
+            // Set session
             $_SESSION['user_id'] = $user_id;
             $_SESSION['username'] = $username;
             $_SESSION['user'] = $username;
             $_SESSION['email'] = $email;
             $_SESSION["photo"] = $photo;
+
+            // 🔥 LOG ACTIVITY HERE
+            logActivity(
+                $conn,
+                $user_id,
+                "sign-in",        // module
+                "User Login",                 // action
+                "User logged in successfully"         // description
+            );
 
             $response['success'] = true;
         } else {
@@ -37,7 +48,7 @@ if (isset($_POST['email']) && isset($_POST['password'])) {
 
     $stmt->close();
 }
-$conn->close();
 
+$conn->close();
 header('Content-Type: application/json');
 echo json_encode($response);
