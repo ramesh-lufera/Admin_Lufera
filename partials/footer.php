@@ -4,6 +4,8 @@
             <p class="mb-0">© <?php echo date("Y"); ?> Lufera Infotech. All Rights Reserved.</p>
         </div>
         <div class="col-auto">
+            <a href="privacy_policy.php">Privacy Policy</a> |    
+            <a href="terms_conditions.php">Terms and Conditions</a> |            
             <a href="https://luferatech.com/">
                 <p class="mb-0">Made by <span class="text-primary-600" style="color: #fec700 !important">Lufera Infotech</span></p>
             </a>

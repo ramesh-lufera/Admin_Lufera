@@ -14612,7 +14612,7 @@ td.fc-header-center {
   position: sticky;
   top: 0;
   padding: 1rem 1.5rem;
-  z-index: 3;
+  z-index: 10;
 }
 
 .sidebar-toggle,
@@ -15021,6 +15021,7 @@ td.fc-header-center {
   display: none;
   padding-inline-start: 1.5rem;
   transition: none;
+  list-style: none;
 }
 
 @media (min-width: 1650px) {
@@ -15174,4 +15175,8 @@ table.dataTable thead>tr>th.dt-orderable-asc:hover, table.dataTable thead>tr>th.
 .form-check-input:checked{
   background-color: #fdc701;
 }
+.jodit-status-bar-link, .jodit-ui-group_group_info{
+    display: none !important;
+}
+
 /* === footer css end === */

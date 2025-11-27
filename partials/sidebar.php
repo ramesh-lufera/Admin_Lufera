@@ -738,6 +738,12 @@
                             <a href="company.php"><i class="ri-circle-fill circle-icon text-warning-600 w-auto"></i> Company</a>
                         </li>
                         <li>
+                            <a href="add_policy.php"><i class="ri-circle-fill circle-icon text-warning-600 w-auto"></i> Privacy policy</a>
+                        </li>
+                        <li>
+                            <a href="add_terms_conditions.php"><i class="ri-circle-fill circle-icon text-warning-600 w-auto"></i> Terms and Conditions</a>
+                        </li>
+                        <li>
                             <a href="credentials.php"><i class="ri-circle-fill circle-icon text-warning-600 w-auto"></i> Credentials</a>
                         </li>
                         <li>
@@ -752,6 +758,12 @@
                     </ul>
                 </li>
             <?php } ?>
+            <li>
+                <a href="activity_log.php">
+                    <iconify-icon icon="tabler:activity" class="menu-icon"></iconify-icon>
+                    <span>Activity Log</span>
+                </a>
+            </li>
             <li>
                 <a href="logout.php" class="hover-bg-transparent hover-text-danger">
                     <iconify-icon icon="bi:x-circle" class="menu-icon"></iconify-icon>
