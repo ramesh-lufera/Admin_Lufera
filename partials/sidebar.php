@@ -5,6 +5,11 @@
     $result = $conn->query($sql);
     $row = $result->fetch_assoc();
 
+    $company_sql = "SELECT * FROM company";
+    $company_result = $conn->query($company_sql);
+    $company_row = $company_result->fetch_assoc();
+    $logo = $company_row['logo'];
+
     // Handle packages (or) products creation
     if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['product_category'], $_POST['product_type'], $_POST['template'])) {
         $product_category = intval($_POST['product_category']);
@@ -584,9 +589,10 @@
     </button>
     <div>
         <a href="admin-dashboard.php" class="sidebar-logo">
-            <img src="assets/images/logo_lufera.png" alt="site logo" class="light-logo">
+            <!-- <img src="assets/images/logo_lufera.png" alt="site logo" class="light-logo">
             <img src="assets/images/Logo_dark.png" alt="site logo" class="dark-logo">
-            <img src="assets/images/Image.jfif" alt="site logo" class="logo-icon">
+            <img src="assets/images/Image.jfif" alt="site logo" class="logo-icon"> -->
+            <img src="uploads/company_logo/<?php echo $logo; ?>" alt="site logo" class="light-logo">
         </a>
     </div>
     <div class="sidebar-menu-area">
@@ -758,12 +764,12 @@
                     </ul>
                 </li>
             <?php } ?>
-            <!-- <li>
+            <li>
                 <a href="activity_log.php">
                     <iconify-icon icon="tabler:activity" class="menu-icon"></iconify-icon>
                     <span>Activity Log</span>
                 </a>
-            </li> -->
+            </li>
             <li>
                 <a href="logout.php" class="hover-bg-transparent hover-text-danger">
                     <iconify-icon icon="bi:x-circle" class="menu-icon"></iconify-icon>

@@ -292,7 +292,8 @@
                                     <div>
                                         <!-- <h3 class="text-xl">Invoice No: <?php echo $invoice_id; ?></h3>
                                         <p class="mb-1 text-sm">Date : <?php echo date('d/m/Y', strtotime($row['created_on'])); ?></p> -->
-                                        <img src="assets/images/logo_lufera.png" alt="image" class="mb-8" width="200px">
+                                        <!-- <img src="assets/images/logo_lufera.png" alt="image" class="mb-8" width="200px"> -->
+                                        <img src="uploads/company_logo/<?php echo $logo; ?>" alt="site logo" class="light-logo" width="200px">
                                         <div class="">
                                             <p class="mb-0 text-xl"><b><?php echo $company_row['full_name']; ?></b></p>
                                             <p class="mb-0 text-sm"><?php echo $company_row['address']; ?>, <?php echo $company_row['city']; ?>,<?php echo $company_row['state']; ?>,<?php echo $company_row['zip_code']; ?>, <?php echo $company_row['country']; ?></p>

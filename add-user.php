@@ -95,6 +95,13 @@ error_reporting(E_ALL);
         $stmt->bind_param("sssssssssssssssssss", $newUserId, $username, $email, $phone, $password, $fname, $lname, $business_name, $gst_in, $address, $city, $state, $country, $pincode, $dob, $created_at, $method, $role, $photo);
             
         if ($stmt->execute()) {
+            logActivity(
+                $conn,
+                $loggedInUserId,
+                "Users",                   // module
+                "User Creation",                   // action
+                "New User Added - $fname $lname"  // description
+            );
             echo "
             <script>
                 Swal.fire({

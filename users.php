@@ -17,7 +17,7 @@ FROM
 LEFT JOIN 
     roles ON users.role = roles.id
 WHERE 
-    users.role != '1'" ;
+    users.role != '1' AND users.is_deleted != '1'" ;
     $result = mysqli_query($conn, $sql);
 ?>
 
@@ -37,6 +37,7 @@ WHERE
                 <table class="table bordered-table sm-table mb-0" id="userTable">
                     <thead>
                         <tr>
+                            <th scope="col">ID</th>
                             <th scope="col">User ID</th>
                             <th scope="col">First Name</th>
                             <th scope="col">Last Name</th>
@@ -51,6 +52,8 @@ WHERE
                         if (mysqli_num_rows($result) > 0) {
                             while ($row = mysqli_fetch_assoc($result)) {
                                 echo '<tr>
+                                    <td>' . htmlspecialchars($row['id']) . '</td>
+                                    
                                     <td>' . htmlspecialchars($row['user_id']) . '</td>
 
                                     <td>' . htmlspecialchars($row['first_name']) . '</td>
@@ -191,68 +194,63 @@ WHERE
 
 <script>
 $(document).ready(function() {
-    $('#userTable').DataTable();
+    $('#userTable').DataTable({
+    columnDefs: [
+        {
+            targets: 0,   // First column (ID)
+            visible: false,
+            searchable: false
+        }
+    ]
+});
 } );
-$(document).ready(function () {
-    $('.remove-item-btn').click(function () {
-        var userId = $(this).data('id');
-        var row = $(this).closest('tr'); // to remove the row on success
 
-        Swal.fire({
-            title: 'Are you sure?',
-            text: "You want to delete the user?",
-            icon: 'warning',
-            showCancelButton: true,
-            cancelButtonColor: '#d5d7d9',
-            confirmButtonText: 'Yes, delete it!'
-        }).then((result) => {
-            if (result.isConfirmed) {
-                $.ajax({
-                    url: 'delete-user.php',
-                    type: 'POST',
-                    data: { id: userId },
-                    success: function (response) {
-                        var result = JSON.parse(response);
-                        if (result.success) {
-                            Swal.fire(
+$(document).on('click', '.remove-item-btn', function () {
+    var userId = $(this).data('id');
+    var row = $(this).closest('tr');
+
+    Swal.fire({
+        title: 'Are you sure?',
+        text: "You want to delete the user?",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Yes, delete it!'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            $.ajax({
+                url: 'delete-user.php',
+                type: 'POST',
+                data: { id: userId },
+                success: function (response) {
+                    const result = JSON.parse(response);
+                    if (result.success) {
+                        Swal.fire(
                                 'Deleted!',
                                 'User has been deleted.',
                                 'success'
-                            );
-                            row.fadeOut(500, function () {
-                                $(this).remove(); // remove the row after fade
+                            ).then(() => {
+                                location.reload(); // refresh to reflect changes
                             });
-                        } else {
-                            Swal.fire('Error', result.error || 'Could not delete user.', 'error');
-                        }
-                    },
-                    error: function () {
-                        Swal.fire('Error', 'Server error occurred.', 'error');
+                        //row.fadeOut(500, function(){ $(this).remove(); });
                     }
-                });
-            }
-        });
+                }
+            });
+        }
     });
 });
 
-
-$(document).ready(function () {
     // Load form data into modal
-    $('.edit-user-btn').click(function () {
-        var userId = $(this).data('id');
-        $('#editUserContent').html('<p>Loading...</p>');
+$(document).on('click', '.edit-user-btn', function () {
+    var userId = $(this).data('id');
+    $('#editUserContent').html('<p>Loading...</p>');
 
-        $.ajax({
-            url: 'fetch-edit-user.php',
-            type: 'POST',
-            data: { id: userId },
-            success: function (response) {
-                $('#editUserContent').html(response);
-            },
-            error: function () {
-                $('#editUserContent').html('<p>Error loading form.</p>');
-            }
-        });
+    $.ajax({
+        url: 'fetch-edit-user.php',
+        type: 'POST',
+        data: { id: userId },
+        success: function (response) {
+            $('#editUserContent').html(response);
+        }
     });
 
 document.getElementById('editUserForm').addEventListener('submit', function (e) {
