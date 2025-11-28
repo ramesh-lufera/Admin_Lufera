@@ -3,6 +3,7 @@
 
     require_once 'vendor/autoload.php';
      include './partials/connection.php';
+     include 'fb-config.php';
 
     $dotenv = Dotenv\Dotenv::createImmutable(__DIR__);
     $dotenv->load();
@@ -16,6 +17,11 @@
     $client->setPrompt('select_account');
 
     $loginUrl = $client->createAuthUrl();
+
+    $company_sql = "SELECT * FROM company";
+    $company_result = $conn->query($company_sql);
+    $company_row = $company_result->fetch_assoc();
+    $logo = $company_row['logo'];
 ?>
 
 <!-- meta tags and other links -->
@@ -43,7 +49,8 @@
             <div class="max-w-464-px mx-auto w-100">
                 <div>
                     <a href="index.php" class="mb-40 max-w-290-px">
-                        <img src="assets/images/logo_lufera.png" alt="" width="200px">
+                        <!-- <img src="assets/images/logo_lufera.png" alt="" width="200px"> -->
+                        <img src="uploads/company_logo/<?php echo $logo; ?>" alt="site logo" class="light-logo" width="200px">
                     </a>
                     <h4 class="mb-12">Sign In</h4>
                     <p class="mb-32 text-secondary-light text-lg">Welcome back! Enter your details</p>
@@ -88,10 +95,12 @@
                         <span class="bg-base z-1 px-4">Or sign in with</span>
                     </div>
                     <div class="mt-32 d-flex align-items-center gap-3">
+                        <a href="<?= $loginUrl1 ?>" style="display:contents;">
                         <button type="button" class="fw-semibold text-primary-light py-16 px-24 w-50 border radius-12 text-md d-flex align-items-center justify-content-center gap-12 line-height-1 bg-hover-primary-50">
                             <iconify-icon icon="ic:baseline-facebook" class="text-primary-600 text-xl line-height-1"></iconify-icon>
                             Facebook
                         </button>
+                        </a>
                         <a href="<?= $loginUrl ?>" style="display:contents;">
                         <button type="button" class="fw-semibold text-primary-light py-16 px-24 w-50 border radius-12 text-md d-flex align-items-center justify-content-center gap-12 line-height-1 bg-hover-primary-50">
                             <iconify-icon icon="logos:google-icon" class="text-primary-600 text-xl line-height-1"></iconify-icon>
