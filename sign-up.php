@@ -23,6 +23,7 @@
     session_start();
     include './partials/head.php';
     include './partials/connection.php';
+    include 'fb-config.php';
 
     use PHPMailer\PHPMailer\PHPMailer;
     use PHPMailer\PHPMailer\Exception;
@@ -223,7 +224,12 @@
     // Force account selection every time
     $client->setPrompt('select_account');
 
-    $loginUrl = $client->createAuthUrl(); 
+    $loginUrl = $client->createAuthUrl();
+    
+    $company_sql = "SELECT * FROM company";
+    $company_result = $conn->query($company_sql);
+    $company_row = $company_result->fetch_assoc();
+    $logo = $company_row['logo'];
 ?>
 
 <body>
@@ -239,7 +245,8 @@
                 <div>
                     <a href="sign-up.php" class="mb-40 max-w-290-px">
                         <!-- <img src="assets/images/logo.png" alt=""> -->
-                        <img src="assets/images/logo_lufera.png" alt="" width="200px">
+                        <!-- <img src="assets/images/logo_lufera.png" alt="" width="200px"> -->
+                        <img src="uploads/company_logo/<?php echo $logo; ?>" alt="site logo" class="light-logo" width="200px">
                     </a>
                     <h4 class="mb-12">Sign Up</h4>
                     <p class="mb-32 text-secondary-light text-lg">Welcome back! Enter your details</p>
@@ -334,10 +341,12 @@
                         <span class="bg-base z-1 px-4">Or sign up with</span>
                     </div>
                     <div class="mt-32 d-flex align-items-center gap-3">
+                        <a href="<?php echo $loginUrl1; ?>" style="display:contents;">
                         <button type="button" class="fw-semibold text-primary-light py-16 px-24 w-50 border radius-12 text-md d-flex align-items-center justify-content-center gap-12 line-height-1 bg-hover-primary-50">
                             <iconify-icon icon="ic:baseline-facebook" class="text-primary-600 text-xl line-height-1"></iconify-icon>
                             Facebook
                         </button>
+                        </a>
                         <a href="<?php echo $loginUrl; ?>" style="display:contents;">
                         <button type="button" class="fw-semibold text-primary-light py-16 px-24 w-50 border radius-12 text-md d-flex align-items-center justify-content-center gap-12 line-height-1 bg-hover-primary-50">
                             <iconify-icon icon="logos:google-icon" class="text-primary-600 text-xl line-height-1"></iconify-icon>
