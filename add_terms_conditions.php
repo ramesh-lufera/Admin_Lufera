@@ -37,6 +37,13 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         );
         $stmt->bind_param('ssisi', $title, $content, $created_by, $created_at, $id);
         if ($stmt->execute()) {
+            logActivity(
+                $conn,
+                $loggedInUserId,
+                "Terms and Conditions",                   // module
+                "Terms and Conditions updated",                   // action
+                "Terms and Conditions updated successfully"  // description
+            );
             echo "<script>
                 Swal.fire({
                     title: 'Updated!',
@@ -53,6 +60,13 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         );
         $stmt->bind_param('sssis', $apply_for, $title, $content, $created_by, $created_at);
         if ($stmt->execute()) {
+            logActivity(
+                $conn,
+                $loggedInUserId,
+                "Terms and Conditions",                   // module
+                "Terms and Conditions updated",                   // action
+                "Terms and Conditions updated successfully"  // description
+            );
             echo "<script>
                 Swal.fire({
                     title: 'Saved!',

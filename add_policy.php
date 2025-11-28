@@ -36,6 +36,13 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         } else {
             $stmt->bind_param('ssssi', $title, $policy, $created_by, $created_at, $id);
             if ($stmt->execute()) {
+                logActivity(
+                    $conn,
+                    $loggedInUserId,
+                    "Privacy Policy",                   // module
+                    "Privacy Policy updated",                   // action
+                    "Privacy Policy updated successfully"  // description
+                );
                 echo "<script>
                     Swal.fire({
                         title: 'Success!',
@@ -61,6 +68,13 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         } else {
             $stmt->bind_param('ssss', $title, $policy, $created_by, $created_at);
             if ($stmt->execute()) {
+                logActivity(
+                    $conn,
+                    $loggedInUserId,
+                    "Privacy Policy",                   // module
+                    "Privacy Policy created",                   // action
+                    "Privacy Policy created successfully"  // description
+                );
                 echo "<script>
                     Swal.fire({
                         title: 'Success!',

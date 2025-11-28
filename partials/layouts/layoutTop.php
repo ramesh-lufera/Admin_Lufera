@@ -1,6 +1,7 @@
 <?php include './partials/head.php';
       include './partials/connection.php';
       include './partials/check_login.php';
+      include './log.php';
 
       $loggedInUserId = $_SESSION['user_id'];
 

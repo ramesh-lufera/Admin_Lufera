@@ -328,7 +328,8 @@ $amountInWords = numberToWords($amount);
                     <div class="pay-rec">                    
                         <div class="d-flex flex-wrap justify-content-between gap-3 my-20">
                             <div>
-                                <img src="assets/images/logo_lufera.png" alt="image" class="mb-8" width="200px">
+                                <!-- <img src="assets/images/logo_lufera.png" alt="image" class="mb-8" width="200px"> -->
+                                <img src="uploads/company_logo/<?php echo $logo; ?>" alt="site logo" class="light-logo" width="200px">
                             </div>
                             <div class="">
                                 <p class="mb-0"><b><?php echo $company_row['full_name']; ?></b></p>

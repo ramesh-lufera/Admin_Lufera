@@ -1,6 +1,8 @@
 <?php
+session_start();
 include 'partials/connection.php';
-
+include './log.php';         // Log function
+$user_id = isset($_SESSION['user_id']) ? $_SESSION['user_id'] : 0;
 if (isset($_POST['id'])) {
     $id = intval($_POST['id']);
     $fname  = $_POST['fname'];
@@ -17,12 +19,18 @@ if (isset($_POST['id'])) {
     $country  = $_POST['country'];
     $pin = $_POST['pin'];
     $pass = $_POST['pass'];
-    $role = $_POST['role'];
 
-    $stmt = $conn->prepare("UPDATE users SET first_name = ?, last_name = ?, username = ?, business_name = ?, gst_in = ?, email = ?, phone = ?, password = ?, address = ?, city = ?, state = ?, country = ?, pincode = ?, dob = ?, role = ?  WHERE id = ?");
-    $stmt->bind_param("sssssssssssssssi", $fname, $lname, $uname, $bname, $gst_in, $email, $phone, $pass, $address, $city, $state, $country, $pin, $dob, $role, $id);
+    $stmt = $conn->prepare("UPDATE users SET first_name = ?, last_name = ?, username = ?, business_name = ?, gst_in = ?, email = ?, phone = ?, password = ?, address = ?, city = ?, state = ?, country = ?, pincode = ?, dob = ?  WHERE id = ?");
+    $stmt->bind_param("ssssssssssssssi", $fname, $lname, $uname, $bname, $gst_in, $email, $phone, $pass, $address, $city, $state, $country, $pin, $dob, $id);
 
     if ($stmt->execute()) {
+        logActivity(
+            $conn,
+            $user_id,
+            "Users",                   // module
+            "User Updated",                   // action
+            "User Updated Successfully for $fname $lname"  // description
+        );
         echo json_encode(["success" => true]);
     } else {
         echo json_encode(["success" => false, "error" => $stmt->error]);

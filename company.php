@@ -1,4 +1,10 @@
-<?php include './partials/layouts/layoutTop.php' ?>
+<?php include './partials/layouts/layoutTop.php'; 
+
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
+
+?>
 <?php
     $id = 0;
     $full_name = $email = $phone_no = $website = $country = $city = $state = $zip_code = $address = $gst_in = $logo = "";
@@ -76,6 +82,13 @@
                 WHERE id=$id";
 
             if ($conn->query($update_sql) === TRUE) {
+                logActivity(
+                    $conn,
+                    $loggedInUserId,
+                    "Company",                   // module
+                    "Company details updated",                   // action
+                    "Company details updated successfully"  // description
+                );
                 echo "<script>
                     Swal.fire({
                         title: 'Success!',
