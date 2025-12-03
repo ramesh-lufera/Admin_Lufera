@@ -1,6 +1,13 @@
 <?php include './partials/layouts/layoutTop.php'; ?>
 
 <style>
+    .readonly-select {
+        pointer-events: none;
+        background-color: #f8f9fa;
+    }
+    .readonly-select:focus {
+        pointer-events: none;
+    }
     .form-group {
         margin-bottom: 24px !important;
     }
@@ -335,34 +342,48 @@
             ];
         }
     
-        $data = json_encode([
-            'company_name' => createField($company_name),
-            'contact_person' => createField($contact_person),
-            'email' => createField($email),
-            'phone' => createField($phone),
-            'website' => createField($website),
-            'app_name' => createField($app_name),
-            'platform' => createField($platform),
-            'app_description' => createField($app_description),
-            'core_features' => createField($core_features),
-            'logo_provided' => createField($logo_provided),
-            'color_style' => createField($color_style),
-            'screenshots' => createField($screenshots),
-            'user_login' => createField($user_login),
-            'backend_details' => createField($backend_details),
-            'push_notifications' => createField($push_notifications),
-            'payment_integration' => createField($payment_integration),
-            'admin_panel' => createField($admin_panel),
-            'admin_functions' => createField($admin_functions),
-            'google_dev_account' => createField($google_dev_account),
-            'apple_dev_account' => createField($apple_dev_account),
-            'budget' => createField($budget),
-            'launch_date' => createField($launch_date),
-            'timeline_constraints' => createField($timeline_constraints),
-            'extra_notes' => createField($extra_notes),
-            'prefill_name' => createField($prefill_name),
-        ]);
-    
+        $inputFields = [
+            'company_name' => $company_name,
+            'contact_person' => $contact_person,
+            'email' => $email,
+            'phone' => $phone,
+            'website' => $website,
+            'app_name' => $app_name,
+            'platform' => $platform,
+            'app_description' => $app_description,
+            'core_features' => $core_features,
+            'logo_provided' => $logo_provided,
+            'color_style' => $color_style,
+            'screenshots' => $screenshots,
+            'user_login' => $user_login,
+            'backend_details' => $backend_details,
+            'push_notifications' => $push_notifications,
+            'payment_integration' => $payment_integration,
+            'admin_panel' => $admin_panel,
+            'admin_functions' => $admin_functions,
+            'google_dev_account' => $google_dev_account,
+            'apple_dev_account' => $apple_dev_account,
+            'budget' => $budget,
+            'launch_date' => $launch_date,
+            'timeline_constraints' => $timeline_constraints,
+            'extra_notes' => $extra_notes,
+            'prefill_name' => $prefill_name,
+        ];
+        if (empty($savedData)) {
+            // New entry: create all fields as pending
+            foreach ($inputFields as $key => $value) {
+                $savedData[$key] = createField($value);
+            }
+        } else {
+            // Existing entry: update only non-approved fields
+            foreach ($inputFields as $key => $value) {
+                if (!isset($savedData[$key]) || ($savedData[$key]['status'] ?? '') !== 'approved') {
+                    $savedData[$key] = createField($value);
+                }
+            }
+        }
+
+        $data = json_encode($savedData);
         $website_id = isset($_GET['id']) ? intval($_GET['id']) : 0;
     
         $check = $conn->prepare("SELECT id FROM json WHERE user_id = ? AND website_id = ? AND template = ?");
@@ -430,7 +451,7 @@
         $isDisabled = ($isAdmin || (!$isAdmin && ($status === 'approved' || $status === 'rejected'))) ? 'disabled' : '';
         $dataValue = is_array($val) ? implode(',', $val) : $val;
         $dataOptions = !empty($options) ? 'data-options="' . htmlspecialchars(implode(',', $options)) . '"' : '';
-
+        $selectReadonlyClass = ($type === 'select' && $isReadonly) ? 'readonly-select' : '';
         echo '<div class="form-group mb-4">';
         echo '<div class="d-flex align-items-start">';
 
@@ -450,7 +471,7 @@
         echo '<div class="input-group">';
 
         $copyButton = '';
-        if (in_array($type, ['text', 'textarea', 'select', 'date'])) {
+        if (in_array($type, ['text', 'textarea', 'select', 'date', 'email', 'url'])) {
             $copyButton = '<button type="button" class="btn btn-outline-secondary btn-sm copy-btn" data-field="' . htmlspecialchars($fieldName) . '" title="Copy Value"><i class="fa fa-copy"></i></button>';
         }
 
@@ -492,7 +513,8 @@
                 echo '</div>';
             }
         } elseif ($type === 'select') {
-            echo '<select class="form-control w-85 h-auto ' . $styleClass . '" id="' . $inputId . '" name="' . htmlspecialchars($fieldName) . '" ' . $isDisabled . '>';
+            //echo '<select class="form-control w-85 h-auto ' . $styleClass . '" id="' . $inputId . '" name="' . htmlspecialchars($fieldName) . '" ' . $isDisabled . '>';
+            echo '<select class="form-control w-85 h-auto ' . $styleClass . ' ' . $selectReadonlyClass . '" id="' . $inputId . '" name="' . htmlspecialchars($fieldName) . '" ' . $isReadonly . ' ' . $dataOptions . '>';
             echo '<option value="">-- Select an option --</option>';
             foreach ($options as $option) {
                 $selected = ($val == $option) ? 'selected' : '';
@@ -622,6 +644,47 @@
         echo 'updated';
         exit;
     }
+
+    // Check if all main fields are approved
+    $mainFields = [
+        'company_name',
+        'contact_person',
+        'email',
+        'phone',
+        'website',
+        'app_name',
+        'platform',
+        'app_description',
+        'core_features',
+        'logo_provided',
+        'color_style',
+        'screenshots',
+        'user_login',
+        'backend_details',
+        'push_notifications',
+        'payment_integration',
+        'admin_panel',
+        'admin_functions',
+        'google_dev_account',
+        'apple_dev_account',
+        'budget',
+        'launch_date',
+        'timeline_constraints',
+        'extra_notes',
+        'prefill_name'
+    ];
+    
+    $allApproved = true;
+    foreach ($mainFields as $field) {
+        if (empty($savedData[$field]) || ($savedData[$field]['status'] ?? 'pending') !== 'approved') {
+            $allApproved = false;
+            break;
+        }
+    }
+
+    // Output savedData to JS for PDF export
+    echo '<script>const savedData = ' . json_encode($savedData) . ';</script>';
+    echo '<script>const websiteId = ' . $website_id . ';</script>';
 ?>
 
     </div>
@@ -653,6 +716,7 @@
                                             <div>
                                                 <button type="button" id="bulkApproveBtn" class="btn btn-success btn-sm">Bulk Approve</button>
                                                 <button type="button" id="bulkRejectBtn" class="btn btn-danger btn-sm">Bulk Reject</button>
+                                                <button type="button" id="exportPdfBtn" class="btn btn-info btn-sm ml-2">Export PDF</button>
                                             </div>
                                         </div>
                                     <?php endif; ?>
@@ -718,9 +782,9 @@
                                         $prefillName = $savedData['prefill_name']['value'] ?? '';
                                         $allowPrefill = !empty($prefillName);
                                         ?>
-                                        <div class="mt-5 p-20">
+                                        <div class="">
                                             <div class="form-check">
-                                                <input class="form-check-input mt-4 me-4" type="checkbox" id="allow_prefill" name="allow_prefill" <?= $allowPrefill ? 'checked' : '' ?>>
+                                                <input class="form-check-input mt-4 me-10" type="checkbox" id="allow_prefill" name="allow_prefill" <?= $allowPrefill ? 'checked' : '' ?>>
                                                 <label class="form-check-label fw-bold" for="allow_prefill">
                                                     Allow users to save prefill data
                                                 </label>
@@ -741,7 +805,7 @@
                                             </div>
                                         </div>
                                     <?php if (in_array($user_role, [8])): ?>
-                                        <input type="submit" name="save" class="lufera-bg bg-hover-warning-400 text-white text-md px-56 py-11 radius-8 m-auto d-block mt-4" value="Save" >
+                                        <input type="submit" id="saveBtn" name="save" class="lufera-bg bg-hover-warning-400 text-white text-md px-56 py-11 radius-8 m-auto d-block mt-4" value="Save" >
                                     <?php endif; ?>
                                 </form>
                             </div>
@@ -978,18 +1042,140 @@
         jQuery('#bulkRejectBtn').click(function () {
             bulkUpdate('rejected');
         });
-
+ 
         // Edit/Update icons for admin
         jQuery('.edit-icon').click(function () {
             const field = jQuery(this).data('field');
             const input = jQuery('#field_' + field);
             const inputType = input.attr('type');
-            input.prop('readonly', false).focus();
+            input.prop('readonly', false).prop('disabled', false);
+            if (input.is('select')) {
+                input.removeClass('readonly-select');
+            }
+            input.focus();
             jQuery('input[type="radio"][name="' + field + '"]').prop('disabled', false);
             jQuery('input[type="checkbox"][name="' + field + '[]"]').prop('disabled', false);
             input.prop('disabled', false);
             jQuery('.update-icon[data-field="' + field + '"]').removeClass('d-none');
             jQuery(this).addClass('d-none');
+        });
+        
+        // PDF Export functionality
+        $('#exportPdfBtn').click(function() {
+            // Define sections and fields mapping (label, fieldKey)
+            const sections = [
+                {
+                    title: '1. Client & Business Info',
+                    fields: [
+                        { label: 'Business Name', key: 'company_name' },
+                        { label: 'Contact Person', key: 'contact_person' },
+                        { label: 'Email', key: 'email' },
+                        { label: 'Phone', key: 'phone' },
+                        { label: 'Website (if any)', key: 'website' }
+                    ]
+                },
+                {
+                    title: '2. App Overview',
+                    fields: [
+                        { label: 'App Name (Tentative)', key: 'app_name' },
+                        { label: 'Platform', key: 'platform' },
+                        { label: 'Brief Description of the App', key: 'app_description' },
+                        { label: 'Core Features / Functionalities', key: 'core_features' }
+                    ]
+                },
+                {
+                    title: '3. Design & Branding',
+                    fields: [
+                        { label: 'Logo Provided?', key: 'logo_provided' },
+                        { label: 'Preferred Colors / Style', key: 'color_style' },
+                        { label: 'Upload Screens / Sketches (if any)', key: 'screenshots' }
+                    ]
+                },
+                {
+                    title: '4. Functionality',
+                    fields: [
+                        { label: 'Will the app require user login?', key: 'user_login' },
+                        { label: 'Any backend/database/API required?', key: 'backend_details' },
+                        { label: 'Push Notifications?', key: 'push_notifications' },
+                        { label: 'Payment Integration Needed?', key: 'payment_integration' }
+                    ]
+                },
+                {
+                    title: '5. Admin Panel',
+                    fields: [
+                        { label: 'Do you need a web-based admin panel?', key: 'admin_panel' },
+                        { label: 'What should the admin be able to do?', key: 'admin_functions' }
+                    ]
+                },
+                {
+                    title: '6. App Publishing',
+                    fields: [
+                        { label: 'Do you have a Google Play Developer Account?', key: 'google_dev_account' },
+                        { label: 'Do you have an Apple Developer Account?', key: 'apple_dev_account' }
+                    ]
+                },
+                {
+                    title: '7. Budget & Timeline',
+                    fields: [
+                        { label: 'Approximate Budget', key: 'budget' },
+                        { label: 'Expected Launch Date', key: 'launch_date' },
+                        { label: 'Any Deadline or Time Constraints?', key: 'timeline_constraints' }
+                    ]
+                },
+                {
+                    title: '8. Notes or Questions',
+                    fields: [
+                        { label: 'Anything else you want to share?', key: 'extra_notes' }
+                    ]
+                }
+            ];
+            let html = '<html><head><title>Mobile App Development Onboarding Form</title>';
+            html += '<style>';
+            html += 'body { font-family: Arial, sans-serif; line-height: 1.6; padding: 20px; margin: 0; }';
+            html += 'h1 { text-align: center; color: #333; border-bottom: 2px solid #fec700; padding-bottom: 10px; margin-bottom: 20px; }';
+            html += 'h2 { color: #fec700; font-size: 18px; margin-top: 30px; margin-bottom: 15px; }';
+            html += '.field-item { margin-bottom: 15px; padding: 10px; border-left: 3px solid #eee; background-color: #f9f9f9; }';
+            html += '.field-label { font-weight: bold; color: #555; display: block; margin-bottom: 5px; }';
+            html += '.field-value { color: #000; word-wrap: break-word; }';
+            html += '.status-approved { color: #28a745; font-style: italic; }';
+            html += '.status-rejected { color: #dc3545; font-style: italic; }';
+            html += '.status-pending { color: #ffc107; font-style: italic; }';
+            html += '@media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }';
+            html += '</style></head><body>';
+            html += '<h1>Mobile App Development Onboarding Form</h1>';
+            html += '<p><strong>Generated on:</strong> ' + new Date().toLocaleDateString() + '</p>';
+           
+            // Populate sections
+            sections.forEach(section => {
+                let sectionHtml = '';
+                section.fields.forEach(field => {
+                    const data = savedData[field.key];
+                    if (data && data.value !== undefined) {
+                        let value = data.value || 'N/A';
+                        if (typeof value === 'string' && value.includes(',')) {
+                            value = value.split(',').map(v => v.trim()).join(', ');
+                        }
+                        const status = data.status || 'pending';
+                        const statusClass = `status-${status}`;
+                        sectionHtml += `
+                            <div class="field-item">
+                                <span class="field-label">${field.label}:</span>
+                                <span class="field-value">${value}</span>
+                                <br><small class="${statusClass}">Status: ${status}</small>
+                            </div>
+                        `;
+                    }
+                });
+                if (sectionHtml) {
+                    html += `<h2>${section.title}</h2>` + sectionHtml;
+                }
+            });
+            html += '</body></html>';
+            const printWindow = window.open('', '_blank');
+            printWindow.document.write(html);
+            printWindow.document.close();
+            printWindow.focus();
+            printWindow.print();
         });
 
         jQuery('.update-icon').click(function () {
@@ -1283,5 +1469,27 @@
             }
         });
     });
+</script>
+<script>
+$(document).ready(function() {
+    $('#saveBtn').on('click', function(e) {
+        const approvedElements = $('input.field-approved, textarea.field-approved, select.field-approved').filter(function() {
+            return $(this).attr('name') !== 'prefill_name';
+        });
+        const approvedCount = approvedElements.length;
+        const totalMainFields = 24;
+
+        if (approvedCount === totalMainFields) {
+            e.preventDefault();
+            Swal.fire({
+                icon: "info",
+                title: "All Fields Approved!",
+                text: "All records are already approved. No need to save."
+            });
+            return false;
+        }
+        // else, allow normal submission
+    });
+});
 </script>
 <?php include './partials/layouts/layoutBottom.php'; ?>

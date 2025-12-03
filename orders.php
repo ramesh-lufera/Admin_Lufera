@@ -406,7 +406,7 @@
                                             New Order
                                     </button>
                                 <?php } else if(($role != '1' || $role != '2') && $row['status'] === 'Pending'){ ?>
-                                    <button class="btn btn-danger btn-sm fw-medium text-white me-2">
+                                    <button class="btn btn-default lufera-bg btn-sm fw-medium text-white me-2">
                                         Pending Confirmation
                                     </button>
                                 <?php } ?>

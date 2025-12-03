@@ -1,30 +1,32 @@
 <?php include './partials/layouts/layoutTop.php'; ?>
-
 <style>
+    .readonly-select {
+        pointer-events: none;
+        background-color: #f8f9fa;
+    }
+    .readonly-select:focus {
+        pointer-events: none;
+    }
     .form-group {
         margin-bottom: 24px !important;
     }
-
     .form-group label {
         font-weight: 600 !important;
         color: #101010 !important;
         margin-bottom: 8px !important;
         display: block !important;
     }
-
     .form-control, textarea, input[type="file"] {
         /* border-radius: 10px !important; */
         border: 1px solid #ccc !important;
         padding: 12px 15px !important;
         width: 100% !important;
     }
-
     .form-control:focus, textarea:focus {
         border-color: #fec700 !important;
         box-shadow: 0 0 0 3px rgba(254,199,0,0.2) !important;
         outline: none !important;
     }
-
     .form-check-group {
         display: flex !important;
         flex-wrap: wrap !important;
@@ -32,13 +34,11 @@
         align-items: center !important;
         margin-top: 10px !important;
     }
-
     .form-check-inline {
         display: flex !important;
         /* align-items: center !important; */
         gap: 8px !important;
     }
-
     .form-check-input {
         width: 18px !important;
         height: 18px !important;
@@ -46,14 +46,12 @@
         /* margin: 0 !important; */
         appearance: auto !important;
     }
-
     .form-check-label {
         margin: 0 !important;
         color: #101010 !important;
         font-weight: 500 !important;
         cursor: pointer !important;
     }
-
     /* Remove browser defaults for consistency */
     .custom-checkbox-yellow {
         appearance: none;
@@ -69,12 +67,10 @@
         background-color: #fff;
         transition: all 0.2s ease-in-out;
     }
-
     .custom-checkbox-yellow:checked {
         background-color: #fece1e;
         border-color: #020202;
     }
-
     /* .custom-checkbox-yellow:checked::after {
         content: '✔';
         color: #000;
@@ -85,29 +81,24 @@
         transform: translate(-50%, -56%);
         font-weight: bold;
     } */
-
      .edit-icon:hover {
         filter: brightness(1.1);
     }
-
     .update-icon:hover {
         filter: brightness(1.1);
     }
-
     .field-approved {
         background-color: #f6fff8 !important;
         border: 1px solid #d1f1dc !important;
         border-radius: 6px;
         transition: background-color 0.3s ease;
     }
-
     .field-rejected {
         background-color: #fff6f6 !important;
         border: 1px solid #f0caca !important;
         border-radius: 6px;
         transition: background-color 0.3s ease;
     }
-
     .form-wizard-submit {
         background-color: #fec700;
         color: #ffffff;
@@ -117,7 +108,6 @@
         padding: 10px;
         text-align: center;
     }
-
     .marketing-header {
         font-size: 26px !important;
         font-weight: 700;
@@ -131,7 +121,6 @@
         font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         box-shadow: 0 1px 5px rgba(0, 0, 0, 0.07);
     }
-
     .w-85{
         width:85% !important;
     }
@@ -152,7 +141,6 @@
         height: 40px;
         font-size:20px;
     }
-
     .notice-yellow {
         background-color: #fff3cd;
         color: #000;
@@ -173,32 +161,31 @@
 <div class="dashboard-main-body">
     <div class="d-flex flex-wrap align-items-center gap-3 mb-24 justify-content-between">
         <div class="d-flex align-self-end">
-            <a class="cursor-pointer fw-bold" onclick="history.back()"><span class="fa fa-arrow-left"></span>&nbsp; </a>     
-            <h6 class="fw-semibold mb-0">Digital Marketing Client Onboarding Form</h6>
+            <a class="cursor-pointer fw-bold" onclick="history.back()"><span class="fa fa-arrow-left"></span>&nbsp; </a>
+            <h6 class="fw-semibold mb-0">Domain Onboarding Form</h6>
         </div>
 <?php
     $session_user_id = $_SESSION['user_id'];
     $prod_id = intval($_GET['prod_id']);
     $web_id = intval($_GET['id']);
-    
+   
     $get_type = "SELECT * FROM websites where id = $web_id";
     $type_result = $conn->query($get_type);
     $row_type = $type_result->fetch_assoc();
     $type = $row_type['type'];
-    
+   
     if($type == "package"){
         $sql = "SELECT * FROM package where id = $prod_id";
         $result = $conn->query($sql);
         $row = $result->fetch_assoc();
-        $template = $row['template'];     
+        $template = $row['template'];
     }
     elseif($type == "product"){
         $sql = "SELECT * FROM products where id = $prod_id";
         $result = $conn->query($sql);
         $row = $result->fetch_assoc();
-        $template = $row['template'];   
+        $template = $row['template'];
     }
-
     // Fetch all past records of this user
     $prevRecords = [];
     //$stmt = $conn->prepare("SELECT id, name FROM json WHERE user_id = ? AND template = ?");
@@ -206,7 +193,6 @@
     $stmt->bind_param("is", $session_user_id, $template);
     $stmt->execute();
     $result = $stmt->get_result();
-
     while ($row = $result->fetch_assoc()) {
         $decoded = json_decode($row['name'], true);
         if ($decoded && isset($decoded['full_name']['value'])) {
@@ -220,10 +206,9 @@
     $stmt->close();
     // Determine if admin/dev is viewing another user's data
     $target_user_id = $session_user_id;
-
     if (isset($_GET['id']) && in_array($session_user_id, [1, 2, 7])) {
         $website_id = intval($_GET['id']);
-        
+       
         // Find the user_id from website table
         $stmt = $conn->prepare("SELECT user_id FROM websites WHERE id = ?");
         $stmt->bind_param("i", $website_id);
@@ -234,34 +219,27 @@
         }
         $stmt->close();
     }
-
     $user_id = $target_user_id;
-
     $roleQuery = $conn->prepare("SELECT role FROM users WHERE id = ?");
     $roleQuery->bind_param("i", $user_id);
     $roleQuery->execute();
     $roleQuery->bind_result($user_role);
     $roleQuery->fetch();
     $roleQuery->close();
-
     $savedData = [];
-
     // Load previously saved data for this user (if any)
     $website_id = $_GET['id'] ?? 0;
     $website_id = intval($website_id);
-
     $query = $conn->prepare("SELECT name FROM json WHERE website_id = ?");
     $query->bind_param("i", $website_id);
     $query->execute();
     $query->store_result();
-
     if ($query->num_rows > 0) {
         $query->bind_result($jsonData);
         $query->fetch();
         $savedData = json_decode($jsonData, true);
     }
     $query->close();
-
     if (isset($_POST['save'])) {
         $full_name = $_POST['full_name'] ?? '';
         $email = $_POST['email'] ?? '';
@@ -330,76 +308,88 @@
                 'status' => 'pending'
             ];
         }
+        $inputFields = [
+            'full_name' => $full_name,
+            'email' => $email,
+            'phone' => $phone,
+            'domain_name' => $domain_name,
+            'registered' => $registered,
+            'registrar' => $registrar,
+            'transfer_assistance' => $transfer_assistance,
+            'expected_price' => $expected_price,
+            'listed_elsewhere' => $listed_elsewhere,
+            'listing_platforms' => $listing_platforms,
+            'sale_type' => $sale_type,
+            'domain_niche' => $domain_niche,
+            'additional_assets' => $additional_assets,
+            'communication_mode' => $communication_mode,
+            'additional_notes' => $additional_notes,
+            'reg_first_name' => $reg_first_name,
+            'reg_last_name' => $reg_last_name,
+            'reg_email' => $reg_email,
+            'reg_company' => $reg_company,
+            'reg_address' => $reg_address,
+            'reg_city' => $reg_city,
+            'reg_state' => $reg_state,
+            'reg_country' => $reg_country,
+            'reg_zip' => $reg_zip,
+            'reg_phone_code' => $reg_phone_code,
+            'reg_phone' => $reg_phone,
+            'admin_first_name' => $admin_first_name,
+            'admin_last_name' => $admin_last_name,
+            'admin_email' => $admin_email,
+            'admin_company' => $admin_company,
+            'admin_address' => $admin_address,
+            'admin_city' => $admin_city,
+            'admin_state' => $admin_state,
+            'admin_country' => $admin_country,
+            'admin_zip' => $admin_zip,
+            'admin_phone_code' => $admin_phone_code,
+            'admin_phone' => $admin_phone,
+            'tech_first_name' => $tech_first_name,
+            'tech_last_name' => $tech_last_name,
+            'tech_email' => $tech_email,
+            'tech_company' => $tech_company,
+            'tech_address' => $tech_address,
+            'tech_city' => $tech_city,
+            'tech_state' => $tech_state,
+            'tech_country' => $tech_country,
+            'tech_zip' => $tech_zip,
+            'tech_phone_code' => $tech_phone_code,
+            'tech_phone' => $tech_phone,
+            'bill_first_name' => $bill_first_name,
+            'bill_last_name' => $bill_last_name,
+            'bill_email' => $bill_email,
+            'bill_company' => $bill_company,
+            'bill_address' => $bill_address,
+            'bill_city' => $bill_city,
+            'bill_state' => $bill_state,
+            'bill_country' => $bill_country,
+            'bill_zip' => $bill_zip,
+            'bill_phone_code' => $bill_phone_code,
+            'bill_phone' => $bill_phone,
+        ];
 
-        $data = json_encode([
-            'full_name' => createField($full_name),
-            'email' => createField($email),
-            'phone' => createField($phone),
-            'domain_name' => createField($domain_name),
-            'registered' => createField($registered),
-            'registrar' => createField($registrar),
-            'transfer_assistance' => createField($transfer_assistance),
-            'expected_price' => createField($expected_price),
-            'listed_elsewhere' => createField($listed_elsewhere),
-            'listing_platforms' => createField($listing_platforms),
-            'sale_type' => createField($sale_type),
-            'domain_niche' => createField($domain_niche),
-            'additional_assets' => createField($additional_assets),
-            'communication_mode' => createField($communication_mode),
-            'additional_notes' => createField($additional_notes),
-            'reg_first_name' => createField($reg_first_name),
-            'reg_last_name' => createField($reg_last_name),
-            'reg_email' => createField($reg_email),
-            'reg_company' => createField($reg_company),
-            'reg_address' => createField($reg_address),
-            'reg_city' => createField($reg_city),
-            'reg_state' => createField($reg_state),
-            'reg_country' => createField($reg_country),
-            'reg_zip' => createField($reg_zip),
-            'reg_phone_code' => createField($reg_phone_code),
-            'reg_phone' => createField($reg_phone),
-            'admin_first_name' => createField($admin_first_name),
-            'admin_last_name' => createField($admin_last_name),
-            'admin_email' => createField($admin_email),
-            'admin_company' => createField($admin_company),
-            'admin_address' => createField($admin_address),
-            'admin_city' => createField($admin_city),
-            'admin_state' => createField($admin_state),
-            'admin_country' => createField($admin_country),
-            'admin_zip' => createField($admin_zip),
-            'admin_phone_code' => createField($admin_phone_code),
-            'admin_phone' => createField($admin_phone),
-            'tech_first_name' => createField($tech_first_name),
-            'tech_last_name' => createField($tech_last_name),
-            'tech_email' => createField($tech_email),
-            'tech_company' => createField($tech_company),
-            'tech_address' => createField($tech_address),
-            'tech_city' => createField($tech_city),
-            'tech_state' => createField($tech_state),
-            'tech_country' => createField($tech_country),
-            'tech_zip' => createField($tech_zip),
-            'tech_phone_code' => createField($tech_phone_code),
-            'tech_phone' => createField($tech_phone),
-            'bill_first_name' => createField($bill_first_name),
-            'bill_last_name' => createField($bill_last_name),
-            'bill_email' => createField($bill_email),
-            'bill_company' => createField($bill_company),
-            'bill_address' => createField($bill_address),
-            'bill_city' => createField($bill_city),
-            'bill_state' => createField($bill_state),
-            'bill_country' => createField($bill_country),
-            'bill_zip' => createField($bill_zip),
-            'bill_phone_code' => createField($bill_phone_code),
-            'bill_phone' => createField($bill_phone),
-        ]);
+        if (empty($savedData)) {
+            // New entry: create all fields as pending
+            foreach ($inputFields as $key => $value) {
+                $savedData[$key] = createField($value);
+            }
+        } else {
+            // Existing entry: update only non-approved fields
+            foreach ($inputFields as $key => $value) {
+                if (!isset($savedData[$key]) || ($savedData[$key]['status'] ?? '') !== 'approved') {
+                    $savedData[$key] = createField($value);
+                }
+            }
+        }
 
+        $data = json_encode($savedData);
         $website_id = isset($_GET['id']) ? intval($_GET['id']) : 0;
-
         $check = $conn->prepare("SELECT id FROM json WHERE user_id = ? AND website_id = ? AND template = ?");
         $check->bind_param("iis", $user_id, $website_id, $template);
         $check->execute();
         $check->store_result();
-
         if ($check->num_rows > 0) {
             $update = $conn->prepare("UPDATE json SET name = ?, prefill_name = ? WHERE user_id = ? AND website_id = ? AND template = ?");
             $update->bind_param("ssiis", $data, $prefill_name, $user_id, $website_id, $template);
@@ -411,9 +401,7 @@
             $success = $insert->execute();
             $insert->close();
         }
-
         $check->close();
-
         echo '
             <script>
                 Swal.fire({
@@ -425,10 +413,9 @@
                 });
             </script>';
     }
-
     if (!empty($prevRecords)): ?>
         <div class="d-flex justify-content-center justify-content-md-end" style="margin-bottom:0;">
-            <div class="p-3 rounded shadow-sm w-100 w-md-40" 
+            <div class="p-3 rounded shadow-sm w-100 w-md-40"
                 style="font-size: 0.85rem; background-color: #fffbea; max-width: 600px; text-align:left;">
                 <h6 class="fw-bold text-dark mb-3" style="font-size: 0.9rem;">
                     Fill Values From Previous Wizards
@@ -436,9 +423,9 @@
                 <div class="d-flex flex-wrap gap-3">
                     <?php foreach ($prevRecords as $record): ?>
                         <div class="form-check form-check-inline">
-                            <input type="checkbox" 
-                                class="form-check-input load-record" 
-                                style="transform: scale(1.1);" 
+                            <input type="checkbox"
+                                class="form-check-input load-record"
+                                style="transform: scale(1.1);"
                                 data-record='<?php echo json_encode($record['data']); ?>'
                                 id="rec_<?php echo $record['id']; ?>">
                             <label for="rec_<?php echo $record['id']; ?>" class="form-check-label ms-1" style="font-size: 0.9rem;">
@@ -450,7 +437,6 @@
             </div>
         </div>
     <?php endif;
-
     function renderFieldExtended($fieldName, $savedData, $user_role, $label = '', $placeholder = '', $type = 'text', $options = []) {
         $val = $savedData[$fieldName]['value'] ?? '';
         $status = $savedData[$fieldName]['status'] ?? 'pending';
@@ -461,82 +447,70 @@
         $isDisabled = ($isAdmin || (!$isAdmin && ($status === 'approved' || $status === 'rejected'))) ? 'disabled' : '';
         $dataValue = is_array($val) ? implode(',', $val) : $val;
         $dataOptions = !empty($options) ? 'data-options="' . htmlspecialchars(implode(',', $options)) . '"' : '';
-
+        $selectReadonlyClass = ($type === 'select' && $isReadonly) ? 'readonly-select' : '';
+        
         echo '<div class="form-group mb-4">';
         echo '<div class="d-flex align-items-start">';
-
         // Admin checkbox
         if ($isAdmin) {
             echo '<div class="me-3 d-flex align-items-center pt-4">';
             echo '<input class="form-check-input bulk-approve-checkbox custom-checkbox custom-checkbox-yellow mt-0" type="checkbox" value="' . htmlspecialchars($fieldName) . '" id="chk_' . htmlspecialchars($fieldName) . '">';
             echo '</div>';
         }
-
         echo '<div class="flex-grow-1">';
-
         // Label
         if ($label) {
             echo '<label for="' . $inputId . '" class="form-label">' . htmlspecialchars($label) . '</label>';
         }
-
         $styleClass = $status === 'approved' ? 'field-approved' : ($status === 'rejected' ? 'field-rejected' : '');
         echo '<div class="input-group">';
-
         $copyButton = '';
         if (in_array($type, ['text', 'textarea', 'select', 'date'])) {
             $copyButton = '<button type="button" class="btn btn-outline-secondary btn-sm copy-btn" data-field="' . htmlspecialchars($fieldName) . '" title="Copy Value"><i class="fa fa-copy"></i></button>';
         }
-
         // === TEXT / EMAIL ===
         if ($type === 'text' || $type === 'email') {
             echo '<input type="' . $type . '" class="form-control w-85 ' . $styleClass . '" id="' . $inputId . '" name="' . htmlspecialchars($fieldName) . '" placeholder="' . htmlspecialchars($placeholder) . '" value="' . htmlspecialchars($val) . '" ' . $isReadonly . '>';
             if ($copyButton) echo $copyButton;
         }
-
         // === TEXTAREA ===
-        elseif ($type === 'textarea') {           
+        elseif ($type === 'textarea') {
             echo '<textarea class="form-control w-85 ' . $styleClass . '" id="' . $inputId . '" name="' . htmlspecialchars($fieldName) . '" rows="3" placeholder="' . htmlspecialchars($placeholder) . '" ' . $isReadonly . '>' . htmlspecialchars($val) . '</textarea>';
             if ($copyButton) echo $copyButton;
         }
-
         // // === SELECT (Dropdown) ===
         // elseif ($type === 'select') {
-        //     echo '<select class="form-control w-85 ' . $styleClass . '" id="' . $inputId . '" name="' . htmlspecialchars($fieldName) . '" ' . $isDisabled . '>';
-        //     foreach ($options as $option) {
-        //         $selected = ($val == $option) ? 'selected' : '';
-        //         echo '<option value="' . htmlspecialchars($option) . '" ' . $selected . '>' . htmlspecialchars($option) . '</option>';
-        //     }
-        //     echo '</select>';
+        // echo '<select class="form-control w-85 ' . $styleClass . '" id="' . $inputId . '" name="' . htmlspecialchars($fieldName) . '" ' . $isDisabled . '>';
+        // foreach ($options as $option) {
+        // $selected = ($val == $option) ? 'selected' : '';
+        // echo '<option value="' . htmlspecialchars($option) . '" ' . $selected . '>' . htmlspecialchars($option) . '</option>';
         // }
-
+        // echo '</select>';
+        // }
         // === SELECT (Dropdown) ===
         elseif ($type === 'select') {
-            echo '<select class="form-control w-85 ' . $styleClass . '" id="' . $inputId . '" name="' . htmlspecialchars($fieldName) . '" ' . $isDisabled . '>';
-
+            //echo '<select class="form-control w-85 ' . $styleClass . '" id="' . $inputId . '" name="' . htmlspecialchars($fieldName) . '" ' . $isDisabled . '>';
+            echo '<select class="form-control w-85 h-auto ' . $styleClass . ' ' . $selectReadonlyClass . '" id="' . $inputId . '" name="' . htmlspecialchars($fieldName) . '" ' . $isReadonly . ' ' . $dataOptions . '>';
             // Default placeholder option
             echo '<option value="" disabled ' . (empty($val) ? 'selected' : '') . '>Select an option</option>';
-
             foreach ($options as $option) {
                 $selected = ($val == $option) ? 'selected' : '';
                 echo '<option value="' . htmlspecialchars($option) . '" ' . $selected . '>' . htmlspecialchars($option) . '</option>';
             }
-
             echo '</select>';
             if ($copyButton) echo $copyButton;
         }
-
         // // === RADIO ===
         // elseif ($type === 'radio') {
-        //     foreach ($options as $option) {
-        //         $checked = ($val == $option) ? 'checked' : '';
-        //         echo '<div class="form-check form-check-inline">';
-        //         // echo '<input class="form-check-input" type="radio" id="' . $inputId . '_' . $option . '" name="' . htmlspecialchars($fieldName) . '" value="' . htmlspecialchars($option) . '" ' . $checked . ' ' . ($isAdmin ? 'disabled' : '') . '>';
-        //         echo '<input class="form-check-input" type="radio" id="' . $inputId . '_' . $option . '" name="' . htmlspecialchars($fieldName) . '" value="' . htmlspecialchars($option) . '" ' . $checked . ' ' . $isDisabled . '>';
-        //         echo '<label class="form-check-label" for="' . $inputId . '_' . $option . '">' . htmlspecialchars($option) . '</label>';
-        //         echo '</div>';
-        //     }
+        // foreach ($options as $option) {
+        // $checked = ($val == $option) ? 'checked' : '';
+        // echo '<div class="form-check form-check-inline">';
+        // // echo '<input class="form-check-input" type="radio" id="' . $inputId . '_' . $option . '" name="' . htmlspecialchars($fieldName) . '" value="' . htmlspecialchars($option) . '" ' . $checked . ' ' . ($isAdmin ? 'disabled' : '') . '>';
+        // echo '<input class="form-check-input" type="radio" id="' . $inputId . '_' . $option . '" name="' . htmlspecialchars($fieldName) . '" value="' . htmlspecialchars($option) . '" ' . $checked . ' ' . $isDisabled . '>';
+        // echo '<label class="form-check-label" for="' . $inputId . '_' . $option . '">' . htmlspecialchars($option) . '</label>';
+        // echo '</div>';
         // }
-
+        // }
         // === CHECKBOX ===
         elseif ($type === 'checkbox') {
             $valArray = is_array($val) ? $val : explode(',', str_replace(' ', '', $val));
@@ -549,12 +523,10 @@
                 echo '</div>';
             }
         }
-
         // === FILE ===
         elseif ($type === 'file') {
             // echo '<input type="file" class="form-control ' . $styleClass . '" id="' . $inputId . '" name="' . htmlspecialchars($fieldName) . '" ' . ($isAdmin ? 'disabled' : '') . '>';
             echo '<input type="file" class="form-control w-85 ' . $styleClass . '" id="' . $inputId . '" name="' . htmlspecialchars($fieldName) . '" ' . $isDisabled . '>';
-
             if (!empty($val)) {
                 echo '<div class="mt-3">';
                 echo '<label class="d-block fw-bold">Uploaded File:</label>';
@@ -568,7 +540,6 @@
                 echo '</div>';
             }
         }
-
         // === Admin Buttons ===
         if ($isAdmin) {
             echo '<div class="btn-group mt-2 ms-1">';
@@ -578,18 +549,16 @@
             echo '<button type="button" class="btn btn-danger btn-sm reject-btn" data-field="' . htmlspecialchars($fieldName) . '" title="Reject">Reject</button>';
             echo '</div>';
         }
-
         // === USER Rejected Fields – Show Edit Icon ===
         // if (!$isAdmin && $status === 'rejected') {
-        //     echo '<button type="button" class="input-group-text text-warning edit-btn ms-2" title="Edit"
-        //         data-field="' . htmlspecialchars($fieldName) . '"
-        //         data-type="' . htmlspecialchars($type) . '"
-        //         data-value="' . htmlspecialchars($dataValue) . '"
-        //         ' . $dataOptions . '>
-        //         &#9998;
-        //     </button>';
+        // echo '<button type="button" class="input-group-text text-warning edit-btn ms-2" title="Edit"
+        // data-field="' . htmlspecialchars($fieldName) . '"
+        // data-type="' . htmlspecialchars($type) . '"
+        // data-value="' . htmlspecialchars($dataValue) . '"
+        // ' . $dataOptions . '>
+        // &#9998;
+        // </button>';
         // }
-
         if (!$isAdmin && $status === 'rejected') {
             echo '<button type="button" class="input-group-text text-warning edit-btn ms-2" title="Edit"
                 data-field="' . htmlspecialchars($fieldName) . '"
@@ -599,31 +568,26 @@
                 &#9998;
             </button>';
         }
-
         // === USER Approved Fields – Show Checkmark ===
         elseif (!$isAdmin && $status === 'approved') {
             echo '<span class="input-group-text text-success">&#10004;</span>';
         }
-
         echo '</div>'; // .input-group or after field
         echo '</div>'; // .flex-grow-1
         echo '</div>'; // .d-flex
         echo '</div>'; // .form-group
     }
-
     if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['edit_field'])) {
         $field = $_POST['edit_field'];
         $value = $_POST['edit_value'] ?? '';
         $user_id = $_SESSION['user_id'];
         $website_id = $_GET['id'] ?? 0;
-
         $check = $conn->prepare("SELECT id, name FROM json WHERE user_id = ? AND website_id = ?");
         $check->bind_param("ii", $user_id, $website_id);
         $check->execute();
         $result = $check->get_result();
         $row = $result->fetch_assoc();
         $jsonData = json_decode($row['name'], true) ?? [];
-
         if (isset($_POST['edit_file_upload']) && isset($_FILES['file'])) {
             $uploadDir = 'uploads/';
             $filename = basename($_FILES['file']['name']);
@@ -636,28 +600,21 @@
                 exit;
             }
         }
-
         $jsonData[$field]['value'] = $value;
         $jsonData[$field]['status'] = 'pending';
-
         $newJson = json_encode($jsonData);
-
         $update = $conn->prepare("UPDATE json SET name = ? WHERE id = ?");
         $update->bind_param("si", $newJson, $row['id']);
         $update->execute();
-
         exit;
     }
-
     if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['inline_update'])) {
         $field = $_POST['field'] ?? '';
         $website_id = isset($_GET['id']) ? intval($_GET['id']) : 0;
-
         if (!$field || !$website_id) {
             echo 'invalid request';
             exit;
         }
-
         // Fetch existing JSON
         $stmt = $conn->prepare("SELECT name FROM json WHERE website_id = ?");
         $stmt->bind_param("i", $website_id);
@@ -665,25 +622,20 @@
         $stmt->bind_result($jsonData);
         $stmt->fetch();
         $stmt->close();
-
         $decoded = json_decode($jsonData, true);
-
         if (!isset($decoded[$field])) {
             echo 'field not found';
             exit;
         }
-
         // === FILE upload ===
         if (!empty($_FILES['file'])) {
             $fileTmp = $_FILES['file']['tmp_name'];
             $fileName = basename($_FILES['file']['name']);
             $uploadDir = 'uploads/';
             $targetPath = $uploadDir . time() . '_' . preg_replace("/[^a-zA-Z0-9.\-_]/", "", $fileName);
-
             if (!is_dir($uploadDir)) {
                 mkdir($uploadDir, 0777, true);
             }
-
             if (move_uploaded_file($fileTmp, $targetPath)) {
                 $decoded[$field]['value'] = $targetPath;
                 $decoded[$field]['status'] = 'pending';
@@ -698,23 +650,47 @@
             $decoded[$field]['value'] = $value;
             $decoded[$field]['status'] = 'pending';
         }
-
         // Update JSON
         $updatedJson = json_encode($decoded);
         $updateStmt = $conn->prepare("UPDATE json SET name = ? WHERE website_id = ?");
         $updateStmt->bind_param("si", $updatedJson, $website_id);
         $updateStmt->execute();
         $updateStmt->close();
-
         echo 'updated';
         exit;
     }
-?>
+// Check if all main fields are approved
+$mainFields = [
+    'full_name','email','phone','domain_name','registered','registrar',
+    'transfer_assistance','expected_price','listed_elsewhere','listing_platforms',
+    'sale_type','domain_niche','additional_assets','communication_mode',
+    'additional_notes','reg_first_name','reg_last_name','reg_email','reg_company',
+    'reg_address','reg_city','reg_state','reg_country','reg_zip','reg_phone_code',
+    'reg_phone','admin_first_name','admin_last_name','admin_email','admin_company',
+    'admin_address','admin_city','admin_state','admin_country','admin_zip',
+    'admin_phone_code','admin_phone','tech_first_name','tech_last_name','tech_email',
+    'tech_company','tech_address','tech_city','tech_state','tech_country','tech_zip',
+    'tech_phone_code','tech_phone','bill_first_name','bill_last_name','bill_email',
+    'bill_company','bill_address','bill_city','bill_state','bill_country','bill_zip',
+    'bill_phone_code','bill_phone'
+];
 
+$allApproved = true;
+foreach ($mainFields as $field) {
+    if (empty($savedData[$field]) || ($savedData[$field]['status'] ?? 'pending') !== 'approved') {
+        $allApproved = false;
+        break;
+    }
+}
+
+// Output savedData to JS for PDF export
+echo '<script>const savedData = ' . json_encode($savedData) . ';</script>';
+echo '<script>const websiteId = ' . $website_id . ';</script>';
+?>
     </div>
-    <div class="card h-100 p-0 radius-12 overflow-hidden">               
+    <div class="card h-100 p-0 radius-12 overflow-hidden">
         <div class="card-body p-40">
-            
+           
             <div class="row justify-content-center">
                 <div class="col-xxl-10">
                 <section class="wizard-section">
@@ -730,7 +706,6 @@
                                         0%
                                     </div>
                                 </div>
-
                                 <form action="" method="post" id="myForm" role="form" enctype="multipart/form-data">
                                     <?php if (in_array($user_role, [1, 2, 7])): ?>
                                         <div class="d-flex justify-content-between align-items-center mb-3">
@@ -741,17 +716,16 @@
                                             <div>
                                                 <button type="button" id="bulkApproveBtn" class="btn btn-success btn-sm">Bulk Approve</button>
                                                 <button type="button" id="bulkRejectBtn" class="btn btn-danger btn-sm">Bulk Reject</button>
+                                                <button type="button" id="exportPdfBtn" class="btn btn-primary btn-sm">Export PDF</button>
                                             </div>
                                         </div>
                                     <?php endif; ?>
-
                                     <h5>1. Client Information</h5>
                                         <?php
                                             renderFieldExtended('full_name', $savedData, $user_role, 'Full Name', '', 'text');
                                             renderFieldExtended('email', $savedData, $user_role, 'Email Address', '', 'text');
                                             renderFieldExtended('phone', $savedData, $user_role, 'Phone Number', '', 'text');
                                         ?>
-
                                     <h5>2. Domain Details</h5>
                                         <?php
                                             renderFieldExtended('domain_name', $savedData, $user_role, 'Domain Name', 'example.com', 'text');
@@ -759,7 +733,6 @@
                                             renderFieldExtended('registrar', $savedData, $user_role, 'Registrar (if registered)', '', 'text');
                                             renderFieldExtended('transfer_assistance', $savedData, $user_role, 'Do you want us to handle the transfer process?', '', 'select', ['Yes', 'No']);
                                         ?>
-
                                     <h5>3. Sale Details</h5>
                                     <?php
                                         renderFieldExtended('expected_price', $savedData, $user_role, 'Expected Selling Price (INR/USD)', '', 'text');
@@ -767,26 +740,22 @@
                                         renderFieldExtended('listing_platforms', $savedData, $user_role, 'If yes, mention platforms (e.g., Sedo, Afternic, Flippa)', '', 'textarea');
                                         renderFieldExtended('sale_type', $savedData, $user_role, 'Is it part of a bundle or single domain sale?', '', 'select', ['Single Domain', 'Part of a Bundle']);
                                     ?>
-
                                     <h5>4. Domain Use and Branding</h5>
                                     <?php
                                         renderFieldExtended('domain_niche', $savedData, $user_role, 'Describe the value or niche of the domain', '', 'textarea');
                                         renderFieldExtended('additional_assets', $savedData, $user_role, 'Any additional assets included? (e.g., logo, website)', '', 'textarea');
                                     ?>
-
                                     <h5>5. Communication & Support</h5>
                                     <?php
                                         renderFieldExtended('communication_mode', $savedData, $user_role, 'Preferred Mode of Communication', '', 'select', ['Email','WhatsApp','Phone']);
                                         renderFieldExtended('additional_notes', $savedData, $user_role, 'Additional Notes / Instructions', '', 'textarea');
                                     ?>
-
                                     <h5>6. Domain Contact Details (Wizard)</h5>
                                     <div class="notice-yellow">
                                         <strong>Important:</strong> Accurate details are crucial to maintain your domain's security and compliance with ICANN (domain name regulator). Incorrect information can lead to your domain registration getting cancelled under the terms of your registration agreement.
                                         <br><br>
                                         If any of the stated information is out of date or incorrect, please make sure to update your information through our Wizard at any time.
                                     </div>
-
                                     <!-- Registrant Contact -->
                                     <h6>Registrant Contact</h6>
                                     <?php
@@ -802,7 +771,6 @@
                                         renderFieldExtended('reg_phone_code', $savedData, $user_role, 'Phone Country Code', '', 'text');
                                         renderFieldExtended('reg_phone', $savedData, $user_role, 'Phone Number', '', 'text');
                                     ?>
-
                                     <!-- Admin Contact -->
                                     <div class="d-flex justify-content-between"><h6>Administrative Contact</h6> <span><input type="checkbox" class="form-check-input mt-4" name="admin_same"> Copy if same as Registrant</span></div>
                                     <?php
@@ -818,7 +786,6 @@
                                         renderFieldExtended('admin_phone_code', $savedData, $user_role, 'Phone Country Code', '', 'text');
                                         renderFieldExtended('admin_phone', $savedData, $user_role, 'Phone Number', '', 'text');
                                     ?>
-
                                     <!-- Tech Contact -->
                                     <div class="d-flex justify-content-between"><h6>Technical Contact</h6> <span><input type="checkbox" class="form-check-input mt-4" name="tech_same"> Copy if same as Registrant</span></div>
                                     <?php
@@ -834,7 +801,6 @@
                                         renderFieldExtended('tech_phone_code', $savedData, $user_role, 'Phone Country Code', '', 'text');
                                         renderFieldExtended('tech_phone', $savedData, $user_role, 'Phone Number', '', 'text');
                                     ?>
-
                                     <!-- Billing Contact -->
                                     <div class="d-flex justify-content-between"><h6>Billing Contact</h6> <span><input type="checkbox" class="form-check-input mt-4" name="billing_same"> Copy if same as Registrant</span></div>
                                     <?php
@@ -856,14 +822,13 @@
                                         $prefillName = $savedData['prefill_name']['value'] ?? '';
                                         $allowPrefill = !empty($prefillName);
                                         ?>
-                                        <div class="mt-5 p-20">
+                                        <div class="">
                                             <div class="form-check">
-                                                <input class="form-check-input mt-4 me-4" type="checkbox" id="allow_prefill" name="allow_prefill" <?= $allowPrefill ? 'checked' : '' ?>>
+                                                <input class="form-check-input mt-4 me-10" type="checkbox" id="allow_prefill" name="allow_prefill" <?= $allowPrefill ? 'checked' : '' ?>>
                                                 <label class="form-check-label fw-bold" for="allow_prefill">
                                                     Allow users to save prefill data
                                                 </label>
                                             </div>
-
                                             <div id="prefill_name_wrapper" class="mt-3" style="display:<?= $allowPrefill ? 'block' : 'none' ?>;">
                                                 <?php
                                                 renderFieldExtended(
@@ -879,7 +844,7 @@
                                             </div>
                                         </div>
                                     <?php if (in_array($user_role, [8])): ?>
-                                        <input type="submit" name="save" class="lufera-bg bg-hover-warning-400 text-white text-md px-56 py-11 radius-8 m-auto d-block mt-4" value="Save" >
+                                        <input type="submit" id="saveBtn" name="save" class="lufera-bg bg-hover-warning-400 text-white text-md px-56 py-11 radius-8 m-auto d-block mt-4" value="Save" >
                                     <?php endif; ?>
                                 </form>
                             </div>
@@ -891,7 +856,6 @@
         </div>
     </div>
 </div>
-
 <style>
     .modal {
         position: fixed;
@@ -944,7 +908,6 @@
         const fieldContainer = document.getElementById('editFieldContainer');
         const saveBtn = document.getElementById('saveEditBtn');
         const closeBtn = document.querySelector('.close-btn');
-
         // Open modal
         document.querySelectorAll('.edit-btn').forEach(btn => {
             btn.addEventListener('click', () => {
@@ -952,9 +915,7 @@
                 currentType = btn.dataset.type || 'text';
                 const value = btn.dataset.value || '';
                 const options = btn.dataset.options ? btn.dataset.options.split(',') : [];
-
                 fieldContainer.innerHTML = ''; // Clear previous field content
-
                 if (currentType === 'textarea') {
                     fieldContainer.innerHTML = `<textarea id="modalInput" class="form-control" rows="4">${value}</textarea>`;
                 } else if (currentType === 'radio') {
@@ -989,10 +950,10 @@
                     fieldContainer.innerHTML = `
                         ${filePreview}
                         <input type="file" class="form-control" id="modalInput">`;
-                } 
+                }
                 // else {
-                //     // Default input (text, email, number etc.)
-                //     fieldContainer.innerHTML = `<input type="text" id="modalInput" class="form-control" value="${value}" />`;
+                // // Default input (text, email, number etc.)
+                // fieldContainer.innerHTML = `<input type="text" id="modalInput" class="form-control" value="${value}" />`;
                 // }
                 else if (currentType === 'select') {
                     let selectHTML = `<select id="modalInput" class="form-control">`;
@@ -1006,16 +967,13 @@
                     // Default input (text, email, number etc.)
                     fieldContainer.innerHTML = `<input type="text" id="modalInput" class="form-control" value="${value}" />`;
                 }
-
                 modal.style.display = 'flex';
             });
         });
-
         // Save edit
         saveBtn.addEventListener('click', () => {
             const formData = new FormData();
             formData.append('edit_field', currentField);
-
             if (currentType === 'checkbox') {
                 const values = Array.from(document.querySelectorAll('input[name="modalInput"]:checked'))
                     .map(el => el.value);
@@ -1034,7 +992,6 @@
             } else {
                 formData.append('edit_value', document.getElementById('modalInput').value);
             }
-
             fetch('', {
                 method: 'POST',
                 body: formData
@@ -1052,7 +1009,6 @@
                 });
             });
         });
-
         // Close modal
         closeBtn.addEventListener('click', () => modal.style.display = 'none');
         window.addEventListener('click', (e) => {
@@ -1060,7 +1016,6 @@
         });
     });
 </script>
-
 <div id="editModal" class="modal" style="display:none;">
     <div class="modal-content p-4 rounded" style="background:#fff; max-width:500px; margin:auto;">
         <span class="close-btn float-end" title="Close" style="cursor:pointer;">&times;</span>
@@ -1069,16 +1024,13 @@
         <button type="button" class="btn lufera-bg btn-warning w-100" id="saveEditBtn">Save</button>
     </div>
 </div>
-
 <script>
     $(document).ready(function () {
         const websiteId = new URLSearchParams(window.location.search).get('id');
-
         // Single field approve/reject
         $('.approve-btn, .reject-btn').click(function () {
             const field = $(this).data('field');
             const status = $(this).hasClass('approve-btn') ? 'approved' : 'rejected';
-
             $.post('json_status_update.php?id=' + websiteId, {
                 fields: [field],
                 status: status
@@ -1088,18 +1040,15 @@
                 Swal.fire('Error', 'Could not update field.', 'error');
             });
         });
-
         // Bulk approve/reject
         function bulkUpdate(status) {
             const fields = $('.bulk-approve-checkbox:checked').map(function () {
                 return $(this).val();
             }).get();
-
             if (fields.length === 0) {
                 Swal.fire('No fields selected', '', 'info');
                 return;
             }
-
             $.post('json_status_update.php?id=' + websiteId, {
                 fields: fields,
                 status: status
@@ -1109,57 +1058,206 @@
                 Swal.fire('Error', 'Bulk update failed.', 'error');
             });
         }
-
         $('#bulkApproveBtn').click(function () {
             bulkUpdate('approved');
         });
-
         $('#bulkRejectBtn').click(function () {
             bulkUpdate('rejected');
         });
+
+        // PDF Export functionality
+        $('#exportPdfBtn').click(function() {
+            // Define sections and fields mapping (label, fieldKey)
+            const sections = [
+                {
+                    title: '1. Client Information',
+                    fields: [
+                        { label: 'Full Name', key: 'full_name' },
+                        { label: 'Email Address', key: 'email' },
+                        { label: 'Phone Number', key: 'phone' }
+                    ]
+                },
+                {
+                    title: '2. Domain Details',
+                    fields: [
+                        { label: 'Domain Name', key: 'domain_name' },
+                        { label: 'Is the domain already registered?', key: 'registered' },
+                        { label: 'Registrar (if registered)', key: 'registrar' },
+                        { label: 'Do you want us to handle the transfer process?', key: 'transfer_assistance' }
+                    ]
+                },
+                {
+                    title: '3. Sale Details',
+                    fields: [
+                        { label: 'Expected Selling Price (INR/USD)', key: 'expected_price' },
+                        { label: 'Is the domain listed elsewhere?', key: 'listed_elsewhere' },
+                        { label: 'If yes, mention platforms (e.g., Sedo, Afternic, Flippa)', key: 'listing_platforms' },
+                        { label: 'Is it part of a bundle or single domain sale?', key: 'sale_type' }
+                    ]
+                },
+                {
+                    title: '4. Domain Use and Branding',
+                    fields: [
+                        { label: 'Describe the value or niche of the domain', key: 'domain_niche' },
+                        { label: 'Any additional assets included? (e.g., logo, website)', key: 'additional_assets' }
+                    ]
+                },
+                {
+                    title: '5. Communication & Support',
+                    fields: [
+                        { label: 'Preferred Mode of Communication', key: 'communication_mode' },
+                        { label: 'Additional Notes / Instructions', key: 'additional_notes' }
+                    ]
+                },
+                {
+                    title: '6. Domain Contact Details (Wizard)',
+                    fields: [
+                        { label: 'Registrant First Name', key: 'reg_first_name' },
+                        { label: 'Registrant Last Name', key: 'reg_last_name' },
+                        { label: 'Registrant Email', key: 'reg_email' },
+                        { label: 'Registrant Company Name', key: 'reg_company' },
+                        { label: 'Registrant Address', key: 'reg_address' },
+                        { label: 'Registrant City', key: 'reg_city' },
+                        { label: 'Registrant State', key: 'reg_state' },
+                        { label: 'Registrant Country Code', key: 'reg_country' },
+                        { label: 'Registrant Zip', key: 'reg_zip' },
+                        { label: 'Registrant Phone Country Code', key: 'reg_phone_code' },
+                        { label: 'Registrant Phone Number', key: 'reg_phone' },
+                        { label: 'Administrative First Name', key: 'admin_first_name' },
+                        { label: 'Administrative Last Name', key: 'admin_last_name' },
+                        { label: 'Administrative Email', key: 'admin_email' },
+                        { label: 'Administrative Company Name', key: 'admin_company' },
+                        { label: 'Administrative Address', key: 'admin_address' },
+                        { label: 'Administrative City', key: 'admin_city' },
+                        { label: 'Administrative State', key: 'admin_state' },
+                        { label: 'Administrative Country Code', key: 'admin_country' },
+                        { label: 'Administrative Zip', key: 'admin_zip' },
+                        { label: 'Administrative Phone Country Code', key: 'admin_phone_code' },
+                        { label: 'Administrative Phone Number', key: 'admin_phone' },
+                        { label: 'Technical First Name', key: 'tech_first_name' },
+                        { label: 'Technical Last Name', key: 'tech_last_name' },
+                        { label: 'Technical Email', key: 'tech_email' },
+                        { label: 'Technical Company Name', key: 'tech_company' },
+                        { label: 'Technical Address', key: 'tech_address' },
+                        { label: 'Technical City', key: 'tech_city' },
+                        { label: 'Technical State', key: 'tech_state' },
+                        { label: 'Technical Country Code', key: 'tech_country' },
+                        { label: 'Technical Zip', key: 'tech_zip' },
+                        { label: 'Technical Phone Country Code', key: 'tech_phone_code' },
+                        { label: 'Technical Phone Number', key: 'tech_phone' },
+                        { label: 'Billing First Name', key: 'bill_first_name' },
+                        { label: 'Billing Last Name', key: 'bill_last_name' },
+                        { label: 'Billing Email', key: 'bill_email' },
+                        { label: 'Billing Company Name', key: 'bill_company' },
+                        { label: 'Billing Address', key: 'bill_address' },
+                        { label: 'Billing City', key: 'bill_city' },
+                        { label: 'Billing State', key: 'bill_state' },
+                        { label: 'Billing Country Code', key: 'bill_country' },
+                        { label: 'Billing Zip', key: 'bill_zip' },
+                        { label: 'Billing Phone Country Code', key: 'bill_phone_code' },
+                        { label: 'Billing Phone Number', key: 'bill_phone' }
+                    ]
+                }
+            ];
+
+            let html = '<html><head><title>Domain Client Onboarding Form</title>';
+            html += '<style>';
+            html += 'body { font-family: Arial, sans-serif; line-height: 1.6; padding: 20px; margin: 0; }';
+            html += 'h1 { text-align: center; color: #333; border-bottom: 2px solid #fec700; padding-bottom: 10px; margin-bottom: 20px; }';
+            html += 'h2 { color: #fec700; font-size: 18px; margin-top: 30px; margin-bottom: 15px; }';
+            html += '.field-item { margin-bottom: 15px; padding: 10px; border-left: 3px solid #eee; background-color: #f9f9f9; }';
+            html += '.field-label { font-weight: bold; color: #555; display: block; margin-bottom: 5px; }';
+            html += '.field-value { color: #000; word-wrap: break-word; }';
+            html += '.status-approved { color: #28a745; font-style: italic; }';
+            html += '.status-rejected { color: #dc3545; font-style: italic; }';
+            html += '.status-pending { color: #ffc107; font-style: italic; }';
+            html += '@media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }';
+            html += '</style></head><body>';
+            html += '<h1>Domain Client Onboarding Form</h1>';
+            html += '<p><strong>Generated on:</strong> ' + new Date().toLocaleDateString() + '</p>';
+            
+            // Populate sections
+            sections.forEach(section => {
+                let sectionHtml = '';
+                section.fields.forEach(field => {
+                    const data = savedData[field.key];
+                    if (data && data.value !== undefined) {
+                        let value = data.value || 'N/A';
+                        if (typeof value === 'string' && value.includes(',')) {
+                            value = value.split(',').map(v => v.trim()).join(', ');
+                        }
+                        const status = data.status || 'pending';
+                        const statusClass = `status-${status}`;
+                        sectionHtml += `
+                            <div class="field-item">
+                                <span class="field-label">${field.label}:</span>
+                                <span class="field-value">${value}</span>
+                                <br><small class="${statusClass}">Status: ${status}</small>
+                            </div>
+                        `;
+                    }
+                });
+                if (sectionHtml) {
+                    html += `<h2>${section.title}</h2>` + sectionHtml;
+                }
+            });
+
+            if (savedData.prefill_name) {
+                html += '<h2>Prefill Data</h2>';
+                html += `
+                    <div class="field-item">
+                        <span class="field-label">Prefill Name:</span>
+                        <span class="field-value">${savedData.prefill_name.value || 'N/A'}</span>
+                        <br><small class="status-${savedData.prefill_name.status || 'pending'}">Status: ${savedData.prefill_name.status || 'pending'}</small>
+                    </div>
+                `;
+            }
+
+            html += '</body></html>';
+
+            const printWindow = window.open('', '_blank');
+            printWindow.document.write(html);
+            printWindow.document.close();
+            printWindow.focus();
+            printWindow.print();
+        });
     });
 </script>
-
 <script>
     $(document).ready(function () {
         const websiteId = new URLSearchParams(window.location.search).get('id');
-
         // Enable inline editing for all fields
         $('.edit-icon').click(function () {
             const field = $(this).data('field');
-
             // Enable text/email/textarea
             const input = $('#field_' + field);
-            input.prop('readonly', false).focus();
-
+            input.prop('readonly', false).prop('disabled', false);
+            if (input.is('select')) {
+                input.removeClass('readonly-select');
+            }
+            input.focus();
             // Enable radio buttons
             $('input[type="radio"][name="' + field + '"]').prop('disabled', false);
-
             // Enable checkboxes
             $('input[type="checkbox"][name="' + field + '[]"]').prop('disabled', false);
-
             // Enable file input
             input.prop('disabled', false);
-
             // Show update icon
             $('.update-icon[data-field="' + field + '"]').removeClass('d-none');
             $(this).addClass('d-none');
         });
-
         // Handle update/save click
         $('.update-icon').click(function () {
             const field = $(this).data('field');
             const input = $('#field_' + field);
             const inputType = input.attr('type');
             let value;
-
             if (inputType === 'file') {
                 const file = input[0].files[0];
                 const formData = new FormData();
                 formData.append('inline_update', true);
                 formData.append('field', field);
                 formData.append('file', file);
-
                 $.ajax({
                     type: 'POST',
                     url: '',
@@ -1176,7 +1274,6 @@
                 });
                 return;
             }
-
             // Checkbox (multiple)
             if (input.length === 0 && $('input[name="' + field + '[]"]').length > 0) {
                 let selected = [];
@@ -1193,7 +1290,6 @@
             else {
                 value = input.val();
             }
-
             $.post('', {
                 inline_update: true,
                 field: field,
@@ -1211,7 +1307,6 @@
         });
     });
 </script>
-
 <!-- Progress Bar -->
 <script>
     const fieldNames = [
@@ -1275,55 +1370,44 @@
         'bill_phone_code',
         'bill_phone'
     ];
-
     function normalizeName(name) {
         return name.replace(/[\[\]\/]/g, "\\$&");
     }
-
     function isFieldFilled($field) {
         const tag = $field.prop('tagName').toLowerCase();
         const type = $field.attr('type');
-
         if (tag === 'select' || tag === 'textarea') {
             return !!$field.val()?.trim();
         }
-
         if (type === 'file') {
             const filesPresent = $field[0]?.files?.length > 0;
             const hasExisting = $field.closest('.form-group').find('img, a').length > 0;
             return filesPresent || hasExisting;
         }
-
         if (type === 'checkbox' || type === 'radio') {
             return $(`input[name="${$field.attr('name')}"]:checked`).length > 0;
         }
-
         return !!$field.val()?.trim();
     }
-
     function updateProgressBar() {
         let filled = 0;
         const total = fieldNames.length;
-
         for (const name of fieldNames) {
             const $field = $(`[name="${normalizeName(name)}"]`);
             if ($field.length && isFieldFilled($field)) {
                 filled++;
             }
         }
-
         const percent = Math.round((filled / total) * 100);
         $('#formProgressBar')
             .css('width', percent + '%')
             .text(percent + '%');
     }
-
     $(document).ready(function () {
         updateProgressBar();
         $(document).on('input change', 'input, select, textarea', updateProgressBar);
     });
 </script>
-
 <script>
     $(document).ready(function () {
     // Object to store original values for each section
@@ -1332,7 +1416,6 @@
         tech: {},
         bill: {}
     };
-
     // Function to save original values for a section
     function saveOriginalValues(prefix) {
         const fields = ['first_name', 'last_name', 'email', 'company', 'address', 'city', 'state', 'country', 'zip', 'phone_code', 'phone'];
@@ -1342,7 +1425,6 @@
             originalValues[prefix][field] = $input.val() || '';
         });
     }
-
     // Function to copy Registrant values to a section
     function copyRegistrantTo(prefix) {
         const fields = ['first_name', 'last_name', 'email', 'company', 'address', 'city', 'state', 'country', 'zip', 'phone_code', 'phone'];
@@ -1351,7 +1433,6 @@
             $(`[name="${prefix}_${field}"]`).val(regVal).trigger('input');
         });
     }
-
     // Function to restore original values for a section
     function restoreOriginalValues(prefix) {
         const fields = ['first_name', 'last_name', 'email', 'company', 'address', 'city', 'state', 'country', 'zip', 'phone_code', 'phone'];
@@ -1359,12 +1440,10 @@
             $(`[name="${prefix}_${field}"]`).val(originalValues[prefix][field] || '').trigger('input');
         });
     }
-
     // Initialize original values for all sections on page load
     ['admin', 'tech', 'bill'].forEach(prefix => {
         saveOriginalValues(prefix);
     });
-
     // Handle Admin Contact checkbox
     $('input[name="admin_same"]').on('change', function () {
         if ($(this).is(':checked')) {
@@ -1374,7 +1453,6 @@
             restoreOriginalValues('admin');
         }
     });
-
     // Handle Tech Contact checkbox
     $('input[name="tech_same"]').on('change', function () {
         if ($(this).is(':checked')) {
@@ -1384,7 +1462,6 @@
             restoreOriginalValues('tech');
         }
     });
-
     // Handle Billing Contact checkbox
     $('input[name="billing_same"]').on('change', function () {
         if ($(this).is(':checked')) {
@@ -1396,7 +1473,6 @@
     });
 });
 </script>
-
 <script>
     document.addEventListener('DOMContentLoaded', function () {
         const selectAllCheckbox = document.getElementById('select_all_admin');
@@ -1405,7 +1481,6 @@
                 const checkboxes = document.querySelectorAll('.bulk-approve-checkbox');
                 checkboxes.forEach(cb => cb.checked = selectAllCheckbox.checked);
             });
-
             // Optional: If all are manually selected/deselected, update the "Select All" checkbox
             document.querySelectorAll('.bulk-approve-checkbox').forEach(cb => {
                 cb.addEventListener('change', function () {
@@ -1421,15 +1496,12 @@ document.addEventListener('DOMContentLoaded', function () {
     document.querySelectorAll('.load-record').forEach(cb => {
         cb.addEventListener('change', function () {
             const form = document.getElementById('myForm');
-
             // Uncheck all other checkboxes
             document.querySelectorAll('.load-record').forEach(other => {
                 if (other !== this) other.checked = false;
             });
-
             if (this.checked) {
                 const data = JSON.parse(this.dataset.record);
-
                 // List of all fields to populate
                 const fields = [
                     'full_name', 'email', 'phone', 'domain_name', 'registered', 'registrar',
@@ -1469,12 +1541,10 @@ document.addEventListener('DOMContentLoaded', function () {
                         }
                     }
                 });
-
                 // Trigger input event to update progress bar
                 if (typeof updateProgressBar === 'function') {
                     updateProgressBar();
                 }
-
             } else {
                 // Reset the form if unchecked
                 form.reset();
@@ -1502,13 +1572,11 @@ document.addEventListener('DOMContentLoaded', function () {
             const field = $(this).data('field');
             const input = $('#field_' + field);
             let value = '';
-
             if (input.is('select')) {
                 value = input.find('option:selected').text() || input.val();
             } else {
                 value = input.val();
             }
-
             if (value) {
                 navigator.clipboard.writeText(value).then(function() {
                     Swal.fire({
@@ -1546,5 +1614,27 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         });
     });
+</script>
+<script>
+$(document).ready(function() {
+    $('#saveBtn').on('click', function(e) {
+        const approvedElements = $('input.field-approved, textarea.field-approved, select.field-approved').filter(function() {
+            return $(this).attr('name') !== 'prefill_name';
+        });
+        const approvedCount = approvedElements.length;
+        const totalMainFields = 59;
+
+        if (approvedCount === totalMainFields) {
+            e.preventDefault();
+            Swal.fire({
+                icon: "info",
+                title: "All Fields Approved!",
+                text: "All records are already approved. No need to save."
+            });
+            return false;
+        }
+        // else, allow normal submission
+    });
+});
 </script>
 <?php include './partials/layouts/layoutBottom.php' ?>
