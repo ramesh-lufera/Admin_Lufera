@@ -616,8 +616,8 @@
                 $conn,
                 $Id,
                 "Category",                   // module
-                "New Category Created",      // action
-                "Category creation completed - $cat_name has been added."  // description
+                "Category Created",      // action
+                "New category created successfully - $cat_name"  // description
             );
             //$_SESSION['swal_success'] = "Category created";
             echo "

@@ -1,5 +1,10 @@
 <?php
 include './partials/connection.php';
+include './log.php';
+
+// Make sure you get the logged-in user ID
+session_start();
+$user_id = $_SESSION['user_id'] ?? 0;
 
 // Create or Update Service
 if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action'])) {
@@ -23,6 +28,28 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action'])) {
         }
 
         if ($conn->query($sql) === TRUE) {
+
+            // -----------------------------
+            // LOG ACTIVITY HERE
+            // -----------------------------
+            if ($action == 'create') {
+                logActivity(
+                    $conn,
+                    $user_id,
+                    "Add-on Service",
+                    "Add-on Service Created",
+                    "Add-on Service Created Successfully - $name"
+                );
+            } else {
+                logActivity(
+                    $conn,
+                    $user_id,
+                    "Add-on Service",
+                    "Add-on Service Updated",
+                    "Add-on Service Updated Successfully - $name"
+                );
+            }
+
             echo json_encode([
                 'status' => 'success', 
                 'message' => $action == 'create' ? 'Service created successfully' : 'Service updated successfully'
@@ -36,9 +63,28 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action'])) {
     // Delete Service
     if ($action == 'delete') {
         $id = intval($_POST['id']);
+
+        // Get name first for logging
+        $nameQuery = $conn->query("SELECT name FROM `add-on-service` WHERE id=$id");
+        $serviceName = ($nameQuery && $nameQuery->num_rows > 0)
+            ? $nameQuery->fetch_assoc()['name']
+            : "Unknown";
+
         $sql = "DELETE FROM `add-on-service` WHERE id=$id";
         
         if ($conn->query($sql) === TRUE) {
+
+            // -----------------------------
+            // LOG DELETE ACTIVITY
+            // -----------------------------
+            logActivity(
+                $conn,
+                $user_id,
+                "Add-on Service",
+                "Add-on Service Deleted",
+                "Add-on Service Deleted Successfully - $serviceName"
+            );
+
             echo json_encode(['status' => 'success', 'message' => 'Service deleted successfully']);
         } else {
             echo json_encode(['status' => 'error', 'message' => 'Error: ' . $conn->error]);
@@ -60,8 +106,8 @@ if ($_SERVER["REQUEST_METHOD"] == "GET" && isset($_GET['action']) && $_GET['acti
 
         // Split duration into value + unit
         $durationParts = explode(' ', trim($row['duration']));
-        $row['duration_value'] = isset($durationParts[0]) ? $durationParts[0] : '';
-        $row['duration_unit'] = isset($durationParts[1]) ? $durationParts[1] : '';
+        $row['duration_value'] = $durationParts[0] ?? '';
+        $row['duration_unit'] = $durationParts[1] ?? '';
 
         echo json_encode(['status' => 'success', 'data' => $row]);
     } else {

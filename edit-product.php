@@ -189,6 +189,13 @@ if (isset($_POST['save'])) {
 
 
   if ($stmt->execute()) {
+    logActivity(
+      $conn,
+      $loggedInUserId,
+      "Product",                   // module
+      "Product Updated",                   // action
+      "Product updated successfully - $name"  // description
+    );
       echo "<script>
           Swal.fire({
               title: 'Success!',

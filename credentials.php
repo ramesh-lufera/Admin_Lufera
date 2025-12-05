@@ -122,7 +122,13 @@
         $emailCommonLink = $newEmailCommonLink;
         $emailImageLink = $newEmailImageLink;
         $paypalClientId = $newPaypalClientId;
-
+        logActivity(
+            $conn, 
+            $loggedInUserId, 
+            "Credentials", 
+            "Credentials Updated", 
+            "Credentials Updated Successfully"
+        );
         echo "<script>
             Swal.fire({
                 icon: 'success',
@@ -140,16 +146,6 @@
         <a class="cursor-pointer fw-bold" onclick="history.back()"><span class="fa fa-arrow-left"></span>&nbsp; Back</a> 
         <h6 class="fw-semibold mb-0">Credentials</h6>
         <a class="cursor-pointer fw-bold visibility-hidden" onclick="history.back()"><span class="fa fa-arrow-left"></span>&nbsp; Back</a> 
-        <!-- <ul class="d-flex align-items-center gap-2">
-            <li class="fw-medium">
-                <a href="admin-dashboard.php" class="d-flex align-items-center gap-1 hover-text-primary">
-                    <iconify-icon icon="solar:home-smile-angle-outline" class="icon text-lg"></iconify-icon>
-                    Dashboard
-                </a>
-            </li>
-            <li>-</li>
-            <li class="fw-medium">Settings - API</li>
-        </ul> -->
     </div>
 
     <div class="card h-100 p-0 radius-12 overflow-hidden">
@@ -229,10 +225,10 @@
                     </div>
 
                     <div class="d-flex align-items-center justify-content-center gap-3 mt-24">
-                        <button type="reset" class="border border-danger-600 bg-hover-danger-200 text-danger-600 text-md px-40 py-11 radius-8">
+                        <button type="reset" class="btn btn-secondary text-md px-40 py-11 radius-8">
                             Reset
                         </button>
-                        <button type="submit" class="btn btn-primary border border-primary-600 text-md px-24 py-12 radius-8 lufera-bg">
+                        <button type="submit" class="btn text-md px-24 py-12 radius-8 lufera-bg">
                             Save
                         </button>
                     </div>

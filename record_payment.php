@@ -31,7 +31,13 @@ $currentURL .= "://".$_SERVER['HTTP_HOST'].$_SERVER['REQUEST_URI'];
         $sql = "INSERT INTO record_payment (payment_id, orders_id, invoice_no, payment_method, amount, balance, remarks, paid_date) 
                         VALUES ('$payment_id', '$order_id', '$invoice_no', '$payment_method', '$amount', '$balance_due', '$remarks', '$created_at')";
             if (mysqli_query($conn, $sql)) {
-
+                logActivity(
+                    $conn,
+                    $loggedInUserId,
+                    "Plan Details",                   // module
+                    "Record Payment",                   // action
+                    "Record Payment created successfully - $payment_id"  // description
+                  );
                 $siteInsert = "UPDATE orders
                                 SET payment_made = $total_amount, balance_due = $balance_due
                                 WHERE invoice_id = '$InvoiceId'";

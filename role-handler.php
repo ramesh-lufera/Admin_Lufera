@@ -1,102 +1,133 @@
 <?php
+session_start();
 include './partials/connection.php';
-
+include './log.php';
+$loggedInUserId = $_SESSION['user_id'] ?? 0;
+$response = "error"; // Default fallback response
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    /* ============================================================
+       DELETE ROLE
+    ============================================================ */
     if (isset($_POST['action']) && $_POST['action'] === 'delete') {
         $id = intval($_POST['id']);
-
         $stmt = $conn->prepare("DELETE FROM roles WHERE id = ?");
         $stmt->bind_param("i", $id);
-
         if ($stmt->execute()) {
-            echo 'success';
+            logActivity(
+                $conn,
+                $loggedInUserId,
+                "Roles",
+                "Role Deleted",
+                "Role deleted successfully"
+            );
+            $response = "success";
         } else {
-            echo 'error';
+            error_log("Delete Error: " . $stmt->error);
+            $response = "error";
         }
-
-        $stmt->close();
+        $stmt->close();  
+        echo $response;
         $conn->close();
-        exit; // Important: stop further processing
+        exit;
     }
-    $id = $_POST['role_id'];
-    $name = $_POST['role_name'];
-    $description = $_POST['description'];
-    $isActive = $_POST['isActive'];
+    /* ============================================================
+       ADD / UPDATE ROLE
+    ============================================================ */
+    $id = $_POST['role_id'] ?? "";
+    $name = trim($_POST['role_name']);
+    $description = trim($_POST['description']);
+    $isActive = intval($_POST['isActive']);
     $created_at = date("Y-m-d H:i:s");
-
+    /* ---------------------------
+       UPDATE ROLE
+    ---------------------------- */
     if (!empty($id)) {
-        // UPDATE logic
-        $stmt = $conn->prepare("UPDATE roles SET name=?, description=?, isActive=? WHERE id=?");
+        $stmt = $conn->prepare("
+            UPDATE roles SET name=?, description=?, isActive=? 
+            WHERE id=?
+        ");
         $stmt->bind_param("ssii", $name, $description, $isActive, $id);
-        // if ($stmt->execute()) {
-        //     echo "update";
-        // } else {
-        //     echo "error";
-        // }
-        // $stmt->close();
-
         if ($stmt->execute()) {
-            // Delete old permissions
+            /* Delete old permissions */
             $conn->query("DELETE FROM permission WHERE role_id = $id");
-        
-            // Insert new permissions
-            $category_ids = isset($_POST['category_ids']) ? $_POST['category_ids'] : [];
-            if (!empty($category_ids)) {
-                $permStmt = $conn->prepare("INSERT INTO permission (role_id, category_id) VALUES (?, ?)");
-                foreach ($category_ids as $cat_id) {
+            /* Insert new permissions */
+            if (!empty($_POST['category_ids'])) {
+                $permStmt = $conn->prepare("
+                    INSERT INTO permission (role_id, category_id) 
+                    VALUES (?, ?)
+                ");
+                foreach ($_POST['category_ids'] as $cat_id) {
                     $permStmt->bind_param("ii", $id, $cat_id);
                     $permStmt->execute();
                 }
                 $permStmt->close();
             }
-        
-            echo "update";
+            /* Log Activity */
+            logActivity(
+                $conn,
+                $loggedInUserId,
+                "Roles",
+                "Role Updated",
+                "Role updated successfully"
+            );
+            $response = "update";
         } else {
-            echo "error";
+            error_log("Update Error: " . $stmt->error);
+            $response = "error";
         }
         $stmt->close();
-        
-    } else {
-        // Check for duplicate
+    }
+    /* ---------------------------
+       ADD NEW ROLE
+    ---------------------------- */
+    else {
+        // Check for duplicate role
         $check = $conn->prepare("SELECT id FROM roles WHERE name = ?");
         $check->bind_param("s", $name);
         $check->execute();
         $check->store_result();
         if ($check->num_rows > 0) {
-            echo "exists";
+            $response = "exists";
         } else {
-            // INSERT logic
-            $stmt = $conn->prepare("INSERT INTO roles (name, description, isActive, created_on) VALUES (?, ?, ?, ?)");
+            $stmt = $conn->prepare("
+                INSERT INTO roles (name, description, isActive, created_on)
+                VALUES (?, ?, ?, ?)
+            ");
             $stmt->bind_param("ssis", $name, $description, $isActive, $created_at);
-            // if ($stmt->execute()) {
-            //     echo "success";
-            // } else {
-            //     echo "error";
-            // }
-            // $stmt->close();
             if ($stmt->execute()) {
-                $role_id = $stmt->insert_id; // Get new role's ID
-                $category_ids = isset($_POST['category_ids']) ? $_POST['category_ids'] : [];
-            
-                if (!empty($category_ids)) {
-                    $permStmt = $conn->prepare("INSERT INTO permission (role_id, category_id) VALUES (?, ?)");
-                    foreach ($category_ids as $cat_id) {
+                $role_id = $stmt->insert_id;
+                /* Insert permissions */
+                if (!empty($_POST['category_ids'])) {
+                    $permStmt = $conn->prepare("
+                        INSERT INTO permission (role_id, category_id)
+                        VALUES (?, ?)
+                    ");
+                    foreach ($_POST['category_ids'] as $cat_id) {
                         $permStmt->bind_param("ii", $role_id, $cat_id);
                         $permStmt->execute();
                     }
                     $permStmt->close();
                 }
-            
-                echo "success";
+                /* Log Activity */
+                logActivity(
+                    $conn,
+                    $loggedInUserId,
+                    "Roles",
+                    "Role Created",
+                    "New Role created successfully - $name"
+                );
+                $response = "success";
             } else {
-                echo "error";
+                error_log("Insert Error: " . $stmt->error);
+                $response = "error";
             }
             $stmt->close();
-            
         }
         $check->close();
     }
-
-    $conn->close();
 }
+// Final output
+echo $response;
+// Close DB connection (ONLY HERE)
+$conn->close();
 ?>

@@ -43,6 +43,7 @@
                 <table class="table bordered-table sm-table mb-0" id="log">
                     <thead>
                         <tr>
+                            <th scope="col">ID</th>
                             <?php if ($showNameColumn) { ?>
                                 <th scope="col">Name</th>
                             <?php } ?>
@@ -59,9 +60,12 @@
                                 while ($row = mysqli_fetch_assoc($results)) {
                         ?>
                             <tr>
-                            <?php if ($showNameColumn) { ?>
-                                <td><?php echo $row['first_name'] . ' ' . $row['last_name']; ?></td>
-                            <?php } ?>
+                                <td>
+                                    <?php echo $row['id']; ?>
+                                </td>
+                                <?php if ($showNameColumn) { ?>
+                                    <td><?php echo $row['first_name'] . ' ' . $row['last_name']; ?></td>
+                                <?php } ?>
                                 <td>
                                     <?php echo $row['module']; ?>
                                 </td>
@@ -88,8 +92,15 @@
 <script>
 $(document).ready(function() {
     $('#log').DataTable({
-        order: [[4, 'asc']]
-    });
+    order: [[0, 'desc']], 
+    columnDefs: [
+        {
+            targets: 0,   // First column (ID)
+            visible: false,
+            searchable: false
+        }
+    ]
+});
 } );
 </script>
 <?php include './partials/layouts/layoutBottom.php' ?>

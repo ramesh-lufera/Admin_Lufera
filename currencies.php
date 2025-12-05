@@ -13,11 +13,13 @@
             $stmt->bind_param("i", $id);
             $stmt->execute();
             $stmt->close();
+            logActivity($conn, $loggedInUserId, "Currencies", "Currency Activated", "Currency ID $id set as active");
 
             echo json_encode(['status' => 'activated']);
         } else {
             $conn->query("UPDATE currencies SET is_active = 0");
             $conn->query("UPDATE currencies SET is_active = 1 WHERE id = 1");
+            logActivity($conn, $loggedInUserId, "Currencies", "Currency Reverted", "Reverted to default currency (ID 1)");
 
             echo json_encode(['status' => 'reverted_to_dollar']);
         }
@@ -37,6 +39,14 @@
         $stmt->bind_param("sssi", $name, $symbol, $code, $id);
 
         if ($stmt->execute()) {
+            // LOG ACTIVITY
+            logActivity(
+                $conn, 
+                $loggedInUserId, 
+                "Currencies", 
+                "Currency Updated", 
+                "Currency Updated Successfully - $name"
+            );
             echo json_encode([
                 'status' => 'updated',
                 'id' => $id,
@@ -57,7 +67,7 @@
 
     if (isset($_POST['action']) && $_POST['action'] === 'delete') {
         $id = intval($_POST['id']);
-
+        
         if ($id === 1) {
             echo json_encode(['status' => 'error', 'message' => 'Cannot delete default']);
         } else {
@@ -65,6 +75,14 @@
             $stmt->bind_param("i", $id);
             $stmt->execute();
             $stmt->close();
+            // LOG ACTIVITY
+            logActivity(
+                $conn, 
+                $loggedInUserId, 
+                "Currencies", 
+                "Currency Deleted", 
+                "Currency Deleted Successfully"
+            );
 
             echo json_encode(['status' => 'deleted', 'id' => $id]);
         }
@@ -80,6 +98,14 @@
         $stmt->bind_param("sss", $name, $symbol, $code);
         $stmt->execute();
         $stmt->close();
+        // LOG ACTIVITY
+        logActivity(
+            $conn,
+            $loggedInUserId,
+            "Currencies",
+            "Currency Created",
+            "Currency Created Successfully - $name"
+        );
 
         echo '
         <script>

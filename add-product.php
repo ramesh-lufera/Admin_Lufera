@@ -109,7 +109,7 @@
     }
   </style>
 <?php
-if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+if (isset($_POST['save_product'])) {
     $name = $_POST['name'];
     $title = $_POST['title'];
     $subtitle = $_POST['subtitle'];
@@ -170,6 +170,13 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 $stmt->bind_param("ssssssssisss", $name, $title, $subtitle, $price, $description, $category, $tags, $product_image, $cat_id, $duration, $template,  $created_at);
 
 if ($stmt->execute()) {
+    logActivity(
+      $conn,
+      $loggedInUserId,
+      "Product",                   // module
+      "Product Created",                   // action
+      "New product created successfully - $name"  // description
+    );
     // --------- CREATE -det.php FILE IF NOT EXISTS ---------
     $det_file_path = $slug . "-det.php";
 
@@ -326,7 +333,7 @@ if ($stmt->execute()) {
                             </div>
                         </div>
                         <!-- Submit Button -->
-                        <button type="submit" class="lufera-bg text-center text-white text-sm btn-sm px-12 py-10 radius-8 mt-28 submit-btn">Submit</button>
+                        <button type="submit" name="save_product" class="lufera-bg text-center text-white text-sm btn-sm px-12 py-10 radius-8 mt-28 submit-btn">Submit</button>
                     </form>
                 </div>
             </div>

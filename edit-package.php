@@ -152,6 +152,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save'])) {
     $stmt->bind_param("ssssisssssii", $package_name, $title, $subtitle, $description, $cat_id, $module, $updated_at, $addon_package, $addon_product, $addon_service, $gst_id, $package_id);
 
     if ($stmt->execute()) {
+        logActivity(
+            $conn, 
+            $loggedInUserId, 
+            "Packages", 
+            "Package Updated", 
+            "Package Updated Successfully - $package_name"
+        );
         $stmt->close();
 
         // Delete and insert features
