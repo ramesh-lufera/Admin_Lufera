@@ -419,6 +419,14 @@
 
                 mysqli_query($conn, $sqlRenewal);
 
+                logActivity(
+                    $conn,
+                    $loggedInUserId,
+                    "Cart Payment",           // module
+                    "Renewed successfully",  // action
+                    "Plan Renewed successfully - $plan_id"  // description
+                );
+
                 // Fetch user info
                 $sqlUser = "SELECT email, username FROM users WHERE id = ?";
                 $userStmt = $conn->prepare($sqlUser);
@@ -450,7 +458,7 @@
                 // flush response so browser shows the loader instantly
                 ob_flush(); flush();
 
-                $orders_link = rtrim($_ENV['EMAIL_COMMON_LINK'], '/') . '/orders.php';
+                $orders_link = rtrim($_ENV['EMAIL_COMMON_LINK'], '/') . '/subscription.php';
 
                 // ===================== SEND RENEWAL EMAIL =====================
                 $mail = new PHPMailer(true);
@@ -512,13 +520,7 @@
                 } catch (Exception $e) {
                     error_log("Renewal email failed: " . $mail->ErrorInfo);
                 }
-                logActivity(
-                    $conn,
-                    $loggedInUserId,
-                    "Cart Payment",           // module
-                    "Renewed successfully",  // action
-                    "Plan Renewed successfully - $plan_id"  // description
-                );
+                
                 echo "<script> 
                     Swal.fire({ 
                         icon: 'success',
@@ -920,7 +922,7 @@
                 // flush response so browser shows the loader instantly
                 ob_flush(); flush();
 
-                $orders_link = rtrim($_ENV['EMAIL_COMMON_LINK'], '/') . '/orders.php';
+                $orders_link = rtrim($_ENV['EMAIL_COMMON_LINK'], '/') . '/subscription.php';
 
                 // ===================== SEND PURCHASE EMAIL =====================
                 $mail = new PHPMailer(true);
@@ -938,9 +940,7 @@
 
                     $mail->isHTML(true);
                     
-                   
-                    
-                        $mail->Subject = "$mail_text Confirmation - Order #$receipt_id";
+                    $mail->Subject = "$mail_text Confirmation - Order #$receipt_id";
                     
                     $mail->Body = '
                         <!DOCTYPE html>

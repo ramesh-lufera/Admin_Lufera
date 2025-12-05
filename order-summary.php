@@ -2,6 +2,7 @@
 <?php
     $invoice_id = $_GET['id'];
     $type = $_GET['type'] ?? 'normal';
+
     //$invoice = "select * from orders where invoice_id = $invoice_id";
     
     // $invoice = "
@@ -86,6 +87,13 @@
                         VALUES ('$payment_id', '$order_id', '$invoice_no', '$payment_method', '$amount', '$balance_due', '$remarks', '$created_at')";
             
             if (mysqli_query($conn, $sql)) {
+                logActivity(
+                    $conn,
+                    $loggedInUserId,
+                    "Order Summary",                   // module
+                    "Record Payment",                   // action
+                    "Record Payment created successfully - $payment_id"  // description
+                  );
 
                  if ($type === 'renewal') {
                     // 👈 Renewal Payment Update
@@ -108,7 +116,7 @@
                         allowOutsideClick: false
                     }).then((result) => {
                         if (result.isConfirmed) {
-                            window.location.href = 'order-summary.php?id=$invoice_id';
+                            window.history.back();
                         }
                     });
                 </script>";

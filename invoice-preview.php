@@ -62,6 +62,7 @@
     $result = $conn->query($invoice);
     $row = $result->fetch_assoc();
     $user_id = $row['user_id'];
+    $id = $row['id'];
     
     $userId = $_SESSION['user_id'];
     $session_user = "select * from users where id = $userId";
@@ -101,6 +102,13 @@
                         VALUES ('$payment_id', '$order_id', '$invoice_no', '$payment_method', '$amount', '$balance_due', '$remarks', '$created_at')";
             
             if (mysqli_query($conn, $sql)) {
+                logActivity(
+                    $conn,
+                    $loggedInUserId,
+                    "Invoice",                   // module
+                    "Record Payment",           // action
+                    "Record payment created successfully - $payment_id"  // description
+                  );
 
                  if ($type === 'renewal') {
                     // 👈 Renewal Payment Update
@@ -123,7 +131,7 @@
                         allowOutsideClick: false
                     }).then((result) => {
                         if (result.isConfirmed) {
-                            window.location.href = 'order-summary.php?id=$invoice_id';
+                            window.history.back();
                         }
                     });
                 </script>";

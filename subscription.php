@@ -668,65 +668,19 @@
                                         <hr />
                                         
                                         <?php
-                                            // $invoice_id = $row['invoice_id'];
-                                            // $id = $row['id'];
-                                            // $payment_made = $row['payment_made'];
-                                            // $balance_due = $row['balance_due'];
-
-                                            // $expiredAt = $row['expired_at'] ?? null;
-                                            // $todayDate = date('Y-m-d');
-                                            // $userId = $row['user_id'];
-                                            // $planId = $row['plan'];
-                                            // // $type = 'normal';
-
-                                            // if (!empty($expiredAt) && $todayDate > $expiredAt) {
-                                            //     // Look up matching renewal invoice by user_id and plan_id
-                                            //     $renewalSql = "
-                                            //         SELECT invoice_id 
-                                            //         FROM renewal_invoices 
-                                            //         WHERE user_id = '$userId' 
-                                            //         AND plan = '$planId'
-                                            //         ORDER BY id DESC 
-                                            //         LIMIT 1
-                                            //     ";
-                                            //     $renewalResult = $conn->query($renewalSql);
-
-                                            //     if ($renewalResult && $renewalResult->num_rows > 0) {
-                                            //         $renewalRow = $renewalResult->fetch_assoc();
-                                            //         $invoice_id = $renewalRow['invoice_id']; // use renewal invoice_id instead
-                                            //         // $type = 'renewal';
-                                            //     }
-                                            // }
-
                                             $invoice_id = $row['invoice_id'];
                                             $id = $row['id'];
                                             $payment_made = $row['payment_made'];
                                             $balance_due = $row['balance_due'];
 
                                             $expiredAt = $row['expired_at'] ?? null;
-                                            $createdAt = !empty($row['web_created_at']) ? $row['web_created_at'] : $row['created_on'];
-                                            $duration  = !empty($row['web_duration']) ? $row['web_duration'] : $row['duration'];
                                             $todayDate = date('Y-m-d');
-                                            $userId    = $row['user_id'];
-                                            $planId    = $row['plan'];
+                                            $userId = $row['user_id'];
+                                            $planId = $row['plan'];
+                                            // $type = 'normal';
 
-                                            // Function to calculate expiry = created_at + duration
-                                            function calcExpiryDate($start, $duration) {
-                                                if (empty($start) || empty($duration)) return null;
-                                                $dt = new DateTime($start);
-                                                return $dt->modify("+" . $duration)->format("Y-m-d");
-                                            }
-
-                                            $expectedExpiry = calcExpiryDate($createdAt, $duration);
-
-                                            // -------------- NEW CONDITION --------------
-                                            if (
-                                                !empty($expectedExpiry) &&
-                                                !empty($expiredAt) &&
-                                                $expectedExpiry < $todayDate &&
-                                                $expectedExpiry < $expiredAt
-                                            ) {
-                                                // Get latest renewal invoice
+                                            if (!empty($expiredAt) && $todayDate > $expiredAt) {
+                                                // Look up matching renewal invoice by user_id and plan_id
                                                 $renewalSql = "
                                                     SELECT invoice_id 
                                                     FROM renewal_invoices 
@@ -739,7 +693,8 @@
 
                                                 if ($renewalResult && $renewalResult->num_rows > 0) {
                                                     $renewalRow = $renewalResult->fetch_assoc();
-                                                    $invoice_id = $renewalRow['invoice_id']; // use renewal invoice_id
+                                                    $invoice_id = $renewalRow['invoice_id']; // use renewal invoice_id instead
+                                                    // $type = 'renewal';
                                                 }
                                             }
 
@@ -791,7 +746,7 @@
                                                     Record Payment
                                                 </button> -->
 
-                                                <!-- <?php
+                                                <?php
                                                     // ✅ Determine if renewal period is active
                                                     $expiredAt = $row['expired_at'] ?? null;
                                                     $todayDate = date('Y-m-d');
@@ -821,60 +776,8 @@
                                                             $balanceDueToUse = $row['amount']; // assuming same as plan amount
                                                         }
                                                     }
-                                                ?> -->
-                                                <?php
-                                                    // =========================================
-                                                    // Determine if renewal period is active
-                                                    // =========================================
-
-                                                    // Fetch values required
-                                                    $expiredAt  = $row['expired_at'] ?? null;
-                                                    $createdAt  = !empty($row['web_created_at']) ? $row['web_created_at'] : $row['created_on'];
-                                                    $duration   = !empty($row['web_duration']) ? $row['web_duration'] : $row['duration'];
-                                                    $todayDate  = date('Y-m-d');
-
-                                                    // Default values (NORMAL invoice payment details)
-                                                    $invoiceToUse       = $row['invoice_id'];
-                                                    $paymentMadeToUse   = $row['payment_made'];
-                                                    $balanceDueToUse    = $row['balance_due'];
-
-                                                    // Function to calculate expiry = created_at + duration
-                                                    function calculateExpiry($start, $durationText) {
-                                                        if (empty($start) || empty($durationText)) return null;
-                                                        $d = new DateTime($start);
-                                                        return $d->modify("+" . $durationText)->format("Y-m-d");
-                                                    }
-
-                                                    // Expected expiry based on duration
-                                                    $expectedExpiry = calculateExpiry($createdAt, $duration);
-
-                                                    // ===================== RENEWAL CONDITION =====================
-                                                    // If (created_at + duration) < today AND (created_at + duration) < expired_at
-                                                    if (
-                                                        !empty($expectedExpiry) &&
-                                                        !empty($expiredAt) &&
-                                                        $expectedExpiry < $todayDate &&
-                                                        $expectedExpiry < $expiredAt
-                                                    ) {
-                                                        $renewalCheck = $conn->query("
-                                                            SELECT invoice_id 
-                                                            FROM renewal_invoices 
-                                                            WHERE user_id = '{$row['user_id']}' 
-                                                            AND plan = '{$row['plan']}'
-                                                            ORDER BY id DESC 
-                                                            LIMIT 1
-                                                        ");
-
-                                                        if ($renewalCheck && $renewalCheck->num_rows > 0) {
-                                                            $renewal = $renewalCheck->fetch_assoc();
-                                                            $invoiceToUse = $renewal['invoice_id'];
-
-                                                            // Reset values for a new renewal
-                                                            $paymentMadeToUse   = 0;
-                                                            $balanceDueToUse    = $row['amount']; // assuming same price for renewal
-                                                        }
-                                                    }
                                                 ?>
+                                                
                                                 <button class="btn text-white btn-primary text-sm mb-10 record-payment-btn"
                                                         data-bs-toggle="modal" data-bs-target="#exampleModal"
                                                         data-invoice="<?= htmlspecialchars($invoiceToUse) ?>"
@@ -896,7 +799,7 @@
                                                 <button class="btn text-white btn-success text-sm mb-10">Invoice</button>
                                             </a> -->
 
-                                            <!-- <?php
+                                            <?php
                                                 // ✅ Check expiry based on websites.expired_at
                                                 $expiredAt = isset($row['expired_at']) ? $row['expired_at'] : null;
                                                 $todayDate = date('Y-m-d');
@@ -908,6 +811,10 @@
                                                     <a href="invoice-preview.php?id=<?php echo $invoice_id; ?>&type=renewal">
                                                         <button class="btn text-white btn-success text-sm mb-10">Invoice</button>
                                                     </a>
+
+                                                    <a href="order-summary.php?id=<?php echo $invoice_id; ?>&type=renewal">
+                                                        <button class="btn text-white btn-danger text-sm mb-10">View More</button>
+                                                    </a>
                                                     <?php
                                                 } else {
                                                     // not expired (today <= expired_at) → normal invoice
@@ -915,56 +822,21 @@
                                                     <a href="invoice-preview.php?id=<?php echo $invoice_id; ?>&type=normal">
                                                         <button class="btn text-white btn-success text-sm mb-10">Invoice</button>
                                                     </a>
+
+                                                    <a href="order-summary.php?id=<?php echo $invoice_id; ?>&type=normal">
+                                                        <button class="btn text-white btn-danger text-sm mb-10">View More</button>
+                                                    </a>
                                                     <?php
                                                 }
-                                            ?>      -->
-
-                                            <?php
-                                                // ===================== NEW FINAL INVOICE LOGIC =======================
-
-                                                // Get values from DB row
-                                                $expiredAt  = !empty($row['expired_at']) ? $row['expired_at'] : null;
-                                                $createdAt  = !empty($row['web_created_at']) ? $row['web_created_at'] : $row['created_on'];
-                                                $duration   = !empty($row['web_duration']) ? $row['web_duration'] : $row['duration'];
-
-                                                // Calculate expiry from created_at + duration
-                                                function calcExpiry($start, $text) {
-                                                    if (empty($start) || empty($text)) return null;
-                                                    $dt = new DateTime($start);
-                                                    return $dt->modify("+" . $text)->format("Y-m-d");
-                                                }
-
-                                                $expectedExpiry = calcExpiry($createdAt, $duration);
-                                                $today          = date("Y-m-d");
-                                                $invoiceType    = "normal"; // default
-
-                                                // ----------------- CONDITION HANDLING -----------------
-
-                                                // 1) NULL expired_at → Normal Invoice
-                                                if (empty($expiredAt)) {
-                                                    $invoiceType = "normal";
-
-                                                // 2) created_at + duration > today → Normal Invoice
-                                                } elseif (!empty($expectedExpiry) && $expectedExpiry > $today) {
-                                                    $invoiceType = "normal";
-
-                                                // 3) created_at + duration < today AND created_at + duration < expired_at → Renewal Invoice
-                                                } elseif (!empty($expectedExpiry) && $expectedExpiry < $today && $expectedExpiry < $expiredAt) {
-                                                    $invoiceType = "renewal";
-                                                }
-                                            ?>
-
-                                            <a href="invoice-preview.php?id=<?php echo $invoice_id; ?>&type=<?php echo $invoiceType; ?>">
-                                                <button class="btn text-white btn-success text-sm mb-10">Invoice</button>
-                                            </a>
+                                            ?>     
 
                                             <!-- <a href="order-summary.php?id=<?=$row['invoice_id']?>">
                                                 <button class="btn text-white btn-danger text-sm mb-10">View More</button>
                                             </a> -->
 
-                                            <a href="order-summary.php?id=<?php echo $invoice_id; ?>&type=<?php echo $invoiceType; ?>">
+                                            <!-- <a href="order-summary.php?id=<?php echo $invoice_id; ?>&type=<?php echo $invoiceType; ?>">
                                                 <button class="btn text-white btn-danger text-sm mb-10">View More</button>
-                                            </a>
+                                            </a> -->
                                         </div>
 
                                         <!-- New Order Approvals Section (Admin only) -->
