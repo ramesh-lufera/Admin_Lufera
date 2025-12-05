@@ -109,8 +109,7 @@
                             \$gst_list[] = \$row;
                         }
                     }
-                    
-                    if (\$_SERVER['REQUEST_METHOD'] == 'POST') {
+                    if (isset(\$_POST['save_package'])) {
                         \$package_name = \$_POST['package_name'];                           
                         \$title = \$_POST['title'];
                         \$subtitle = \$_POST['subtitle'];
@@ -131,7 +130,16 @@
                         \$stmt->bind_param("ssssissssss", \$package_name, \$title, \$subtitle, \$description, \$cat_id, \$created_at, \$template, \$addons, \$addon_packages, \$addon_products, \$gst_id);
 
                         if (\$stmt->execute()) {
-                            \$package_id = \$conn->insert_id;
+                        \$package_id = \$conn->insert_id;
+                        
+                        logActivity(
+                            \$conn,
+                            \$userid,
+                            "Package",                   // module
+                            "Package Created",          // action
+                            "New package created successfully - \$package_name"  // description
+                        );
+        
                             \$stmt->close();
 
                             if (!empty(\$features) && is_array(\$features)) {
@@ -405,7 +413,7 @@
                                             <button type="button" class="border border-danger-600 bg-hover-danger-200 text-danger-600 text-md px-56 py-11 radius-8">
                                                 Cancel
                                             </button>
-                                            <button type="submit" class="btn lufera-bg text-white text-md px-56 py-12 radius-8">
+                                            <button type="submit" name="save_package" class="btn lufera-bg text-white text-md px-56 py-12 radius-8">
                                                 Save
                                             </button>
                                         </div>

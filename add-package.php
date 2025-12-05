@@ -50,7 +50,7 @@ error_reporting(E_ALL);
 
 $addons_query = $conn->query("SELECT id, name FROM `add-on-service`");
 
-    if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+    if (isset($_POST['save_package'])) {
         // Existing package fields
         $plan_type = $_POST['plan_type'];
         $title = $_POST['title'];
@@ -207,7 +207,7 @@ $addons_query = $conn->query("SELECT id, name FROM `add-on-service`");
                                     <button type="button" class="border border-danger-600 bg-hover-danger-200 text-danger-600 text-md px-56 py-11 radius-8">
                                         Cancel
                                     </button>
-                                    <button type="submit" class="btn lufera-bg text-white text-md px-56 py-12 radius-8">
+                                    <button type="submit" name="save_package" class="btn lufera-bg text-white text-md px-56 py-12 radius-8">
                                         Save
                                     </button>
                                 </div>

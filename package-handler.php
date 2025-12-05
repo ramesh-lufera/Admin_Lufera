@@ -1,7 +1,9 @@
 <?php
+session_start();
 include './partials/connection.php';
 header('Content-Type: application/json');
-
+include './log.php';
+$loggedInUserId = $_SESSION['user_id'] ?? 0;
 $response = ['success' => false];
 
 if (isset($_POST['action'])) {
@@ -15,6 +17,13 @@ if (isset($_POST['action'])) {
         $stmt = $conn->prepare($query);
         $stmt->bind_param('ii', $status, $id);
         if ($stmt->execute()) {
+            logActivity(
+                $conn, 
+                $loggedInUserId, 
+                "Packages", 
+                "Package Updated", 
+                "Package Status changed Successfully - $status"
+            );
             $response['success'] = true;
         }
     }
@@ -26,6 +35,13 @@ if (isset($_POST['action'])) {
         $stmt = $conn->prepare($query);
         $stmt->bind_param('i', $id);
         if ($stmt->execute()) {
+            logActivity(
+                $conn, 
+                $loggedInUserId, 
+                "Packages", 
+                "Package Deleted", 
+                "Package Deleted Successfully"
+            );
             $response['success'] = true;
         }
     }

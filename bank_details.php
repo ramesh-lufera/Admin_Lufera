@@ -42,6 +42,13 @@
                 swift_code='$swift_code'
                 WHERE id=$id";
             if ($conn->query($update_sql) === TRUE) {
+                logActivity(
+                    $conn,
+                    $loggedInUserId,
+                    "Bank Details",                   // module
+                    "Bank Details Updated",      // action
+                    "Bank Details Updated Successfully"  // description
+                );
                 echo "<script>
                     Swal.fire({
                         title: 'Success!',
@@ -61,6 +68,13 @@
             $insert_sql = "INSERT INTO bank_details (bank_name, ac_name, ac_no, branch, ifsc_code, micr, swift_code) 
                 VALUES ('$bank_name', '$ac_name', '$ac_no', '$branch', '$ifsc_code', '$micr', '$swift_code')";
             if ($conn->query($insert_sql) === TRUE) {
+                logActivity(
+                    $conn,
+                    $loggedInUserId,
+                    "Bank Details",                   // module
+                    "Bank Details Updated",      // action
+                    "Bank Details Updated Successfully"  // description
+                );
                 echo "<script>
                     Swal.fire({
                         title: 'Success!',

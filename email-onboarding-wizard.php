@@ -1,6 +1,13 @@
 <?php include './partials/layouts/layoutTop.php'; ?>
 
 <style>
+    .readonly-select {
+        pointer-events: none;
+        background-color: #f8f9fa;
+    }
+    .readonly-select:focus {
+        pointer-events: none;
+    }
     .form-group {
         margin-bottom: 24px !important;
     }
@@ -292,27 +299,42 @@
             ];
         }
         
-        $data = json_encode([
-            'organization_name' => createField($organization_name), // Updated key
-            'primary_contact' => createField($primary_contact), // Updated key
-            'email' => createField($email),
-            'phone' => createField($phone),
-            'website' => createField($website),
-            'service_needed' => createField($service_needed),
-            'details' => createField($details),
-            'industry' => createField($industry), // New field
-            'has_domain' => createField($_POST['has_domain'] ?? ''),
-            'domain_name' => createField($_POST['domain_name'] ?? ''),
-            'use_domain_for_email' => createField($_POST['use_domain_for_email'] ?? ''),
-            'email_accounts' => createField($_POST['email_accounts'] ?? ''),
-            'email_format' => createField($_POST['email_format'] ?? ''),
-            'user_list' => createField($_POST['user_list'] ?? ''),
-            'provider' => createField($_POST['provider'] ?? ''),
-            'existing_settings' => createField($_POST['existing_settings'] ?? ''),
-            'notes' => createField($_POST['notes'] ?? ''),
-            'prefill_name' => createField($prefill_name),
-        ]);
+        $inputFields = [
+            'organization_name' => $organization_name, // Updated key
+            'primary_contact' => $primary_contact, // Updated key
+            'email' => $email,
+            'phone' => $phone,
+            'website' => $website,
+            'service_needed' => $service_needed,
+            'details' => $details,
+            'industry' => $industry, // New field
+            'has_domain' => $_POST['has_domain'] ?? '',
+            'domain_name' => $_POST['domain_name'] ?? '',
+            'use_domain_for_email' => $_POST['use_domain_for_email'] ?? '',
+            'email_accounts' => $_POST['email_accounts'] ?? '',
+            'email_format' => $_POST['email_format'] ?? '',
+            'user_list' => $_POST['user_list'] ?? '',
+            'provider' => $_POST['provider'] ?? '',
+            'existing_settings' => $_POST['existing_settings'] ?? '',
+            'notes' => $_POST['notes'] ?? '',
+            'prefill_name' => $prefill_name,
+        ];
 
+        if (empty($savedData)) {
+            // New entry: create all fields as pending
+            foreach ($inputFields as $key => $value) {
+                $savedData[$key] = createField($value);
+            }
+        } else {
+            // Existing entry: update only non-approved fields
+            foreach ($inputFields as $key => $value) {
+                if (!isset($savedData[$key]) || ($savedData[$key]['status'] ?? '') !== 'approved') {
+                    $savedData[$key] = createField($value);
+                }
+            }
+        }
+
+        $data = json_encode($savedData);
         $website_id = isset($_GET['id']) ? intval($_GET['id']) : 0;
 
         $check = $conn->prepare("SELECT id FROM json WHERE user_id = ? AND website_id = ? AND template = ?");
@@ -380,7 +402,8 @@
         $isDisabled = ($isAdmin || (!$isAdmin && ($status === 'approved' || $status === 'rejected'))) ? 'disabled' : '';
         $dataValue = is_array($val) ? implode(',', $val) : $val;
         $dataOptions = !empty($options) ? 'data-options="' . htmlspecialchars(implode(',', $options)) . '"' : '';
-
+        $selectReadonlyClass = ($type === 'select' && $isReadonly) ? 'readonly-select' : '';
+        
         echo '<div class="form-group mb-4">';
         echo '<div class="d-flex align-items-start">';
 
@@ -400,9 +423,8 @@
         echo '<div class="input-group">';
 
         $copyButton = '';
-        if (in_array($type, ['text', 'textarea', 'select', 'date'])) {
+        if (in_array($type, ['text', 'textarea', 'select', 'date', 'email', 'url'])) {
             $copyButton = '<button type="button" class="btn btn-outline-secondary btn-sm copy-btn" data-field="' . htmlspecialchars($fieldName) . '" title="Copy Value"><i class="fa fa-copy"></i></button>';
-            if ($copyButton) echo $copyButton;
         }
         
         if ($type === 'text' || $type === 'email' || $type === 'url' || $type === 'date') {
@@ -443,7 +465,7 @@
                 echo '</div>';
             }
         } elseif ($type === 'select') {
-            echo '<select class="form-control w-85 h-auto ' . $styleClass . '" id="' . $inputId . '" name="' . htmlspecialchars($fieldName) . '" ' . $isDisabled . '>';
+            echo '<select class="form-control w-85 h-auto ' . $styleClass . ' ' . $selectReadonlyClass . '" id="' . $inputId . '" name="' . htmlspecialchars($fieldName) . '" ' . $isReadonly . ' ' . $dataOptions . '>';
             echo '<option value="">-- Select an option --</option>';
             foreach ($options as $option) {
                 $selected = ($val == $option) ? 'selected' : '';
@@ -572,6 +594,50 @@
         echo 'updated';
         exit;
     }
+
+    // Check if all main fields are approved
+    $mainFields = [
+        // 1. Company Information
+        'organization_name',
+        'primary_contact',
+        'email',
+        'phone',
+        'website',
+        'industry',
+    
+        // 2. Purpose of Email Services
+        'service_needed',
+        'details',
+    
+        // 3. Domain Information
+        'has_domain',
+        'domain_name',
+        'use_domain_for_email',
+    
+        // 4. User Details
+        'email_accounts',
+        'email_format',
+        'user_list',
+    
+        // 5. Technical Information
+        'provider',
+        'existing_settings',
+    
+        // 6. Additional Notes
+        'notes'
+    ];
+    
+    $allApproved = true;
+    foreach ($mainFields as $field) {
+        if (empty($savedData[$field]) || ($savedData[$field]['status'] ?? 'pending') !== 'approved') {
+            $allApproved = false;
+            break;
+        }
+    }
+
+    // Output savedData to JS for PDF export
+    echo '<script>const savedData = ' . json_encode($savedData) . ';</script>';
+    echo '<script>const websiteId = ' . $website_id . ';</script>';
 ?>
 
     </div>
@@ -602,6 +668,7 @@
                                             <div>
                                                 <button type="button" id="bulkApproveBtn" class="btn btn-success btn-sm">Bulk Approve</button>
                                                 <button type="button" id="bulkRejectBtn" class="btn btn-danger btn-sm">Bulk Reject</button>
+                                                <button type="button" id="exportPdfBtn" class="btn btn-info btn-sm ml-2">Export PDF</button>
                                             </div>
                                         </div>
                                     <?php endif; ?>
@@ -647,9 +714,9 @@
                                         $prefillName = $savedData['prefill_name']['value'] ?? '';
                                         $allowPrefill = !empty($prefillName);
                                         ?>
-                                        <div class="mt-5 p-20">
+                                        <div class="">
                                             <div class="form-check">
-                                                <input class="form-check-input mt-4 me-4" type="checkbox" id="allow_prefill" name="allow_prefill" <?= $allowPrefill ? 'checked' : '' ?>>
+                                                <input class="form-check-input mt-4 me-10" type="checkbox" id="allow_prefill" name="allow_prefill" <?= $allowPrefill ? 'checked' : '' ?>>
                                                 <label class="form-check-label fw-bold" for="allow_prefill">
                                                     Allow users to save prefill data
                                                 </label>
@@ -670,7 +737,7 @@
                                             </div>
                                         </div>
                                     <?php if (in_array($user_role, [8])): ?>
-                                        <input type="submit" name="save" class="lufera-bg bg-hover-warning-400 text-white text-md px-56 py-11 radius-8 m-auto d-block mt-4" value="Save" >
+                                        <input type="submit" id="saveBtn" name="save" class="lufera-bg bg-hover-warning-400 text-white text-md px-56 py-11 radius-8 m-auto d-block mt-4" value="Save" >
                                     <?php endif; ?>
                                 </form>
                             </div>
@@ -861,6 +928,184 @@
         $('#bulkRejectBtn').click(function () {
             bulkUpdate('rejected');
         });
+
+        $('#exportPdfBtn').click(function() {
+            const fields = {
+                'organization_name': 'Organization Name',
+                'primary_contact': 'Primary Contact',
+                'email': 'Email',
+                'phone': 'Phone',
+                'website': 'Website',
+                'industry': 'Industry',
+                'service_needed': 'Type of Service Needed',
+                'details': 'Details or Requirements',
+                'has_domain': 'Do you have a domain?',
+                'domain_name': 'If Yes, provide domain name',
+                'use_domain_for_email': 'Do you want to use this domain for email?',
+                'email_accounts': 'How many email accounts do you need?',
+                'email_format': 'Preferred email ID format (e.g. name@domain.com)',
+                'user_list': 'List of users (if available)',
+                'provider': 'Preferred Email Provider (e.g. Zoho, Google Workspace, Microsoft 365, Others)',
+                'existing_settings': 'Any existing email configuration or settings?',
+                'notes': 'Anything else we should know?'
+            };
+
+            let htmlContent = `
+                <html>
+                <head>
+                    <title>Email Services Onboarding Form</title>
+                    <style>
+                        body { font-family: Arial, sans-serif; margin: 40px; line-height: 1.6; }
+                        h1 { text-align: center; color: #333; border-bottom: 2px solid #fec700; padding-bottom: 10px; }
+                        .section { margin-bottom: 30px; page-break-inside: avoid; }
+                        .section h2 { color: #fec700; font-size: 18px; margin-bottom: 15px; border-left: 4px solid #fec700; padding-left: 10px; }
+                        .field { margin-bottom: 15px; padding: 10px; border-bottom: 1px solid #eee; }
+                        .label { font-weight: bold; color: #555; display: inline-block; width: 300px; vertical-align: top; }
+                        .value { margin-left: 10px; display: inline-block; width: calc(100% - 310px); word-wrap: break-word; }
+                        @media print { body { margin: 0; } .no-print { display: none; } }
+                    </style>
+                </head>
+                <body>
+                    <h1>Email Services Onboarding Form</h1>
+                    <div class="section">
+                        <h2>1. Company Information</h2>`;
+
+            for (let key in fields) {
+                if (['organization_name', 'primary_contact', 'email', 'phone', 'website', 'industry'].includes(key)) {
+                    const inputId = 'field_' + key;
+                    let value = '';
+                    const input = document.getElementById(inputId);
+                    if (input) {
+                        value = input.tagName === 'TEXTAREA' ? input.value.replace(/\n/g, '<br>') : input.value;
+                        if (input.tagName === 'SELECT') {
+                            value = input.options[input.selectedIndex]?.text || '';
+                        }
+                    }
+                    htmlContent += `
+                        <div class="field">
+                            <span class="label">${fields[key]}:</span>
+                            <span class="value">${value}</span>
+                        </div>`;
+                }
+            }
+
+            htmlContent += `
+                    </div>
+                    <div class="section">
+                        <h2>2. Purpose of Email Services</h2>`;
+
+            for (let key of ['service_needed', 'details']) {
+                const inputId = 'field_' + key;
+                let value = '';
+                const input = document.getElementById(inputId);
+                if (input) {
+                    value = input.tagName === 'TEXTAREA' ? input.value.replace(/\n/g, '<br>') : input.value;
+                    if (input.tagName === 'SELECT') {
+                        value = input.options[input.selectedIndex]?.text || '';
+                    }
+                }
+                htmlContent += `
+                    <div class="field">
+                        <span class="label">${fields[key]}:</span>
+                        <span class="value">${value}</span>
+                    </div>`;
+            }
+
+            htmlContent += `
+                    </div>
+                    <div class="section">
+                        <h2>3. Domain Information</h2>`;
+
+            for (let key of ['has_domain', 'domain_name', 'use_domain_for_email']) {
+                const inputId = 'field_' + key;
+                let value = '';
+                const input = document.getElementById(inputId);
+                if (input) {
+                    value = input.tagName === 'TEXTAREA' ? input.value.replace(/\n/g, '<br>') : input.value;
+                    if (input.tagName === 'SELECT') {
+                        value = input.options[input.selectedIndex]?.text || '';
+                    }
+                }
+                htmlContent += `
+                    <div class="field">
+                        <span class="label">${fields[key]}:</span>
+                        <span class="value">${value}</span>
+                    </div>`;
+            }
+
+            htmlContent += `
+                    </div>
+                    <div class="section">
+                        <h2>4. User Details</h2>`;
+
+            for (let key of ['email_accounts', 'email_format', 'user_list']) {
+                const inputId = 'field_' + key;
+                let value = '';
+                const input = document.getElementById(inputId);
+                if (input) {
+                    value = input.tagName === 'TEXTAREA' ? input.value.replace(/\n/g, '<br>') : input.value;
+                    if (input.tagName === 'SELECT') {
+                        value = input.options[input.selectedIndex]?.text || '';
+                    }
+                }
+                htmlContent += `
+                    <div class="field">
+                        <span class="label">${fields[key]}:</span>
+                        <span class="value">${value}</span>
+                    </div>`;
+            }
+
+            htmlContent += `
+                    </div>
+                    <div class="section">
+                        <h2>5. Technical Information</h2>`;
+
+            for (let key of ['provider', 'existing_settings']) {
+                const inputId = 'field_' + key;
+                let value = '';
+                const input = document.getElementById(inputId);
+                if (input) {
+                    value = input.tagName === 'TEXTAREA' ? input.value.replace(/\n/g, '<br>') : input.value;
+                    if (input.tagName === 'SELECT') {
+                        value = input.options[input.selectedIndex]?.text || '';
+                    }
+                }
+                htmlContent += `
+                    <div class="field">
+                        <span class="label">${fields[key]}:</span>
+                        <span class="value">${value}</span>
+                    </div>`;
+            }
+
+            htmlContent += `
+                    </div>
+                    <div class="section">
+                        <h2>6. Additional Notes or Questions</h2>`;
+
+            const inputId = 'field_notes';
+            let value = '';
+            const input = document.getElementById(inputId);
+            if (input) {
+                value = input.tagName === 'TEXTAREA' ? input.value.replace(/\n/g, '<br>') : input.value;
+                if (input.tagName === 'SELECT') {
+                    value = input.options[input.selectedIndex]?.text || '';
+                }
+            }
+            htmlContent += `
+                    <div class="field">
+                        <span class="label">${fields['notes']}:</span>
+                        <span class="value">${value}</span>
+                    </div>
+                </div>
+            </body>
+            </html>`;
+
+            const printWindow = window.open('', '_blank');
+            printWindow.document.write(htmlContent);
+            printWindow.document.close();
+            printWindow.focus();
+            printWindow.print();
+        });
     });
 </script>
 
@@ -871,7 +1116,11 @@
         $('.edit-icon').click(function () {
             const field = $(this).data('field');
             const input = $('#field_' + field);
-            input.prop('readonly', false).focus();
+            input.prop('readonly', false).prop('disabled', false);
+            if (input.is('select')) {
+                input.removeClass('readonly-select');
+            }
+            input.focus();
             $('input[type="radio"][name="' + field + '"]').prop('disabled', false);
             $('input[type="checkbox"][name="' + field + '[]"]').prop('disabled', false);
             input.prop('disabled', false);
@@ -1136,5 +1385,27 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         });
     });
+</script>
+<script>
+$(document).ready(function() {
+    $('#saveBtn').on('click', function(e) {
+        const approvedElements = $('input.field-approved, textarea.field-approved, select.field-approved').filter(function() {
+            return $(this).attr('name') !== 'prefill_name';
+        });
+        const approvedCount = approvedElements.length;
+        const totalMainFields = 17;
+
+        if (approvedCount === totalMainFields) {
+            e.preventDefault();
+            Swal.fire({
+                icon: "info",
+                title: "All Fields Approved!",
+                text: "All records are already approved. No need to save."
+            });
+            return false;
+        }
+        // else, allow normal submission
+    });
+});
 </script>
 <?php include './partials/layouts/layoutBottom.php'; ?>

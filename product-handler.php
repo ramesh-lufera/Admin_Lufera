@@ -1,7 +1,9 @@
 <?php
+session_start();
 include './partials/connection.php';
+include './log.php';
 header('Content-Type: application/json');
-
+$loggedInUserId = $_SESSION['user_id'] ?? 0;
 $response = ['success' => false];
 
 if (isset($_POST['action'])) {
@@ -15,6 +17,13 @@ if (isset($_POST['action'])) {
         $stmt = $conn->prepare($query);
         $stmt->bind_param('ii', $status, $id);
         if ($stmt->execute()) {
+            logActivity(
+                $conn,
+                $loggedInUserId,
+                "Product",                   // module
+                "Product Updated",                   // action
+                "Product status changed successfully"  // description
+              );
             $response['success'] = true;
         }
     }
@@ -26,6 +35,13 @@ if (isset($_POST['action'])) {
         $stmt = $conn->prepare($query);
         $stmt->bind_param('i', $id);
         if ($stmt->execute()) {
+            logActivity(
+                $conn,
+                $loggedInUserId,
+                "Product",                   // module
+                "Product Deleted",                   // action
+                "Product deleted successfully"  // description
+              );
             $response['success'] = true;
         }
     }

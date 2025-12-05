@@ -16,7 +16,6 @@
                     Add New Role
                 </button>
             </div>
-
             <div class="card h-100 p-0 radius-12">
                 <div class="card-body p-24">
                     <div class="table-responsive scroll-sm">
@@ -172,17 +171,13 @@
                             </div>
                         </div>
                     </div>
-                
                     </div>
-                    
                 </form>
                 </div>
             </div>
         </div>
         <!-- Modal End -->
-
 <script>
-
 function isStep1Valid() {
     const roleName = document.getElementById('role_name').value.trim();
     const desc = document.getElementById('description').value.trim();
@@ -190,8 +185,6 @@ function isStep1Valid() {
 
     return roleName !== '' && desc !== '' && isActiveChecked !== null;
 }
-
-
 
 $(document).ready(function() {
     $('#role-table').DataTable();
@@ -208,7 +201,6 @@ $(document).on("click", ".add-role-btn", function () {
     $(".modal-title").text("Add New Role");
     $(".btn[type='submit']").text("Save").attr("name", "save");
 });
-
 
 $(document).ready(function () {
     $('#roleForm').on('submit', function (e) {
@@ -363,7 +355,6 @@ document.getElementById('nextBtn').addEventListener('click', function () {
     document.getElementById('submitBtn').classList.remove('d-none');
 });
 
-
 document.getElementById('prevBtn').addEventListener('click', function () {
     var tab = new bootstrap.Tab(document.querySelector('#step1-tab'));
     tab.show();
@@ -390,14 +381,11 @@ document.querySelector('#step2-tab').addEventListener('show.bs.tab', function (e
     }
 });
 
-
-
 // Detect when user clicks back to Role tab
 document.querySelector('#step1-tab').addEventListener('shown.bs.tab', function () {
     document.getElementById('nextBtn').classList.remove('d-none');
     document.getElementById('submitBtn').classList.add('d-none');
 });
-
 </script>
 
 <?php include './partials/layouts/layoutBottom.php' ?>

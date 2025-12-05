@@ -1,6 +1,20 @@
 <?php include './partials/layouts/layoutTop.php'; ?>
 
 <style>
+     .readonly-select {
+        pointer-events: none;
+        background-color: #f8f9fa;
+    }
+    .readonly-select:focus {
+        pointer-events: none;
+    }
+    .readonly-select {
+        pointer-events: none;
+        background-color: #f8f9fa;
+    }
+    .readonly-select:focus {
+        pointer-events: none;
+    }
     .form-group {
         margin-bottom: 24px !important;
     }
@@ -314,31 +328,47 @@
             ];
         }
 
-        $data = json_encode([
-            'business_name' => createField($Business_name),
-            'industry_niche' => createField($Industry_niche),
-            'target_audience' => createField($Target_audience),
-            'unique_selling_proposition' => createField($Unique_selling_proposition),
-            'main_competitors' => createField($Main_competitors),
-            'logo_brand_guidelines' => createField($Logo_brand_guidelines),
-            'website_url' => createField($Website_url),
-            'social_media_links' => createField($Social_media_links),
-            'google_analytics_tag_manager_IDs' => createField($Google_analytics_tag_manager_IDs),
-            'other_platform_access' => createField($Other_platform_access),
-            'main_goals' => createField($Main_goals),
-            'preferred_channels' => createField($Preferred_channels),
-            'monthly_marketing_budget' => createField($Monthly_marketing_budget),
-            'products_services_to_promote' => createField($Products_services_to_promote),
-            'any_existing_offers_campaigns' => createField($Any_existing_offers_campaigns),
-            'content_bank' => createField($Content_bank),
-            'primary_point_of_contact' => createField($Primary_point_of_contact),
-            'email_phone' => createField($Email_phone),
-            'preferred_communication_channel' => createField($Preferred_communication_channel),
-            'reporting_frequency' => createField($Reporting_frequency),
-            'past_campaigns_tools_used' => createField($Past_campaigns_tools_used),
-            'top_performing_content' => createField($Top_performing_content),
-            'prefill_name' => createField($prefill_name),
-        ]);
+        $inputFields = [
+            'business_name' => $Business_name,
+            'industry_niche' => $Industry_niche,
+            'target_audience' => $Target_audience,
+            'unique_selling_proposition' => $Unique_selling_proposition,
+            'main_competitors' => $Main_competitors,
+            'logo_brand_guidelines' => $Logo_brand_guidelines,
+            'website_url' => $Website_url,
+            'social_media_links' => $Social_media_links,
+            'google_analytics_tag_manager_IDs' => $Google_analytics_tag_manager_IDs,
+            'other_platform_access' => $Other_platform_access,
+            'main_goals' => $Main_goals,
+            'preferred_channels' => $Preferred_channels,
+            'monthly_marketing_budget' => $Monthly_marketing_budget,
+            'products_services_to_promote' => $Products_services_to_promote,
+            'any_existing_offers_campaigns' => $Any_existing_offers_campaigns,
+            'content_bank' => $Content_bank,
+            'primary_point_of_contact' => $Primary_point_of_contact,
+            'email_phone' => $Email_phone,
+            'preferred_communication_channel' => $Preferred_communication_channel,
+            'reporting_frequency' => $Reporting_frequency,
+            'past_campaigns_tools_used' => $Past_campaigns_tools_used,
+            'top_performing_content' => $Top_performing_content,
+            'prefill_name' => $prefill_name,
+        ];
+
+        if (empty($savedData)) {
+            // New entry: create all fields as pending
+            foreach ($inputFields as $key => $value) {
+                $savedData[$key] = createField($value);
+            }
+        } else {
+            // Existing entry: update only non-approved fields
+            foreach ($inputFields as $key => $value) {
+                if (!isset($savedData[$key]) || ($savedData[$key]['status'] ?? '') !== 'approved') {
+                    $savedData[$key] = createField($value);
+                }
+            }
+        }
+
+        $data = json_encode($savedData);
 
         $website_id = isset($_GET['id']) ? intval($_GET['id']) : 0;
 
@@ -407,6 +437,7 @@
         $isDisabled = ($isAdmin || (!$isAdmin && ($status === 'approved' || $status === 'rejected'))) ? 'disabled' : '';
         $dataValue = is_array($val) ? implode(',', $val) : $val;
         $dataOptions = !empty($options) ? 'data-options="' . htmlspecialchars(implode(',', $options)) . '"' : '';
+        $selectReadonlyClass = ($type === 'select' && $isReadonly) ? 'readonly-select' : '';
 
         echo '<div class="form-group mb-4">';
         echo '<div class="d-flex align-items-start">';
@@ -447,8 +478,8 @@
 
         // === SELECT (Dropdown) ===
         elseif ($type === 'select') {
-            echo '<select class="form-control w-85 ' . $styleClass . '" id="' . $inputId . '" name="' . htmlspecialchars($fieldName) . '" ' . $isDisabled . '>';
-
+            //echo '<select class="form-control w-85 ' . $styleClass . '" id="' . $inputId . '" name="' . htmlspecialchars($fieldName) . '" ' . $isReadonly . ' ' . $dataOptions . '>';
+            echo '<select class="form-control w-85 h-auto ' . $styleClass . ' ' . $selectReadonlyClass . '" id="' . $inputId . '" name="' . htmlspecialchars($fieldName) . '" ' . $isReadonly . ' ' . $dataOptions . '>';
             // Default placeholder option
             echo '<option value="" disabled ' . (empty($val) ? 'selected' : '') . '>Select an option</option>';
 
@@ -620,6 +651,27 @@
         echo 'updated';
         exit;
     }
+    // Check if all main fields are approved
+    $mainFields = [
+        'bussiness_name', 'industry_niche', 'target_audience',
+        'unique_selling_proposition', 'main_competitors', 'logo_brand_guidelines',
+        'website_url', 'social_media_links', 'google_analytics_tag_manager_IDs',
+        'other_platform_access', 'main_goals', 'preferred_channels',
+        'monthly_marketing_budget', 'products_services_to_promote', 'any_existing_offers_campaigns', 'content_bank',
+        'primary_point_of_contact', 'email_phone', 'preferred_communication_channel', 'reporting_frequency', 
+        'past_campaigns_tools_used', 'top_performing_content'
+    ];
+    $allApproved = true;
+    foreach ($mainFields as $field) {
+        if (empty($savedData[$field]) || ($savedData[$field]['status'] ?? 'pending') !== 'approved') {
+            $allApproved = false;
+            break;
+        }
+    }
+
+    // Output savedData to JS for PDF export
+    echo '<script>const savedData = ' . json_encode($savedData) . ';</script>';
+    echo '<script>const websiteId = ' . $website_id . ';</script>';
 ?>
 
 </div>
@@ -652,6 +704,7 @@
                                             <div>
                                                 <button type="button" id="bulkApproveBtn" class="btn btn-success btn-sm">Bulk Approve</button>
                                                 <button type="button" id="bulkRejectBtn" class="btn btn-danger btn-sm">Bulk Reject</button>
+                                                <button type="button" id="exportPdfBtn" class="btn btn-primary btn-sm">Export PDF</button>
                                             </div>
                                         </div>
                                     <?php endif; ?>
@@ -711,9 +764,9 @@
                                     $prefillName = $savedData['prefill_name']['value'] ?? '';
                                     $allowPrefill = !empty($prefillName);
                                     ?>
-                                    <div class="mt-5 p-4">
+                                    <div class="">
                                         <div class="form-check">
-                                            <input class="form-check-input mt-4 me-4" type="checkbox" id="allow_prefill" name="allow_prefill" <?= $allowPrefill ? 'checked' : '' ?>>
+                                            <input class="form-check-input mt-4 me-10" type="checkbox" id="allow_prefill" name="allow_prefill" <?= $allowPrefill ? 'checked' : '' ?>>
                                             <label class="form-check-label fw-bold" for="allow_prefill">
                                                 Allow users to save prefill data
                                             </label>
@@ -734,7 +787,7 @@
                                         </div>
                                     </div>
                                     <?php if (in_array($user_role, [8])): ?>
-                                        <input type="submit" name="save" class="lufera-bg bg-hover-warning-400 text-white text-md px-56 py-11 radius-8 m-auto d-block mt-4" value="Save" >
+                                        <input type="submit" id="saveBtn" name="save" class="lufera-bg bg-hover-warning-400 text-white text-md px-56 py-11 radius-8 m-auto d-block mt-4" value="Save" >
                                     <?php endif; ?>
                                 </form>
                             </div>
@@ -934,6 +987,120 @@
         $('#bulkRejectBtn').click(function () {
             bulkUpdate('rejected');
         });
+
+        // PDF Export functionality
+        $('#exportPdfBtn').click(function() {
+            // Define sections and fields mapping (label, fieldKey)
+            const sections = [
+                {
+                    title: '1. Business Information',
+                    fields: [
+                        { label: 'Business Name', key: 'business_name' },
+                        { label: 'Industry / Niche', key: 'industry_niche' },
+                        { label: 'Target Audience', key: 'target_audience' },
+                        { label: 'Unique Selling Proposition (USP)', key: 'unique_selling_proposition' },
+                        { label: 'Main Competitors', key: 'main_competitors' }
+                    ]
+                },
+                {
+                    title: '2. Branding & Assets',
+                    fields: [
+                        { label: 'Logo / Brand Guidelines (Upload separately)', key: 'logo_brand_guidelines' }
+                    ]
+                },
+                {
+                    title: '3. Digital Presence',
+                    fields: [
+                        { label: 'Website URL', key: 'website_url' },
+                        { label: 'Social Media Links', key: 'social_media_links' },
+                        { label: 'Google Analytics / Tag Manager IDs', key: 'google_analytics_tag_manager_IDs' },
+                        { label: 'Other Platform Access (e.g., Facebook Ads, Email Tools)', key: 'other_platform_access' }
+                    ]
+                },
+                {
+                    title: '4. Marketing Objectives',
+                    fields: [
+                        { label: 'Main Goals', key: 'main_goals' },
+                        { label: 'Preferred Channels', key: 'preferred_channels' },
+                        { label: 'Monthly Marketing Budget', key: 'monthly_marketing_budget' }
+                    ]
+                },
+                {
+                    title: '5. Content & Offers',
+                    fields: [
+                        { label: 'Products/Services to Promote', key: 'products_services_to_promote' },
+                        { label: 'Any Existing Offers / Campaigns', key: 'any_existing_offers_campaigns' },
+                        { label: 'Content Bank (Blog links, brochures, etc.)', key: 'content_bank' }
+                    ]
+                },
+                {
+                    title: '6. Communication & Legal',
+                    fields: [
+                        { label: 'Primary Point of Contact', key: 'primary_point_of_contact' },
+                        { label: 'Email & Phone', key: 'email_phone' },
+                        { label: 'Preferred Communication Channel', key: 'preferred_communication_channel' },
+                        { label: 'Reporting Frequency', key: 'reporting_frequency' }
+                    ]
+                },
+                {
+                    title: '7. Past Marketing Data (Optional)',
+                    fields: [
+                        { label: 'Past Campaigns / Tools Used', key: 'past_campaigns_tools_used' },
+                        { label: 'Top-Performing Content (if known)', key: 'top_performing_content' }
+                    ]
+                }
+            ];
+
+            let html = '<html><head><title>Digital Marketing Client Onboarding Form</title>';
+            html += '<style>';
+            html += 'body { font-family: Arial, sans-serif; line-height: 1.6; padding: 20px; margin: 0; }';
+            html += 'h1 { text-align: center; color: #333; border-bottom: 2px solid #fec700; padding-bottom: 10px; margin-bottom: 20px; }';
+            html += 'h2 { color: #fec700; font-size: 18px; margin-top: 30px; margin-bottom: 15px; }';
+            html += '.field-item { margin-bottom: 15px; padding: 10px; border-left: 3px solid #eee; background-color: #f9f9f9; }';
+            html += '.field-label { font-weight: bold; color: #555; display: block; margin-bottom: 5px; }';
+            html += '.field-value { color: #000; word-wrap: break-word; }';
+            html += '.status-approved { color: #28a745; font-style: italic; }';
+            html += '.status-rejected { color: #dc3545; font-style: italic; }';
+            html += '.status-pending { color: #ffc107; font-style: italic; }';
+            html += '@media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }';
+            html += '</style></head><body>';
+            html += '<h1>Digital Marketing Client Onboarding Form</h1>';
+            html += '<p><strong>Generated on:</strong> ' + new Date().toLocaleDateString() + '</p>';
+            
+            // Populate sections
+            sections.forEach(section => {
+                let sectionHtml = '';
+                section.fields.forEach(field => {
+                    const data = savedData[field.key];
+                    if (data && data.value !== undefined) {
+                        let value = data.value || 'N/A';
+                        if (typeof value === 'string' && value.includes(',')) {
+                            value = value.split(',').map(v => v.trim()).join(', ');
+                        }
+                        const status = data.status || 'pending';
+                        const statusClass = `status-${status}`;
+                        sectionHtml += `
+                            <div class="field-item">
+                                <span class="field-label">${field.label}:</span>
+                                <span class="field-value">${value}</span>
+                                <br><small class="${statusClass}">Status: ${status}</small>
+                            </div>
+                        `;
+                    }
+                });
+                if (sectionHtml) {
+                    html += `<h2>${section.title}</h2>` + sectionHtml;
+                }
+            });
+
+            html += '</body></html>';
+
+            const printWindow = window.open('', '_blank');
+            printWindow.document.write(html);
+            printWindow.document.close();
+            printWindow.focus();
+            printWindow.print();
+        });
     });
 </script>
 
@@ -947,8 +1114,12 @@
 
             // Enable text/email/textarea
             const input = $('#field_' + field);
-            input.prop('readonly', false).focus();
-
+            //input.prop('readonly', false).focus();
+            input.prop('readonly', false).prop('disabled', false);
+            if (input.is('select')) {
+                input.removeClass('readonly-select');
+            }
+            input.focus();
             // Enable radio buttons
             $('input[type="radio"][name="' + field + '"]').prop('disabled', false);
 
@@ -1245,5 +1416,27 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         });
     });
+</script>
+<script>
+$(document).ready(function() {
+    $('#saveBtn').on('click', function(e) {
+        const approvedElements = $('input.field-approved, textarea.field-approved, select.field-approved').filter(function() {
+            return $(this).attr('name') !== 'prefill_name';
+        });
+        const approvedCount = approvedElements.length;
+        const totalMainFields = 22;
+
+        if (approvedCount === totalMainFields) {
+            e.preventDefault();
+            Swal.fire({
+                icon: "info",
+                title: "All Fields Approved!",
+                text: "All records are already approved. No need to save."
+            });
+            return false;
+        }
+        // else, allow normal submission
+    });
+});
 </script>
 <?php include './partials/layouts/layoutBottom.php' ?>
