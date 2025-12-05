@@ -601,6 +601,7 @@
             <img src="assets/images/Logo_dark.png" alt="site logo" class="dark-logo">
             <img src="assets/images/Image.jfif" alt="site logo" class="logo-icon"> -->
             <img src="uploads/company_logo/<?php echo $logo; ?>" alt="site logo" class="light-logo">
+            <img src="uploads/company_logo/<?php echo $logo; ?>" alt="site logo" class="dark-logo">
         </a>
     </div>
     <div class="sidebar-menu-area">
@@ -684,12 +685,12 @@
             <?php } ?>
             </ul>
             <ul class="sidebar-menu bottom-menu" id="sidebar-menu" style="border-top: 1px solid #eee; ">
-            <li>
+            <!-- <li>
                 <a href="orders.php">
                     <iconify-icon icon="hugeicons:invoice-03" class="menu-icon"></iconify-icon>
                     <span>Orders</span>
                 </a>
-            </li>
+            </li> -->
             <li class="dropdown">
                 <a href="javascript:void(0)">
                     <iconify-icon icon="hugeicons:invoice-03" class="menu-icon"></iconify-icon>
