@@ -35,7 +35,6 @@ $currentURL .= "://".$_SERVER['HTTP_HOST'].$_SERVER['REQUEST_URI'];
                     $conn,
                     $loggedInUserId,
                     "Plan Details",                   // module
-                    "Record Payment",                   // action
                     "Record Payment created successfully - $payment_id"  // description
                   );
                 $siteInsert = "UPDATE orders

@@ -24,7 +24,7 @@
         exit('Unauthorized');
     }
 
-    $stmt = $conn->prepare("SELECT id, name FROM json WHERE website_id = ?");
+    $stmt = $conn->prepare("SELECT id, name, prefill_name FROM json WHERE website_id = ?");
     $stmt->bind_param("i", $website_id);
     $stmt->execute();
     $res = $stmt->get_result();
@@ -32,16 +32,57 @@
     $stmt->close();
 
     $json = json_decode($data['name'], true);
+
     foreach ($fields as $f) {
         if (isset($json[$f])) {
             $json[$f]['status'] = $status;
         }
     }
 
+
     $newJson = json_encode($json);
     $update = $conn->prepare("UPDATE json SET name = ? WHERE id = ?");
     $update->bind_param("si", $newJson, $data['id']);
     $update->execute();
+
+    $prefillLabel = isset($data['prefill_name']) && $data['prefill_name'] !== '' 
+    ? $data['prefill_name'] 
+    : null;
+
+    // Determine action text based on number of fields and status
+    if (count($fields) > 1) {
+        // Bulk action
+        if ($prefillLabel) {
+            $safePrefill = htmlspecialchars($prefillLabel, ENT_QUOTES, 'UTF-8');
+            $actionText = $status === 'approved'
+                ? "Wizard bulk approved for {$safePrefill}"
+                : "Wizard bulk rejected for {$safePrefill}";
+        } else {
+            $actionText = $status === 'approved'
+                ? "Wizard bulk approved"
+                : "Wizard bulk rejected";
+        }
+    } else {
+        // Single field action
+        $fieldName = $fields[0];
+        $prefix = $status === 'approved'
+            ? "Field Approved for {$fieldName}"
+            : "Field Rejected for {$fieldName}";
+        if ($prefillLabel) {
+            $safePrefill = htmlspecialchars($prefillLabel, ENT_QUOTES, 'UTF-8');
+            $actionText = $prefix . " in {$safePrefill}";
+        } else {
+            $actionText = $prefix;
+        }
+    }
+
+// Log activity
+logActivity(
+    $conn,
+    $user_id,
+    "wizard",
+    $actionText
+);
 
     echo 'Success';
 

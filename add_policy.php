@@ -41,7 +41,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     $loggedInUserId,
                     "Privacy Policy",                   // module
                     "Privacy Policy updated",                   // action
-                    "Privacy Policy updated successfully"  // description
                 );
                 echo "<script>
                     Swal.fire({
@@ -73,7 +72,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     $loggedInUserId,
                     "Privacy Policy",                   // module
                     "Privacy Policy created",                   // action
-                    "Privacy Policy created successfully"  // description
                 );
                 echo "<script>
                     Swal.fire({

@@ -5,31 +5,53 @@ include './log.php';
 $loggedInUserId = $_SESSION['user_id'] ?? 0;
 $response = "error"; // Default fallback response
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    
     /* ============================================================
-       DELETE ROLE
-    ============================================================ */
-    if (isset($_POST['action']) && $_POST['action'] === 'delete') {
-        $id = intval($_POST['id']);
-        $stmt = $conn->prepare("DELETE FROM roles WHERE id = ?");
-        $stmt->bind_param("i", $id);
-        if ($stmt->execute()) {
-            logActivity(
-                $conn,
-                $loggedInUserId,
-                "Roles",
-                "Role Deleted",
-                "Role deleted successfully"
-            );
-            $response = "success";
-        } else {
-            error_log("Delete Error: " . $stmt->error);
-            $response = "error";
-        }
-        $stmt->close();  
-        echo $response;
-        $conn->close();
+   DELETE ROLE
+============================================================ */
+if (isset($_POST['action']) && $_POST['action'] === 'delete') {
+    $id = intval($_POST['id']);
+
+    // Fetch role name BEFORE deleting
+    $stmt = $conn->prepare("SELECT name FROM roles WHERE id = ?");
+    $stmt->bind_param("i", $id);
+    $stmt->execute();
+    $stmt->bind_result($roleName);
+    $stmt->fetch();
+    $stmt->close();
+
+    // If no name found, stop with error
+    if (empty($roleName)) {
+        echo "error";
         exit;
     }
+
+    // DELETE permissions first (fix foreign key issue)
+    $conn->query("DELETE FROM permission WHERE role_id = $id");
+
+    // Now delete the role
+    $stmt = $conn->prepare("DELETE FROM roles WHERE id = ?");
+    $stmt->bind_param("i", $id);
+
+    if ($stmt->execute()) {
+        logActivity(
+            $conn,
+            $loggedInUserId,
+            "Roles",
+            "Role Deleted - $roleName"
+        );
+        $response = "success";
+    } else {
+        error_log("Delete Error: " . $stmt->error);
+        $response = "error";
+    }
+
+    $stmt->close();
+    echo $response;
+    $conn->close();
+    exit;
+}
+
     /* ============================================================
        ADD / UPDATE ROLE
     ============================================================ */
@@ -67,8 +89,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $conn,
                 $loggedInUserId,
                 "Roles",
-                "Role Updated",
-                "Role updated successfully"
+                "Role Updated - $name",
             );
             $response = "update";
         } else {
@@ -113,8 +134,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $conn,
                     $loggedInUserId,
                     "Roles",
-                    "Role Created",
-                    "New Role created successfully - $name"
+                    "Role created - $name"
                 );
                 $response = "success";
             } else {

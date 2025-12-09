@@ -400,7 +400,12 @@
         }
 
         $check->close();
-
+        logActivity(
+            $conn,
+            $session_user_id,
+            "wizard",
+            "Wizard updated"
+        );
         echo '
             <script>
                 Swal.fire({
@@ -413,30 +418,12 @@
             </script>';
     }
 
-    if (!empty($prevRecords)): ?>
-        <div class="d-flex justify-content-center justify-content-md-end" style="margin-bottom:0;">
-            <div class="p-3 rounded shadow-sm w-100 w-md-40" 
-                style="font-size: 0.85rem; background-color: #fffbea; max-width: 600px; text-align:left;">
-                <h6 class="fw-bold text-dark mb-3" style="font-size: 0.9rem;">
-                    Fill Values From Previous Wizards
-                </h6>
-                <div class="d-flex flex-wrap gap-3">
-                    <?php foreach ($prevRecords as $record): ?>
-                        <div class="form-check form-check-inline">
-                            <input type="checkbox" 
-                                class="form-check-input load-record" 
-                                style="transform: scale(1.1);" 
-                                data-record='<?php echo json_encode($record['data']); ?>'
-                                id="rec_<?php echo $record['id']; ?>">
-                            <label for="rec_<?php echo $record['id']; ?>" class="form-check-label ms-1" style="font-size: 0.9rem;">
-                                <?php echo htmlspecialchars($record['prefill_name']); ?>
-                            </label>
-                        </div>
-                    <?php endforeach; ?>
-                </div>
-            </div>
-        </div>
-    <?php endif;
+    
+        if (!empty($prevRecords)): ?>
+            <script>
+                const prevRecordsData = <?php echo json_encode($prevRecords); ?>;
+            </script>
+    <?php endif; 
 
     function renderFieldExtended($fieldName, $savedData, $user_role, $label = '', $placeholder = '', $type = 'text', $options = []) {
         $val = $savedData[$fieldName]['value'] ?? '';
@@ -598,43 +585,49 @@
         $update = $conn->prepare("UPDATE json SET name = ? WHERE id = ?");
         $update->bind_param("si", $newJson, $row['id']);
         $update->execute();
-
+        // ⬇️ ADD THIS
+        logActivity(
+            $conn,
+            $user_id,
+            "wizard",
+            "Wizard updated"
+        );
         exit;
     }
 
     if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['inline_update'])) {
         $field = $_POST['field'] ?? '';
         $website_id = isset($_GET['id']) ? intval($_GET['id']) : 0;
-
+    
         if (!$field || !$website_id) {
             echo 'invalid request';
             exit;
         }
-
+    
         $stmt = $conn->prepare("SELECT name FROM json WHERE website_id = ?");
         $stmt->bind_param("i", $website_id);
         $stmt->execute();
         $stmt->bind_result($jsonData);
         $stmt->fetch();
         $stmt->close();
-
+    
         $decoded = json_decode($jsonData, true);
-
+    
         if (!isset($decoded[$field])) {
             echo 'field not found';
             exit;
         }
-
+    
         if (!empty($_FILES['file'])) {
             $fileTmp = $_FILES['file']['tmp_name'];
             $fileName = basename($_FILES['file']['name']);
             $uploadDir = 'Uploads/';
             $targetPath = $uploadDir . time() . '_' . preg_replace("/[^a-zA-Z0-9.\-_]/", "", $fileName);
-
+    
             if (!is_dir($uploadDir)) {
                 mkdir($uploadDir, 0777, true);
             }
-
+    
             if (move_uploaded_file($fileTmp, $targetPath)) {
                 $decoded[$field]['value'] = $targetPath;
                 $decoded[$field]['status'] = 'pending';
@@ -648,13 +641,36 @@
             $decoded[$field]['value'] = $value;
             $decoded[$field]['status'] = 'pending';
         }
-
+    
         $updatedJson = json_encode($decoded);
         $updateStmt = $conn->prepare("UPDATE json SET name = ? WHERE website_id = ?");
         $updateStmt->bind_param("si", $updatedJson, $website_id);
         $updateStmt->execute();
         $updateStmt->close();
-
+    
+        // Fetch prefill_name for logging
+        $stmt_prefill = $conn->prepare("SELECT prefill_name FROM json WHERE website_id = ?");
+        $stmt_prefill->bind_param("i", $website_id);
+        $stmt_prefill->execute();
+        $stmt_prefill->bind_result($prefill_name_db);
+        $stmt_prefill->fetch();
+        $stmt_prefill->close();
+    
+        $prefillLabel = !empty($prefill_name_db) ? $prefill_name_db : null;
+        $actionText = "Field updated for " . $field;
+        if ($prefillLabel) {
+            $safePrefill = htmlspecialchars($prefillLabel, ENT_QUOTES, 'UTF-8');
+            $actionText .= " in {$safePrefill}";
+        }
+    
+        // Log activity
+        logActivity(
+            $conn,
+            $session_user_id,
+            "wizard",
+            $actionText
+        );
+    
         echo 'updated';
         exit;
     }
@@ -684,9 +700,34 @@
 </div>
 
     <div class="card h-100 p-0 radius-12 overflow-hidden">               
-        <div class="card-body p-40">
+        <div class="card-body p-20">
+        <?php
+                    if (!empty($prevRecords)): ?>
+                        <div class="d-flex justify-content-center justify-content-md-end" style="margin-bottom:0;">
+                            <div class="p-3">
+                                <h6 class="fw-bold text-dark mb-3 text-center">
+                                    Fill Values From Previous Wizards
+                                </h6>
+                                <div class="d-flex flex-wrap gap-3">
+                                    <?php foreach ($prevRecords as $record): ?>
+                                        <div class="form-check form-check-inline">
+                                            <input type="checkbox" 
+                                                class="form-check-input load-record" 
+                                                style="transform: scale(1.1);" 
+                                                data-record-id="<?php echo $record['id']; ?>"
+                                                id="rec_<?php echo $record['id']; ?>">
+                                            <label for="rec_<?php echo $record['id']; ?>" class="form-check-label ms-1" style="font-size: 0.9rem;">
+                                                <?php echo htmlspecialchars($record['prefill_name']); ?>
+                                            </label>
+                                        </div>
+                                    <?php endforeach; ?>
+                                </div>
+                            </div>
+                        </div>
+                    <?php endif; ?>
             <div class="row justify-content-center">
                 <div class="col-xxl-10">
+                    
                 <section class="wizard-section">
                     <div class="row no-gutters">
                         <div class="col-lg-12">
@@ -1335,6 +1376,8 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function () {
+    if (typeof prevRecordsData === 'undefined') return;
+
     document.querySelectorAll('.load-record').forEach(cb => {
         cb.addEventListener('change', function () {
             const form = document.getElementById('myForm');
@@ -1342,73 +1385,51 @@ document.addEventListener('DOMContentLoaded', function () {
                 if (other !== this) other.checked = false;
             });
             if (this.checked) {
-                const data = JSON.parse(this.dataset.record);
+                const recordId = parseInt(this.dataset.recordId);
+                const record = prevRecordsData.find(r => r.id === recordId);
+                if (!record) {
+                    console.warn('Record not found:', recordId);
+                    return;
+                }
+                const data = record.data;
+
+                // Load values into fields (same logic, but no JSON.parse)
                 if (data.bussiness_name?.value) document.getElementById('field_bussiness_name').value = data.bussiness_name.value;
                 if (data.industry_niche?.value) document.getElementById('field_industry_niche').value = data.industry_niche.value;
                 if (data.business_description?.value) document.getElementById('field_business_description').value = data.business_description.value;
                 if (data.target_audience?.value) document.getElementById('field_target_audience').value = data.target_audience.value;
-                if (data.website_purpose?.value) {
-                    document.querySelectorAll('select[name="website_purpose"] option').forEach(opt => {
-                        opt.selected = (opt.value === data.website_purpose.value);
-                    });
-                }
+                if (data.website_purpose?.value) document.getElementById('field_website_purpose').value = data.website_purpose.value;  // Simpler for select
                 if (data.top_goals?.value) document.getElementById('field_top_goals').value = data.top_goals.value;
                 if (data.existing_website?.value) document.getElementById('field_existing_website').value = data.existing_website.value;
-                if (data.has_logo?.value) {
-                    document.querySelectorAll('select[name="has_logo"] option').forEach(opt => {
-                        opt.selected = (opt.value === data.has_logo.value);
-                    });
-                }
-                if (data.has_branding?.value) {
-                    document.querySelectorAll('select[name="has_branding"] option').forEach(opt => {
-                        opt.selected = (opt.value === data.has_branding.value);
-                    });
-                }
+                if (data.has_logo?.value) document.getElementById('field_has_logo').value = data.has_logo.value;  // Simpler for select
+                if (data.has_branding?.value) document.getElementById('field_has_branding').value = data.has_branding.value;  // Simpler for select
                 if (data.reference_websites?.value) document.getElementById('field_reference_websites').value = data.reference_websites.value;
-                if (data.content_ready?.value) {
-                    document.querySelectorAll('select[name="content_ready"] option').forEach(opt => {
-                        opt.selected = (opt.value === data.content_ready.value);
-                    });
-                }
+                if (data.content_ready?.value) document.getElementById('field_content_ready').value = data.content_ready.value;  // Simpler for select
                 if (data.page_count?.value) document.getElementById('field_page_count').value = data.page_count.value;
                 if (data.features?.value) document.getElementById('field_features').value = data.features.value;
-                if (data.has_domain?.value) {
-                    document.querySelectorAll('select[name="has_domain"] option').forEach(opt => {
-                        opt.selected = (opt.value === data.has_domain.value);
-                    });
-                }
+                if (data.has_domain?.value) document.getElementById('field_has_domain').value = data.has_domain.value;  // Simpler for select
                 if (data.domain_name?.value) document.getElementById('field_domain_name').value = data.domain_name.value;
-                if (data.has_hosting?.value) {
-                    document.querySelectorAll('select[name="has_hosting"] option').forEach(opt => {
-                        opt.selected = (opt.value === data.has_hosting.value);
-                    });
-                }
-                if (data.platform_preference?.value) {
-                    document.querySelectorAll('select[name="platform_preference"] option').forEach(opt => {
-                        opt.selected = (opt.value === data.platform_preference.value);
-                    });
-                }
+                if (data.has_hosting?.value) document.getElementById('field_has_hosting').value = data.has_hosting.value;  // Simpler for select
+                if (data.platform_preference?.value) document.getElementById('field_platform_preference').value = data.platform_preference.value;  // Simpler for select
                 if (data.launch_date?.value) document.getElementById('field_launch_date').value = data.launch_date.value;
                 if (data.budget_range?.value) document.getElementById('field_budget_range').value = data.budget_range.value;
                 if (data.contact_name?.value) document.getElementById('field_contact_name').value = data.contact_name.value;
                 if (data.contact_info?.value) document.getElementById('field_contact_info').value = data.contact_info.value;
-                if (data.communication_method?.value) {
-                    document.querySelectorAll('select[name="communication_method"] option').forEach(opt => {
-                        opt.selected = (opt.value === data.communication_method.value);
-                    });
-                }
+                if (data.communication_method?.value) document.getElementById('field_communication_method').value = data.communication_method.value;  // Simpler for select
                 if (data.prefill_name?.value) {
                     const prefillInput = document.getElementById('field_prefill_name');
                     if (prefillInput) prefillInput.value = data.prefill_name.value;
-                    document.getElementById('allow_prefill').checked = true;
-                    document.getElementById('prefill_name_wrapper').style.display = 'block';
+                    const allowPrefillCb = document.getElementById('allow_prefill');
+                    if (allowPrefillCb) allowPrefillCb.checked = true;
+                    const wrapper = document.getElementById('prefill_name_wrapper');
+                    if (wrapper) wrapper.style.display = 'block';
                 }
                 if (typeof updateProgressBar === 'function') updateProgressBar();
-                } else {
-                    form.reset();
-                    document.querySelectorAll('.record-preview').forEach(el => el.remove());
-                    if (typeof updateProgressBar === 'function') updateProgressBar();
-                }
+            } else {
+                form.reset();
+                document.querySelectorAll('.record-preview').forEach(el => el.remove());
+                if (typeof updateProgressBar === 'function') updateProgressBar();
+            }
         });
     });
 });

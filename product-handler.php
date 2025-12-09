@@ -21,7 +21,6 @@ if (isset($_POST['action'])) {
                 $conn,
                 $loggedInUserId,
                 "Product",                   // module
-                "Product Updated",                   // action
                 "Product status changed successfully"  // description
               );
             $response['success'] = true;
@@ -39,8 +38,7 @@ if (isset($_POST['action'])) {
                 $conn,
                 $loggedInUserId,
                 "Product",                   // module
-                "Product Deleted",                   // action
-                "Product deleted successfully"  // description
+                "Product Deleted",          // action
               );
             $response['success'] = true;
         }

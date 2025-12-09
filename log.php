@@ -1,9 +1,9 @@
 <?php
-function logActivity($conn, $user_id, $log_module, $log_action, $log_description)
+function logActivity($conn, $user_id, $log_module, $log_action)
 {
     $stmt = $conn->prepare("
-        INSERT INTO log (user_id, module, action, description, date_time)
-        VALUES (?, ?, ?, ?, NOW())
+        INSERT INTO log (user_id, module, action, date_time)
+        VALUES (?, ?, ?, UTC_TIMESTAMP())
     ");
 
     if (!$stmt) {
@@ -11,7 +11,7 @@ function logActivity($conn, $user_id, $log_module, $log_action, $log_description
         return false;
     }
 
-    $stmt->bind_param("isss", $user_id, $log_module, $log_action, $log_description);
+    $stmt->bind_param("iss", $user_id, $log_module, $log_action);
 
     if ($stmt->execute()) {
         return true;

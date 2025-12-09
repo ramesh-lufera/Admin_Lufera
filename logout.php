@@ -12,7 +12,6 @@ logActivity(
     $conn,
     $loggedInUserId,
     "Logout",                   // module
-    "Logout",                   // action
     "User Logout successfully"  // description
 );
 

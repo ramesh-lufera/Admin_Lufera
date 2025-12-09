@@ -120,12 +120,6 @@ $script = '<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1
 }
 </style>
 <?php
-$userId = $_SESSION['user_id'];
-
-$user_sql = "select * from users where id = $userId";
-$user_fetch = $conn->query($user_sql);
-$user_row = $user_fetch->fetch_assoc();
-
 $company_sql = "select * from company";
 $company_fetch = $conn->query($company_sql);
 $company_row = $company_fetch->fetch_assoc();
@@ -139,11 +133,11 @@ $payment_id = $row_trans['payment_id'];
 $paid_date = $row_trans['paid_date'];
 $amount = $row_trans['amount'];
 $payment_method = $row_trans['payment_method'];
-$invoice_no = intval($invoice_no); 
 
 $sql = "
 SELECT 
-    o.*, 
+    o.*,
+    u.business_name, u.address, u.city, u.state, u.pincode, u.country, 
     CASE 
         WHEN o.type = 'product' THEN p.name
         WHEN o.type = 'package' THEN pk.package_name
@@ -151,6 +145,7 @@ SELECT
 FROM orders o
 LEFT JOIN products p ON (o.type = 'product' AND o.plan = p.id)
 LEFT JOIN package pk ON (o.type = 'package' AND o.plan = pk.id)
+LEFT JOIN users u ON o.user_id = u.id
 WHERE o.invoice_id = $invoice_no";
 
 $result = $conn->query($sql);
@@ -205,7 +200,6 @@ $amountInWords = numberToWords($amount);
                 <div class="col-lg-12">
                 <div class="d-flex my-3 justify-content-between">
                     <p class="mb-0 mt-auto">Payment ID: <b><?php echo $payment_id; ?></b></p>  
-                    
                         <!-- <div class="amt-rec w-auto p-20">
                             <p class="mb-0">Payment Made</p>
                             <p class="mb-0"><?= htmlspecialchars($symbol) ?> <?php echo number_format($amount, 2); ?></p>
@@ -333,7 +327,7 @@ $amountInWords = numberToWords($amount);
                             </div>
                             <div class="">
                                 <p class="mb-0"><b><?php echo $company_row['full_name']; ?></b></p>
-                                <p class="mb-0 text-sm"><?php echo $company_row['address']; ?>,<br> <?php echo $company_row['   ']; ?>, <?php echo $company_row['state']; ?>, <?php echo $company_row['zip_code']; ?>, <?php echo $company_row['country']; ?></p>
+                                <p class="mb-0 text-sm"><?php echo $company_row['address']; ?>,<br> <?php echo $company_row['city']; ?>, <?php echo $company_row['state']; ?>, <?php echo $company_row['zip_code']; ?>, <?php echo $company_row['country']; ?></p>
                                 <p class="mb-0 text-sm"><?php echo $company_row['phone_no']; ?></p>
                                 <p class="mb-0 text-sm"><?php echo $company_row['website']; ?></p>
                             </div>
@@ -371,10 +365,10 @@ $amountInWords = numberToWords($amount);
                         <div class="d-flex flex-wrap justify-content-between gap-3 my-20">
                             <div>
                                 <p class="mb-0 text-sm text-gray"><b>Received From</b></p>
-                                <p class="mb-0"><b><?php echo $user_row['business_name']; ?></b></p>
-                                <p class="mb-0 text-sm"><?php echo $user_row['address']; ?></p>
-                                <p class="mb-0 text-sm"><?php echo $user_row['city']; ?>, <?php echo $user_row['state']; ?> <?php echo $user_row['pincode']; ?></p>
-                                <p class="mb-0 text-sm"><?php echo $user_row['country']; ?></p>
+                                <p class="mb-0"><b><?php echo $row['business_name']; ?></b></p>
+                                <p class="mb-0 text-sm"><?php echo $row['address']; ?></p>
+                                <p class="mb-0 text-sm"><?php echo $row['city']; ?>, <?php echo $row['state']; ?> <?php echo $row['pincode']; ?></p>
+                                <p class="mb-0 text-sm"><?php echo $row['country']; ?></p>
                             </div>
                             <div class="text-end">
                                 <p class="mb-0 text-sm">Authorized Signature</p>

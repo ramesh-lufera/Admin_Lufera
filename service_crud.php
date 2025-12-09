@@ -37,16 +37,14 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action'])) {
                     $conn,
                     $user_id,
                     "Add-on Service",
-                    "Add-on Service Created",
-                    "Add-on Service Created Successfully - $name"
+                    "Add-on Service Created - $name"
                 );
             } else {
                 logActivity(
                     $conn,
                     $user_id,
                     "Add-on Service",
-                    "Add-on Service Updated",
-                    "Add-on Service Updated Successfully - $name"
+                    "Add-on Service Updated - $name"
                 );
             }
 
@@ -81,8 +79,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action'])) {
                 $conn,
                 $user_id,
                 "Add-on Service",
-                "Add-on Service Deleted",
-                "Add-on Service Deleted Successfully - $serviceName"
+                "Add-on Service Deleted - $serviceName"
             );
 
             echo json_encode(['status' => 'success', 'message' => 'Service deleted successfully']);

@@ -42,7 +42,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 $loggedInUserId,
                 "Terms and Conditions",                   // module
                 "Terms and Conditions updated",                   // action
-                "Terms and Conditions updated successfully"  // description
             );
             echo "<script>
                 Swal.fire({
@@ -64,8 +63,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 $conn,
                 $loggedInUserId,
                 "Terms and Conditions",                   // module
-                "Terms and Conditions updated",                   // action
-                "Terms and Conditions updated successfully"  // description
+                "Terms and Conditions updated",          // action
             );
             echo "<script>
                 Swal.fire({

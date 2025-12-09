@@ -616,8 +616,7 @@
                 $conn,
                 $Id,
                 "Category",                   // module
-                "Category Created",      // action
-                "New category created successfully - $cat_name"  // description
+                "New category created - $cat_name"  // description
             );
             //$_SESSION['swal_success'] = "Category created";
             echo "
@@ -1162,8 +1161,7 @@
             $conn,
             $Id,
             "Category",                   // module
-            "Category Updated",      // action
-            "Category updated - name changed to $edit_cat_name."  // description
+            "Category updated - $edit_cat_name."  // description
         );
 
         echo "
@@ -1222,7 +1220,6 @@
             $conn,
             $Id,
             "Category",               // module
-            "Category Deleted",      // action
             "Category Deleted - $catName has been removed."  // description
         );
 
