@@ -66,7 +66,30 @@ error_reporting(E_ALL);
         }
 
         if ($id > 0) {
-            // Update existing record
+
+            // Detect changed fields
+            $changed_fields = [];
+        
+            if ($full_name !== $row['full_name']) $changed_fields[] = "Full Name";
+            if ($email !== $row['email']) $changed_fields[] = "Email";
+            if ($phone_no !== $row['phone_no']) $changed_fields[] = "Phone Number";
+            if ($website !== $row['website']) $changed_fields[] = "Website";
+            if ($country !== $row['country']) $changed_fields[] = "Country";
+            if ($city !== $row['city']) $changed_fields[] = "City";
+            if ($state !== $row['state']) $changed_fields[] = "State";
+            if ($zip_code !== $row['zip_code']) $changed_fields[] = "Zip Code";
+            if ($address !== $row['address']) $changed_fields[] = "Address";
+            if ($gst_in !== $row['gst_in']) $changed_fields[] = "GSTIN";
+            if ($logo_name !== $row['logo']) $changed_fields[] = "Logo";
+        
+            // Prepare action
+            if (empty($changed_fields)) {
+                $action = "No fields were changed.";
+            } else {
+                $action = implode(", ", $changed_fields) . " updated successfully.";
+            }
+        
+            // UPDATE query
             $update_sql = "UPDATE company SET 
                 full_name='$full_name',
                 email='$email',
@@ -80,15 +103,16 @@ error_reporting(E_ALL);
                 address='$address',
                 logo='$logo_name'
                 WHERE id=$id";
-
+        
             if ($conn->query($update_sql) === TRUE) {
+        
                 logActivity(
                     $conn,
                     $loggedInUserId,
-                    "Company",                   // module
-                    "Company details updated",                   // action
-                    "Company details updated successfully"  // description
+                    "Company",
+                    $action
                 );
+        
                 echo "<script>
                     Swal.fire({
                         title: 'Success!',
@@ -100,10 +124,12 @@ error_reporting(E_ALL);
                         }
                     });
                 </script>";
+        
             } else {
                 echo "<p style='color:red;'>Error updating record: " . $conn->error . "</p>";
             }
-        } else {
+        }
+         else {
             // Insert new record
             $insert_sql = "INSERT INTO company (full_name, email, phone_no, website, country, city, state, zip_code, address, gst_in, logo) 
                 VALUES ('$full_name', '$email', '$phone_no', '$website', '$country', '$city', '$state' ,'$zip_code', '$address', '$gst_in', '$logo_name')";

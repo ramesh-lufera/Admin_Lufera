@@ -3,29 +3,49 @@
 
     if (isset($_POST['toggle_symbol']) && isset($_POST['id'])) {
         header('Content-Type: application/json'); // Important for correct AJAX response
-
+    
         $id = intval($_POST['id']);
         $checked = $_POST['checked'] === 'true';
-
+    
+        // Fetch currency name for logging
+        $stmt = $conn->prepare("SELECT name FROM currencies WHERE id = ?");
+        $stmt->bind_param("i", $id);
+        $stmt->execute();
+        $stmt->bind_result($currencyName);
+        $stmt->fetch();
+        $stmt->close();
+    
         if ($checked) {
             $conn->query("UPDATE currencies SET is_active = 0");
             $stmt = $conn->prepare("UPDATE currencies SET is_active = 1 WHERE id = ?");
             $stmt->bind_param("i", $id);
             $stmt->execute();
             $stmt->close();
-            logActivity($conn, $loggedInUserId, "Currencies", "Currency Activated", "Currency ID $id set as active");
-
+    
+            logActivity($conn, $loggedInUserId, "Currencies", "Currency '$currencyName' set as active");
+    
             echo json_encode(['status' => 'activated']);
         } else {
+    
+            // Get the default currency (Dollar) name
+            $defaultId = 1;
+            $stmt = $conn->prepare("SELECT name FROM currencies WHERE id = ?");
+            $stmt->bind_param("i", $defaultId);
+            $stmt->execute();
+            $stmt->bind_result($defaultName);
+            $stmt->fetch();
+            $stmt->close();
+    
             $conn->query("UPDATE currencies SET is_active = 0");
-            $conn->query("UPDATE currencies SET is_active = 1 WHERE id = 1");
-            logActivity($conn, $loggedInUserId, "Currencies", "Currency Reverted", "Reverted to default currency (ID 1)");
-
+            $conn->query("UPDATE currencies SET is_active = 1 WHERE id = $defaultId");
+    
+            logActivity($conn, $loggedInUserId, "Currencies", "Reverted to default currency '$defaultName'");
+    
             echo json_encode(['status' => 'reverted_to_dollar']);
         }
-
+    
         exit;
-    }
+    }    
 
     if (isset($_POST['action']) && $_POST['action'] === 'update') {
         header('Content-Type: application/json');
@@ -44,8 +64,7 @@
                 $conn, 
                 $loggedInUserId, 
                 "Currencies", 
-                "Currency Updated", 
-                "Currency Updated Successfully - $name"
+                "Currency Updated - $name"
             );
             echo json_encode([
                 'status' => 'updated',
@@ -81,7 +100,6 @@
                 $loggedInUserId, 
                 "Currencies", 
                 "Currency Deleted", 
-                "Currency Deleted Successfully"
             );
 
             echo json_encode(['status' => 'deleted', 'id' => $id]);
@@ -103,8 +121,7 @@
             $conn,
             $loggedInUserId,
             "Currencies",
-            "Currency Created",
-            "Currency Created Successfully - $name"
+            "Currency Created - $name"
         );
 
         echo '

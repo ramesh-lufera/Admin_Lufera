@@ -136,8 +136,7 @@
                             \$conn,
                             \$userid,
                             "Package",                   // module
-                            "Package Created",          // action
-                            "New package created successfully - \$package_name"  // description
+                            "New package created - \$package_name"  // description
                         );
         
                             \$stmt->close();

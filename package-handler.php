@@ -21,7 +21,6 @@ if (isset($_POST['action'])) {
                 $conn, 
                 $loggedInUserId, 
                 "Packages", 
-                "Package Updated", 
                 "Package Status changed Successfully - $status"
             );
             $response['success'] = true;

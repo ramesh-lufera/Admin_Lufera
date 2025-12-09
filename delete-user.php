@@ -18,7 +18,6 @@ if (isset($_POST['id'])) {
             $user_id,
             "Users",                   // module
             "User Deleted",                   // action
-            "User Deleted Successfully"  // description
         );
         echo json_encode(["success" => true]);
     } else {

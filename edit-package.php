@@ -156,8 +156,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save'])) {
             $conn, 
             $loggedInUserId, 
             "Packages", 
-            "Package Updated", 
-            "Package Updated Successfully - $package_name"
+            "Package Updated for $package_name"
         );
         $stmt->close();
 

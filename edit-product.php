@@ -193,7 +193,6 @@ if (isset($_POST['save'])) {
       $conn,
       $loggedInUserId,
       "Product",                   // module
-      "Product Updated",                   // action
       "Product updated successfully - $name"  // description
     );
       echo "<script>

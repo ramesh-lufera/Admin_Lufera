@@ -127,7 +127,6 @@
             $loggedInUserId, 
             "Credentials", 
             "Credentials Updated", 
-            "Credentials Updated Successfully"
         );
         echo "<script>
             Swal.fire({

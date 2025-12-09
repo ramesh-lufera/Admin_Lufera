@@ -99,7 +99,6 @@ error_reporting(E_ALL);
                 $conn,
                 $loggedInUserId,
                 "Users",                   // module
-                "User Creation",                   // action
                 "New User Added - $fname $lname"  // description
             );
             echo "

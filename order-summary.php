@@ -91,7 +91,6 @@
                     $conn,
                     $loggedInUserId,
                     "Order Summary",                   // module
-                    "Record Payment",                   // action
                     "Record Payment created successfully - $payment_id"  // description
                   );
 

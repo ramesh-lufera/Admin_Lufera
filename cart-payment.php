@@ -423,8 +423,7 @@
                     $conn,
                     $loggedInUserId,
                     "Cart Payment",           // module
-                    "Renewed successfully",  // action
-                    "Plan Renewed successfully - $plan_id"  // description
+                    "Plan Renewed for - $plan_name"  // description
                 );
 
                 // Fetch user info
@@ -633,8 +632,7 @@
                     $conn,
                     $loggedInUserId,
                     "Cart Payment",           // module
-                    "Upgrade successfully",  // action
-                    "Plan upgraded successfully - $plan_id"  // description
+                    "Plan upgraded to - $plan_name"  // action
                 );
                 $sql = "INSERT INTO orders (user_id, invoice_id, plan, duration, amount, gst, price, addon_price, addon_gst, status, payment_method, discount, payment_made, created_on, subtotal, balance_due, addon_service, type, coupon_code, discount_amount, existing_balance, existing_plan) VALUES 
                     ('$client_id', '$receipt_id', '$plan_id', '$duration' ,'$upgrade_amount', '$upgrade_gst', '$price', '$insert_addon_price', '$insert_addon_gst', 'Pending', '$pay_method', '$main_discount', '$payment_made', '$created_at', '$main_subtotal', '$upgrade_amount', '$get_addon', '$type', '$coupon_code', '$discount_amount', '$hostinger_balance', '$current_plan_id')";
@@ -644,8 +642,7 @@
                     $conn,
                     $loggedInUserId,
                     "Cart Payment",                   // module
-                    "Purchase successfully",           // action
-                    "Plan purchased successfully - $plan_id"  // description
+                    "Plan purchased successfully - $plan_name"  // action
                 );
                 $sql = "INSERT INTO orders (user_id, invoice_id, plan, duration, amount, gst, price, addon_price, addon_gst, status, payment_method, discount, payment_made, created_on, subtotal, balance_due, addon_service, type, coupon_code, discount_amount) VALUES 
                     ('$client_id', '$receipt_id', '$plan_id', '$duration' ,'$main_amount', '$main_gst', '$price', '$insert_addon_price', '$insert_addon_gst', 'Pending', '$pay_method', '$main_discount', '$payment_made', '$created_at', '$main_subtotal', '$main_amount', '$get_addon', '$type', '$coupon_code', '$discount_amount')";

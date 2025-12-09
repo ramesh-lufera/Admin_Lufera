@@ -106,7 +106,6 @@
                     $conn,
                     $loggedInUserId,
                     "Invoice",                   // module
-                    "Record Payment",           // action
                     "Record payment created successfully - $payment_id"  // description
                   );
 

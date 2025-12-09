@@ -28,8 +28,7 @@ if (isset($_POST['id'])) {
             $conn,
             $user_id,
             "Users",                   // module
-            "User Updated",                   // action
-            "User Updated Successfully for $fname $lname"  // description
+            "User Updated for $fname $lname"  // description
         );
         echo json_encode(["success" => true]);
     } else {

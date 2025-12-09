@@ -34,7 +34,6 @@ if (!empty($_POST['email']) && !empty($_POST['password'])) {
                 $conn,
                 $user_id,
                 "sign-in",        // module
-                "User Login",                 // action
                 "User logged in successfully"         // description
             );
 

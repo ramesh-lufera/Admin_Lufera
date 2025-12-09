@@ -47,7 +47,6 @@
                     $loggedInUserId,
                     "Bank Details",                   // module
                     "Bank Details Updated",      // action
-                    "Bank Details Updated Successfully"  // description
                 );
                 echo "<script>
                     Swal.fire({
@@ -71,9 +70,8 @@
                 logActivity(
                     $conn,
                     $loggedInUserId,
-                    "Bank Details",                   // module
+                    "Bank Details",               // module
                     "Bank Details Updated",      // action
-                    "Bank Details Updated Successfully"  // description
                 );
                 echo "<script>
                     Swal.fire({
