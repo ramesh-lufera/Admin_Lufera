@@ -102,7 +102,7 @@
                 'token'      => $token
             ];
 
-            $verify_link = $_ENV['EMAIL_COMMON_LINK'] . "/email-verify.php?token=" . $token;
+            $verify_link = $_ENV['EMAIL_COMMON_LINK'] . "/sign-up_verify.php?token=" . $token;
 
             // ============== SEND EMAIL =================
             $mail = new PHPMailer(true);

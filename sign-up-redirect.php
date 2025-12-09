@@ -1,6 +1,7 @@
 <?php
     session_start();
     include './partials/connection.php';
+    include './log.php';
     require_once 'vendor/autoload.php';
 
     use PHPMailer\PHPMailer\PHPMailer;
@@ -51,6 +52,15 @@
             $stmt->bind_result($id, $username);
             $stmt->fetch();
 
+            // ✅ ACTIVITY LOG FOR EXISTING USER LOGIN
+            logActivity(
+                $conn,
+                $id,          // ✅ Correct DB user ID
+                "google sign-up",
+                "Google User Registration",
+                "Google user registered successfully"
+            );
+
             $_SESSION['user_id'] = $id;
             $_SESSION['username'] = $username;
             $_SESSION['email'] = $email;
@@ -77,6 +87,14 @@
             $_SESSION['user_id'] = $insert->insert_id;
             $_SESSION['username'] = $username;
             $_SESSION['email'] = $email;
+
+            logActivity(
+                $conn,
+                $_SESSION['user_id'],   // ✅ This will now store the correct user_id
+                "google sign-up",
+                "Google User Registration",
+                "New Google user registered successfully"
+            );
 
             // ================= WELCOME EMAIL =================
             $signup_link = rtrim($_ENV['EMAIL_COMMON_LINK'], '/') . '/sign-up.php';
