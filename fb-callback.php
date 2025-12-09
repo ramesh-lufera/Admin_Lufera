@@ -5,6 +5,7 @@ if (session_status() === PHP_SESSION_NONE) {
 
 require_once __DIR__ . '/vendor/autoload.php';
 require 'fb-config.php';
+include './log.php';
 
 // FIX: prevent CSRF mismatch
 if (isset($_GET['state'])) {
@@ -101,6 +102,15 @@ if ($result->num_rows > 0) {
     $existing = $result->fetch_assoc();
     $existingUserId = $existing['id'];
 
+    // ✅ ACTIVITY LOG FOR EXISTING USER LOGIN
+    logActivity(
+        $conn,
+        $existingUserId,          // ✅ Correct DB user ID
+        "facebook sign-in",
+        "Facebook User Login",
+        "Facebook user logged in successfully"
+    );
+
     $update = $conn->prepare("
         UPDATE users SET photo = ?, dob = ? WHERE id = ?
     ");
@@ -150,6 +160,14 @@ if ($result->num_rows > 0) {
     $stmt->execute();
 
     $insertedId = $conn->insert_id;
+
+    logActivity(
+        $conn,
+        $insertedId,   // ✅ This will now store the correct user_id
+        "facebook sign-in",
+        "Facebook User Login",
+        "New Facebook user registered and logged in successfully"
+    );
 
     $stmt->close();
 

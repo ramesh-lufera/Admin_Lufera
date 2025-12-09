@@ -1,6 +1,7 @@
 <?php
     session_start();
     include './partials/connection.php';
+    include './log.php';
     require_once 'vendor/autoload.php';
 
     use PHPMailer\PHPMailer\PHPMailer;
@@ -50,15 +51,38 @@
             $stmt->store_result();
 
             if ($stmt->num_rows > 0) {
+                // ✅ Fetch existing user ID
+                $stmt->bind_result($existingUserId);
+                $stmt->fetch();
+
                 // User exists: update photo
                 $update = $conn->prepare("UPDATE users SET photo = ? WHERE email = ?");
                 $update->bind_param("ss", $google_photo, $email);
                 $update->execute();
+
+                // ✅ ACTIVITY LOG FOR EXISTING USER LOGIN
+                logActivity(
+                    $conn,
+                    $existingUserId,          // ✅ Correct DB user ID
+                    "google sign-in",
+                    "Google User Login",
+                    "Google user logged in successfully"
+                );
             } else {
                 // User doesn't exist - insert new
                 $insert = $conn->prepare("INSERT INTO users (user_id, username, email, phone, password, first_name, last_name, business_name, address, city, state, country, pincode, dob, created_at, method, role, photo) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
                 $insert->bind_param("ssssssssssssssssss", $newUserId, $username, $email, $phone, $password, $fname, $lname, $business_name, $address, $city, $state, $country, $pincode, $dob, $created_at, $method, $role, $google_photo);
                 $insert->execute();
+
+                $insertedUserId = $conn->insert_id; // ✅ Get REAL numeric user ID
+
+                logActivity(
+                    $conn,
+                    $insertedUserId,   // ✅ This will now store the correct user_id
+                    "google sign-in",
+                    "Google User Login",
+                    "New Google user registered and logged in successfully"
+                );
 
                 // Send Welcome Email (only for NEW user)
                 $login_link = rtrim($_ENV['EMAIL_COMMON_LINK'], '/') . '/sign-in.php';

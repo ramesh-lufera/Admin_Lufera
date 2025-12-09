@@ -2,6 +2,7 @@
 session_start();
 include './partials/head.php';
 include './partials/connection.php';
+include './log.php';
 
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
@@ -42,6 +43,17 @@ if (isset($_GET['token']) && isset($_SESSION['pending_user'])) {
             $pending['created_at'], $pending['method'], $pending['role'], $photo, $is_verified);
 
         if ($stmt->execute()) {
+            $user_id = $stmt->insert_id; // ✅ Required for correct user_id
+
+            // 🔥 LOG ACTIVITY HERE
+            logActivity(
+                $conn,
+                $user_id,
+                "sign-up",        // module
+                "User Registration",     // action
+                "User verified email and completed registration successfully" // description
+            );
+
             unset($_SESSION['pending_user']); // clear pending session
 
             $login_link = rtrim($_ENV['EMAIL_COMMON_LINK'], '/') . '/sign-in.php';
