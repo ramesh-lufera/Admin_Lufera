@@ -390,7 +390,12 @@
         }
 
         $check->close();
-
+        logActivity(
+            $conn,
+            $session_user_id,
+            "wizard",
+            "Wizard updated"
+        );
         echo '
             <script>
                 Swal.fire({
@@ -402,31 +407,6 @@
                 });
             </script>';
     }
-
-    if (!empty($prevRecords)): ?>
-        <div class="d-flex justify-content-center justify-content-md-end" style="margin-bottom:0;">
-            <div class="p-3 rounded shadow-sm w-100 w-md-40" 
-                style="font-size: 0.85rem; background-color: #fffbea; max-width: 600px; text-align:left;">
-                <h6 class="fw-bold text-dark mb-3" style="font-size: 0.9rem;">
-                    Fill Values From Previous Wizards
-                </h6>
-                <div class="d-flex flex-wrap gap-3">
-                    <?php foreach ($prevRecords as $record): ?>
-                        <div class="form-check form-check-inline">
-                            <input type="checkbox" 
-                                class="form-check-input load-record" 
-                                style="transform: scale(1.1);" 
-                                data-record='<?php echo json_encode($record['data']); ?>'
-                                id="rec_<?php echo $record['id']; ?>">
-                            <label for="rec_<?php echo $record['id']; ?>" class="form-check-label ms-1" style="font-size: 0.9rem;">
-                                <?php echo htmlspecialchars($record['prefill_name']); ?>
-                            </label>
-                        </div>
-                    <?php endforeach; ?>
-                </div>
-            </div>
-        </div>
-    <?php endif;
 
     function renderFieldExtended($fieldName, $savedData, $user_role, $label = '', $placeholder = '', $type = 'text', $options = []) {
         $val = $savedData[$fieldName]['value'] ?? '';
@@ -587,7 +567,13 @@
         $update = $conn->prepare("UPDATE json SET name = ? WHERE id = ?");
         $update->bind_param("si", $newJson, $row['id']);
         $update->execute();
-
+        // ⬇️ ADD THIS
+        logActivity(
+            $conn,
+            $user_id,
+            "wizard",
+            "Wizard updated"
+        );
         exit;
     }
 
@@ -648,6 +634,29 @@
         $updateStmt->execute();
         $updateStmt->close();
 
+        // Fetch prefill_name for logging
+        $stmt_prefill = $conn->prepare("SELECT prefill_name FROM json WHERE website_id = ?");
+        $stmt_prefill->bind_param("i", $website_id);
+        $stmt_prefill->execute();
+        $stmt_prefill->bind_result($prefill_name_db);
+        $stmt_prefill->fetch();
+        $stmt_prefill->close();
+    
+        $prefillLabel = !empty($prefill_name_db) ? $prefill_name_db : null;
+        $actionText = "Field updated for " . $field;
+        if ($prefillLabel) {
+            $safePrefill = htmlspecialchars($prefillLabel, ENT_QUOTES, 'UTF-8');
+            $actionText .= " in {$safePrefill}";
+        }
+    
+        // Log activity
+        logActivity(
+            $conn,
+            $session_user_id,
+            "wizard",
+            $actionText
+        );
+
         echo 'updated';
         exit;
     }
@@ -676,8 +685,31 @@
 
 </div>
     <div class="card h-100 p-0 radius-12 overflow-hidden">               
-        <div class="card-body p-40">
-            
+        <div class="card-body p-20">
+            <?php if (!empty($prevRecords)): ?>
+                <div class="d-flex justify-content-center justify-content-md-end" style="margin-bottom:0;">
+                    <div class="p-3 rounded shadow-sm w-100 w-md-40" 
+                        style="font-size: 0.85rem; background-color: #fffbea; max-width: 600px; text-align:left;">
+                        <h6 class="fw-bold text-dark mb-3" style="font-size: 0.9rem;">
+                            Fill Values From Previous Wizards
+                        </h6>
+                        <div class="d-flex flex-wrap gap-3">
+                            <?php foreach ($prevRecords as $record): ?>
+                                <div class="form-check form-check-inline">
+                                    <input type="checkbox" 
+                                        class="form-check-input load-record" 
+                                        style="transform: scale(1.1);" 
+                                        data-record='<?php echo json_encode($record['data']); ?>'
+                                        id="rec_<?php echo $record['id']; ?>">
+                                    <label for="rec_<?php echo $record['id']; ?>" class="form-check-label ms-1" style="font-size: 0.9rem;">
+                                        <?php echo htmlspecialchars($record['prefill_name']); ?>
+                                    </label>
+                                </div>
+                            <?php endforeach; ?>
+                        </div>
+                    </div>
+                </div>
+            <?php endif; ?>
             <div class="row justify-content-center">
                 <div class="col-xxl-10">
                 <section class="wizard-section">
@@ -1297,6 +1329,7 @@
 </script>
 <script>
 document.addEventListener('DOMContentLoaded', function () {
+    if (typeof prevRecordsData === 'undefined') return;
     document.querySelectorAll('.load-record').forEach(cb => {
         cb.addEventListener('change', function () {
             const form = document.getElementById('myForm');
@@ -1307,7 +1340,13 @@ document.addEventListener('DOMContentLoaded', function () {
             });
 
             if (this.checked) {
-                const data = JSON.parse(this.dataset.record);
+                const recordId = parseInt(this.dataset.recordId);
+                const record = prevRecordsData.find(r => r.id === recordId);
+                if (!record) {
+                    console.warn('Record not found:', recordId);
+                    return;
+                }
+                const data = record.data;
 
                 // === Fill fields ===
                 if (data.business_name?.value) document.getElementById('field_business_name').value = data.business_name.value;
@@ -1333,13 +1372,15 @@ document.addEventListener('DOMContentLoaded', function () {
                 if (data.past_campaigns_tools_used?.value) document.getElementById('field_past_campaigns_tools_used').value = data.past_campaigns_tools_used.value;
                 if (data.top_performing_content?.value) document.getElementById('field_top_performing_content').value = data.top_performing_content.value;
 
-
                 if (data.prefill_name?.value) {
                     const prefillInput = document.getElementById('field_prefill_name');
                     if (prefillInput) prefillInput.value = data.prefill_name.value;
-                    document.getElementById('allow_prefill').checked = true;
-                    document.getElementById('prefill_name_wrapper').style.display = 'block';
+                    const allowPrefillCb = document.getElementById('allow_prefill');
+                    if (allowPrefillCb) allowPrefillCb.checked = true;
+                    const wrapper = document.getElementById('prefill_name_wrapper');
+                    if (wrapper) wrapper.style.display = 'block';
                 }
+
                 // Update progress bar if exists
                 if (typeof updateProgressBar === 'function') updateProgressBar();
 
