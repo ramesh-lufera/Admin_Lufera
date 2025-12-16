@@ -127,6 +127,7 @@ let focusedCell = null;
 const data = {};
 let ROWS = 10;
 let COLS = 4;
+let columnHeaders = {};
 
 /* ------------------------------------------------------------
    PRELOAD PHP DATA BEFORE TABLE IS BUILT
@@ -176,19 +177,24 @@ function buildTable() {
     hRow.appendChild(document.createElement("th")); // corner cell
 
     for (let c = 1; c <= COLS; c++) {
-    const th = document.createElement("th");
+        const th = document.createElement("th");
+        th.dataset.c = c;
 
-    if (c === 1) {
-        th.textContent = "Tasks";
-        th.contentEditable = false;
-    } else {
-        th.textContent = colName(c - 1);
-        th.contentEditable = true;
+        if (c === 1) {
+            th.textContent = "Tasks";
+            th.contentEditable = false;
+            columnHeaders[c] = "Tasks";
+        } else {
+            th.contentEditable = true;
+            th.textContent = columnHeaders[c] || colName(c - 1);
+
+            th.addEventListener("input", () => {
+                columnHeaders[c] = th.textContent;
+            });
+        }
+
+        hRow.appendChild(th);
     }
-
-    th.dataset.c = c;
-    hRow.appendChild(th);
-}
 
 
     thead.appendChild(hRow);
