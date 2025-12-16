@@ -33,8 +33,62 @@ if (isset($_GET['id'])) {
     .toolbar button{padding:6px 14px;border:1px solid #d1d5db;background:#fff;border-radius:6px;cursor:pointer}
     .selected{background:rgba(37,99,235,0.08)}
     caption{caption-side:top;text-align:left;padding:8px;font-weight:600}
-    input[type=file]{display:none}
+    /* input[type=file]{display:none} */
+
+    .comment-panel {
+    position: fixed;
+    right: -360px;
+    top: 0;
+    width: 360px;
+    height: 100%;
+    background: #fff;
+    border-left: 1px solid #ddd;
+    box-shadow: -2px 0 6px rgba(0,0,0,.1);
+    transition: right .3s ease;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    }
+
+    .comment-panel.open { right: 0; }
+
+    .comment-header {
+        padding: 12px;
+        display: flex;
+        justify-content: space-between;
+        border-bottom: 1px solid #eee;
+    }
+
+    .comment-list {
+        flex: 1;
+        overflow-y: auto;
+        padding: 12px;
+    }
+
+    .comment {
+        margin-bottom: 12px;
+        background: #f5f7fa;
+        padding: 8px;
+        border-radius: 6px;
+    }
+
+    .reply {
+        margin-left: 20px;
+        margin-top: 6px;
+        background: #e9edf3;
+    }
+
+    .comment-input {
+        border-top: 1px solid #eee;
+        padding: 10px;
+    }
+
+    .comment-input textarea {
+        width: 100%;
+        height: 60px;
+    }
   </style>
+  
 </head>
 
 <body>
@@ -71,8 +125,8 @@ if (isset($_GET['id'])) {
 ------------------------------------------------------------ */
 let focusedCell = null;
 const data = {};
-let ROWS = 20;
-let COLS = 10;
+let ROWS = 10;
+let COLS = 4;
 
 /* ------------------------------------------------------------
    PRELOAD PHP DATA BEFORE TABLE IS BUILT
@@ -112,9 +166,9 @@ function buildTable() {
     const sheetEl = document.getElementById("sheet");
     const table = document.createElement("table");
 
-    const cap = document.createElement("caption");
-    cap.textContent = "Sheet1";
-    table.appendChild(cap);
+    // const cap = document.createElement("caption");
+    // cap.textContent = "Sheet1";
+    // table.appendChild(cap);
 
     const thead = document.createElement("thead");
     const hRow = document.createElement("tr");
@@ -122,12 +176,20 @@ function buildTable() {
     hRow.appendChild(document.createElement("th")); // corner cell
 
     for (let c = 1; c <= COLS; c++) {
-        const th = document.createElement("th");
-        th.dataset.c = c;
+    const th = document.createElement("th");
+
+    if (c === 1) {
+        th.textContent = "Tasks";
+        th.contentEditable = false;
+    } else {
+        th.textContent = colName(c - 1);
         th.contentEditable = true;
-        th.textContent = colName(c);
-        hRow.appendChild(th);
     }
+
+    th.dataset.c = c;
+    hRow.appendChild(th);
+}
+
 
     thead.appendChild(hRow);
     table.appendChild(thead);
@@ -145,15 +207,24 @@ function buildTable() {
         for (let c = 1; c <= COLS; c++) {
             const td = document.createElement("td");
             const div = document.createElement("div");
+
             div.className = "cell";
             div.contentEditable = true;
             div.dataset.r = r;
             div.dataset.c = c;
             div.id = cellId(r, c);
 
-            div.addEventListener("input", onEdit);
-            div.addEventListener("focus", onFocus);
-            div.addEventListener("keydown", onKeyDown);
+            // FIRST COLUMN = TASK + COMMENT ICON
+            if (c === 1) {
+                div.innerHTML = `
+                    <span class="task-text" contenteditable="true"></span>
+                    <span class="task-actions">
+                        <span class="comment-icon fa fa-message cursor-pointer" title="Comments" onclick="openComments(${r})"></span>
+                        <span class="attach-icon fa fa-paperclip cursor-pointer" title="Attachments" onclick="openAttachments(${r})"></span>
+                    </span>
+                `;
+                div.contentEditable = false;
+            }
 
             td.appendChild(div);
             tr.appendChild(td);
@@ -165,6 +236,29 @@ function buildTable() {
     table.appendChild(tbody);
     sheetEl.innerHTML = "";
     sheetEl.appendChild(table);
+}
+
+function rebuildPreserveData() {
+    const dataSnapshot = JSON.parse(JSON.stringify(data));
+    const headerSnapshot = { ...columnHeaders };
+
+    buildTable();
+
+    // Restore headers
+    Object.keys(headerSnapshot).forEach(c => {
+        columnHeaders[c] = headerSnapshot[c];
+        const th = document.querySelector(`thead th[data-c='${c}']`);
+        if (th) th.textContent = headerSnapshot[c];
+    });
+
+    // Restore cell data
+    Object.keys(dataSnapshot).forEach(id => {
+        data[id] = dataSnapshot[id];
+        const el = document.getElementById(id);
+        if (el) el.textContent = dataSnapshot[id].raw;
+    });
+
+    recalcAll();
 }
 
 /* ------------------------------------------------------------
@@ -266,8 +360,8 @@ function recalcAll() {
 /* ------------------------------------------------------------
    BUTTON ACTIONS
 ------------------------------------------------------------ */
-document.getElementById("add-row").onclick = () => { ROWS++; buildTable(); };
-document.getElementById("add-col").onclick = () => { COLS++; buildTable(); };
+document.getElementById("add-row").onclick = () => { ROWS++; rebuildPreserveData(); };
+document.getElementById("add-col").onclick = () => { COLS++; rebuildPreserveData(); };
 
 /* ------------------------------------------------------------
    SAVE TO DB
@@ -392,7 +486,163 @@ document.getElementById("load-db").onclick = async () => {
 
 });
 
+let activeRow = null;
+let activeSheetId = <?= isset($_GET['id']) ? intval($_GET['id']) : 0 ?>;
+
+function openComments(row) {
+    activeRow = row;
+    document.getElementById("commentPanel").classList.add("open");
+    loadComments();
+}
+
+function closeComments() {
+    document.getElementById("commentPanel").classList.remove("open");
+}
+
+async function loadComments() {
+    const res = await fetch(`comments.php?sheet_id=${activeSheetId}&row=${activeRow}`);
+    const comments = await res.json();
+
+    const list = document.getElementById("commentList");
+    list.innerHTML = "";
+
+    comments.forEach(c => {
+        const div = document.createElement("div");
+        div.className = "comment";
+        div.innerHTML = `
+            <div>${c.comment}</div>
+            <small>${c.created_at}</small>
+            <button onclick="replyPrompt(${c.id})">Reply</button>
+        `;
+        list.appendChild(div);
+
+        c.replies.forEach(r => {
+            const rd = document.createElement("div");
+            rd.className = "comment reply";
+            rd.innerHTML = `<div>${r.comment}</div>`;
+            list.appendChild(rd);
+        });
+    });
+}
+
+function replyPrompt(parentId) {
+    const text = prompt("Reply:");
+    if (!text) return;
+
+    fetch("save_comment.php", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            sheet_id: activeSheetId,
+            row_number: activeRow,
+            parent_id: parentId,
+            comment: text
+        })
+    }).then(loadComments);
+}
+
+function saveComment() {
+    const text = document.getElementById("commentText").value;
+    if (!text) return;
+
+    fetch("save_comment.php", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            sheet_id: activeSheetId,
+            row_number: activeRow,
+            comment: text
+        })
+    }).then(() => {
+        document.getElementById("commentText").value = "";
+        loadComments();
+    });
+}
+
+//attachments
+let activeAttachRow = null;
+
+function openAttachments(row) {
+    activeAttachRow = row;
+    document.getElementById("attachmentPanel").classList.add("open");
+    loadAttachments();
+}
+
+function closeAttachments() {
+    document.getElementById("attachmentPanel").classList.remove("open");
+}
+
+async function loadAttachments() {
+    const res = await fetch(
+        `attachments.php?sheet_id=${activeSheetId}&row=${activeAttachRow}`
+    );
+    const files = await res.json();
+
+    const list = document.getElementById("attachmentList");
+    list.innerHTML = "";
+
+    files.forEach(f => {
+        const div = document.createElement("div");
+        div.className = "comment";
+        div.innerHTML = `
+            <a href="${f.file_path}" target="_blank">${f.original_name}</a>
+            <br><small>${f.created_at}</small>
+        `;
+        list.appendChild(div);
+    });
+}
+
+async function uploadAttachment() {
+    const fileInput = document.getElementById("attachFile");
+    if (!fileInput.files.length) return;
+
+    const formData = new FormData();
+    formData.append("file", fileInput.files[0]);
+    formData.append("sheet_id", activeSheetId);
+    formData.append("row_number", activeAttachRow);
+
+    const res = await fetch("upload_attachment.php", {
+        method: "POST",
+        body: formData
+    });
+
+    const out = await res.json();
+    if (out.success) {
+        fileInput.value = "";
+        loadAttachments();
+    } else {
+        alert(out.error || "Upload failed");
+    }
+}
+
 </script>
+<div id="commentPanel" class="comment-panel">
+    <div class="comment-header">
+        <strong>Comments</strong>
+        <button onclick="closeComments()">✖</button>
+    </div>
+
+    <div id="commentList" class="comment-list"></div>
+
+    <div class="comment-input">
+        <textarea id="commentText" placeholder="Write a comment..."></textarea>
+        <button class="btn btn-secondary float-end mt-10" onclick="saveComment()">Send</button>
+    </div>
+</div>
+
+<div id="attachmentPanel" class="comment-panel">
+    <div class="comment-header">
+        <strong>Task Attachments</strong>
+        <button onclick="closeAttachments()">✖</button>
+    </div>
+
+    <div id="attachmentList" class="comment-list"></div>
+
+    <div class="comment-input">
+        <input type="file" id="attachFile" />
+        <button class="btn btn-secondary mt-10" onclick="uploadAttachment()">Upload</button>
+    </div>
+</div>
 
 </body>
 </html>
