@@ -230,6 +230,7 @@
     $company_result = $conn->query($company_sql);
     $company_row = $company_result->fetch_assoc();
     $logo = $company_row['logo'];
+    $sign_up_img = $company_row['sign_up_img'];
 ?>
 
 <body>
@@ -238,6 +239,11 @@
             <div class="d-flex align-items-center flex-column h-100 justify-content-center sign-up-img">
                 <!-- <img src="assets/images/auth/auth-img.png" alt=""> -->
                 <!-- <img src="assets/images/signin-page.jpg" alt="" class="sign-in-img"> -->
+                <?php if($sign_up_img != NULL) { ?>
+                    <img src="uploads/company_logo/<?php echo $sign_up_img; ?>" alt="" class="sign-in-img">
+                <?php } else { ?>       
+                    <img src="assets/images/1.jpg" alt="" class="sign-in-img">
+                <?php } ?>
             </div>
         </div>
         <div class="auth-right py-32 px-24 d-flex flex-column justify-content-center">

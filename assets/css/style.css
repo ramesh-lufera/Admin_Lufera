@@ -12270,8 +12270,8 @@ div.dt-container .dt-paging .dt-paging-button:hover:hover, div.dt-container .dt-
   transition: 0.2s linear;
 }
 
-.form-check .form-check-input:focus {
-  box-shadow: none;
+.form-check-input:focus {
+  box-shadow: none !important;
 }
 
 /* input Radio Css End */
@@ -15135,10 +15135,10 @@ td.fc-header-center {
   height: -webkit-fill-available;
   object-fit: cover;
 }
-.sign-up-img{
+/* .sign-up-img{
   background-image: url(../images/1.jpg);
   background-size: cover;
-}
+} */
 .navbar-search input:focus {
   border-color: #101010 !important;
 }
@@ -15174,6 +15174,7 @@ table.dataTable thead>tr>th.dt-orderable-asc:hover, table.dataTable thead>tr>th.
 }
 .form-check-input:checked{
   background-color: #fdc701;
+  border-color: #fdc701;
 }
 .jodit-status-bar-link, .jodit-ui-group_group_info{
     display: none !important;
