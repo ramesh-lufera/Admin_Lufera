@@ -464,17 +464,16 @@ if (isset($_GET['id']) && is_numeric($_GET['id'])) {
 <script>
 function buildSheetPayload() {
 
-    const headers = [];
     const cells = {};
+    const headers = [];
     const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
 
-    let colIndex = 0;
-    const row = 1;
+    let colIndex = 1;   // ⬅️ START FROM B (skip A)
+    const row = 1;     // still row 1 (append logic will handle next rows)
 
     fields.forEach((f, i) => {
 
         const col = alphabet[colIndex];
-        headers.push(f.label || col);
 
         let value = "";
 
@@ -501,16 +500,16 @@ function buildSheetPayload() {
         }
 
         cells[`${col}${row}`] = value;
+        headers.push(col);
+
         colIndex++;
     });
 
     return {
-        name: "Sheet1",
-        rows: 20,
-        cols: 10,
-        headers: headers.concat(
-            alphabet.slice(headers.length, 10)
-        ),
+        rows: 10,
+        cols: colIndex,
+        headers: headers,
+        columnTypes: [],
         cells: cells
     };
 }
