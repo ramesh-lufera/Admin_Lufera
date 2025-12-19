@@ -168,7 +168,7 @@ body{
     <!-- Header -->
     <div class="header">
         <h2>My Forms</h2>
-        <a href="forms.php" class="create-btn">+ Create Form</a>
+        <a href="form_builder.php" class="create-btn">+ Create Form</a>
     </div>
 
     <!-- Forms Grid -->
@@ -193,12 +193,12 @@ body{
 
                     <div class="card-actions">
                         <!-- VIEW MODE -->
-                        <a href="forms.php?id=<?= $row['id'] ?>&mode=view" class="view-btn">
+                        <a href="form_builder.php?id=<?= $row['id'] ?>&mode=view" class="view-btn">
                             View
                         </a>
 
                         <!-- EDIT MODE -->
-                        <a href="forms.php?id=<?= $row['id'] ?>" class="edit-btn">
+                        <a href="form_builder.php?id=<?= $row['id'] ?>" class="edit-btn">
                             Edit
                         </a>
                     </div>
