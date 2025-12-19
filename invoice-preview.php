@@ -359,7 +359,15 @@
                                                     <th class="text-end w-25">Total</th>
                                                 </thead>
                                                 <tbody>
-                                                    <td class="w-25"><?php echo $row['plan_name']; ?></td>
+                                                    <!-- <td class="w-25"><?php echo $row['plan_name']; ?></td> -->
+                                                    <td class="w-25">
+                                                        <?php 
+                                                            echo $row['plan_name'];
+                                                            if ($type === 'renewal') {
+                                                                echo ' (Renewal Plan)';
+                                                            }
+                                                        ?>
+                                                    </td>
                                                     <td class="w-25"><?= htmlspecialchars($symbol) ?> <?php echo number_format($row['price'], 2); ?> </td>
                                                     <td class="w-25"><?= htmlspecialchars($symbol) ?> <?php echo number_format($row['gst'], 2); ?></td>
                                                     <td class="text-end w-25"><?= htmlspecialchars($symbol) ?> <?php echo number_format(floatval($row['price']) + floatval($row['gst']), 2); ?></td>
