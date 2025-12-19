@@ -682,6 +682,19 @@
                         </a>
                     </li> -->
             <?php } ?>
+
+            <li>
+                <a href="form_dashboard.php">
+                <iconify-icon icon="solar:clipboard-text-outline" class="menu-icon"></iconify-icon>
+                    <span>Form Builder</span>
+                </a>
+
+                <a href="dashboard-sheets.php">
+                    <iconify-icon icon="tabler:file-spreadsheet" class="menu-icon"></iconify-icon>
+                    <span>Sheets</span>
+                </a>
+            </li>
+
             </ul>
             <ul class="sidebar-menu bottom-menu" id="sidebar-menu" style="border-top: 1px solid #eee; ">
             <!-- <li>
@@ -733,8 +746,8 @@
                         <li><a href="company.php"><i class="ri-circle-fill circle-icon text-warning-600 w-auto"></i> Company</a></li>
                         <li><a href="credentials.php"><i class="ri-circle-fill circle-icon text-warning-600 w-auto"></i> Credentials</a></li>
                         <li><a href="currencies.php"><i class="ri-circle-fill circle-icon text-warning-600 w-auto"></i> Currencies</a></li>
-                        <li><a href="form_builder.php"><i class="ri-circle-fill circle-icon text-warning-600 w-auto"></i> Form Builder</a></li>
-                        <li><a href="payment-gateway.php"><i class="ri-circle-fill circle-icon text-warning-600 w-auto"></i> Payment Gateway</a></li>
+                        <!-- <li><a href="form_dashboard.php"><i class="ri-circle-fill circle-icon text-warning-600 w-auto"></i> Form Builder</a></li> -->
+                        <!-- <li><a href="payment-gateway.php"><i class="ri-circle-fill circle-icon text-warning-600 w-auto"></i> Payment Gateway</a></li> -->
                         <li><a href="promotion.php"><i class="ri-circle-fill circle-icon text-warning-600 w-auto"></i> Promotion</a></li>
                         <li><a href="add_policy.php"><i class="ri-circle-fill circle-icon text-warning-600 w-auto"></i> Privacy policy</a></li>
                         <li><a href="view_packages.php"><i class="ri-circle-fill circle-icon text-warning-600 w-auto"></i> Packages</a></li>
@@ -746,12 +759,12 @@
 
                 </li>
             <?php } ?>
-            <li>
+            <!-- <li>
                 <a href="dashboard-sheets.php">
                     <iconify-icon icon="tabler:file-spreadsheet" class="menu-icon"></iconify-icon>
                     <span>Sheets</span>
                 </a>
-            </li>
+            </li> -->
             <li>
                 <a href="activity_log.php">
                     <iconify-icon icon="tabler:activity" class="menu-icon"></iconify-icon>

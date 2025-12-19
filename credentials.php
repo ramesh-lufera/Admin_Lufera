@@ -10,6 +10,9 @@
     $emailCommonLink = '';
     $emailImageLink = '';
     $paypalClientId = '';
+    $facebookAppId = '';
+    $facebookAppSecret = '';
+    $facebookCallbackUrl = '';
 
     // Load existing values from .env
     if (file_exists($envPath)) {
@@ -21,6 +24,14 @@
                 $clientSecret = trim(explode('=', $line, 2)[1], "\"");
             } elseif (strpos($line, 'GOOGLE_REDIRECT_URI=') === 0) {
                 $redirectUri = trim(explode('=', $line, 2)[1], "\"");
+
+            } elseif (strpos($line, 'FACEBOOK_APP_ID=') === 0) {
+                $facebookAppId = trim(explode('=', $line, 2)[1], "\"");
+            } elseif (strpos($line, 'FACEBOOK_APP_SECRET=') === 0) {
+                $facebookAppSecret = trim(explode('=', $line, 2)[1], "\"");
+            } elseif (strpos($line, 'FACEBOOK_CALLBACK_URL=') === 0) {
+                $facebookCallbackUrl = trim(explode('=', $line, 2)[1], "\"");
+
             } elseif (strpos($line, 'EMAIL_USERNAME=') === 0) {
                 $emailUsername = trim(explode('=', $line, 2)[1], "\"");
             } elseif (strpos($line, 'GMAIL_APP_PASSWORD=') === 0) {
@@ -46,11 +57,17 @@
         $newEmailImageLink = trim($_POST['email_image_link']);
         $newPaypalClientId = trim($_POST['paypal_client_id']);
 
+        $newFacebookAppId = trim($_POST['facebook_app_id']);
+        $newFacebookAppSecret = trim($_POST['facebook_app_secret']);
+        $newFacebookCallbackUrl = trim($_POST['facebook_callback_url']);
+
         $updatedLines = [];
         $foundClientId = $foundClientSecret = $foundRedirectUri = false;
         $foundEmailUsername = $foundGmailAppPassword = false;
         $foundEmailCommonLink = $foundEmailImageLink = false;
         $foundPaypalClientId = false;
+
+        $foundFacebookAppId = $foundFacebookAppSecret = $foundFacebookCallbackUrl = false;
 
         // Update .env values while preserving others
         if (file_exists($envPath)) {
@@ -80,6 +97,17 @@
                 } elseif (strpos($line, 'PAYPAL_CLIENT_ID=') === 0) {
                     $updatedLines[] = 'PAYPAL_CLIENT_ID="' . $newPaypalClientId . '"';
                     $foundPaypalClientId = true;
+                
+                } elseif (strpos($line, 'FACEBOOK_APP_ID=') === 0) {
+                    $updatedLines[] = 'FACEBOOK_APP_ID="' . $newFacebookAppId . '"';
+                    $foundFacebookAppId = true;
+                } elseif (strpos($line, 'FACEBOOK_APP_SECRET=') === 0) {
+                    $updatedLines[] = 'FACEBOOK_APP_SECRET="' . $newFacebookAppSecret . '"';
+                    $foundFacebookAppSecret = true;
+                } elseif (strpos($line, 'FACEBOOK_CALLBACK_URL=') === 0) {
+                    $updatedLines[] = 'FACEBOOK_CALLBACK_URL="' . $newFacebookCallbackUrl . '"';
+                    $foundFacebookCallbackUrl = true;
+
                 } else {
                     $updatedLines[] = $line;
                 }
@@ -111,6 +139,16 @@
             $updatedLines[] = 'PAYPAL_CLIENT_ID="' . $newPaypalClientId . '"';
         }
 
+        if (!$foundFacebookAppId) {
+            $updatedLines[] = 'FACEBOOK_APP_ID="' . $newFacebookAppId . '"';
+        }
+        if (!$foundFacebookAppSecret) {
+            $updatedLines[] = 'FACEBOOK_APP_SECRET="' . $newFacebookAppSecret . '"';
+        }
+        if (!$foundFacebookCallbackUrl) {
+            $updatedLines[] = 'FACEBOOK_CALLBACK_URL="' . $newFacebookCallbackUrl . '"';
+        }
+
         file_put_contents($envPath, implode("\n", $updatedLines) . "\n");
 
         // Update displayed values
@@ -122,6 +160,11 @@
         $emailCommonLink = $newEmailCommonLink;
         $emailImageLink = $newEmailImageLink;
         $paypalClientId = $newPaypalClientId;
+
+        $facebookAppId = $newFacebookAppId;
+        $facebookAppSecret = $newFacebookAppSecret;
+        $facebookCallbackUrl = $newFacebookCallbackUrl;
+ 
         logActivity(
             $conn, 
             $loggedInUserId, 
@@ -175,6 +218,32 @@
                         <div class="mb-20">
                             <label for="google_redirect_uri" class="form-label fw-semibold text-primary-light text-sm mb-8">Google Redirect URI</label>
                             <input type="text" class="form-control radius-8" id="google_redirect_uri" name="google_redirect_uri" placeholder="Google Redirect URI" value="<?= htmlspecialchars($redirectUri) ?>" required>
+                        </div>
+                    </div>
+
+                    <!-- Facebook Section Title -->
+                    <div class="col-sm-12">
+                        <h6 class="fw-bold mt-3 mb-3">Facebook</h6>
+                    </div>
+                    <!-- Facebook App ID -->
+                    <div class="col-sm-12">
+                        <div class="mb-20">
+                            <label for="facebook_app_id" class="form-label fw-semibold text-primary-light text-sm mb-8">Facebook App ID</label>
+                            <input type="text" class="form-control radius-8" id="facebook_app_id" name="facebook_app_id" placeholder="Facebook App ID" value="<?= htmlspecialchars($facebookAppId) ?>" required>
+                        </div>
+                    </div>
+                    <!-- Facebook App Secret -->
+                    <div class="col-sm-12">
+                        <div class="mb-20">
+                            <label for="facebook_app_secret" class="form-label fw-semibold text-primary-light text-sm mb-8">Facebook App Secret</label>
+                            <input type="text" class="form-control radius-8" id="facebook_app_secret" name="facebook_app_secret" placeholder="Facebook App Secret" value="<?= htmlspecialchars($facebookAppSecret) ?>" required>
+                        </div>
+                    </div>
+                    <!-- Facebook Callback URL -->
+                    <div class="col-sm-12">
+                        <div class="mb-20">
+                            <label for="facebook_callback_url" class="form-label fw-semibold text-primary-light text-sm mb-8">Facebook Callback URL</label>
+                            <input type="text" class="form-control radius-8" id="facebook_callback_url" name="facebook_callback_url" placeholder="Facebook Callback URL" value="<?= htmlspecialchars($facebookCallbackUrl) ?>" required>
                         </div>
                     </div>
 
