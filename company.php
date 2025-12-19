@@ -7,7 +7,7 @@ error_reporting(E_ALL);
 ?>
 <?php
     $id = 0;
-    $full_name = $email = $phone_no = $website = $country = $city = $state = $zip_code = $address = $gst_in = $logo = "";
+    $full_name = $email = $phone_no = $website = $country = $city = $state = $zip_code = $address = $gst_in = $logo = $sign_in_img = $sign_up_img = "";
 
     // Fetch existing data (assuming only one record)
     $sql = "SELECT * FROM company LIMIT 1";
@@ -27,6 +27,8 @@ error_reporting(E_ALL);
         $gst_in = $row['gst_in'];
         $address = $row['address'];
         $logo = $row['logo']; // 👈 Added
+        $sign_in_img = $row['sign_in_img'];
+        $sign_up_img = $row['sign_up_img'];
     }
 
     // Handle form submission
@@ -49,7 +51,11 @@ error_reporting(E_ALL);
         }
 
         $logo_name = $logo; // keep old logo if no new one uploaded
+        $sign_in_name = $sign_in_img;
+        $sign_up_name = $sign_up_img;
+        $allowed_types = ['jpg','jpeg','png','gif','webp'];
 
+        //LOGO IMAGE
         if (isset($_FILES['logo']) && $_FILES['logo']['error'] == 0) {
             $file_tmp = $_FILES['logo']['tmp_name'];
             $file_name = time() . '_' . basename($_FILES['logo']['name']);
@@ -64,7 +70,30 @@ error_reporting(E_ALL);
                 }
             }
         }
+        
+        // SIGN IN IMAGE
+        if (isset($_FILES['sign_in_img']) && $_FILES['sign_in_img']['error'] == 0) {
+            $tmp = $_FILES['sign_in_img']['tmp_name'];
+            $name = time() . '_signin_' . basename($_FILES['sign_in_img']['name']);
+            $path = $upload_dir . $name;
 
+            $ext = strtolower(pathinfo($path, PATHINFO_EXTENSION));
+            if (in_array($ext, $allowed_types) && move_uploaded_file($tmp, $path)) {
+                $sign_in_name = $name;
+            }
+        }
+
+        // SIGN UP IMAGE
+        if (isset($_FILES['sign_up_img']) && $_FILES['sign_up_img']['error'] == 0) {
+            $tmp = $_FILES['sign_up_img']['tmp_name'];
+            $name = time() . '_signup_' . basename($_FILES['sign_up_img']['name']);
+            $path = $upload_dir . $name;
+
+            $ext = strtolower(pathinfo($path, PATHINFO_EXTENSION));
+            if (in_array($ext, $allowed_types) && move_uploaded_file($tmp, $path)) {
+                $sign_up_name = $name;
+            }
+        }
         if ($id > 0) {
 
             // Detect changed fields
@@ -81,6 +110,8 @@ error_reporting(E_ALL);
             if ($address !== $row['address']) $changed_fields[] = "Address";
             if ($gst_in !== $row['gst_in']) $changed_fields[] = "GSTIN";
             if ($logo_name !== $row['logo']) $changed_fields[] = "Logo";
+            if ($sign_in_name !== $row['sign_in_img']) $changed_fields[] = "Sign In Image";
+            if ($sign_up_name !== $row['sign_up_img']) $changed_fields[] = "Sign Up Image";
         
             // Prepare action
             if (empty($changed_fields)) {
@@ -101,7 +132,9 @@ error_reporting(E_ALL);
                 zip_code='$zip_code',
                 gst_in='$gst_in',
                 address='$address',
-                logo='$logo_name'
+                logo='$logo_name',
+                sign_in_img='$sign_in_name',
+                sign_up_img='$sign_up_name'
                 WHERE id=$id";
         
             if ($conn->query($update_sql) === TRUE) {
@@ -131,8 +164,8 @@ error_reporting(E_ALL);
         }
          else {
             // Insert new record
-            $insert_sql = "INSERT INTO company (full_name, email, phone_no, website, country, city, state, zip_code, address, gst_in, logo) 
-                VALUES ('$full_name', '$email', '$phone_no', '$website', '$country', '$city', '$state' ,'$zip_code', '$address', '$gst_in', '$logo_name')";
+            $insert_sql = "INSERT INTO company (full_name, email, phone_no, website, country, city, state, zip_code, address, gst_in, logo, sign_in_img, sign_up_img) 
+                VALUES ('$full_name', '$email', '$phone_no', '$website', '$country', '$city', '$state' ,'$zip_code', '$address', '$gst_in', '$logo_name', '$sign_in_name', '$sign_up_name')";
 
             if ($conn->query($insert_sql) === TRUE) {
                 echo "<script>
@@ -238,6 +271,38 @@ error_reporting(E_ALL);
                                     <input type="text" class="form-control radius-8" name="gst_in" value="<?php echo htmlspecialchars($gst_in); ?>" required>
                                 </div>
                             </div>
+                            <div class="col-sm-6">
+                                <div class="mb-20">
+                                    <label class="form-label fw-semibold text-primary-light text-sm mb-8">
+                                        Sign In Image
+                                    </label>
+                                    <input type="file" class="form-control radius-8" name="sign_in_img" accept="image/*">
+
+                                    <?php if (!empty($sign_in_img)): ?>
+                                        <div class="mt-2">
+                                            <img src="uploads/company_logo/<?php echo htmlspecialchars($sign_in_img); ?>" 
+                                                style="max-width:150px;border-radius:8px;">
+                                        </div>
+                                    <?php endif; ?>
+                                </div>
+                            </div>
+
+                            <div class="col-sm-6">
+                                <div class="mb-20">
+                                    <label class="form-label fw-semibold text-primary-light text-sm mb-8">
+                                        Sign Up Image
+                                    </label>
+                                    <input type="file" class="form-control radius-8" name="sign_up_img" accept="image/*">
+
+                                    <?php if (!empty($sign_up_img)): ?>
+                                        <div class="mt-2">
+                                            <img src="uploads/company_logo/<?php echo htmlspecialchars($sign_up_img); ?>" 
+                                                style="max-width:150px;border-radius:8px;">
+                                        </div>
+                                    <?php endif; ?>
+                                </div>
+                            </div>
+
                             <div class="d-flex align-items-center justify-content-center gap-3 mt-24">
                                 <button type="submit" class="lufera-bg bg-hover-warning-400 text-white text-md px-56 py-11 radius-8 m-auto d-block">
                                     Save Change
