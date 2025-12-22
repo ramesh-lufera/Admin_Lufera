@@ -145,6 +145,26 @@ tr:hover .task-actions {
     color: #16a34a !important;
     font-weight: bold;
 }
+
+.delete-row-icon {
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    font-size: 14px;
+}
+
+/* Show delete icon on row hover */
+tr:hover .delete-row-icon {
+    opacity: 1;
+}
+
+/* Optional: make it slightly more visible when has activity */
+.task-actions.has-activity ~ .delete-row-icon,
+tr:hover .delete-row-icon {
+    opacity: 1;
+}
+.delete-col-icon {
+    pointer-events: auto; /* Ensure click works */
+}
   </style>
   
 </head>
@@ -331,18 +351,55 @@ function buildTable() {
             th.textContent = "Tasks";
             th.contentEditable = false;
         } else {
-            th.contentEditable = false;
-            th.textContent = columnHeaders[c] || colName(c - 1);
-            th.style.cursor = "pointer";
-            th.title = "Click to edit column name and type";
+            // Container for name and trash
+            const wrapper = document.createElement("div");
+            wrapper.style.display = "flex";
+            wrapper.style.alignItems = "center";
+            wrapper.style.justifyContent = "center";
+            wrapper.style.width = "100%";
+            wrapper.style.position = "relative";
 
+            // Column name
+            const nameSpan = document.createElement("span");
+            nameSpan.textContent = columnHeaders[c] || colName(c - 1);
+
+            // Trash icon
+            const trashSpan = document.createElement("span");
+            trashSpan.className = "delete-col-icon fa fa-close text-danger position-absolute";
+            trashSpan.style.right = "8px";
+            trashSpan.style.opacity = "0";
+            trashSpan.style.transition = "opacity 0.2s ease";
+            trashSpan.style.cursor = "pointer";
+            trashSpan.style.fontSize = "12px";
+            trashSpan.title = "Delete this column";
+            trashSpan.onclick = (e) => {
+                e.stopPropagation();
+                deleteColumn(c);
+            };
+
+            wrapper.appendChild(nameSpan);
+            wrapper.appendChild(trashSpan);
+            th.appendChild(wrapper);
+
+            th.style.cursor = "pointer";
+            th.title = "Click to edit column • Hover for delete";
+
+            // Hover: show/hide trash icon
+            th.addEventListener("mouseenter", () => {
+                trashSpan.style.opacity = "1";
+            });
+            th.addEventListener("mouseleave", () => {
+                trashSpan.style.opacity = "0";
+            });
+
+            // Click header (not trash) to open modal
             th.addEventListener("click", (e) => {
-                if (c === 1) return;
+                if (e.target.classList.contains("delete-col-icon")) return;
                 currentColumnForType = c;
                 openColumnTypeModal(c);
-                e.stopPropagation();
             });
         }
+
         hRow.appendChild(th);
     }
     thead.appendChild(hRow);
@@ -371,6 +428,7 @@ function buildTable() {
                     <span class="task-actions">
                         <span class="comment-icon fa fa-message cursor-pointer" title="Comments" onclick="openComments(${r})"></span>
                         <span class="attach-icon fa fa-paperclip cursor-pointer" title="Attachments" onclick="openAttachments(${r})"></span>
+                        <span class="delete-row-icon fa fa-close cursor-pointer text-danger ms-2" title="Delete this row" onclick="deleteRow(${r}); event.stopPropagation();"></span>
                     </span>
                 `;
                 container.contentEditable = false;
@@ -397,18 +455,29 @@ function rebuildPreserveData() {
     const headerSnapshot = { ...columnHeaders };
     const typesSnapshot = { ...columnTypes };
 
+    // Rebuild the full table (this recreates trash icons and hover events)
     buildTable();
 
+    // DO NOT overwrite th.textContent — it destroys the trash icon!
+    // Instead, update only the name span inside the wrapper
     Object.keys(headerSnapshot).forEach(c => {
+        if (c == 1) return; // skip Tasks column
         const th = document.querySelector(`thead th[data-c="${c}"]`);
         if (th) {
-            th.textContent = headerSnapshot[c];
-            columnHeaders[c] = headerSnapshot[c];
+            const nameSpan = th.querySelector("span"); // first span is the name
+            if (nameSpan) {
+                const fullName = headerSnapshot[c];
+                const firstLine = fullName.split('\n')[0];
+                nameSpan.textContent = fullName.includes('\n') ? firstLine + "..." : firstLine;
+                th.title = fullName;
+            }
         }
+        columnHeaders[c] = headerSnapshot[c];
     });
 
     columnTypes = typesSnapshot;
 
+    // Restore cell data
     Object.keys(dataSnapshot).forEach(id => {
         const cellEl = document.getElementById(id);
         if (cellEl && parseInt(cellEl.dataset.c) !== 1) {
@@ -645,7 +714,7 @@ document.getElementById("add-row").onclick = () => { ROWS++; rebuildPreserveData
 document.getElementById("add-col").onclick = () => { COLS++; rebuildPreserveData(); };
 
 document.getElementById("save-db").onclick = async () => {
-    const name = prompt("Enter sheet name:", "Sheet");
+    let name = prompt("Enter sheet name:", columnHeaders[1] || "Sheet");
     if (!name) return;
 
     const payload = {
@@ -657,28 +726,48 @@ document.getElementById("save-db").onclick = async () => {
         cells: {}
     };
 
+    // Collect headers (skip Tasks column)
     document.querySelectorAll("thead th").forEach(th => {
         if (th.dataset.c && th.dataset.c != 1) {
-            payload.headers.push(th.textContent);
+            // Get the visible text from the name span (not the full th)
+            const nameSpan = th.querySelector("span");
+            payload.headers.push(nameSpan ? nameSpan.textContent : th.textContent);
         }
     });
 
+    // Collect cell data
     document.querySelectorAll(".cell").forEach(cell => {
-        if (cell.dataset.c == 1) return;
+        if (cell.dataset.c == 1) return; // skip Tasks column text
         const raw = data[cell.id]?.raw;
         if (raw !== undefined && raw.trim() !== "") {
             payload.cells[cell.id] = raw;
         }
     });
 
-    const res = await fetch("save.php", {
+    // If we have an ID in URL → UPDATE, else INSERT
+    let url = "save.php";
+    if (activeSheetId > 0) {
+        payload.id = activeSheetId; // tell backend to update
+    }
+
+    const res = await fetch(url, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)
     });
 
     const out = await res.json();
-    alert(out.success ? "Saved with ID: " + out.id : "Save Error");
+
+    if (out.success) {
+        // If it was a new sheet, update the URL with the new ID
+        if (!activeSheetId && out.id) {
+            history.replaceState(null, '', `?id=${out.id}`);
+            activeSheetId = out.id;
+        }
+        alert("Sheet saved successfully!");
+    } else {
+        alert("Save Error: " + (out.error || "Unknown"));
+    }
 };
 
 /* ------------------------------------------------------------
@@ -929,6 +1018,77 @@ async function uploadAttachment() {
     } else {
         alert(out.error || "Upload failed");
     }
+}
+
+function deleteRow(row) {
+    if (ROWS <= 1) {
+        alert("Cannot delete the last row.");
+        return;
+    }
+
+    if (!confirm(`Delete row ${row} and all its data ?`)) {
+        return;
+    }
+
+    // Remove all data in this row
+    for (let c = 1; c <= COLS; c++) {
+        const id = cellId(row, c);
+        delete data[id];
+    }
+
+    // Remove comment/attachment tracking
+    delete rowComments[row];
+    delete rowAttachments[row];
+
+    ROWS--;
+    rebuildPreserveData();
+}
+
+function deleteColumn(col) {
+    if (COLS <= 1) {
+        alert("Cannot delete — at least one column must remain.");
+        return;
+    }
+    if (col === 1) {
+        alert("Cannot delete the Tasks column.");
+        return;
+    }
+
+    const colNameDisplay = columnHeaders[col] || colName(col - 1);
+    if (!confirm(`Delete column "${colNameDisplay}" and all its data ?`)) return;
+
+    // Remove data
+    for (let r = 1; r <= ROWS; r++) {
+        const id = cellId(r, col);
+        delete data[id];
+    }
+
+    // Remove config
+    delete columnTypes[col];
+    delete columnHeaders[col];
+
+    // Shift left
+    for (let c = col; c < COLS; c++) {
+        columnTypes[c] = columnTypes[c + 1] || { type: "text" };
+        columnHeaders[c] = columnHeaders[c + 1];
+
+        for (let r = 1; r <= ROWS; r++) {
+            const oldId = cellId(r, c + 1);
+            const newId = cellId(r, c);
+            if (data[oldId]) {
+                data[newId] = data[oldId];
+                delete data[oldId];
+            } else {
+                delete data[newId];
+            }
+        }
+    }
+
+    delete columnTypes[COLS];
+    delete columnHeaders[COLS];
+
+    COLS--;
+    rebuildPreserveData();
 }
 </script>
 
