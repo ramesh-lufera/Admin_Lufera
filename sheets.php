@@ -165,6 +165,9 @@ tr:hover .delete-row-icon {
 .delete-col-icon {
     pointer-events: auto; /* Ensure click works */
 }
+input, select{
+    width:-webkit-fill-available;
+}
   </style>
   
 </head>
@@ -190,6 +193,7 @@ tr:hover .delete-row-icon {
                 <!-- DB Buttons -->
                 <button id="save-db">Save to DB</button>
                 <button id="load-db">Load from DB</button>
+                <button id="export-to-form">Export to Form</button>
             </div>
 
             <div class="sheet" id="sheet"></div>
@@ -198,6 +202,69 @@ tr:hover .delete-row-icon {
 </div>
 
 <script>
+
+document.getElementById("export-to-form").onclick = () => {
+    // Use the actual saved sheet name from DB
+    let formTitle = "Untitled Sheet";
+
+    <?php if ($sheetData): ?>
+        <?php 
+            // $row is from the query: SELECT * FROM sheets WHERE id = $id
+            // So $row['name'] is the saved sheet name
+            $currentSheetName = $row['name'] ?? 'Untitled Sheet';
+        ?>
+        formTitle = <?= json_encode($currentSheetName) ?>;
+    <?php endif; ?>
+
+    // Fallback if no name
+    if (!formTitle || formTitle.trim() === "") {
+        formTitle = "New Form";
+    }
+
+    const tempFields = [];
+
+    for (let c = 2; c <= COLS; c++) {
+        const label = (columnHeaders[c] || colName(c - 1)).trim();
+        if (!label) continue;
+
+        const colConfig = columnTypes[c] || { type: "text" };
+        const colType = colConfig.type;
+
+        let formType = "text";
+        if (colType === "number") formType = "number";
+        else if (colType === "date") formType = "datetime";
+        else if (colType === "dropdown") formType = "select";
+        else if (colType === "checkbox") formType = "checkbox";
+
+        // Get dropdown options (only if it's a dropdown)
+        const options = (colType === "dropdown" && colConfig.options && colConfig.options.length > 0)
+            ? colConfig.options
+            : (formType === "checkbox" ? ["Yes"] : ["Option 1", "Option 2"]);
+
+        tempFields.push({
+            id: Date.now() + c,
+            type: formType,
+            label: label,
+            placeholder: "",
+            required: false,
+            options: options,
+            value: "",  // ← ALWAYS EMPTY — no prefill!
+            validation: ""
+        });
+    }
+
+    if (tempFields.length === 0) {
+        alert("No columns to export (only Tasks column found).");
+        return;
+    }
+
+    const params = new URLSearchParams();
+    params.append('pre_title', formTitle);
+    params.append('pre_fields', JSON.stringify(tempFields));
+
+    window.location.href = `form_builder.php?${params.toString()}`;
+};
+
 /* ------------------------------------------------------------
    BASE VARIABLES (init first)
 ------------------------------------------------------------ */
@@ -601,10 +668,14 @@ function applyColumnType() {
     }
 
     if (selectedType === "dropdown") {
-        const rawOptions = document.getElementById("dropdownValues").value;
-        const vals = rawOptions.split('\n').map(v => v.trim()).filter(v => v);
+    const rawOptions = document.getElementById("dropdownValues").value;
+    const vals = rawOptions
+        .split(/[\n,]+/)
+        .map(v => v.trim())
+        .filter(v => v.length > 0);
         columnTypes[currentColumnForType] = { type: "dropdown", options: vals };
-    } else {
+    }    
+    else {
         columnTypes[currentColumnForType] = { type: selectedType };
     }
 
@@ -878,6 +949,14 @@ document.addEventListener("DOMContentLoaded", () => {
     recalcAll();
     loadCountsAndRefreshIcons(); // Critical: shows existing comments/attachments
     <?php endif; ?>
+
+    // Add this inside DOMContentLoaded
+    document.getElementById("commentText").addEventListener("keydown", function(e) {
+            if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                saveComment();
+            }
+        });
 });
 
 /* ------------------------------------------------------------
@@ -891,6 +970,13 @@ function openComments(row) {
 
 function closeComments() {
     document.getElementById("commentPanel").classList.remove("open");
+}
+
+function scrollCommentListToBottom() {
+    const list = document.getElementById("commentList");
+    if (list) {
+        list.scrollTop = list.scrollHeight;
+    }
 }
 
 async function loadComments() {
@@ -922,6 +1008,7 @@ async function loadComments() {
             list.appendChild(rd);
         });
     });
+    scrollCommentListToBottom();
 }
 
 function saveComment() {
@@ -943,7 +1030,6 @@ function saveComment() {
         loadComments();
     });
 }
-
 function replyPrompt(parentId) {
     const text = prompt("Reply:");
     if (!text) return;
