@@ -1416,14 +1416,14 @@ document.addEventListener('DOMContentLoaded', function () {
                 if (data.contact_name?.value) document.getElementById('field_contact_name').value = data.contact_name.value;
                 if (data.contact_info?.value) document.getElementById('field_contact_info').value = data.contact_info.value;
                 if (data.communication_method?.value) document.getElementById('field_communication_method').value = data.communication_method.value;  // Simpler for select
-                if (data.prefill_name?.value) {
-                    const prefillInput = document.getElementById('field_prefill_name');
-                    if (prefillInput) prefillInput.value = data.prefill_name.value;
-                    const allowPrefillCb = document.getElementById('allow_prefill');
-                    if (allowPrefillCb) allowPrefillCb.checked = true;
-                    const wrapper = document.getElementById('prefill_name_wrapper');
-                    if (wrapper) wrapper.style.display = 'block';
-                }
+                // if (data.prefill_name?.value) {
+                //     const prefillInput = document.getElementById('field_prefill_name');
+                //     if (prefillInput) prefillInput.value = data.prefill_name.value;
+                //     const allowPrefillCb = document.getElementById('allow_prefill');
+                //     if (allowPrefillCb) allowPrefillCb.checked = true;
+                //     const wrapper = document.getElementById('prefill_name_wrapper');
+                //     if (wrapper) wrapper.style.display = 'block';
+                // }
                 if (typeof updateProgressBar === 'function') updateProgressBar();
             } else {
                 form.reset();
@@ -1468,5 +1468,71 @@ $(document).ready(function() {
     });
 });
 </script>
+<script>
+$(document).ready(function() {
+    // Form submission validation (unchanged)
+    $('#myForm').on('submit', function(e) {
+        const allowPrefill = $('#allow_prefill').is(':checked');
+        if (!allowPrefill) {
+            return true;
+        }
 
+        const prefillName = $('#field_prefill_name').val().trim();
+        if (prefillName === '') {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Required',
+                text: 'Please enter a name for this prefill template.'
+            });
+            e.preventDefault();
+            return false;
+        }
+
+        const existingNames = [
+            <?php foreach ($prevRecords as $record): ?>
+                "<?php echo addslashes(htmlspecialchars(strtolower($record['prefill_name']))); ?>",
+            <?php endforeach; ?>
+        ];
+
+        if (existingNames.some(name => name === prefillName.toLowerCase())) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Duplicate Name',
+                text: 'This prefill name already exists. Please choose a unique name.'
+            });
+            e.preventDefault();
+            return false;
+        }
+
+        return true;
+    });
+
+    // Real-time duplicate check - FIXED POSITION
+    $('#field_prefill_name').on('input', function() {
+        const val = $(this).val().trim().toLowerCase();
+
+        // Find the parent .input-group that contains both input + copy button
+        const inputGroup = $(this).closest('.input-group');
+
+        // Remove any previous warning
+        $('#prefill-duplicate-warning').remove();
+        $(this).removeClass('is-invalid');
+
+        if (val) {
+            const existingNames = [
+                <?php foreach ($prevRecords as $record): ?>
+                    "<?php echo addslashes(htmlspecialchars(strtolower($record['prefill_name']))); ?>",
+                <?php endforeach; ?>
+            ];
+
+            const duplicate = existingNames.includes(val);
+            if (duplicate) {
+                $(this).addClass('is-invalid');
+                // Append warning AFTER the entire input-group (so below copy button)
+                inputGroup.after('<small id="prefill-duplicate-warning" class="text-danger d-block mt-1">This name is already used.</small>');
+            }
+        }
+    });
+});
+</script>
 <?php include './partials/layouts/layoutBottom.php'; ?>
