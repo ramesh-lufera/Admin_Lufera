@@ -157,7 +157,7 @@
         border-radius:50%;
         width:28px;height:28px;
         cursor:pointer;
-        font-size:18px;
+        font-size:medium;
         font-weight:700;
         display:flex;
         align-items:center;
@@ -564,6 +564,15 @@
                 $editForm = $result->fetch_assoc();
             }
         }
+
+        $preTitle = '';
+        $preFieldsJSON = '';
+
+        if (!isset($_GET['id']) || !is_numeric($_GET['id'])) {
+            // Only use pre_ parameters when NOT editing an existing form
+            $preTitle = isset($_GET['pre_title']) ? trim(htmlspecialchars($_GET['pre_title'])) : '';
+            $preFieldsJSON = isset($_GET['pre_fields']) ? $_GET['pre_fields'] : '';
+        }
     ?>
 
     <div class="app" id="formBuilderWrapper">
@@ -611,7 +620,7 @@
                     id="formTitle"
                     class="form-title-input"
                     placeholder="Form title"
-                    value="<?= $editForm ? htmlspecialchars($editForm['form_title']) : '' ?>"
+                    value="<?= $editForm ? htmlspecialchars($editForm['form_title']) : $preTitle ?>"
                 />
             <?php endif; ?>
 
@@ -761,37 +770,27 @@
                 let inputHTML = "";
 
                 switch(f.type){
-                    case "text":
+        case "text":
         case "email":
         case "phone":
         case "number":
+        let inputType = "text";
+        
+        if (f.type === "number") inputType = "number";
+        else if (f.type === "phone") inputType = "tel";
+        else if (f.type === "email") inputType = "email";
             inputHTML = `
-                <input
-                    type="${f.type === 'phone' ? 'tel' : f.type}"
-                    name="fields[${i}]"
-                    placeholder="${f.placeholder}"
-                />
-            `;
-            break;
-
-
-                    case "paragraph":
-                        inputHTML = `<textarea name="fields[${i}]" placeholder="${f.placeholder}"></textarea>`;
-                        break;
-
-                    case "select":
-                        inputHTML = `<select name="fields[${i}]">
-                            ${f.options.map(o=>`<option value="${o}">${o}</option>`).join("")}
-                        </select>`;
-                        break;
-
-                    // case "radio":
-                    //     inputHTML = f.options.map(o =>
-                    //         `<label><input type="radio" name="fields[${i}]" value="${o}"> ${o}</label>`
-                    //     ).join("<br>");
-                    //     break;
-
-                    case "radio":
+                <input type="${f.type === 'phone' ? 'tel' : f.type}" name="fields[${i}]" placeholder="${f.placeholder}" />`;
+        break;
+        case "paragraph":
+            inputHTML = `<textarea name="fields[${i}]" placeholder="${f.placeholder}"></textarea>`;
+        break;
+        case "select":
+            inputHTML = `<select name="fields[${i}]">
+                ${f.options.map(o=>`<option value="${o}">${o}</option>`).join("")}
+                </select>`;
+        break;
+        case "radio":
             inputHTML = `
                 <div class="radio-group">
                     ${f.options.map(o =>
@@ -802,37 +801,31 @@
                     ).join("")}
                 </div>
             `;
+        break;
+        case "checkbox":
+            inputHTML = `
+                <div style="display:flex;flex-direction:column;gap:6px">
+                    ${f.options.map(o =>
+                        `<label style="font-weight:500">
+                            <input type="checkbox" name="fields[${i}][]" value="${o}"> ${o}
+                        </label>`
+                    ).join("")}
+                </div>
+            `;
+        break;
+        case "datetime":
+            inputHTML = `<input type="datetime-local" name="fields[${i}]" />`;
             break;
-
-
-                    case "checkbox":
-                        inputHTML = `
-            <div style="display:flex;flex-direction:column;gap:6px">
-                ${f.options.map(o =>
-                    `<label style="font-weight:500">
-                        <input type="checkbox" name="fields[${i}][]" value="${o}"> ${o}
-                    </label>`
-                ).join("")}
-            </div>
-        `;
-
-                        break;
-
-                    case "datetime":
-                        inputHTML = `<input type="datetime-local" name="fields[${i}]" />`;
-                        break;
-
-                    case "file":
-                        inputHTML = `<input type="file" name="fields[${i}]" />`;
-                        break;
-
-                    default:
-                        inputHTML = `<input type="text" name="fields[${i}]" />`;
-                }
+        case "file":
+            inputHTML = `<input type="file" name="fields[${i}]" />`;
+            break;
+        default:
+            inputHTML = `<input type="text" name="fields[${i}]" />`;
+    }
 
                 el.innerHTML = `<label class="field-title">${f.label}</label>${inputHTML}`;
 
-                if (!isViewMode) {
+        if (!isViewMode) {
             const removeBtn = document.createElement("div");
             removeBtn.className = "field-remove";
             removeBtn.innerHTML = "×";
@@ -849,7 +842,6 @@
 
             el.appendChild(removeBtn);
         }
-
 
                 if (!isViewMode) {
                     el.draggable = true;
@@ -997,18 +989,33 @@
             render();
         }
 
-        /* LOAD EXISTING FORM FIELDS (EDIT MODE) */
+        /// Load fields and title (works in both edit and view mode)
         <?php if ($editForm): ?>
             try {
                 fields = JSON.parse(<?= json_encode($editForm['form_json']) ?>);
+
+                // Set title safely — in view mode, no input exists, so skip
+                const titleEl = document.getElementById("formTitle");
+                if (titleEl) {
+                    titleEl.value = <?= json_encode($editForm['form_title']) ?>;
+                }
             } catch (e) {
+                console.error("Failed to parse saved form JSON", e);
                 fields = [];
             }
-
-            if (Array.isArray(fields) && fields.length > 0) {
-                render();
+        <?php elseif ($preFieldsJSON !== ''): ?>
+            try {
+                fields = JSON.parse(<?= json_encode($preFieldsJSON) ?>);
+            } catch (e) {
+                console.error("Failed to parse pre_fields JSON", e);
+                fields = [];
             }
+        <?php else: ?>
+            fields = [];
         <?php endif; ?>
+
+        // Always render at the end
+        render();
 
     </script>
 
