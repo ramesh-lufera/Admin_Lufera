@@ -28,9 +28,8 @@ if (isset($_GET['id'])) {
     th,td{border-right:1px solid #e6e6e6;border-bottom:1px solid #e6e6e6;padding:0;margin:0;}
     th{background:var(--header-bg);position:sticky;top:0;z-index:3;text-align:center;font-weight:600}
     .row-header{position:sticky;left:0;z-index:2;background:var(--header-bg);width:40px;text-align:center}
-    .cell{height:var(--cell-height);min-width:var(--cell-width);padding:4px;box-sizing:border-box;cursor:text}
+    .cell{font-size:14px;height:var(--cell-height);min-width:var(--cell-width);padding:4px;box-sizing:border-box;cursor:text;text-align:center}
     .cell:focus{outline:2px solid #2563eb}
-    .toolbar button{padding:6px 14px;border:1px solid #d1d5db;background:#fff;border-radius:6px;cursor:pointer}
     .selected{background:rgba(37,99,235,0.08)}
     caption{caption-side:top;text-align:left;padding:8px;font-weight:600}
     /* input[type=file]{display:none} */
@@ -168,6 +167,42 @@ tr:hover .delete-row-icon {
 input, select{
     width:-webkit-fill-available;
 }
+/* Dropdown styles */
+.dropdown {
+    position: relative;
+}
+
+.dropdown-menu {
+    display: none;
+    position: absolute;
+    top: 110%;
+    left: 0;
+    background: #fff;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    min-width: 160px;
+    z-index: 1000;
+    padding: 8px;
+}
+
+.dropdown-menu button {
+    width: 100%;
+    text-align: left;
+    padding: 8px 12px;
+    border: none;
+    background: none;
+    cursor: pointer;
+}
+
+.dropdown-menu button:hover {
+    background: #f3f4f6;
+}
+
+/* Show dropdown */
+.dropdown.open .dropdown-menu {
+    display: block;
+}
   </style>
   
 </head>
@@ -184,17 +219,45 @@ input, select{
     <div class="card radius-12 h-100">
         <div class="card-body p-24">
 
-            <div class="toolbar mb-3">
+            <!-- <div class="toolbar mb-3">
                 <button id="add-row">+ Row</button>
                 <button id="add-col">+ Col</button>
                 <button id="export-csv">Export CSV</button>
                 <button id="clear">Clear</button>
-
-                <!-- DB Buttons -->
+                
                 <button id="save-db">Save to DB</button>
                 <button id="load-db">Load from DB</button>
                 <button id="export-to-form">Export to Form</button>
+            </div> -->
+
+            <div class="toolbar mb-3 d-flex gap-2 align-items-center">
+                
+
+                <!-- FILE DROPDOWN -->
+                <div class="dropdown">
+                    <button class="dropdown-btn px-3">File</button>
+                    <div class="dropdown-menu">
+                        <button class="new_sheet" onclick="Redirect()">New</button>
+                        <button id="export-csv">Export</button>
+                        <button id="save-db">Save</button>
+                        <button id="load-db">Open</button>
+                        <button id="clear">Clear</button>
+                    </div>
+                </div>
+
+                <!-- FORM DROPDOWN -->
+                <div class="dropdown">
+                    <button class="dropdown-btn px-3">Form</button>
+                    <div class="dropdown-menu">
+                        <button id="export-to-form">Create Form</button>
+                    </div>
+                </div>
+
+                <button id="add-row" class="px-3">+ Row</button>
+                <button id="add-col" class="px-3">+ Col</button>
+                
             </div>
+
 
             <div class="sheet" id="sheet"></div>
         </div>
@@ -202,7 +265,9 @@ input, select{
 </div>
 
 <script>
-
+function Redirect() {
+    window.location = "sheets.php";
+}
 document.getElementById("export-to-form").onclick = () => {
     // Use the actual saved sheet name from DB
     let formTitle = "Untitled Sheet";
@@ -1176,6 +1241,26 @@ function deleteColumn(col) {
     COLS--;
     rebuildPreserveData();
 }
+
+// Dropdown toggle logic
+document.querySelectorAll(".dropdown-btn").forEach(btn => {
+    btn.addEventListener("click", e => {
+        e.stopPropagation();
+
+        // Close others
+        document.querySelectorAll(".dropdown").forEach(d => {
+            if (d !== btn.parentElement) d.classList.remove("open");
+        });
+
+        btn.parentElement.classList.toggle("open");
+    });
+});
+
+// Close dropdowns when clicking outside
+document.addEventListener("click", () => {
+    document.querySelectorAll(".dropdown").forEach(d => d.classList.remove("open"));
+});
+
 </script>
 
 <div id="commentPanel" class="comment-panel">
