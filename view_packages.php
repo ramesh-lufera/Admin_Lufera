@@ -128,6 +128,7 @@
                     <label for="template" class="form-label">Module</label>
                     <select name="template" class="form-control" id="template" required>
                         <option value="">-- Select Module --</option>
+                        <option value="lufera-one">LuferaOne</option>
                         <option value="website">Website</option>
                         <option value="marketing">Marketing</option>
                         <option value="visa">Visa</option>
@@ -183,6 +184,7 @@
                     <label for="edit_template" class="form-label">Module</label>
                     <select name="template" class="form-control" id="edit_template" required>
                         <option value="">-- Select Module --</option>
+                        <option value="lufera-one">LuferaOne</option>
                         <option value="website">Website</option>
                         <option value="marketing">Marketing</option>
                         <option value="visa">Visa</option>
