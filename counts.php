@@ -1,4 +1,7 @@
 <?php
+ini_set('display_errors', 1);
+error_reporting(E_ALL);
+
 header('Content-Type: application/json');
 include 'partials/connection.php';
 
@@ -8,37 +11,37 @@ if ($sheetId <= 0) {
     exit;
 }
 
-// Count comments (including replies)
+// COMMENTS
 $commentStmt = $conn->prepare("
-    SELECT row_number, COUNT(*) as cnt
+    SELECT sheet_row, COUNT(*) as cnt
     FROM sheet_comments
     WHERE sheet_id = ?
-    GROUP BY row_number
+    GROUP BY sheet_row
 ");
 $commentStmt->bind_param("i", $sheetId);
 $commentStmt->execute();
-$result = $commentStmt->get_result();
+$commentStmt->bind_result($rowNumber, $cnt);
 
 $comments = [];
-while ($row = $result->fetch_assoc()) {
-    $comments[$row['row_number']] = (int)$row['cnt'];
+while ($commentStmt->fetch()) {
+    $comments[$rowNumber] = (int)$cnt;
 }
 $commentStmt->close();
 
-// Count attachments
+// ATTACHMENTS
 $attachStmt = $conn->prepare("
-    SELECT row_number, COUNT(*) as cnt
+    SELECT sheet_row, COUNT(*) as cnt
     FROM sheet_attachments
     WHERE sheet_id = ?
-    GROUP BY row_number
+    GROUP BY sheet_row
 ");
 $attachStmt->bind_param("i", $sheetId);
 $attachStmt->execute();
-$result = $attachStmt->get_result();
+$attachStmt->bind_result($rowNumber, $cnt);
 
 $attachments = [];
-while ($row = $result->fetch_assoc()) {
-    $attachments[$row['row_number']] = (int)$row['cnt'];
+while ($attachStmt->fetch()) {
+    $attachments[$rowNumber] = (int)$cnt;
 }
 $attachStmt->close();
 

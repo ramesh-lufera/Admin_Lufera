@@ -7,7 +7,7 @@ $row   = intval($_GET['row']);
 $res = $conn->query("
     SELECT original_name, file_path, created_at
     FROM sheet_attachments
-    WHERE sheet_id = $sheet AND row_number = $row
+    WHERE sheet_id = $sheet AND sheet_row = $row
     ORDER BY created_at DESC
 ");
 

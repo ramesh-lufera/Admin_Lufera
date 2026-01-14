@@ -7,7 +7,7 @@ if (!isset($_FILES['file'])) {
 }
 
 $sheet = intval($_POST['sheet_id']);
-$row   = intval($_POST['row_number']);
+$row   = intval($_POST['sheet_row']);
 
 $uploadDir = "uploads/sheet_attachments/";
 if (!is_dir($uploadDir)) mkdir($uploadDir, 0777, true);
@@ -27,7 +27,7 @@ if (!move_uploaded_file($tmp, $path)) {
 
 $stmt = $conn->prepare("
     INSERT INTO sheet_attachments
-    (sheet_id, row_number, original_name, file_path, file_size, mime_type)
+    (sheet_id, sheet_row, original_name, file_path, file_size, mime_type)
     VALUES (?, ?, ?, ?, ?, ?)
 ");
 
