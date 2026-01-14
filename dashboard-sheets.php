@@ -11,8 +11,12 @@ while ($row = $res->fetch_assoc()) {
 
 <div class="dashboard-main-body">
     <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-24">
+        <a class="cursor-pointer fw-bold" onclick="history.back()"><span class="fa fa-arrow-left"></span>&nbsp; Back</a> 
         <h6 class="fw-semibold mb-0">Saved Sheets</h6>
-        <a href="sheets.php" class="btn btn-default lufera-bg">+ Create New Sheet</a>
+        <button type="button" class="add-role-btn btn lufera-bg text-white text-sm btn-sm px-12 py-12 radius-8 d-flex align-items-center gap-2" onclick="window.location.href='sheets.php'">
+            <iconify-icon icon="ic:baseline-plus" class="icon text-xl line-height-1"></iconify-icon>
+            Create New Sheet
+        </button>
     </div>
 
     <div class="row g-3">

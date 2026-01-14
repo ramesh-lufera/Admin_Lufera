@@ -28,10 +28,11 @@ if (isset($_GET['id'])) {
     th,td{border-right:1px solid #e6e6e6;border-bottom:1px solid #e6e6e6;padding:0;margin:0;}
     th{background:var(--header-bg);position:sticky;top:0;z-index:3;text-align:center;font-weight:600}
     .row-header{position:sticky;left:0;z-index:2;background:var(--header-bg);width:40px;text-align:center}
-    .cell{font-size:14px;height:var(--cell-height);min-width:var(--cell-width);padding:4px;box-sizing:border-box;cursor:text;text-align:center}
+    .cell{font-size:14px;height:var(--cell-height);min-width:var(--cell-width);padding:4px;box-sizing:border-box;cursor:text;}
     .cell:focus{outline:2px solid #2563eb}
     .selected{background:rgba(37,99,235,0.08)}
     caption{caption-side:top;text-align:left;padding:8px;font-weight:600}
+    .cell.checkbox, .cell>select{text-align:center}
     /* input[type=file]{display:none} */
 /* Modal for column type */
 #columnTypeModal {
@@ -203,7 +204,27 @@ input, select{
 .dropdown.open .dropdown-menu {
     display: block;
 }
-  </style>
+
+.add-col-icon {
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+thead th:hover .add-col-icon {
+    opacity: 1;
+}
+.add-row-icon {
+    opacity: 0;
+    font-size: 12px;
+    margin-left: 6px;
+    transition: opacity 0.2s ease;
+}
+
+tr:hover .add-row-icon {
+    opacity: 1;
+}
+
+</style>
   
 </head>
 
@@ -251,14 +272,8 @@ input, select{
                     <div class="dropdown-menu">
                         <button id="export-to-form">Create Form</button>
                     </div>
-                </div>
-
-                <button id="add-row" class="px-3">+ Row</button>
-                <button id="add-col" class="px-3">+ Col</button>
-                
+                </div>                
             </div>
-
-
             <div class="sheet" id="sheet"></div>
         </div>
     </div>
@@ -289,7 +304,7 @@ document.getElementById("export-to-form").onclick = () => {
     const tempFields = [];
 
     for (let c = 2; c <= COLS; c++) {
-        const label = (columnHeaders[c] || colName(c - 1)).trim();
+        const label = (columnHeaders[c] || defaultFieldName(c - 1)).trim();
         if (!label) continue;
 
         const colConfig = columnTypes[c] || { type: "text" };
@@ -378,6 +393,11 @@ let activeSheetId = <?= isset($_GET['id']) ? intval($_GET['id']) : 0 ?>;
 /* ------------------------------------------------------------
    HELPERS
 ------------------------------------------------------------ */
+function defaultFieldName(col) {
+    //return `Column Field ${col}`;
+    return `ColumnField_${col}`;
+}
+
 function colName(n) {
     let s = "";
     while (n > 0) {
@@ -387,8 +407,7 @@ function colName(n) {
     }
     return s || "A";
 }
-
-function cellId(r, c) { return colName(c) + r; }
+function cellId(r, c) { return defaultFieldName(c) + r; }
 
 /* ------------------------------------------------------------
    RENDER CELL CONTENT BASED ON COLUMN TYPE
@@ -490,11 +509,20 @@ function buildTable() {
             wrapper.style.justifyContent = "center";
             wrapper.style.width = "100%";
             wrapper.style.position = "relative";
-
+            wrapper.style.gap = "6px";
             // Column name
             const nameSpan = document.createElement("span");
-            nameSpan.textContent = columnHeaders[c] || colName(c - 1);
-
+            nameSpan.textContent = columnHeaders[c] || "Column Field";
+// ➕ Add column button
+const addSpan = document.createElement("span");
+addSpan.className = "fa fa-plus text-success add-col-icon";
+addSpan.title = "Add column";
+addSpan.style.cursor = "pointer";
+addSpan.style.fontSize = "11px";
+addSpan.onclick = (e) => {
+    e.stopPropagation();
+    addColumnAfter(c);
+};
             // Trash icon
             const trashSpan = document.createElement("span");
             trashSpan.className = "delete-col-icon fa fa-close text-danger position-absolute";
@@ -510,6 +538,7 @@ function buildTable() {
             };
 
             wrapper.appendChild(nameSpan);
+            wrapper.appendChild(addSpan);
             wrapper.appendChild(trashSpan);
             th.appendChild(wrapper);
 
@@ -560,7 +589,8 @@ function buildTable() {
                     <span class="task-actions">
                         <span class="comment-icon fa fa-message cursor-pointer" title="Comments" onclick="openComments(${r})"></span>
                         <span class="attach-icon fa fa-paperclip cursor-pointer" title="Attachments" onclick="openAttachments(${r})"></span>
-                        <span class="delete-row-icon fa fa-close cursor-pointer text-danger ms-2" title="Delete this row" onclick="deleteRow(${r}); event.stopPropagation();"></span>
+                        <span class="fa fa-plus add-row-icon cursor-pointer text-success" title="Add row below" onclick="addRowAfter(${r}); event.stopPropagation();"></span>
+                        <span class="delete-row-icon fa fa-close cursor-pointer text-danger" title="Delete this row" onclick="deleteRow(${r}); event.stopPropagation();"></span>
                     </span>
                 `;
                 container.contentEditable = false;
@@ -598,7 +628,8 @@ function rebuildPreserveData() {
         if (th) {
             const nameSpan = th.querySelector("span"); // first span is the name
             if (nameSpan) {
-                const fullName = headerSnapshot[c];
+                //const fullName = headerSnapshot[c] || defaultFieldName(Number(c));
+                const fullName = headerSnapshot[c] || "Column Field";
                 const firstLine = fullName.split('\n')[0];
                 nameSpan.textContent = fullName.includes('\n') ? firstLine + "..." : firstLine;
                 th.title = fullName;
@@ -646,6 +677,40 @@ function updateRowIcons(row) {
         taskActions.classList.toggle("has-activity", hasActivity);
     }
 }
+function addColumnAfter(col) {
+    // Increase total columns
+    COLS++;
+
+    // Shift columns right
+    for (let c = COLS; c > col + 1; c--) {
+        columnHeaders[c] = columnHeaders[c - 1];
+        columnTypes[c] = columnTypes[c - 1];
+
+        for (let r = 1; r <= ROWS; r++) {
+            const oldId = cellId(r, c - 1);
+            const newId = cellId(r, c);
+            if (data[oldId]) {
+                data[newId] = data[oldId];
+                delete data[oldId];
+            }
+        }
+    }
+
+    // Initialize new column
+    const newCol = col + 1;
+    //columnHeaders[newCol] = colName(newCol - 1);
+    //columnHeaders[newCol] = defaultFieldName(newCol);
+    columnHeaders[newCol] = "Column Field";
+    columnTypes[newCol] = { type: "text" };
+
+    rebuildPreserveData();
+
+    // Open Column Settings modal immediately
+    setTimeout(() => {
+        currentColumnForType = newCol;
+        openColumnTypeModal(newCol);
+    }, 50);
+}
 
 function refreshAllRowIcons() {
     for (let r = 1; r <= ROWS; r++) {
@@ -680,7 +745,7 @@ function loadCountsAndRefreshIcons() {
 function openColumnTypeModal(col) {
     currentColumnForType = col;
 
-    const currentName = columnHeaders[col] || colName(col - 1);
+    const currentName = columnHeaders[col] || defaultFieldName(col);
     document.getElementById("modalColName").value = currentName;
 
     const config = columnTypes[col] || { type: "text", options: [] };
@@ -692,7 +757,7 @@ function openColumnTypeModal(col) {
 
     if (config.type === "dropdown") {
         dropdownDiv.style.display = "block";
-        dropdownTextarea.value = config.options.join("\n");
+        dropdownTextarea.value = config.options.join(", ");
     } else {
         dropdownDiv.style.display = "none";
         dropdownTextarea.value = "";
@@ -714,43 +779,57 @@ function closeColumnTypeModal() {
 function applyColumnType() {
     if (!currentColumnForType) return;
 
-    const newName = document.getElementById("modalColName").value.trim();
+    const inputEl = document.getElementById("modalColName");
+    const newName = inputEl.value.trim();
     const selectedType = document.getElementById("modalColType").value;
 
-    if (newName) {
-        columnHeaders[currentColumnForType] = newName;
-        const th = document.querySelector(`thead th[data-c="${currentColumnForType}"]`);
-        if (th) {
-            const firstLine = newName.split('\n')[0];
-            th.textContent = newName.includes('\n') ? firstLine + "..." : firstLine;
-            th.title = newName;
+    // ✅ Always resolve a safe final name
+    const finalName = newName || defaultFieldName(currentColumnForType);
+    columnHeaders[currentColumnForType] = finalName;
+
+    // ✅ Update ONLY the name span (never th.textContent)
+    const th = document.querySelector(
+        `thead th[data-c="${currentColumnForType}"]`
+    );
+
+    if (th) {
+        const nameSpan = th.querySelector("span");
+        if (nameSpan) {
+            const firstLine = finalName.split('\n')[0];
+            nameSpan.textContent = finalName.includes('\n')
+                ? firstLine + "..."
+                : firstLine;
+            th.title = finalName;
         }
-    } else {
-        const fallback = colName(currentColumnForType - 1);
-        columnHeaders[currentColumnForType] = fallback;
-        const th = document.querySelector(`thead th[data-c="${currentColumnForType}"]`);
-        if (th) th.textContent = fallback;
     }
 
+    // ✅ Column type handling
     if (selectedType === "dropdown") {
-    const rawOptions = document.getElementById("dropdownValues").value;
-    const vals = rawOptions
-        .split(/[\n,]+/)
-        .map(v => v.trim())
-        .filter(v => v.length > 0);
-        columnTypes[currentColumnForType] = { type: "dropdown", options: vals };
-    }    
-    else {
+        const rawOptions = document.getElementById("dropdownValues").value;
+        const vals = rawOptions
+            .split(/[\n,]+/)
+            .map(v => v.trim())
+            .filter(v => v.length > 0);
+
+        columnTypes[currentColumnForType] = {
+            type: "dropdown",
+            options: vals
+        };
+    } else {
         columnTypes[currentColumnForType] = { type: selectedType };
     }
 
+    // ✅ Re-render column cells
     for (let r = 1; r <= ROWS; r++) {
-        const cell = document.getElementById(cellId(r, currentColumnForType));
+        const cell = document.getElementById(
+            cellId(r, currentColumnForType)
+        );
         if (cell) renderCellContent(cell, currentColumnForType);
     }
 
     closeColumnTypeModal();
 }
+
 
 /* ------------------------------------------------------------
    EVENT HANDLERS
@@ -846,8 +925,8 @@ function recalcAll() {
 /* ------------------------------------------------------------
    BUTTON ACTIONS
 ------------------------------------------------------------ */
-document.getElementById("add-row").onclick = () => { ROWS++; rebuildPreserveData(); };
-document.getElementById("add-col").onclick = () => { COLS++; rebuildPreserveData(); };
+//document.getElementById("add-row").onclick = () => { ROWS++; rebuildPreserveData(); };
+//document.getElementById("add-col").onclick = () => { COLS++; rebuildPreserveData(); };
 
 document.getElementById("save-db").onclick = async () => {
     let name = prompt("Enter sheet name:", columnHeaders[1] || "Sheet");
@@ -986,7 +1065,7 @@ document.addEventListener("DOMContentLoaded", () => {
         document.querySelectorAll("thead th").forEach(th => {
             if (th.dataset.c && th.dataset.c != 1) {
                 const idx = Number(th.dataset.c) - 2;
-                th.textContent = sheet.headers[idx] || colName(Number(th.dataset.c) - 1);
+                th.textContent = sheet.headers[idx] || defaultFieldName(Number(th.dataset.c) - 1);
             }
         });
 
@@ -1085,7 +1164,7 @@ function saveComment() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
             sheet_id: activeSheetId,
-            row_number: activeRow,
+            sheet_row: activeRow,
             comment: text
         })
     }).then(() => {
@@ -1104,7 +1183,7 @@ function replyPrompt(parentId) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
             sheet_id: activeSheetId,
-            row_number: activeRow,
+            sheet_row: activeRow,
             parent_id: parentId,
             comment: text
         })
@@ -1153,7 +1232,7 @@ async function uploadAttachment() {
     const formData = new FormData();
     formData.append("file", fileInput.files[0]);
     formData.append("sheet_id", activeSheetId);
-    formData.append("row_number", activeAttachRow);
+    formData.append("sheet_row", activeAttachRow);
 
     const res = await fetch("upload_attachment.php", {
         method: "POST",
@@ -1169,6 +1248,38 @@ async function uploadAttachment() {
     } else {
         alert(out.error || "Upload failed");
     }
+}
+
+function addRowAfter(row) {
+    ROWS++;
+
+    // Shift rows down
+    for (let r = ROWS; r > row + 1; r--) {
+        for (let c = 1; c <= COLS; c++) {
+            const oldId = cellId(r - 1, c);
+            const newId = cellId(r, c);
+
+            if (data[oldId]) {
+                data[newId] = data[oldId];
+                delete data[oldId];
+            } else {
+                delete data[newId];
+            }
+        }
+
+        // Move comments & attachments
+        rowComments[r] = rowComments[r - 1] || 0;
+        rowAttachments[r] = rowAttachments[r - 1] || 0;
+    }
+
+    // Initialize new row
+    for (let c = 1; c <= COLS; c++) {
+        delete data[cellId(row + 1, c)];
+    }
+    rowComments[row + 1] = 0;
+    rowAttachments[row + 1] = 0;
+
+    rebuildPreserveData();
 }
 
 function deleteRow(row) {
@@ -1205,7 +1316,7 @@ function deleteColumn(col) {
         return;
     }
 
-    const colNameDisplay = columnHeaders[col] || colName(col - 1);
+    const colNameDisplay = columnHeaders[col] || defaultFieldName(col - 1);
     if (!confirm(`Delete column "${colNameDisplay}" and all its data ?`)) return;
 
     // Remove data

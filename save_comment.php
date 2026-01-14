@@ -1,18 +1,27 @@
 <?php
 include './partials/connection.php';
+
 $data = json_decode(file_get_contents("php://input"), true);
+if (!$data) {
+    $data = $_POST;
+}
+
+$sheet_id   = intval($data['sheet_id'] ?? 0);
+$sheet_row = intval($data['sheet_row'] ?? 0);
+$comment    = trim($data['comment'] ?? '');
+$parent_id  = isset($data['parent_id']) ? intval($data['parent_id']) : null;
 
 $stmt = $conn->prepare("
-    INSERT INTO sheet_comments (sheet_id, row_number, parent_id, comment)
+    INSERT INTO sheet_comments (`sheet_id`, `sheet_row`, `parent_id`, `comment`)
     VALUES (?, ?, ?, ?)
 ");
 
 $stmt->bind_param(
     "iiis",
-    $data['sheet_id'],
-    $data['row_number'],
-    $data['parent_id'],
-    $data['comment']
+    $sheet_id,
+    $sheet_row,
+    $parent_id,
+    $comment
 );
 
 $stmt->execute();

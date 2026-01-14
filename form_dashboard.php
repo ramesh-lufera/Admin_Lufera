@@ -8,26 +8,6 @@
 <title>Form Builder Dashboard</title>
 
 <style>
-:root{
-    --primary:#fec700;
-    --bg:#f9fafb;
-    --card:#ffffff;
-    --muted:#6b7280;
-    --border:#f5e8b8;
-}
-*{box-sizing:border-box;font-family:Inter,Segoe UI,Roboto,Helvetica,Arial,sans-serif}
-
-body{
-    margin:0;
-    background:var(--bg);
-    color:#111827;
-}
-
-/* Page Layout */
-.page{
-    padding:36px;
-}
-
 /* Header */
 .header{
     display:flex;
@@ -39,19 +19,6 @@ body{
     margin:0;
     font-size:26px !important;
     font-weight:700;
-}
-
-/* Create Button */
-.create-btn{
-    background:var(--primary);
-    padding:12px 22px;
-    font-weight:700;
-    border:none;
-    border-radius:8px;
-    cursor:pointer;
-    font-size:15px;
-    text-decoration:none;
-    color:#111827;
 }
 
 /* Grid */
@@ -118,7 +85,6 @@ body{
 
 /* VIEW BUTTON */
 .card-actions .view-btn{
-    background:#ffffff;
     border:1px solid var(--border);
     padding:9px 18px;
     border-radius:8px;
@@ -127,9 +93,6 @@ body{
     color:#111827;
     text-decoration:none;
     transition:all .2s ease;
-}
-.card-actions .view-btn:hover{
-    background:#f9fafb;
 }
 
 /* EDIT BUTTON */
@@ -162,27 +125,24 @@ body{
 </head>
 
 <body>
-
-<div class="page">
-
-    <!-- Header -->
-    <div class="header">
-        <h2>My Forms</h2>
-        <a href="form_builder.php" class="create-btn">+ Create Form</a>
+<div class="dashboard-main-body">
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-24">
+        <a class="cursor-pointer fw-bold" onclick="history.back()"><span class="fa fa-arrow-left"></span>&nbsp; Back</a> 
+        <h6 class="fw-semibold mb-0">Forms</h6>
+        <button type="button" class="add-role-btn btn lufera-bg text-white text-sm btn-sm px-12 py-12 radius-8 d-flex align-items-center gap-2" onclick="window.location.href='form_builder.php'">
+            <iconify-icon icon="ic:baseline-plus" class="icon text-xl line-height-1"></iconify-icon>
+            Create Form 
+        </button>
     </div>
-
     <!-- Forms Grid -->
     <div class="grid">
-
         <?php
         $query = "SELECT id, form_title, created_at FROM form_builder ORDER BY id DESC";
         $result = $conn->query($query);
-
         if ($result && $result->num_rows > 0):
             while ($row = $result->fetch_assoc()):
         ?>
-
-            <div class="card">
+            <div class="card bg-white">
                 <div>
                     <h4><?= htmlspecialchars($row['form_title']) ?></h4>
                     <p>Form Builder Template</p>
@@ -209,15 +169,11 @@ body{
             endwhile;
         else:
         ?>
-
             <div class="empty">
                 No forms available. Click “Create Form” to get started.
             </div>
-
         <?php endif; ?>
-
     </div>
-
 </div>
 
 </body>

@@ -4,7 +4,7 @@ include 'partials/connection.php';
 $sheet = intval($_GET['sheet_id']);
 $row = intval($_GET['row']);
 
-$res = $conn->query("SELECT * FROM sheet_comments WHERE sheet_id=$sheet AND row_number=$row AND parent_id IS NULL");
+$res = $conn->query("SELECT * FROM sheet_comments WHERE sheet_id=$sheet AND sheet_row=$row AND parent_id IS NULL");
 
 $comments = [];
 
