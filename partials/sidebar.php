@@ -614,7 +614,7 @@
                     <span>Dashboard</span>
                 </a>
             <?php } else { ?>
-            <a href="user-dashboard.php">
+            <a href="admin-dashboard.php">
                 <iconify-icon icon="solar:home-smile-angle-outline" class="menu-icon"></iconify-icon>
                     <span>Dashboard</span>
                 </a>

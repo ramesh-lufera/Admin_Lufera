@@ -132,7 +132,8 @@
       series: [
           {
             name: 'This Day',
-            data: [4, 18, 13, 40, 30, 50, 30, 60, 40, 75, 45, 90],
+            // data: [4, 18, 13, 40, 30, 50, 30, 60, 40, 75, 45, 90],
+            data: window.revenueChartData || [],
           },
       ],
       chart: {
@@ -249,7 +250,8 @@
     var chart = new ApexCharts(document.querySelector(`#${chartId}`), options);
     chart.render();
   }
-  createChartTwo('revenue-chart', '#487fff');
+//   createChartTwo('revenue-chart', '#487fff');
+  createChartTwo('revenue-chart', '#fec700');
   // ================================ Revenue Growth Area Chart End ================================ 
 
   // ================================ Earning Statistics bar chart Start ================================ 
@@ -314,12 +316,14 @@
       },
       fill: {
           type: 'gradient',
-          colors: ['#487FFF'], // Set the starting color (top color) here
+        //   colors: ['#487FFF'], // Set the starting color (top color) here
+          colors: ['#fec700'], // Set the starting color (top color) here
           gradient: {
               shade: 'light', // Gradient shading type
               type: 'vertical',  // Gradient direction (vertical)
               shadeIntensity: 0.5, // Intensity of the gradient shading
-              gradientToColors: ['#487FFF'], // Bottom gradient color (with transparency)
+            //   gradientToColors: ['#487FFF'], // Bottom gradient color (with transparency)
+              gradientToColors: ['#fec700'], // Bottom gradient color (with transparency)
               inverseColors: false, // Do not invert colors
               opacityFrom: 1, // Starting opacity
               opacityTo: 1,  // Ending opacity
