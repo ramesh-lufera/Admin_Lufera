@@ -8,119 +8,146 @@
 <title>Form Builder Dashboard</title>
 
 <style>
-/* Header */
-.header{
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-    margin-bottom:32px;
-}
-.header h2{
-    margin:0;
-    font-size:26px !important;
-    font-weight:700;
-}
+    /* Header */
+    .header{
+        display:flex;
+        justify-content:space-between;
+        align-items:center;
+        margin-bottom:32px;
+    }
+    .header h2{
+        margin:0;
+        font-size:26px !important;
+        font-weight:700;
+    }
 
-/* Grid */
-.grid{
-    display:grid;
-    grid-template-columns:repeat(auto-fill, minmax(320px,1fr));
-    gap:26px;
-}
+    /* Grid */
+    .grid{
+        display:grid;
+        grid-template-columns:repeat(auto-fill, minmax(320px,1fr));
+        gap:26px;
+    }
 
-/* Card */
-.card{
-    background:var(--card);
-    border:1px solid var(--border);
-    border-radius:14px;
-    padding:24px;
-    box-shadow:0 8px 22px rgba(0,0,0,0.07);
-    display:flex;
-    flex-direction:column;
-    justify-content:space-between;
-    transition:all .25s ease;
-}
-.card:hover{
-    transform:translateY(-3px);
-    box-shadow:0 14px 34px rgba(0,0,0,0.12);
-}
+    /* Card */
+    .card{
+        background:var(--card);
+        border:1px solid var(--border);
+        border-radius:14px;
+        padding:24px;
+        box-shadow:0 8px 22px rgba(0,0,0,0.07);
+        display:flex;
+        flex-direction:column;
+        justify-content:space-between;
+        transition:all .25s ease;
+    }
+    .card:hover{
+        transform:translateY(-3px);
+        box-shadow:0 14px 34px rgba(0,0,0,0.12);
+    }
 
-/* Card Title */
-.card h4{
-    margin:0 0 12px;
-    font-size:21px !important;
-    font-weight:700;
-    line-height:1.35;
-}
+    /* Card Title */
+    .card h4{
+        margin:0 0 12px;
+        font-size:21px !important;
+        font-weight:700;
+        line-height:1.35;
+    }
 
-/* Card Description */
-.card p{
-    margin:0;
-    font-size:15px;
-    line-height:1.6;
-    color:var(--muted);
-}
+    /* Card Description */
+    .card p{
+        margin:0;
+        font-size:15px;
+        line-height:1.6;
+        color:var(--muted);
+    }
 
-/* Card Footer */
-.card-footer{
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-    margin-top:22px;
-    padding-top:14px;
-    border-top:1px solid var(--border);
-}
+    /* Card Footer */
+    .card-footer{
+        display:flex;
+        justify-content:space-between;
+        align-items:center;
+        margin-top:22px;
+        padding-top:14px;
+        border-top:1px solid var(--border);
+    }
 
-/* Date */
-.card-footer span{
-    font-size:14px;
-    color:var(--muted);
-}
+    /* Date */
+    .card-footer span{
+        font-size:14px;
+        color:var(--muted);
+    }
 
-/* Action Buttons */
-.card-actions{
-    display:flex;
-    gap:10px;
-}
+    /* Action Buttons */
+    .card-actions{
+        display:flex;
+        gap:10px;
+    }
 
-/* VIEW BUTTON */
-.card-actions .view-btn{
-    border:1px solid var(--border);
-    padding:9px 18px;
-    border-radius:8px;
-    font-size:14px;
-    font-weight:700;
-    color:#111827;
-    text-decoration:none;
-    transition:all .2s ease;
-}
+    /* VIEW BUTTON */
+    .card-actions .view-btn{
+        border:1px solid var(--border);
+        padding:9px 18px;
+        border-radius:8px;
+        font-size:14px;
+        font-weight:700;
+        color:#111827;
+        text-decoration:none;
+        transition:all .2s ease;
+    }
 
-/* EDIT BUTTON */
-.card-actions .edit-btn{
-    background:var(--primary);
-    padding:9px 20px;
-    border-radius:8px;
-    font-size:14px;
-    font-weight:700;
-    color:#111827;
-    text-decoration:none;
-    transition:all .2s ease;
-}
-.card-actions .edit-btn:hover{
-    filter:brightness(0.95);
-}
+    /* EDIT BUTTON */
+    .card-actions .edit-btn{
+        background:var(--primary);
+        padding:9px 20px;
+        border-radius:8px;
+        font-size:14px;
+        font-weight:700;
+        color:#111827;
+        text-decoration:none;
+        transition:all .2s ease;
+    }
+    .card-actions .edit-btn:hover{
+        filter:brightness(0.95);
+    }
 
-/* Empty State */
-.empty{
-    background:#fff;
-    border:2px dashed var(--border);
-    border-radius:14px;
-    padding:60px;
-    text-align:center;
-    color:var(--muted);
-    grid-column:1 / -1;
-    font-size:15px;
-}
+    /* Empty State */
+    .empty{
+        background:#fff;
+        border:2px dashed var(--border);
+        border-radius:14px;
+        padding:60px;
+        text-align:center;
+        color:var(--muted);
+        grid-column:1 / -1;
+        font-size:15px;
+    }
+
+    /* Shortcode */
+    .shortcode-box{
+        margin-top:12px;
+        display:flex;
+        align-items:center;
+        gap:8px;
+        font-size:13px;
+        background:#f9fafb;
+        border:1px dashed var(--border);
+        padding:6px 10px;
+        border-radius:8px;
+        width:fit-content;
+        cursor:pointer;
+    }
+
+    .shortcode-box code{
+        font-family:monospace;
+        font-size:13px;
+        color:#111827;
+    }
+
+    .shortcode-box svg{
+        width:14px;
+        height:14px;
+        stroke:#374151;
+    }
 </style>
 </head>
 
@@ -143,9 +170,26 @@
             while ($row = $result->fetch_assoc()):
         ?>
             <div class="card bg-white">
+                <!-- <div>
+                    <h4><?= htmlspecialchars($row['form_title']) ?></h4>
+                    <p>Form Builder Template</p>
+                </div> -->
+
                 <div>
                     <h4><?= htmlspecialchars($row['form_title']) ?></h4>
                     <p>Form Builder Template</p>
+
+                    <!-- SHORTCODE -->
+                    <div class="shortcode-box"
+                        onclick="copyShortcode('[form id=<?= $row['id'] ?>]')">
+                        <code>[form id=<?= $row['id'] ?>]</code>
+
+                        <!-- Copy Icon -->
+                        <svg viewBox="0 0 24 24" fill="none" stroke-width="2">
+                            <rect x="9" y="9" width="13" height="13"></rect>
+                            <rect x="3" y="3" width="13" height="13"></rect>
+                        </svg>
+                    </div>
                 </div>
 
                 <div class="card-footer">
@@ -175,6 +219,14 @@
         <?php endif; ?>
     </div>
 </div>
+
+<script>
+    function copyShortcode(text){
+        navigator.clipboard.writeText(text).then(function(){
+            alert('Shortcode copied: ' + text);
+        });
+    }
+</script>
 
 </body>
 </html>

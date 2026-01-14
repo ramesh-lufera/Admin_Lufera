@@ -450,6 +450,21 @@
         margin-bottom: 2px;
         line-height: 1.3;
     }
+/* ===============================
+   INLINE VALIDATION STYLES
+=============================== */
+
+.field-error {
+    border-color: #dc2626 !important;
+    box-shadow: 0 0 0 2px rgba(220,38,38,.15);
+}
+
+.error-text {
+    font-size: 12px;
+    color: #dc2626;
+    margin-top: 4px;
+    line-height: 1.3;
+}
 
 </style>
 </head>
@@ -657,6 +672,98 @@
         <input type="hidden" name="form_id" value="<?= (int)$formId ?>">
         <input type="hidden" name="sheet_data" id="sheetJSON">
     </form>
+
+    <script>
+function clearInlineErrors() {
+    document.querySelectorAll(".error-text").forEach(e => e.remove());
+    document.querySelectorAll(".field-error").forEach(e => {
+        e.classList.remove("field-error");
+    });
+}
+
+function showInlineError(el, message) {
+    el.classList.add("field-error");
+
+    const err = document.createElement("div");
+    err.className = "error-text";
+    err.textContent = message;
+
+    // place error after field or group
+    if (el.parentElement) {
+        el.parentElement.appendChild(err);
+    }
+}
+
+function validateFormFieldsInline() {
+
+    clearInlineErrors();
+
+    for (let i = 0; i < fields.length; i++) {
+        const f = fields[i];
+
+        const input      = document.querySelector(`[name="fields[${i}]"]`);
+        const radios     = document.querySelectorAll(`[name="fields[${i}]"]`);
+        const checkboxes = document.querySelectorAll(`[name="fields[${i}][]"]`);
+
+        let value = "";
+        let hasValue = false;
+        let errorTarget = input;
+
+        /* CHECK VALUE */
+        if (checkboxes.length > 0) {
+            const checked = [...checkboxes].filter(cb => cb.checked);
+            hasValue = checked.length > 0;
+            value = checked.map(cb => cb.value).join(", ");
+            errorTarget = checkboxes[0];
+        }
+        else if (radios.length > 0 && radios[0].type === "radio") {
+            const checked = [...radios].find(r => r.checked);
+            hasValue = !!checked;
+            value = checked ? checked.value : "";
+            errorTarget = radios[0];
+        }
+        else if (input) {
+            value = input.value.trim();
+            hasValue = value !== "";
+        }
+
+        /* REQUIRED */
+        if (f.required && !hasValue) {
+            showInlineError(errorTarget, `"${f.label}" is required`);
+            return false;
+        }
+
+        /* EMAIL */
+        if (f.validation === "email" && hasValue) {
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(value)) {
+                showInlineError(errorTarget, "Enter a valid email address");
+                return false;
+            }
+        }
+
+        /* NUMBER */
+        if (f.validation === "range" && hasValue) {
+            if (isNaN(value)) {
+                showInlineError(errorTarget, "Enter a valid number");
+                return false;
+            }
+        }
+
+        /* FILE SIZE */
+        if (f.validation === "filesize" && input?.files?.length) {
+            const maxSize = 2 * 1024 * 1024; // 2MB
+            if (input.files[0].size > maxSize) {
+                showInlineError(input, "File size must be under 2MB");
+                return false;
+            }
+        }
+    }
+
+    return true;
+}
+</script>
+
 
 
     <script>
@@ -875,11 +982,20 @@
             if (isViewMode) {
                 const btn = document.createElement("button");
                 btn.type = "button";
-        btn.onclick = () => {
-            const payload = buildSheetPayload();
-            document.getElementById("sheetJSON").value = JSON.stringify(payload);
-            document.getElementById("sheetForm").submit();
-        };
+        // btn.onclick = () => {
+        //     const payload = buildSheetPayload();
+        //     document.getElementById("sheetJSON").value = JSON.stringify(payload);
+        //     document.getElementById("sheetForm").submit();
+        // };
+btn.onclick = () => {
+
+    if (!validateFormFieldsInline()) return;
+
+    const payload = buildSheetPayload();
+    document.getElementById("sheetJSON").value = JSON.stringify(payload);
+    document.getElementById("sheetForm").submit();
+};
+
 
                 btn.textContent = "Submit";
                 btn.style.marginTop = "20px";
