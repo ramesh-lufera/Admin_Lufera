@@ -381,7 +381,7 @@
                     <div class="upgrade__payment-card">
                         <div class="h-portlet w-100">
                             <div class="h-portlet__body position-relative">
-                                <h2 class="trans h-mb-24 h-mt-8">Upgrade to Cloud Startup Hosting</h2>                                                               
+                                <h2 class="trans h-mb-24 h-mt-8" id="upgradeHeading"></h2>                                                               
                                 <div class="purchase-details">
                                     <ul class="purchase-details__list">
                                         <li class="details-item">
@@ -555,7 +555,11 @@ function updateUpgradeDisplay() {
     const duration = selected.getAttribute('data-duration')?.toLowerCase() || '';
     const packageId = selected.value;
     const packageName = selected.textContent.trim();
-
+// Update heading text
+const heading = document.getElementById('upgradeHeading');
+if (heading) {
+    heading.textContent = 'Upgrade to ' + packageName;
+}
     const priceDisplay = document.querySelector('.upgrade_price');
     const totalElement = document.querySelector('.details-item__price.total-amount');
     const expirationElement = document.querySelector('.details-item__price.expiration-date');

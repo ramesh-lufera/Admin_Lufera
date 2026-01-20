@@ -131,18 +131,25 @@ tr:hover .task-actions {
 }
 
 /* Icon colors */
-.comment-icon, .attach-icon {
-    color: #aaa;
+.comment-icon,
+.attach-icon {
+    color: #aaa;                /* gray when no activity */
     font-size: 14px;
+    cursor: pointer;
+    opacity: 0;               /* faded when inactive */
+    transition: all 0.2s ease;
 }
 
+/* Active states */
 .comment-icon.has-comment {
-    color: #2563eb !important;
+    color: #2563eb !important;  /* blue */
+    opacity: 1;
     font-weight: bold;
 }
 
 .attach-icon.has-attachment {
-    color: #16a34a !important;
+    color: #16a34a !important;  /* green */
+    opacity: 1;
     font-weight: bold;
 }
 
@@ -224,6 +231,10 @@ tr:hover .add-row-icon {
     opacity: 1;
 }
 
+tr:hover .comment-icon,
+tr:hover .attach-icon {
+    opacity: 1;                 /* always visible on row hover */
+}
 </style>
   
 </head>
@@ -367,6 +378,9 @@ let activeSheetId = <?= isset($_GET['id']) ? intval($_GET['id']) : 0 ?>;
 /* ------------------------------------------------------------
    PRELOAD PHP DATA BEFORE TABLE IS BUILT
 ------------------------------------------------------------ */
+/* ------------------------------------------------------------
+   PRELOAD PHP DATA + MIGRATE OLD CELL KEYS
+------------------------------------------------------------ */
 <?php if ($sheetData): ?>
     const loaded = <?= json_encode($sheetData) ?>;
 
@@ -374,11 +388,22 @@ let activeSheetId = <?= isset($_GET['id']) ? intval($_GET['id']) : 0 ?>;
     COLS = loaded.cols || COLS;
 
     if (loaded.cells) {
-        Object.keys(loaded.cells).forEach(id => {
-            data[id] = { raw: loaded.cells[id] };
+        Object.keys(loaded.cells).forEach(oldKey => {
+            // Try to detect old rXcY format
+            const match = oldKey.match(/^r(\d+)c(\d+)$/);
+            if (match) {
+                const row = parseInt(match[1], 10);
+                const col = parseInt(match[2], 10);
+                const newKey = colName(col) + row;          // ← B1, C1, B2, ...
+                data[newKey] = { raw: loaded.cells[oldKey] };
+            } else {
+                // Already in A1-style or unknown → keep as is
+                data[oldKey] = { raw: loaded.cells[oldKey] };
+            }
         });
     }
 
+    // headers, columnTypes etc. stay the same
     if (loaded.headers) {
         loaded.headers.forEach((h, i) => {
             columnHeaders[i + 2] = h;
@@ -407,7 +432,12 @@ function colName(n) {
     }
     return s || "A";
 }
-function cellId(r, c) { return defaultFieldName(c) + r; }
+
+//function cellId(r, c) { return defaultFieldName(c) + r; }
+
+function cellId(row, col) {
+    return colName(col) + row;
+}
 
 /* ------------------------------------------------------------
    RENDER CELL CONTENT BASED ON COLUMN TYPE
@@ -660,21 +690,29 @@ function updateRowIcons(row) {
     const container = document.querySelector(`.cell[data-r="${row}"][data-c="1"]`);
     if (!container) return;
 
-    const taskActions = container.querySelector(".task-actions");
     const commentIcon = container.querySelector(".comment-icon");
-    const attachIcon = container.querySelector(".attach-icon");
+    const attachIcon  = container.querySelector(".attach-icon");
+    const taskActions = container.querySelector(".task-actions");
 
-    const hasComments = (rowComments[row] || 0) > 0;
-    const hasAttachments = (rowAttachments[row] || 0) > 0;
-    const hasActivity = hasComments || hasAttachments;
+    const commentCount = rowComments[row] || 0;
+    const attachCount  = rowAttachments[row] || 0;
 
-    // Toggle individual icon styles
-    if (commentIcon) commentIcon.classList.toggle("has-comment", hasComments);
-    if (attachIcon) attachIcon.classList.toggle("has-attachment", hasAttachments);
+    // Only apply active class when count > 0
+    if (commentIcon) {
+        commentIcon.classList.toggle("has-comment", commentCount > 0);
+    }
 
-    // Toggle the whole task-actions visibility
+    if (attachIcon) {
+        attachIcon.classList.toggle("has-attachment", attachCount > 0);
+    }
+
+    // Optional: only make whole actions block fully visible if there's ANY activity
+    // (but most people prefer icons always visible on hover)
     if (taskActions) {
-        taskActions.classList.toggle("has-activity", hasActivity);
+        const hasAny = commentCount > 0 || attachCount > 0;
+        taskActions.classList.toggle("has-activity", hasAny);
+        // If you still want to use .has-activity for something else, keep it
+        // Otherwise you can remove this line completely
     }
 }
 function addColumnAfter(col) {
@@ -745,28 +783,55 @@ function loadCountsAndRefreshIcons() {
 function openColumnTypeModal(col) {
     currentColumnForType = col;
 
-    const currentName = columnHeaders[col] || defaultFieldName(col);
-    document.getElementById("modalColName").value = currentName;
+    // ────────────────────────────────────────────────────────────────
+    // Decide what to show in the name input field
+    // ────────────────────────────────────────────────────────────────
+    let displayName = "";
 
+    // If we already have a real name stored → use it
+    if (columnHeaders[col] && columnHeaders[col].trim() !== "") {
+        // But avoid showing auto-generated placeholders as "current name"
+        if (!columnHeaders[col].startsWith("Column Field") && 
+            !columnHeaders[col].startsWith("ColumnField_")) {
+            displayName = columnHeaders[col];
+        }
+        // else → leave empty (treat placeholder as "not really set by user")
+    }
+    // New column or never properly named → start empty
+
+    // Set the input value
+    const nameInput = document.getElementById("modalColName");
+    nameInput.value = displayName;
+
+    // Optional: give focus to name field immediately (good UX)
+    nameInput.focus();
+    nameInput.select();  // select text if editing existing name
+
+    // ────────────────────────────────────────────────────────────────
+    // Load current type & dropdown options if applicable
+    // ────────────────────────────────────────────────────────────────
     const config = columnTypes[col] || { type: "text", options: [] };
-    const selectEl = document.getElementById("modalColType");
-    selectEl.value = config.type;
+    
+    const typeSelect = document.getElementById("modalColType");
+    typeSelect.value = config.type;
 
     const dropdownDiv = document.getElementById("dropdownOptions");
     const dropdownTextarea = document.getElementById("dropdownValues");
 
     if (config.type === "dropdown") {
         dropdownDiv.style.display = "block";
-        dropdownTextarea.value = config.options.join(", ");
+        dropdownTextarea.value = (config.options || []).join(", ");
     } else {
         dropdownDiv.style.display = "none";
         dropdownTextarea.value = "";
     }
 
-    selectEl.onchange = function() {
-        dropdownDiv.style.display = this.value === "dropdown" ? "block" : "none";
+    // Update visibility when type changes
+    typeSelect.onchange = function() {
+        dropdownDiv.style.display = (this.value === "dropdown") ? "block" : "none";
     };
 
+    // Show modal
     document.getElementById("modalBackdrop").classList.add("open");
     document.getElementById("columnTypeModal").classList.add("open");
 }
@@ -779,57 +844,60 @@ function closeColumnTypeModal() {
 function applyColumnType() {
     if (!currentColumnForType) return;
 
-    const inputEl = document.getElementById("modalColName");
-    const newName = inputEl.value.trim();
-    const selectedType = document.getElementById("modalColType").value;
+    const inputEl   = document.getElementById("modalColName");
+    const newName   = inputEl.value.trim();
 
-    // ✅ Always resolve a safe final name
-    const finalName = newName || defaultFieldName(currentColumnForType);
-    columnHeaders[currentColumnForType] = finalName;
+    // ──────────────── Validation ────────────────
+    if (!newName) {
+        inputEl.style.borderColor = "#dc2626";
+        inputEl.focus();
+        alert("Column name is required.");
+        // Optional: setTimeout(() => inputEl.style.borderColor = "", 2000);
+        return;
+    }
 
-    // ✅ Update ONLY the name span (never th.textContent)
-    const th = document.querySelector(
-        `thead th[data-c="${currentColumnForType}"]`
-    );
+    // Clear error style if valid
+    inputEl.style.borderColor = "";
 
+    // ──────────────── Proceed ────────────────
+    columnHeaders[currentColumnForType] = newName;
+
+    // Update visible name in header (first line + ellipsis if multiline)
+    const th = document.querySelector(`thead th[data-c="${currentColumnForType}"]`);
     if (th) {
-        const nameSpan = th.querySelector("span");
+        const nameSpan = th.querySelector("span"); // first span = name
         if (nameSpan) {
-            const firstLine = finalName.split('\n')[0];
-            nameSpan.textContent = finalName.includes('\n')
-                ? firstLine + "..."
-                : firstLine;
-            th.title = finalName;
+            const firstLine = newName.split('\n')[0];
+            nameSpan.textContent = newName.includes('\n') ? firstLine + "..." : firstLine;
+            th.title = newName;
         }
     }
 
-    // ✅ Column type handling
+    // ─── Column type logic (unchanged) ───
+    const selectedType = document.getElementById("modalColType").value;
+
     if (selectedType === "dropdown") {
-        const rawOptions = document.getElementById("dropdownValues").value;
-        const vals = rawOptions
-            .split(/[\n,]+/)
-            .map(v => v.trim())
-            .filter(v => v.length > 0);
+        const raw = document.getElementById("dropdownValues").value;
+        const options = raw.split(/[\n,]+/)
+                          .map(v => v.trim())
+                          .filter(v => v.length > 0);
 
         columnTypes[currentColumnForType] = {
             type: "dropdown",
-            options: vals
+            options: options.length > 0 ? options : ["Option 1", "Option 2"]
         };
     } else {
         columnTypes[currentColumnForType] = { type: selectedType };
     }
 
-    // ✅ Re-render column cells
+    // Re-render affected cells
     for (let r = 1; r <= ROWS; r++) {
-        const cell = document.getElementById(
-            cellId(r, currentColumnForType)
-        );
+        const cell = document.getElementById(cellId(r, currentColumnForType));
         if (cell) renderCellContent(cell, currentColumnForType);
     }
 
     closeColumnTypeModal();
 }
-
 
 /* ------------------------------------------------------------
    EVENT HANDLERS
@@ -952,10 +1020,10 @@ document.getElementById("save-db").onclick = async () => {
 
     // Collect cell data
     document.querySelectorAll(".cell").forEach(cell => {
-        if (cell.dataset.c == 1) return; // skip Tasks column text
+        if (cell.dataset.c == 1) return; // skip Tasks column
         const raw = data[cell.id]?.raw;
         if (raw !== undefined && raw.trim() !== "") {
-            payload.cells[cell.id] = raw;
+            payload.cells[cell.id] = raw;   // now cell.id = "B1", "C2", ...
         }
     });
 
@@ -980,6 +1048,7 @@ document.getElementById("save-db").onclick = async () => {
             activeSheetId = out.id;
         }
         alert("Sheet saved successfully!");
+        window.location.href = "dashboard-sheets.php";
     } else {
         alert("Save Error: " + (out.error || "Unknown"));
     }
