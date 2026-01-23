@@ -22,7 +22,7 @@ if (isset($_GET['id'])) {
   <title>Excel-like HTML Spreadsheet</title>
 
   <style>
-    :root{--cell-width:120px;--cell-height:28px;--header-bg:#f3f4f6}
+    :root{--cell-width:150px;--cell-height:35px;--header-bg:#f3f4f6}
     .sheet{border:1px solid #ddd;overflow:auto;max-width:100%;box-shadow:0 2px 6px rgba(0,0,0,0.04)}
     table{border-collapse:collapse;min-width:900px}
     th,td{border-right:1px solid #e6e6e6;border-bottom:1px solid #e6e6e6;padding:0;margin:0;}
@@ -235,6 +235,30 @@ tr:hover .comment-icon,
 tr:hover .attach-icon {
     opacity: 1;                 /* always visible on row hover */
 }
+.bell-icon {
+    color: #6b7280;                 /* gray when no reminder */
+    font-size: 14px;
+    cursor: pointer;
+    opacity: 0;                     /* hidden until hover or has-reminder */
+    transition: all 0.2s ease;
+}
+
+.bell-icon.has-reminder {
+    color: #dc2626 !important;      /* red when active */
+    opacity: 1 !important;
+    font-weight: bold;              /* optional emphasis */
+}
+
+/* Always visible on row hover */
+tr:hover .bell-icon {
+    opacity: 1;
+}
+
+/* Optional: make task-actions block always visible if ANY activity (comments + attach + reminder) */
+.task-actions.has-activity {
+    opacity: 1 !important;
+    pointer-events: auto !important;
+}
 </style>
   
 </head>
@@ -245,7 +269,7 @@ tr:hover .attach-icon {
     <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-24">
         <a onclick="history.back()" class="cursor-pointer fw-bold"><span class="fa fa-arrow-left"></span>&nbsp; Back</a>
         <h6 class="fw-semibold mb-0">Sheets</h6>
-        <span class="visibility-hidden"></span>
+        <a onclick="history.back()" class="cursor-pointer fw-bold visibility-hidden"><span class="fa fa-arrow-left"></span>&nbsp; Back</a>
     </div>
 
     <div class="card radius-12 h-100">
@@ -291,6 +315,7 @@ tr:hover .attach-icon {
 </div>
 
 <script>
+let isAddingNewColumn = false;
 function Redirect() {
     window.location = "sheets.php";
 }
@@ -345,7 +370,12 @@ document.getElementById("export-to-form").onclick = () => {
     }
 
     if (tempFields.length === 0) {
-        alert("No columns to export (only Tasks column found).");
+        Swal.fire({
+            icon: 'warning',
+            title: 'Nothing to export',
+            text: 'No columns to export (only Tasks column found).',
+            confirmButtonText: 'OK'
+        });
         return;
     }
 
@@ -370,6 +400,7 @@ let currentColumnForType = null;
 // IMPORTANT: Declared early to avoid initialization errors
 const rowComments = {};        // { rowNumber: commentCount }
 const rowAttachments = {};     // { rowNumber: attachmentCount }
+const rowReminders  = {};
 
 let activeRow = null;
 let activeAttachRow = null;
@@ -531,6 +562,7 @@ function buildTable() {
         if (c === 1) {
             th.textContent = "Tasks";
             th.contentEditable = false;
+            th.style.minWidth = "160px";
         } else {
             // Container for name and trash
             const wrapper = document.createElement("div");
@@ -540,19 +572,25 @@ function buildTable() {
             wrapper.style.width = "100%";
             wrapper.style.position = "relative";
             wrapper.style.gap = "6px";
+            wrapper.style.minWidth = "200px";
             // Column name
             const nameSpan = document.createElement("span");
             nameSpan.textContent = columnHeaders[c] || "Column Field";
-// ➕ Add column button
-const addSpan = document.createElement("span");
-addSpan.className = "fa fa-plus text-success add-col-icon";
-addSpan.title = "Add column";
-addSpan.style.cursor = "pointer";
-addSpan.style.fontSize = "11px";
-addSpan.onclick = (e) => {
-    e.stopPropagation();
-    addColumnAfter(c);
-};
+            // ➕ Add column button
+            const addSpan = document.createElement("span");
+            addSpan.className = "fa fa-plus text-success add-col-icon";
+            addSpan.title = "Add column";
+            addSpan.style.cursor = "pointer";
+            addSpan.style.fontSize = "11px";
+            addSpan.onclick = (e) => {
+                e.stopPropagation();
+                e.preventDefault();
+
+                isAddingNewColumn = true;
+                insertAfterColumn = c;
+
+                openColumnTypeModal(c + 1);         // open modal for the would-be new column
+            };
             // Trash icon
             const trashSpan = document.createElement("span");
             trashSpan.className = "delete-col-icon fa fa-close text-danger position-absolute";
@@ -602,6 +640,7 @@ addSpan.onclick = (e) => {
 
         const rh = document.createElement("th");
         rh.className = "row-header";
+        rh.style.minWidth = "70px";
         rh.textContent = r;
         tr.appendChild(rh);
 
@@ -615,12 +654,21 @@ addSpan.onclick = (e) => {
 
             if (c === 1) {
                 container.innerHTML = `
-                    <span class="task-text" contenteditable="true"></span>
+                    <span class="task-text" contenteditable="false"></span>
                     <span class="task-actions">
                         <span class="comment-icon fa fa-message cursor-pointer" title="Comments" onclick="openComments(${r})"></span>
                         <span class="attach-icon fa fa-paperclip cursor-pointer" title="Attachments" onclick="openAttachments(${r})"></span>
-                        <span class="fa fa-plus add-row-icon cursor-pointer text-success" title="Add row below" onclick="addRowAfter(${r}); event.stopPropagation();"></span>
-                        <span class="delete-row-icon fa fa-close cursor-pointer text-danger" title="Delete this row" onclick="deleteRow(${r}); event.stopPropagation();"></span>
+                        <!--  ──► NEW ──►  -->
+                        <span class="bell-icon fa fa-bell cursor-pointer ${rowReminders[r] > 0 ? 'has-reminder' : ''}" 
+                        title="${rowReminders[r] > 0 ? 'Has reminder(s)' : 'Set Reminder'}" 
+                        onclick="openReminderModal(${r})"></span>
+                        <!--  ─────────────── -->
+                        <span class="fa fa-plus add-row-icon cursor-pointer text-success" 
+                        title="Insert row below" 
+                        onclick="addRowAfter(${r})"></span>
+                        <span class="delete-row-icon fa fa-close cursor-pointer text-danger" 
+                        title="Delete this row" 
+                        onclick="deleteRow(${r})"></span>
                     </span>
                 `;
                 container.contentEditable = false;
@@ -678,43 +726,57 @@ function rebuildPreserveData() {
             renderCellContent(cellEl, parseInt(cellEl.dataset.c));
         }
     });
-
+    refreshAllActivityIcons();
     recalcAll();
-    refreshAllRowIcons();
 }
 
 /* ------------------------------------------------------------
    ICON UPDATE FUNCTIONS
 ------------------------------------------------------------ */
-function updateRowIcons(row) {
-    const container = document.querySelector(`.cell[data-r="${row}"][data-c="1"]`);
-    if (!container) return;
+// Better unified version
+function updateTaskActivityIcons(row) {
+    const cell = document.querySelector(`.cell[data-r="${row}"][data-c="1"]`);
+    if (!cell) return;
 
-    const commentIcon = container.querySelector(".comment-icon");
-    const attachIcon  = container.querySelector(".attach-icon");
-    const taskActions = container.querySelector(".task-actions");
+    const commentCount  = rowComments[row]  || 0;
+    const attachCount   = rowAttachments[row] || 0;
+    const reminderCount = rowReminders[row]  || 0;
 
-    const commentCount = rowComments[row] || 0;
-    const attachCount  = rowAttachments[row] || 0;
+    const hasComment    = commentCount > 0;
+    const hasAttach     = attachCount > 0;
+    const hasReminder   = reminderCount > 0;
 
-    // Only apply active class when count > 0
-    if (commentIcon) {
-        commentIcon.classList.toggle("has-comment", commentCount > 0);
+    const hasAnyActivity = hasComment || hasAttach || hasReminder;
+
+    // Icons classes
+    cell.querySelector(".comment-icon")?.classList.toggle("has-comment", hasComment);
+    cell.querySelector(".attach-icon")?.classList.toggle("has-attachment", hasAttach);
+    cell.querySelector(".bell-icon")?.classList.toggle("has-reminder", hasReminder);
+
+    // Force visibility of the whole actions container if there's activity
+    const actions = cell.querySelector(".task-actions");
+    if (actions) {
+        actions.classList.toggle("has-activity", hasAnyActivity);
     }
 
-    if (attachIcon) {
-        attachIcon.classList.toggle("has-attachment", attachCount > 0);
-    }
-
-    // Optional: only make whole actions block fully visible if there's ANY activity
-    // (but most people prefer icons always visible on hover)
-    if (taskActions) {
-        const hasAny = commentCount > 0 || attachCount > 0;
-        taskActions.classList.toggle("has-activity", hasAny);
-        // If you still want to use .has-activity for something else, keep it
-        // Otherwise you can remove this line completely
+    // Extra safety: force opacity 1 if has activity (bypasses some browser quirks)
+    if (hasAnyActivity && actions) {
+        actions.style.opacity = "1";
+        actions.style.pointerEvents = "auto";
     }
 }
+
+// Call this instead of the two separate functions
+function refreshAllActivityIcons() {
+    for (let r = 1; r <= ROWS; r++) {
+        updateTaskActivityIcons(r);
+    }
+}
+
+// Rename your old functions to this one
+// You can remove refreshAllRowIcons() and refreshAllReminderIcons()
+// and replace all calls with refreshAllActivityIcons()
+
 function addColumnAfter(col) {
     // Increase total columns
     COLS++;
@@ -750,30 +812,27 @@ function addColumnAfter(col) {
     }, 50);
 }
 
-function refreshAllRowIcons() {
-    for (let r = 1; r <= ROWS; r++) {
-        updateRowIcons(r);
-    }
-}
-
 /* ------------------------------------------------------------
    FETCH COUNTS FROM BACKEND ON LOAD
 ------------------------------------------------------------ */
+// Replace or update this function
 function loadCountsAndRefreshIcons() {
     if (activeSheetId <= 0) {
-        refreshAllRowIcons();
+        refreshAllActivityIcons();   // ← change here
         return;
     }
 
     fetch(`counts.php?sheet_id=${activeSheetId}`)
         .then(res => res.json())
         .then(result => {
-            Object.assign(rowComments, result.comments || {});
+            Object.assign(rowComments,    result.comments    || {});
             Object.assign(rowAttachments, result.attachments || {});
-            refreshAllRowIcons();
+            Object.assign(rowReminders,   result.reminders   || {});
+
+            refreshAllActivityIcons();   // ← change here
         })
         .catch(() => {
-            refreshAllRowIcons(); // fallback if counts.php fails
+            refreshAllActivityIcons();   // ← change here (fallback)
         });
 }
 
@@ -788,34 +847,41 @@ function openColumnTypeModal(col) {
     // ────────────────────────────────────────────────────────────────
     let displayName = "";
 
-    // If we already have a real name stored → use it
-    if (columnHeaders[col] && columnHeaders[col].trim() !== "") {
-        // But avoid showing auto-generated placeholders as "current name"
-        if (!columnHeaders[col].startsWith("Column Field") && 
-            !columnHeaders[col].startsWith("ColumnField_")) {
+    // When adding a NEW column → force empty name field
+    if (isAddingNewColumn) {
+        displayName = "";
+    }
+    // When editing an EXISTING column → show real name if it exists and is meaningful
+    else if (columnHeaders[col] && columnHeaders[col].trim() !== "") {
+        // Avoid showing auto-generated / placeholder names
+        if (!columnHeaders[col].startsWith("Column Field") &&
+            !columnHeaders[col].startsWith("ColumnField_") &&
+            columnHeaders[col] !== defaultFieldName(col)) {
             displayName = columnHeaders[col];
         }
-        // else → leave empty (treat placeholder as "not really set by user")
+        // else → leave empty (treat placeholder as not user-set)
     }
-    // New column or never properly named → start empty
 
     // Set the input value
     const nameInput = document.getElementById("modalColName");
     nameInput.value = displayName;
 
-    // Optional: give focus to name field immediately (good UX)
+    // Good UX: focus and select the name field immediately
     nameInput.focus();
-    nameInput.select();  // select text if editing existing name
+    nameInput.select();
 
     // ────────────────────────────────────────────────────────────────
-    // Load current type & dropdown options if applicable
+    // Load current column type & dropdown options (if applicable)
     // ────────────────────────────────────────────────────────────────
-    const config = columnTypes[col] || { type: "text", options: [] };
-    
+    // For NEW columns: start with default "text" type
+    const config = isAddingNewColumn 
+        ? { type: "text", options: [] } 
+        : (columnTypes[col] || { type: "text", options: [] });
+
     const typeSelect = document.getElementById("modalColType");
     typeSelect.value = config.type;
 
-    const dropdownDiv = document.getElementById("dropdownOptions");
+    const dropdownDiv     = document.getElementById("dropdownOptions");
     const dropdownTextarea = document.getElementById("dropdownValues");
 
     if (config.type === "dropdown") {
@@ -826,12 +892,12 @@ function openColumnTypeModal(col) {
         dropdownTextarea.value = "";
     }
 
-    // Update visibility when type changes
+    // Update dropdown visibility when type changes
     typeSelect.onchange = function() {
         dropdownDiv.style.display = (this.value === "dropdown") ? "block" : "none";
     };
 
-    // Show modal
+    // Show the modal
     document.getElementById("modalBackdrop").classList.add("open");
     document.getElementById("columnTypeModal").classList.add("open");
 }
@@ -844,28 +910,62 @@ function closeColumnTypeModal() {
 function applyColumnType() {
     if (!currentColumnForType) return;
 
-    const inputEl   = document.getElementById("modalColName");
-    const newName   = inputEl.value.trim();
+    const inputEl = document.getElementById("modalColName");
+    const newName = inputEl.value.trim();
 
-    // ──────────────── Validation ────────────────
     if (!newName) {
-        inputEl.style.borderColor = "#dc2626";
-        inputEl.focus();
-        alert("Column name is required.");
-        // Optional: setTimeout(() => inputEl.style.borderColor = "", 2000);
+        // ... your validation ...
         return;
     }
 
-    // Clear error style if valid
-    inputEl.style.borderColor = "";
+    // ────────────────────────────────────────────────
+    // CASE: Adding a NEW column after a specific position
+    // ────────────────────────────────────────────────
+    if (isAddingNewColumn && insertAfterColumn !== null) {
+        const insertPos = insertAfterColumn + 1;
 
-    // ──────────────── Proceed ────────────────
+        // Increase total columns
+        COLS++;
+
+        // Shift columns to the right starting from insertPos
+        for (let c = COLS; c > insertPos; c--) {
+            columnHeaders[c] = columnHeaders[c - 1];
+            columnTypes[c] = columnTypes[c - 1];
+
+            for (let r = 1; r <= ROWS; r++) {
+                const oldId = cellId(r, c - 1);
+                const newId = cellId(r, c);
+                if (data[oldId]) {
+                    data[newId] = data[oldId];
+                    delete data[oldId];
+                }
+            }
+        }
+
+        // Now initialize the newly inserted column
+        columnHeaders[insertPos] = newName;
+        columnTypes[insertPos] = { type: "text" }; // default – will be updated below
+
+        // The modal is already "editing" this position
+        currentColumnForType = insertPos;
+
+        // Reset flags
+        isAddingNewColumn = false;
+        insertAfterColumn = null;
+
+        // Rebuild table (now includes the new column in correct place)
+        rebuildPreserveData();
+    }
+
+    // ────────────────────────────────────────────────
+    // Apply name & type (for both new and existing columns)
+    // ────────────────────────────────────────────────
     columnHeaders[currentColumnForType] = newName;
 
-    // Update visible name in header (first line + ellipsis if multiline)
+    // Update header display
     const th = document.querySelector(`thead th[data-c="${currentColumnForType}"]`);
     if (th) {
-        const nameSpan = th.querySelector("span"); // first span = name
+        const nameSpan = th.querySelector("span");
         if (nameSpan) {
             const firstLine = newName.split('\n')[0];
             nameSpan.textContent = newName.includes('\n') ? firstLine + "..." : firstLine;
@@ -873,7 +973,7 @@ function applyColumnType() {
         }
     }
 
-    // ─── Column type logic (unchanged) ───
+    // Apply selected type
     const selectedType = document.getElementById("modalColType").value;
 
     if (selectedType === "dropdown") {
@@ -890,13 +990,22 @@ function applyColumnType() {
         columnTypes[currentColumnForType] = { type: selectedType };
     }
 
-    // Re-render affected cells
+    // Re-render cells in this column
     for (let r = 1; r <= ROWS; r++) {
         const cell = document.getElementById(cellId(r, currentColumnForType));
         if (cell) renderCellContent(cell, currentColumnForType);
     }
 
     closeColumnTypeModal();
+
+    // Optional success message
+    Swal.fire({
+        icon: 'success',
+        title: 'Done',
+        text: isAddingNewColumn === false ? 'Column added' : 'Column updated',
+        timer: 1400,
+        showConfirmButton: false
+    });
 }
 
 /* ------------------------------------------------------------
@@ -1047,10 +1156,24 @@ document.getElementById("save-db").onclick = async () => {
             history.replaceState(null, '', `?id=${out.id}`);
             activeSheetId = out.id;
         }
-        alert("Sheet saved successfully!");
-        window.location.href = "dashboard-sheets.php";
+        Swal.fire({
+        icon: 'success',
+        title: 'Saved!',
+        text: 'Sheet saved successfully',
+        timer: 1800,              // disappears after 1.8 seconds
+        showConfirmButton: false,
+        allowOutsideClick: false
+        }).then(() => {
+            window.location.href = "dashboard-sheets.php";
+        });
     } else {
-        alert("Save Error: " + (out.error || "Unknown"));
+        Swal.fire({
+            icon: 'error',
+            title: 'Oops...',
+            text: out.error || "Failed to save the sheet. Please try again.",
+            confirmButtonText: 'OK',
+            confirmButtonColor: '#dc2626'
+        });
     }
 };
 
@@ -1080,74 +1203,149 @@ document.addEventListener("DOMContentLoaded", () => {
     };
 
     document.getElementById("clear").onclick = () => {
-        if (!confirm("Clear all data?")) return;
-        for (let r = 1; r <= ROWS; r++) {
-            for (let c = 1; c <= COLS; c++) {
-                const id = cellId(r, c);
-                data[id] = { raw: "" };
-                const el = document.getElementById(id);
-                if (el) {
-                    if (c === 1) el.querySelector(".task-text").textContent = "";
-                    else renderCellContent(el, c);
+        //if (!confirm("Clear all data?")) return;
+        Swal.fire({
+            title: 'Are you sure?',
+            text: "This will clear all data in the sheet!",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#6b7280',
+            confirmButtonText: 'Yes, clear it!',
+            cancelButtonText: 'Cancel'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                // your clear logic here...
+                for (let r = 1; r <= ROWS; r++) {
+                    for (let c = 1; c <= COLS; c++) {
+                        const id = cellId(r, c);
+                        data[id] = { raw: "" };
+                        const el = document.getElementById(id);
+                        if (el) {
+                            if (c === 1) el.querySelector(".task-text").textContent = "";
+                            else renderCellContent(el, c);
+                        }
+                    }
                 }
+                Swal.fire(
+                    'Cleared!',
+                    'All data has been removed.',
+                    'success'
+                );
             }
-        }
+        });        
         Object.keys(rowComments).forEach(k => delete rowComments[k]);
         Object.keys(rowAttachments).forEach(k => delete rowAttachments[k]);
-        refreshAllRowIcons();
+        Object.keys(rowReminders).forEach(k => delete rowReminders[k]);  
+        refreshAllActivityIcons(); 
     };
 
     document.getElementById("load-db").onclick = async () => {
-        const listRes = await fetch("list.php");
-        const sheets = await listRes.json();
+        try {
+            const listRes = await fetch("list.php");
+            if (!listRes.ok) throw new Error("list.php failed");
+            const sheets = await listRes.json();
 
-        if (!sheets.length) {
-            alert("No saved sheets found.");
-            return;
-        }
-
-        const id = prompt(
-            "Saved Sheets:\n" +
-            sheets.map(s => `${s.id}: ${s.name} (${s.updated_at})`).join("\n") +
-            "\nEnter ID:"
-        );
-
-        if (!id) return;
-
-        const loadRes = await fetch("load.php?id=" + id);
-        const payload = await loadRes.json();
-
-        if (!payload.success) {
-            alert("Error: " + payload.error);
-            return;
-        }
-
-        const sheet = payload.data;
-
-        ROWS = sheet.rows;
-        COLS = sheet.cols;
-        columnTypes = sheet.columnTypes || {};
-        activeSheetId = id;
-
-        buildTable();
-
-        document.querySelectorAll("thead th").forEach(th => {
-            if (th.dataset.c && th.dataset.c != 1) {
-                const idx = Number(th.dataset.c) - 2;
-                th.textContent = sheet.headers[idx] || defaultFieldName(Number(th.dataset.c) - 1);
+            if (!Array.isArray(sheets) || sheets.length === 0) {
+                Swal.fire({
+                    icon: 'info',
+                    title: 'No sheets found',
+                    text: 'There are no saved sheets to load.',
+                });
+                return;
             }
-        });
 
-        Object.keys(sheet.cells).forEach(id => {
-            const el = document.getElementById(id);
-            if (el) {
-                data[id] = { raw: sheet.cells[id] };
-                if (el.dataset.c != 1) renderCellContent(el, parseInt(el.dataset.c));
+            const choices = sheets.map(s => `${s.id}: ${s.name || 'Untitled'} (${s.updated_at || '—'})`).join('\n');
+            const idStr = prompt("Saved Sheets:\n" + choices + "\n\nEnter ID to load:");
+
+            const id = parseInt(idStr);
+            if (!id || isNaN(id)) return;
+
+            const loadRes = await fetch(`load.php?id=${id}`);
+            if (!loadRes.ok) throw new Error(`load.php status ${loadRes.status}`);
+            
+            const payload = await loadRes.json();
+
+            if (!payload.success) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Load failed',
+                    text: payload.error || "Unknown error from server",
+                });
+                return;
             }
-        });
 
-        recalcAll();
-        loadCountsAndRefreshIcons(); // This will show correct icons immediately
+            const sheet = payload.data;
+
+            // Migrate old cell keys if necessary
+            const migratedCells = {};
+            Object.keys(sheet.cells || {}).forEach(key => {
+                const match = key.match(/^r(\d+)c(\d+)$/i);
+                if (match) {
+                    const r = parseInt(match[1]);
+                    const c = parseInt(match[2]);
+                    const newKey = colName(c) + r;
+                    migratedCells[newKey] = sheet.cells[key];
+                } else {
+                    migratedCells[key] = sheet.cells[key];
+                }
+            });
+            sheet.cells = migratedCells;
+
+            // ─── Apply values ───
+            ROWS = sheet.rows || 10;
+            COLS = sheet.cols || 4;
+            columnTypes = sheet.columnTypes || {};
+            activeSheetId = id;
+
+            // 1. Build table structure first (creates elements with correct IDs)
+            buildTable();
+
+            // 2. Update headers safely (only the name span)
+            document.querySelectorAll("thead th[data-c]").forEach(th => {
+                const c = parseInt(th.dataset.c);
+                if (c === 1) return; // skip Tasks
+
+                const idx = c - 2;
+                const headerValue = sheet.headers?.[idx] || "";
+
+                const nameSpan = th.querySelector("span"); // your first <span> is the name
+                if (nameSpan) {
+                    nameSpan.textContent = headerValue;
+                    th.title = headerValue;
+                }
+
+                // Optional: re-attach events if needed (usually not necessary)
+            });
+
+            // 3. Fill cell data
+            Object.entries(sheet.cells || {}).forEach(([key, value]) => {
+                const cellEl = document.getElementById(key);
+                if (cellEl && cellEl.dataset.c !== "1") { // skip task column
+                    data[key] = { raw: value };
+                    renderCellContent(cellEl, parseInt(cellEl.dataset.c));
+                }
+            });
+
+            recalcAll();
+            loadCountsAndRefreshIcons();
+
+            Swal.fire({
+                icon: 'success',
+                title: 'Loaded!',
+                text: `Sheet "${payload.name || 'Untitled'}" loaded successfully`,
+                timer: 1800,
+                showConfirmButton: false
+            });
+
+        } catch (err) {
+            console.error("Load error:", err);
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: "Failed to load sheet: " + (err.message || "Network/server issue")
+            });
+        }
     };
 
     // PHP direct load
@@ -1202,7 +1400,7 @@ async function loadComments() {
     let totalComments = comments.length;
     comments.forEach(c => totalComments += c.replies ? c.replies.length : 0);
     rowComments[activeRow] = totalComments;
-    updateRowIcons(activeRow);
+    updateTaskActivityIcons(activeRow);
 
     comments.forEach(c => {
         const div = document.createElement("div");
@@ -1312,7 +1510,7 @@ async function uploadAttachment() {
     if (out.success) {
         fileInput.value = "";
         rowAttachments[activeAttachRow] = (rowAttachments[activeAttachRow] || 0) + 1;
-        updateRowIcons(activeAttachRow);
+        updateTaskActivityIcons(activeAttachRow);
         loadAttachments();
     } else {
         alert(out.error || "Upload failed");
@@ -1349,77 +1547,141 @@ function addRowAfter(row) {
     rowAttachments[row + 1] = 0;
 
     rebuildPreserveData();
+    refreshAllActivityIcons();
 }
 
 function deleteRow(row) {
     if (ROWS <= 1) {
-        alert("Cannot delete the last row.");
+        Swal.fire({
+            icon: 'error',
+            title: 'Cannot delete',
+            text: 'You cannot delete the last row.',
+            confirmButtonColor: '#dc2626'
+        });
         return;
     }
 
-    if (!confirm(`Delete row ${row} and all its data ?`)) {
-        return;
-    }
+    Swal.fire({
+        title: `Delete row ${row}?`,
+        text: "This action cannot be undone. All data in this row will be lost.",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#6b7280',
+        confirmButtonText: 'Yes, delete it!',
+        cancelButtonText: 'No, keep it'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            // ────────────────────────────────────────────────
+            // ONLY HERE — perform the actual deletion
+            for (let c = 1; c <= COLS; c++) {
+                const id = cellId(row, c);
+                delete data[id];
+            }
 
-    // Remove all data in this row
-    for (let c = 1; c <= COLS; c++) {
-        const id = cellId(row, c);
-        delete data[id];
-    }
+            // Remove comment/attachment tracking
+            delete rowComments[row];
+            delete rowAttachments[row];
 
-    // Remove comment/attachment tracking
-    delete rowComments[row];
-    delete rowAttachments[row];
+            ROWS--;
+            rebuildPreserveData();
 
-    ROWS--;
-    rebuildPreserveData();
+            // Success feedback
+            Swal.fire({
+                icon: 'success',
+                title: 'Deleted!',
+                text: `Row ${row} has been removed.`,
+                timer: 1600,
+                showConfirmButton: false
+            });
+            // ────────────────────────────────────────────────
+        }
+        // else → user clicked cancel → do nothing
+    });
 }
 
 function deleteColumn(col) {
     if (COLS <= 1) {
-        alert("Cannot delete — at least one column must remain.");
+        Swal.fire({
+            icon: 'error',
+            title: 'Cannot delete',
+            text: 'At least one data column must remain.',
+            confirmButtonColor: '#dc2626'
+        });
         return;
     }
+
     if (col === 1) {
-        alert("Cannot delete the Tasks column.");
+        Swal.fire({
+            icon: 'error',
+            title: 'Protected',
+            text: 'Cannot delete the Tasks column.',
+            confirmButtonColor: '#dc2626'
+        });
         return;
     }
 
     const colNameDisplay = columnHeaders[col] || defaultFieldName(col - 1);
-    if (!confirm(`Delete column "${colNameDisplay}" and all its data ?`)) return;
 
-    // Remove data
-    for (let r = 1; r <= ROWS; r++) {
-        const id = cellId(r, col);
-        delete data[id];
-    }
+    Swal.fire({
+        title: `Delete column "${colNameDisplay}"?`,
+        text: "All data in this column will be permanently deleted. This cannot be undone.",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#6b7280',
+        confirmButtonText: 'Yes, delete column',
+        cancelButtonText: 'No, cancel'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            // ────────────────────────────────────────────────
+            // ONLY HERE — perform the actual deletion
 
-    // Remove config
-    delete columnTypes[col];
-    delete columnHeaders[col];
-
-    // Shift left
-    for (let c = col; c < COLS; c++) {
-        columnTypes[c] = columnTypes[c + 1] || { type: "text" };
-        columnHeaders[c] = columnHeaders[c + 1];
-
-        for (let r = 1; r <= ROWS; r++) {
-            const oldId = cellId(r, c + 1);
-            const newId = cellId(r, c);
-            if (data[oldId]) {
-                data[newId] = data[oldId];
-                delete data[oldId];
-            } else {
-                delete data[newId];
+            // Remove data
+            for (let r = 1; r <= ROWS; r++) {
+                const id = cellId(r, col);
+                delete data[id];
             }
+
+            // Remove config
+            delete columnTypes[col];
+            delete columnHeaders[col];
+
+            // Shift columns left
+            for (let c = col; c < COLS; c++) {
+                columnTypes[c] = columnTypes[c + 1] || { type: "text" };
+                columnHeaders[c] = columnHeaders[c + 1];
+
+                for (let r = 1; r <= ROWS; r++) {
+                    const oldId = cellId(r, c + 1);
+                    const newId = cellId(r, c);
+                    if (data[oldId]) {
+                        data[newId] = data[oldId];
+                        delete data[oldId];
+                    } else {
+                        delete data[newId];
+                    }
+                }
+            }
+
+            delete columnTypes[COLS];
+            delete columnHeaders[COLS];
+
+            COLS--;
+            rebuildPreserveData();
+
+            // Success feedback
+            Swal.fire({
+                icon: 'success',
+                title: 'Deleted!',
+                text: `Column "${colNameDisplay}" has been removed.`,
+                timer: 1800,
+                showConfirmButton: false
+            });
+            // ────────────────────────────────────────────────
         }
-    }
-
-    delete columnTypes[COLS];
-    delete columnHeaders[COLS];
-
-    COLS--;
-    rebuildPreserveData();
+        // else → user canceled → do nothing
+    });
 }
 
 // Dropdown toggle logic
@@ -1441,6 +1703,75 @@ document.addEventListener("click", () => {
     document.querySelectorAll(".dropdown").forEach(d => d.classList.remove("open"));
 });
 
+let currentReminderRow = null;
+
+function openReminderModal(row) {
+    currentReminderRow = row;
+    document.getElementById("reminderRow").textContent = row;
+    
+    // Optional: pre-fill if already exists (future improvement)
+    document.getElementById("reminderDate").value = "";
+    document.getElementById("reminderMessage").value = "";
+    
+    document.getElementById("modalBackdropReminder").style.display = "block";
+    document.getElementById("reminderModal").style.display = "block";
+}
+
+function closeReminderModal() {
+    document.getElementById("modalBackdropReminder").style.display = "none";
+    document.getElementById("reminderModal").style.display = "none";
+    currentReminderRow = null;
+}
+
+async function saveReminder() {
+    const dateStr = document.getElementById("reminderDate").value;
+    const msg = document.getElementById("reminderMessage").value.trim();
+
+    if (!dateStr) {
+        alert("Please select a reminder date.");
+        return;
+    }
+    if (!msg) {
+        alert("Please enter a reminder message.");
+        return;
+    }
+
+    try {
+        const res = await fetch("save_reminder.php", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                sheet_id: activeSheetId,
+                sheet_row: currentReminderRow,
+                remind_at: dateStr,
+                message: msg
+            })
+        });
+
+        const result = await res.json();
+        if (result.success) {
+            // Visual feedback
+            //const bell = document.querySelector(`.cell[data-r="${currentReminderRow}"][data-c="1"] .bell-icon`);
+            rowReminders[currentReminderRow] = (rowReminders[currentReminderRow] || 0) + 1;
+            updateTaskActivityIcons(currentReminderRow);
+
+            Swal.fire({
+                icon: 'success',
+                title: 'Reminder Set',
+                text: `Will remind you on ${dateStr}`,
+                timer: 1800,
+                showConfirmButton: false
+            });
+
+            closeReminderModal();
+        } else {
+            alert(result.error || "Could not save reminder");
+        }
+    } catch (err) {
+        console.error(err);
+        alert("Network error");
+    }
+}
 </script>
 
 <div id="commentPanel" class="comment-panel">
@@ -1500,6 +1831,28 @@ document.addEventListener("click", () => {
     <div style="margin-top:24px; text-align:right;">
         <button onclick="closeColumnTypeModal()" class="btn btn-sm btn-secondary me-4">Cancel</button>
         <button onclick="applyColumnType()" class="btn btn-sm text-white lufera-bg">Apply</button>
+    </div>
+</div>
+
+<div id="modalBackdropReminder" onclick="closeReminderModal()"></div>
+
+<div id="reminderModal" class="modal" style="height:auto; display:none; position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); background:white; padding:24px; border-radius:8px; box-shadow:0 4px 20px rgba(0,0,0,0.25); z-index:10001; width:420px;">
+    <h6 class="mb-16">Set Reminder for Row <span id="reminderRow"></span></h6>
+    
+    <div class="mb-16">
+        <label class="form-label fw-500">Reminder Date</label>
+        <input type="date" id="reminderDate" class="form-control" required>
+    </div>
+    
+    <div class="mb-20">
+        <label class="form-label fw-500">Message / Note</label>
+        <textarea id="reminderMessage" class="form-control" rows="3" 
+                  placeholder="e.g. Follow up with client, send invoice, call supplier..."></textarea>
+    </div>
+    
+    <div class="text-end">
+        <button class="btn btn-sm btn-secondary me-3" onclick="closeReminderModal()">Cancel</button>
+        <button class="btn btn-sm lufera-bg text-white" onclick="saveReminder()">Save Reminder</button>
     </div>
 </div>
 
