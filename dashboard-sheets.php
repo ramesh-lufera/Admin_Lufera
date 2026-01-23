@@ -1,26 +1,139 @@
 <?php include './partials/layouts/layoutTop.php'; ?>
-
+<style>
+    .fa-file{
+        padding: 10px 20px;
+        background: #fcf1c9;
+        margin: -40px 0px 10px;
+        align-items: center;
+        justify-content: center;
+        display: flex;
+        border-radius: 8px;
+        color: #fec700;
+    }
+</style>
 <?php
-// Fetch sheets
+// Fetch sheets (your existing code)
 $sheets = [];
 $res = $conn->query("SELECT id, name, updated_at FROM sheets ORDER BY updated_at DESC");
 while ($row = $res->fetch_assoc()) {
     $sheets[] = $row;
 }
+
+// ────────────────────────────────────────────────
+// Fetch ALL unread reminders for the offcanvas
+// ────────────────────────────────────────────────
+$today = date('Y-m-d');
+
+$remindersQuery = "
+    SELECT r.*, s.name AS sheet_name
+    FROM sheet_reminders r
+    JOIN sheets s ON s.id = r.sheet_id
+    WHERE r.is_read = 0
+    ORDER BY r.remind_at DESC, r.created_at DESC
+";
+$remindersResult = $conn->query($remindersQuery);
+$reminderCount = $remindersResult->num_rows;
+
+// Optional: Count only today's for the badge (or keep total unread)
+$todayRemindersCount = 0;
+$remindersResult->data_seek(0); // reset pointer
+while ($rem = $remindersResult->fetch_assoc()) {
+    if ($rem['remind_at'] === $today) {
+        $todayRemindersCount++;
+    }
+}
+$remindersResult->data_seek(0); // reset again for display
 ?>
 
 <div class="dashboard-main-body">
+
+    <!-- Notifications Button (top right or near title) -->
     <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-24">
-        <a class="cursor-pointer fw-bold" onclick="history.back()"><span class="fa fa-arrow-left"></span>&nbsp; Back</a> 
+        <a class="cursor-pointer fw-bold" onclick="history.back()">
+            <span class="fa fa-arrow-left"></span> Back
+        </a> 
         <h6 class="fw-semibold mb-0">Saved Sheets</h6>
-        <button type="button" class="add-role-btn btn lufera-bg text-white text-sm btn-sm px-12 py-12 radius-8 d-flex align-items-center gap-2" onclick="window.location.href='sheets.php'">
-            <iconify-icon icon="ic:baseline-plus" class="icon text-xl line-height-1"></iconify-icon>
-            Create New Sheet
-        </button>
+        
+        <div class="d-flex align-items-center gap-3">
+            <!-- Notifications Button with Badge -->
+            <button class="btn btn-outline-warning position-relative px-3" 
+                    type="button" 
+                    data-bs-toggle="offcanvas" 
+                    data-bs-target="#notificationsOffcanvas" 
+                    aria-controls="notificationsOffcanvas">
+                <i class="fa fa-bell me-1"></i> Notifications
+                <?php if ($reminderCount > 0): ?>
+                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                        <?= $reminderCount ?>
+                        <span class="visually-hidden">unread reminders</span>
+                    </span>
+                <?php endif; ?>
+            </button>
+
+            <button type="button" class="add-role-btn btn lufera-bg text-white text-sm btn-sm px-12 py-12 radius-8 d-flex align-items-center gap-2" 
+                    onclick="window.location.href='sheets.php'">
+                <iconify-icon icon="ic:baseline-plus" class="icon text-xl line-height-1"></iconify-icon>
+                Create New Sheet
+            </button>
+        </div>
     </div>
 
-    <div class="row g-3">
+    <!-- Offcanvas - Right Side Notifications Panel -->
+    <div class="offcanvas offcanvas-end w-25" tabindex="-1" id="notificationsOffcanvas" aria-labelledby="notificationsOffcanvasLabel">
+        <div class="offcanvas-header border-bottom">
+            <h6 class="offcanvas-title" id="notificationsOffcanvasLabel">
+                <i class="fa fa-bell me-2"></i> Notifications & Reminders
+                <?php if ($reminderCount > 0): ?>
+                    <!-- <span class="badge bg-warning text-dark ms-2"><?= $reminderCount ?> unread</span> -->
+                <?php endif; ?>
+            </h6>
+            <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+        </div>
+        
+        <div class="offcanvas-body p-0">
+            <?php if ($reminderCount === 0): ?>
+                <div class="text-center py-5 text-muted">
+                    <i class="fa fa-bell-slash fa-3x mb-3 d-block opacity-50"></i>
+                    <p>No pending reminders</p>
+                    <small>All caught up!</small>
+                </div>
+            <?php else: ?>
+                <div class="list-group list-group-flush">
+                    <?php while ($rem = $remindersResult->fetch_assoc()): ?>
+                        <?php 
+                            $isToday = ($rem['remind_at'] === $today);
+                            $dueClass = $isToday ? 'text-danger fw-bold' : 'text-warning';
+                        ?>
+                        <div class="list-group-item list-group-item-action border-bottom px-4 py-3">
+                            <div class="d-flex align-items-start">
+                                <div class="me-3 mt-4">
+                                    <i class="fa fa-bell <?= $dueClass ?>" style="font-size: 1.4rem;"></i>
+                                </div>
+                                <div class="flex-grow-1">
+                                    <div class="d-flex justify-content-between align-items-start mb-1">
+                                        <h6 class="mb-0"><?= htmlspecialchars($rem['sheet_name']) ?></h6>
+                                        <small class="<?= $dueClass ?>">
+                                            <?= $isToday ? 'Due Today' : date('M d, Y', strtotime($rem['remind_at'])) ?>
+                                        </small>
+                                    </div>
+                                    <p class="mb-1 text-muted" style="font-size: 0.95rem;">
+                                        Row <strong><?= $rem['sheet_row'] ?></strong><br>
+                                        <?= nl2br(htmlspecialchars($rem['message'])) ?>
+                                    </p>
+                                    <small class="text-muted">
+                                        <?= date('M d, Y h:i A', strtotime($rem['created_at'] ?? $rem['remind_at'])) ?>
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                    <?php endwhile; ?>
+                </div>
+            <?php endif; ?>
+        </div>
+    </div>
 
+    <!-- Your existing sheets grid -->
+    <div class="row g-3">
         <?php if (empty($sheets)): ?>
             <div class="col-12 text-center py-5">
                 <h5>No sheets found</h5>
@@ -30,26 +143,19 @@ while ($row = $res->fetch_assoc()) {
 
         <?php foreach ($sheets as $sheet): ?>
             <div class="col-xl-3 col-lg-4 col-md-6 col-sm-12">
-                <div class="card radius-12 cursor-pointer h-100"
-                     onclick="window.location='sheets.php?id=<?= $sheet['id'] ?>'">
-                    
+                <div class="card radius-12 cursor-pointer h-100" onclick="window.location='sheets.php?id=<?= $sheet['id'] ?>'">
+                <img src="assets/images/sheets.png" style="border-radius: 10px 10px 0 0;">
                     <div class="card-body p-24">
-                        
-                        <h6 class="fw-semibold mb-8">
-                            <?= htmlspecialchars($sheet['name']) ?>
-                        </h6>
-
+                    <span class="fa fa-thin fa-file"></span>
+                        <h6 class="fw-semibold mb-8"><?= htmlspecialchars($sheet['name']) ?></h6>
                         <p class="text-muted mb-0" style="font-size: 14px;">
                             Last Updated: <br>
                             <strong><?= date("M d, Y H:i", strtotime($sheet['updated_at'])) ?></strong>
                         </p>
-
                     </div>
-
                 </div>
             </div>
         <?php endforeach; ?>
-
     </div>
 </div>
 
