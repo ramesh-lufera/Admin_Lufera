@@ -16,8 +16,44 @@
 
         if ($result->num_rows === 0) {
 
+            // /* FIRST SUBMISSION → CREATE SHEET */
+            // $sheetName = $newData['name'] ?? 'Sheet1';
+            // $sheetJSON = json_encode($newData);
+
             /* FIRST SUBMISSION → CREATE SHEET */
-            $sheetName = $newData['name'] ?? 'Sheet1';
+
+            /* Fetch form title from form_builder */
+            $formTitle = 'Sheet1';
+
+            $stmtTitle = $conn->prepare(
+                "SELECT form_title FROM form_builder WHERE id = ? LIMIT 1"
+            );
+            $stmtTitle->bind_param("i", $formId);
+            $stmtTitle->execute();
+            $titleResult = $stmtTitle->get_result();
+
+            if ($titleResult && $titleResult->num_rows === 1) {
+                $rowTitle  = $titleResult->fetch_assoc();
+                $formTitle = $rowTitle['form_title'];
+            }
+
+            $sheetName = $formTitle;
+            // $sheetJSON = json_encode($newData);
+
+            $usedCols = [];
+            foreach ($newData['cells'] as $cellKey => $_) {
+                if (preg_match('/^([A-Z]+)/', $cellKey, $m)) {
+                    $usedCols[$m[1]] = true;
+                }
+            }
+
+            $newData['cols'] = empty($usedCols)
+                ? 0
+                : (max(array_map(
+                    fn($c) => ord($c) - 64,
+                    array_keys($usedCols)
+                )));
+
             $sheetJSON = json_encode($newData);
 
             $stmt = $conn->prepare(
@@ -37,25 +73,71 @@
             $sheetId   = $row['id'];
             $sheetData = json_decode($row['data'], true);
 
-            /* STEP 2: Find next row number */
-            $existingCells = $sheetData['cells'] ?? [];
-            $maxRow = 0;
+            // /* STEP 2: Find next row number */
+            // $existingCells = $sheetData['cells'] ?? [];
+            // $maxRow = 0;
 
-            foreach ($existingCells as $cell => $value) {
-                preg_match('/\d+/', $cell, $m);
-                $maxRow = max($maxRow, (int)$m[0]);
+            // foreach ($existingCells as $cell => $value) {
+            //     preg_match('/\d+/', $cell, $m);
+            //     $maxRow = max($maxRow, (int)$m[0]);
+            // }
+
+            // $nextRow = $maxRow + 1;
+
+            // /* STEP 3: Append cells */
+            // foreach ($newData['cells'] as $cell => $value) {
+            //     $col = preg_replace('/\d+/', '', $cell);
+            //     $sheetData['cells'][$col . $nextRow] = $value;
+            // }
+
+            // /* STEP 4: Update row count */
+            // $sheetData['rows'] = max($sheetData['rows'], $nextRow);
+
+            /* STEP 2: Ensure structure exists */
+            $sheetData['cells']   = $sheetData['cells']   ?? [];
+            $sheetData['headers'] = $sheetData['headers'] ?? [];
+
+            /* STEP 3: Set headers ONCE */
+            if (empty($sheetData['headers']) && !empty($newData['headers'])) {
+                $sheetData['headers'] = $newData['headers'];
             }
 
-            $nextRow = $maxRow + 1;
+            /* STEP 4: Row calculation — FIXED */
+            /* FIND NEXT AVAILABLE ROW BASED ON FILLED CELLS */
+            $maxFilledRow = 0;
+            foreach ($sheetData['cells'] as $cellKey => $_) {
+                if (preg_match('/\d+$/', $cellKey, $m)) {
+                    $maxFilledRow = max($maxFilledRow, (int)$m[0]);
+                }
+            }
 
-            /* STEP 3: Append cells */
-            foreach ($newData['cells'] as $cell => $value) {
-                $col = preg_replace('/\d+/', '', $cell);
+            $nextRow = $maxFilledRow + 1;
+
+            /* STEP 5: Append cells (no overwrite) */
+            foreach ($newData['cells'] as $cellKey => $value) {
+                preg_match('/^([A-Z]+)/', $cellKey, $m);
+                $col = $m[1];
                 $sheetData['cells'][$col . $nextRow] = $value;
             }
 
-            /* STEP 4: Update row count */
+            /* STEP 6: Update rows counter */
             $sheetData['rows'] = max($sheetData['rows'], $nextRow);
+
+            /* STEP 6.1: REBUILD COLUMNS FROM ACTUAL CELLS (REMOVE EMPTY COLUMNS) */
+            $usedCols = [];
+
+            foreach ($sheetData['cells'] as $cellKey => $_) {
+                if (preg_match('/^([A-Z]+)/', $cellKey, $m)) {
+                    $usedCols[$m[1]] = true;
+                }
+            }
+
+            $sheetData['cols'] = empty($usedCols)
+                ? 0
+                : (max(array_map(
+                    fn($c) => ord($c) - 64,
+                    array_keys($usedCols)
+                )));
 
             /* STEP 5: Save */
             $sheetJSON = json_encode($sheetData);
@@ -450,21 +532,21 @@
         margin-bottom: 2px;
         line-height: 1.3;
     }
-/* ===============================
-   INLINE VALIDATION STYLES
-=============================== */
+    /* ===============================
+    INLINE VALIDATION STYLES
+    =============================== */
 
-.field-error {
-    border-color: #dc2626 !important;
-    box-shadow: 0 0 0 2px rgba(220,38,38,.15);
-}
+    .field-error {
+        border-color: #dc2626 !important;
+        box-shadow: 0 0 0 2px rgba(220,38,38,.15);
+    }
 
-.error-text {
-    font-size: 12px;
-    color: #dc2626;
-    margin-top: 4px;
-    line-height: 1.3;
-}
+    .error-text {
+        font-size: 12px;
+        color: #dc2626;
+        margin-top: 4px;
+        line-height: 1.3;
+    }
 
 </style>
 </head>
@@ -549,6 +631,28 @@
                 $stmt->bind_param("ss", $title, $json);
                 $stmt->execute();
                 $redirectId = $conn->insert_id;
+
+                /* ✅ CREATE EMPTY SHEET IMMEDIATELY */
+
+                $emptySheetData = json_encode([
+                    "rows" => 10,        // ✅ fixed initial rows
+                    "cols" => 0,
+                    "headers" => [],
+                    "columnTypes" => [],
+                    "cells" => []
+                ]);
+
+                $stmtSheet = $conn->prepare(
+                    "INSERT INTO sheets (form_id, name, data, created_at, updated_at)
+                    VALUES (?, ?, ?, NOW(), NOW())"
+                );
+                $stmtSheet->bind_param(
+                    "iss",
+                    $redirectId,     // form_id
+                    $title,          // sheet name = form title
+                    $emptySheetData
+                );
+                $stmtSheet->execute();
             }
 
             // ✅ REDIRECT TO INDIVIDUAL FORM PAGE
@@ -674,97 +778,95 @@
     </form>
 
     <script>
-function clearInlineErrors() {
-    document.querySelectorAll(".error-text").forEach(e => e.remove());
-    document.querySelectorAll(".field-error").forEach(e => {
-        e.classList.remove("field-error");
-    });
-}
-
-function showInlineError(el, message) {
-    el.classList.add("field-error");
-
-    const err = document.createElement("div");
-    err.className = "error-text";
-    err.textContent = message;
-
-    // place error after field or group
-    if (el.parentElement) {
-        el.parentElement.appendChild(err);
-    }
-}
-
-function validateFormFieldsInline() {
-
-    clearInlineErrors();
-
-    for (let i = 0; i < fields.length; i++) {
-        const f = fields[i];
-
-        const input      = document.querySelector(`[name="fields[${i}]"]`);
-        const radios     = document.querySelectorAll(`[name="fields[${i}]"]`);
-        const checkboxes = document.querySelectorAll(`[name="fields[${i}][]"]`);
-
-        let value = "";
-        let hasValue = false;
-        let errorTarget = input;
-
-        /* CHECK VALUE */
-        if (checkboxes.length > 0) {
-            const checked = [...checkboxes].filter(cb => cb.checked);
-            hasValue = checked.length > 0;
-            value = checked.map(cb => cb.value).join(", ");
-            errorTarget = checkboxes[0];
-        }
-        else if (radios.length > 0 && radios[0].type === "radio") {
-            const checked = [...radios].find(r => r.checked);
-            hasValue = !!checked;
-            value = checked ? checked.value : "";
-            errorTarget = radios[0];
-        }
-        else if (input) {
-            value = input.value.trim();
-            hasValue = value !== "";
+        function clearInlineErrors() {
+            document.querySelectorAll(".error-text").forEach(e => e.remove());
+            document.querySelectorAll(".field-error").forEach(e => {
+                e.classList.remove("field-error");
+            });
         }
 
-        /* REQUIRED */
-        if (f.required && !hasValue) {
-            showInlineError(errorTarget, `"${f.label}" is required`);
-            return false;
-        }
+        function showInlineError(el, message) {
+            el.classList.add("field-error");
 
-        /* EMAIL */
-        if (f.validation === "email" && hasValue) {
-            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-            if (!emailRegex.test(value)) {
-                showInlineError(errorTarget, "Enter a valid email address");
-                return false;
+            const err = document.createElement("div");
+            err.className = "error-text";
+            err.textContent = message;
+
+            // place error after field or group
+            if (el.parentElement) {
+                el.parentElement.appendChild(err);
             }
         }
 
-        /* NUMBER */
-        if (f.validation === "range" && hasValue) {
-            if (isNaN(value)) {
-                showInlineError(errorTarget, "Enter a valid number");
-                return false;
+        function validateFormFieldsInline() {
+
+            clearInlineErrors();
+
+            for (let i = 0; i < fields.length; i++) {
+                const f = fields[i];
+
+                const input      = document.querySelector(`[name="fields[${i}]"]`);
+                const radios     = document.querySelectorAll(`[name="fields[${i}]"]`);
+                const checkboxes = document.querySelectorAll(`[name="fields[${i}][]"]`);
+
+                let value = "";
+                let hasValue = false;
+                let errorTarget = input;
+
+                /* CHECK VALUE */
+                if (checkboxes.length > 0) {
+                    const checked = [...checkboxes].filter(cb => cb.checked);
+                    hasValue = checked.length > 0;
+                    value = checked.map(cb => cb.value).join(", ");
+                    errorTarget = checkboxes[0];
+                }
+                else if (radios.length > 0 && radios[0].type === "radio") {
+                    const checked = [...radios].find(r => r.checked);
+                    hasValue = !!checked;
+                    value = checked ? checked.value : "";
+                    errorTarget = radios[0];
+                }
+                else if (input) {
+                    value = input.value.trim();
+                    hasValue = value !== "";
+                }
+
+                /* REQUIRED */
+                if (f.required && !hasValue) {
+                    showInlineError(errorTarget, `"${f.label}" is required`);
+                    return false;
+                }
+
+                /* EMAIL */
+                if (f.validation === "email" && hasValue) {
+                    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                    if (!emailRegex.test(value)) {
+                        showInlineError(errorTarget, "Enter a valid email address");
+                        return false;
+                    }
+                }
+
+                /* NUMBER */
+                if (f.validation === "range" && hasValue) {
+                    if (isNaN(value)) {
+                        showInlineError(errorTarget, "Enter a valid number");
+                        return false;
+                    }
+                }
+
+                /* FILE SIZE */
+                if (f.validation === "filesize" && input?.files?.length) {
+                    const maxSize = 2 * 1024 * 1024; // 2MB
+                    if (input.files[0].size > maxSize) {
+                        showInlineError(input, "File size must be under 2MB");
+                        return false;
+                    }
+                }
             }
+
+            return true;
         }
-
-        /* FILE SIZE */
-        if (f.validation === "filesize" && input?.files?.length) {
-            const maxSize = 2 * 1024 * 1024; // 2MB
-            if (input.files[0].size > maxSize) {
-                showInlineError(input, "File size must be under 2MB");
-                return false;
-            }
-        }
-    }
-
-    return true;
-}
-</script>
-
-
+    </script>
 
     <script>
         function buildSheetPayload() {
