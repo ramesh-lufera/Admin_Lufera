@@ -94,6 +94,23 @@
         $invoiceId = $order['invoice_id'];
         $amount    = $order['amount'];
 
+        echo "
+                <script>
+                    Swal.fire({
+                        title: 'Processing...',
+                        text: 'Please wait while we finalize your renewal.',
+                        allowOutsideClick: false,
+                        didOpen: () => {
+                            Swal.showLoading();
+                            const spinner = document.querySelector('.swal2-loader');
+                            if (spinner) {
+                                spinner.style.borderColor = '#fec700 transparent #fec700 transparent';
+                            }
+                        }
+                    });
+                </script>";
+                // flush response so browser shows the loader instantly
+                ob_flush(); flush();
         // ✅ Send Email to User
         try {
             $mail = new PHPMailer(true);
@@ -104,12 +121,13 @@
             $mail->Password   = $_ENV['GMAIL_APP_PASSWORD']; 
             $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
             $mail->Port       = 587;
-
+            $mail->CharSet = 'UTF-8';
+            $mail->Encoding = 'base64';
             $mail->setFrom($_ENV['EMAIL_USERNAME'], 'Lufera Infotech');
             $mail->addAddress($userEmail, $userName);
-
             $mail->isHTML(true);
             $mail->Subject = "Your Order Has Been Approved";
+            $mail->ContentType = 'text/html; charset=UTF-8';
 
             $mail->Body = '
                 <!DOCTYPE html>
@@ -235,6 +253,23 @@
             $invoiceId = $row['invoice_id'];
             $amount    = $row['amount'];
 
+            echo "
+                <script>
+                    Swal.fire({
+                        title: 'Processing...',
+                        text: 'Please wait while we finalize your renewal.',
+                        allowOutsideClick: false,
+                        didOpen: () => {
+                            Swal.showLoading();
+                            const spinner = document.querySelector('.swal2-loader');
+                            if (spinner) {
+                                spinner.style.borderColor = '#fec700 transparent #fec700 transparent';
+                            }
+                        }
+                    });
+                </script>";
+                // flush response so browser shows the loader instantly
+                ob_flush(); flush();
             // Send Cancelled Mail
             try {
                 $mail = new PHPMailer(true);
@@ -245,12 +280,13 @@
                 $mail->Password   = $_ENV['GMAIL_APP_PASSWORD']; 
                 $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
                 $mail->Port       = 587;
-
+                $mail->CharSet = 'UTF-8';
+                $mail->Encoding = 'base64';
                 $mail->setFrom($_ENV['EMAIL_USERNAME'], 'Lufera Infotech');
                 $mail->addAddress($userEmail, $userName);
-
                 $mail->isHTML(true);
                 $mail->Subject = "Your Order Has Been Cancelled";
+                $mail->ContentType = 'text/html; charset=UTF-8';
 
                 $mail->Body = '
                     <!DOCTYPE html>
