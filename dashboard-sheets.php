@@ -128,9 +128,7 @@ $remindersResult->data_seek(0); // reset again for display
         <div class="offcanvas-body p-0">
             <?php if ($reminderCount === 0): ?>
                 <div class="text-center py-5 text-muted">
-                    <i class="fa fa-bell-slash fa-3x mb-3 d-block opacity-50"></i>
                     <p>No pending reminders</p>
-                    <small>All caught up!</small>
                 </div>
             <?php else: ?>
                 <div class="list-group list-group-flush">
