@@ -1,5 +1,27 @@
-<?php 
-include 'partials/layouts/layoutTop.php'; 
+<?php
+include 'partials/layouts/layoutTop.php';
+
+$sheetId   = isset($_GET['id']) ? intval($_GET['id']) : 0;
+$sheetName = "Untitled Sheet";
+
+if ($sheetId <= 0) {
+    header("Location: dashboard-sheets.php");
+    exit;
+}
+
+$stmt = $conn->prepare("SELECT name FROM sheets WHERE id = ? LIMIT 1");
+$stmt->bind_param("i", $sheetId);
+$stmt->execute();
+$result = $stmt->get_result();
+
+if ($result->num_rows === 0) {
+    header("Location: dashboard-sheets.php");
+    exit;
+}
+
+$sheetRow  = $result->fetch_assoc();
+$sheetName = $sheetRow['name'] ?? "Untitled Sheet";
+$stmt->close();
 
 $sheetData = null;
 
@@ -89,7 +111,7 @@ if (isset($_GET['id'])) {
 
     .comment {
         margin-bottom: 12px;
-        background: #f5f7fa;
+        background: #f5f6fa;
         padding: 8px;
         border-radius: 6px;
     }
@@ -97,7 +119,7 @@ if (isset($_GET['id'])) {
     .reply {
         margin-left: 20px;
         margin-top: 6px;
-        background: #e9edf3;
+        background: #cfdffa;
     }
 
     .comment-input {
@@ -183,7 +205,7 @@ input, select{
 .dropdown-menu {
     display: none;
     position: absolute;
-    top: 110%;
+    top: 250%;
     left: 0;
     background: #fff;
     border: 1px solid #d1d5db;
@@ -259,6 +281,32 @@ tr:hover .bell-icon {
     opacity: 1 !important;
     pointer-events: auto !important;
 }
+.reply-box {
+    background: #f8f9fa;
+    padding: 10px;
+    border-radius: 6px;
+    border: 1px solid #e0e0e0;
+}
+
+.reply-box textarea {
+    resize: none;
+    font-size: 0.9rem;
+    height:60px !important
+}
+
+.comment button.btn-link {
+    font-size: 0.85rem;
+    text-decoration: none;
+}
+
+.comment button.btn-link:hover {
+    text-decoration: underline;
+}
+.reply-error {
+    color: #dc3545;
+    font-size: 0.85rem;
+    margin-top: 4px;
+}
 </style>
   
 </head>
@@ -267,35 +315,25 @@ tr:hover .bell-icon {
 
 <div class="dashboard-main-body">
     <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-24">
-        <a onclick="history.back()" class="cursor-pointer fw-bold"><span class="fa fa-arrow-left"></span>&nbsp; Back</a>
-        <h6 class="fw-semibold mb-0">Sheets</h6>
-        <a onclick="history.back()" class="cursor-pointer fw-bold visibility-hidden"><span class="fa fa-arrow-left"></span>&nbsp; Back</a>
+        <a onclick="history.back()" class="cursor-pointer fw-bold">
+            <span class="fa fa-arrow-left"></span> Back
+        </a>
+        <div class="text-center flex-grow-1">
+            <h6 class="fw-semibold mb-0"><?= htmlspecialchars($sheetName) ?></h6>
+        </div>
+        <div style="width:120px"></div> <!-- spacer to balance layout -->
     </div>
 
     <div class="card radius-12 h-100">
         <div class="card-body p-24">
 
-            <!-- <div class="toolbar mb-3">
-                <button id="add-row">+ Row</button>
-                <button id="add-col">+ Col</button>
-                <button id="export-csv">Export CSV</button>
-                <button id="clear">Clear</button>
-                
-                <button id="save-db">Save to DB</button>
-                <button id="load-db">Load from DB</button>
-                <button id="export-to-form">Export to Form</button>
-            </div> -->
-
-            <div class="toolbar mb-3 d-flex gap-2 align-items-center">
-                
-
+            <div class="toolbar mb-3 d-flex gap-2 align-items-center">                
                 <!-- FILE DROPDOWN -->
                 <div class="dropdown">
-                    <button class="dropdown-btn px-3">File</button>
+                    <button class="dropdown-btn">File</button>
                     <div class="dropdown-menu">
-                        <button class="new_sheet" onclick="Redirect()">New</button>
+                        <!-- <button class="new_sheet" onclick="Redirect()">New</button> -->
                         <button id="export-csv">Export</button>
-                        <button id="save-db">Save</button>
                         <button id="load-db">Open</button>
                         <button id="clear">Clear</button>
                     </div>
@@ -308,6 +346,10 @@ tr:hover .bell-icon {
                         <button id="export-to-form">Create Form</button>
                     </div>
                 </div>                
+            </div>
+
+            <div class="mb-3">
+                <button id="save-db"><span class="fa fa-save text-xxl"></span></button>
             </div>
             <div class="sheet" id="sheet"></div>
         </div>
@@ -404,7 +446,7 @@ const rowReminders  = {};
 
 let activeRow = null;
 let activeAttachRow = null;
-let activeSheetId = <?= isset($_GET['id']) ? intval($_GET['id']) : 0 ?>;
+let activeSheetId = <?= $sheetId ?>;
 
 /* ------------------------------------------------------------
    PRELOAD PHP DATA BEFORE TABLE IS BUILT
@@ -563,6 +605,8 @@ function buildTable() {
             th.textContent = "Tasks";
             th.contentEditable = false;
             th.style.minWidth = "160px";
+            th.style.height = "40px";
+            th.style.alignContent = "center";
         } else {
             // Container for name and trash
             const wrapper = document.createElement("div");
@@ -611,6 +655,8 @@ function buildTable() {
             th.appendChild(wrapper);
 
             th.style.cursor = "pointer";
+            th.style.height = "40px";
+            th.style.alignContent = "center";
             th.title = "Click to edit column • Hover for delete";
 
             // Hover: show/hide trash icon
@@ -1106,11 +1152,11 @@ function recalcAll() {
 //document.getElementById("add-col").onclick = () => { COLS++; rebuildPreserveData(); };
 
 document.getElementById("save-db").onclick = async () => {
-    let name = prompt("Enter sheet name:", columnHeaders[1] || "Sheet");
-    if (!name) return;
+    // No more prompt!
+    // Name is already in DB — we don't change it here anymore
 
     const payload = {
-        name,
+        id: activeSheetId,           // ← always send ID → backend will UPDATE
         rows: ROWS,
         cols: COLS,
         headers: [],
@@ -1118,61 +1164,56 @@ document.getElementById("save-db").onclick = async () => {
         cells: {}
     };
 
-    // Collect headers (skip Tasks column)
-    document.querySelectorAll("thead th").forEach(th => {
-        if (th.dataset.c && th.dataset.c != 1) {
-            // Get the visible text from the name span (not the full th)
+    // Collect visible header names (from UI)
+    document.querySelectorAll("thead th[data-c]").forEach(th => {
+        if (th.dataset.c && th.dataset.c != "1") {
             const nameSpan = th.querySelector("span");
-            payload.headers.push(nameSpan ? nameSpan.textContent : th.textContent);
+            payload.headers.push(nameSpan ? nameSpan.textContent.trim() : "");
         }
     });
 
-    // Collect cell data
+    // Collect cell data (only non-empty)
     document.querySelectorAll(".cell").forEach(cell => {
-        if (cell.dataset.c == 1) return; // skip Tasks column
-        const raw = data[cell.id]?.raw;
-        if (raw !== undefined && raw.trim() !== "") {
-            payload.cells[cell.id] = raw;   // now cell.id = "B1", "C2", ...
+        if (cell.dataset.c == "1") return; // skip Tasks
+        const raw = data[cell.id]?.raw?.trim();
+        if (raw) {
+            payload.cells[cell.id] = raw;
         }
     });
 
-    // If we have an ID in URL → UPDATE, else INSERT
-    let url = "save.php";
-    if (activeSheetId > 0) {
-        payload.id = activeSheetId; // tell backend to update
-    }
-
-    const res = await fetch(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
-    });
-
-    const out = await res.json();
-
-    if (out.success) {
-        // If it was a new sheet, update the URL with the new ID
-        if (!activeSheetId && out.id) {
-            history.replaceState(null, '', `?id=${out.id}`);
-            activeSheetId = out.id;
-        }
-        Swal.fire({
-        icon: 'success',
-        title: 'Saved!',
-        text: 'Sheet saved successfully',
-        timer: 1800,              // disappears after 1.8 seconds
-        showConfirmButton: false,
-        allowOutsideClick: false
-        }).then(() => {
-            window.location.href = "dashboard-sheets.php";
+    try {
+        const res = await fetch("save.php", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
         });
-    } else {
+
+        const out = await res.json();
+
+        if (out.success) {
+            Swal.fire({
+                icon: 'success',
+                title: 'Saved!',
+                text: 'Changes saved successfully',
+                timer: 1600,
+                showConfirmButton: false
+            });
+
+            // Optional: stay on page instead of redirect
+            // window.location.href = "dashboard-sheets.php";
+        } else {
+            Swal.fire({
+                icon: 'error',
+                title: 'Save failed',
+                text: out.error || "Server error – please try again",
+                confirmButtonText: 'OK'
+            });
+        }
+    } catch (err) {
         Swal.fire({
             icon: 'error',
-            title: 'Oops...',
-            text: out.error || "Failed to save the sheet. Please try again.",
-            confirmButtonText: 'OK',
-            confirmButtonColor: '#dc2626'
+            title: 'Network error',
+            text: "Could not reach the server."
         });
     }
 };
@@ -1407,18 +1448,27 @@ async function loadComments() {
         div.className = "comment";
         div.innerHTML = `
             <div>${c.comment}</div>
-            <small>${c.created_at}</small>
-            <button onclick="replyPrompt(${c.id})">Reply</button>
+            <small>${c.created_at} • 
+                <button class="btn btn-link btn-sm p-0 text-primary" 
+                        onclick="showReplyBox(${c.id}, this)">Reply</button>
+            </small>
         `;
         list.appendChild(div);
 
-        c.replies.forEach(r => {
-            const rd = document.createElement("div");
-            rd.className = "comment reply";
-            rd.innerHTML = `<div>${r.comment}</div>`;
-            list.appendChild(rd);
-        });
+        // Render replies (indented)
+        if (c.replies && c.replies.length > 0) {
+            c.replies.forEach(r => {
+                const rd = document.createElement("div");
+                rd.className = "comment reply";
+                rd.innerHTML = `
+                    <div>${r.comment}</div>
+                    <small>${r.created_at}</small>
+                `;
+                list.appendChild(rd);
+            });
+        }
     });
+
     scrollCommentListToBottom();
 }
 
@@ -1437,14 +1487,95 @@ function saveComment() {
     }).then(() => {
         document.getElementById("commentText").value = "";
         rowComments[activeRow] = (rowComments[activeRow] || 0) + 1;
-        updateRowIcons(activeRow);
+        updateTaskActivityIcons(activeRow);    // ← fixed
         loadComments();
     });
 }
-function replyPrompt(parentId) {
-    const text = prompt("Reply:");
-    if (!text) return;
 
+// Show reply box below a specific comment
+function showReplyBox(commentId, parentElement) {
+    // Remove any existing reply boxes first (only one open at a time)
+    document.querySelectorAll('.reply-box').forEach(box => box.remove());
+
+    const replyBox = document.createElement('div');
+    replyBox.className = 'reply-box mt-2';
+    replyBox.innerHTML = `
+        <textarea class="form-control form-control-sm" rows="2" placeholder="Write your reply..." id="replyText_${commentId}"></textarea>
+        <div class="mt-1 text-end">
+            <button class="btn btn-sm btn-secondary me-2" onclick="cancelReply('${commentId}')">Cancel</button>
+            <button class="btn btn-sm lufera-bg text-white" onclick="saveReply(${commentId})">Send Reply</button>
+        </div>
+    `;
+
+    // Insert right after the comment content
+    const commentDiv = parentElement.closest('.comment');
+    if (commentDiv) {
+        commentDiv.appendChild(replyBox);
+        document.getElementById(`replyText_${commentId}`).focus();
+    }
+}
+
+// Cancel reply
+function cancelReply(commentId) {
+    // Find the reply box by a more reliable way
+    const replyBox = document.querySelector(`#replyText_${commentId}`)?.closest('.reply-box');
+    if (replyBox) {
+        replyBox.remove();
+    }
+}
+
+// Save inline reply
+function saveReply(parentId) {
+    const textarea = document.getElementById(`replyText_${parentId}`);
+    if (!textarea) return;
+
+    const text = textarea.value.trim();
+
+    // Remove any previous error message
+    const existingError = textarea.parentElement.querySelector('.reply-error');
+    if (existingError) existingError.remove();
+
+    // Reset textarea border
+    textarea.style.borderColor = '';
+
+    if (!text) {
+        // Create warning message
+        const errorDiv = document.createElement('div');
+        errorDiv.className = 'reply-error text-danger small mt-1 mb-2';
+        errorDiv.textContent = 'Please write something before sending.';
+        errorDiv.style.fontSize = '0.85rem';
+
+        // Insert ABOVE the buttons (after textarea, before the button container)
+        const buttonContainer = textarea.nextElementSibling; // the <div class="mt-2 text-end">
+        if (buttonContainer) {
+            buttonContainer.parentElement.insertBefore(errorDiv, buttonContainer);
+        } else {
+            // Fallback: just append if structure changes
+            textarea.parentElement.appendChild(errorDiv);
+        }
+
+        // Highlight textarea border in red
+        textarea.style.borderColor = '#dc3545';
+        textarea.focus();
+
+        // Auto-remove after 4 seconds
+        setTimeout(() => {
+            if (errorDiv.parentElement) errorDiv.remove();
+            textarea.style.borderColor = '';
+        }, 40000000000);
+
+        // Remove error when user starts typing
+        const removeErrorOnInput = () => {
+            if (errorDiv.parentElement) errorDiv.remove();
+            textarea.style.borderColor = '';
+            textarea.removeEventListener('input', removeErrorOnInput);
+        };
+        textarea.addEventListener('input', removeErrorOnInput);
+
+        return;
+    }
+
+    // Proceed with save if text exists
     fetch("save_comment.php", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -1454,10 +1585,20 @@ function replyPrompt(parentId) {
             parent_id: parentId,
             comment: text
         })
-    }).then(() => {
-        rowComments[activeRow] = (rowComments[activeRow] || 0) + 1;
-        updateRowIcons(activeRow);
-        loadComments();
+    })
+    .then(res => res.json())
+    .then(result => {
+        if (result.success) {
+            rowComments[activeRow] = (rowComments[activeRow] || 0) + 1;
+            updateTaskActivityIcons(activeRow);
+            loadComments(); // refresh the list
+        } else {
+            alert(result.error || "Failed to save reply");
+        }
+    })
+    .catch(err => {
+        console.error(err);
+        alert("Network error");
     });
 }
 
@@ -1476,7 +1617,7 @@ async function loadAttachments() {
     const files = await res.json();
 
     rowAttachments[activeAttachRow] = files.length;
-    updateRowIcons(activeAttachRow);
+    updateTaskActivityIcons(activeAttachRow);   // fixed
 
     const list = document.getElementById("attachmentList");
     list.innerHTML = "";

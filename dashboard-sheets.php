@@ -12,6 +12,26 @@
     }
 </style>
 <?php
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'create_sheet') {
+    $sheet_name = trim($_POST['sheet_name'] ?? '');
+
+    if (strlen($sheet_name) >= 1 && strlen($sheet_name) <= 100) {  // adjust length limit as needed
+        $stmt = $conn->prepare("INSERT INTO sheets (name, created_at, updated_at) VALUES (?, NOW(), NOW())");
+        $stmt->bind_param("s", $sheet_name);
+        
+        if ($stmt->execute()) {
+            $new_sheet_id = $conn->insert_id;
+            echo "<script>window.location.href='sheets.php?id={$new_sheet_id}';</script>";
+            exit;
+        } else {
+            $error = "Database error: " . $conn->error;
+        }
+        $stmt->close();
+    } else {
+        $error = "Please enter a valid sheet name (1–100 characters).";
+    }
+}
+
 // Fetch sheets (your existing code)
 $sheets = [];
 $res = $conn->query("SELECT id, name, updated_at FROM sheets ORDER BY updated_at DESC");
@@ -49,19 +69,13 @@ $remindersResult->data_seek(0); // reset again for display
 
     <!-- Notifications Button (top right or near title) -->
     <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-24">
-        <a class="cursor-pointer fw-bold" onclick="history.back()">
-            <span class="fa fa-arrow-left"></span> Back
-        </a> 
-        <h6 class="fw-semibold mb-0">Saved Sheets</h6>
-        
         <div class="d-flex align-items-center gap-3">
+            <a class="cursor-pointer fw-bold" onclick="history.back()">
+                <span class="fa fa-arrow-left"></span> Back
+            </a> 
             <!-- Notifications Button with Badge -->
-            <button class="btn btn-outline-warning position-relative px-3" 
-                    type="button" 
-                    data-bs-toggle="offcanvas" 
-                    data-bs-target="#notificationsOffcanvas" 
-                    aria-controls="notificationsOffcanvas">
-                <i class="fa fa-bell me-1"></i> Notifications
+            <button class="btn btn-outline-warning position-relative px-3 visibility-hidden" type="button" data-bs-toggle="offcanvas" data-bs-target="#notificationsOffcanvas" aria-controls="notificationsOffcanvas">
+                <i class="fa fa-bell me-1"></i> Reminder
                 <?php if ($reminderCount > 0): ?>
                     <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
                         <?= $reminderCount ?>
@@ -70,8 +84,29 @@ $remindersResult->data_seek(0); // reset again for display
                 <?php endif; ?>
             </button>
 
-            <button type="button" class="add-role-btn btn lufera-bg text-white text-sm btn-sm px-12 py-12 radius-8 d-flex align-items-center gap-2" 
-                    onclick="window.location.href='sheets.php'">
+            <button type="button" class="add-role-btn btn lufera-bg text-white text-sm btn-sm px-12 py-12 radius-8 d-flex align-items-center gap-2 visibility-hidden" data-bs-toggle="modal" data-bs-target="#createSheetModal">
+                <iconify-icon icon="ic:baseline-plus" class="icon text-xl line-height-1"></iconify-icon>
+                Create New Sheet
+            </button>
+        </div>
+        <h6 class="fw-semibold mb-0">Saved Sheets</h6>
+        
+        <div class="d-flex align-items-center gap-3">
+            <a class="cursor-pointer fw-bold visibility-hidden" onclick="history.back()">
+                <span class="fa fa-arrow-left"></span> Back
+            </a> 
+            <!-- Notifications Button with Badge -->
+            <button class="btn btn-outline-warning position-relative px-3" type="button" data-bs-toggle="offcanvas" data-bs-target="#notificationsOffcanvas" aria-controls="notificationsOffcanvas">
+                <i class="fa fa-bell me-1"></i> Reminder
+                <?php if ($reminderCount > 0): ?>
+                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                        <?= $reminderCount ?>
+                        <span class="visually-hidden">unread reminders</span>
+                    </span>
+                <?php endif; ?>
+            </button>
+
+            <button type="button" class="add-role-btn btn lufera-bg text-white text-sm btn-sm px-12 py-12 radius-8 d-flex align-items-center gap-2" data-bs-toggle="modal" data-bs-target="#createSheetModal">
                 <iconify-icon icon="ic:baseline-plus" class="icon text-xl line-height-1"></iconify-icon>
                 Create New Sheet
             </button>
@@ -132,6 +167,42 @@ $remindersResult->data_seek(0); // reset again for display
         </div>
     </div>
 
+    <div class="modal fade" id="createSheetModal" tabindex="-1" aria-labelledby="createSheetModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="createSheetModalLabel">Create New Sheet</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                
+                <form method="POST" action="" id="createSheetForm">
+                    <input type="hidden" name="action" value="create_sheet">
+                    
+                    <div class="modal-body">
+                        <?php if (isset($error)): ?>
+                            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                                <?= htmlspecialchars($error) ?>
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            </div>
+                        <?php endif; ?>
+                        
+                        <div class="mb-3">
+                            <label for="sheet_name" class="form-label fw-semibold">Sheet Name <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="sheet_name" name="sheet_name" required minlength="1" maxlength="100" autofocus>
+                            <div class="invalid-feedback">
+                                Please enter a sheet name.
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn lufera-bg text-white">Create Sheet</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
     <!-- Your existing sheets grid -->
     <div class="row g-3">
         <?php if (empty($sheets)): ?>
@@ -158,5 +229,15 @@ $remindersResult->data_seek(0); // reset again for display
         <?php endforeach; ?>
     </div>
 </div>
-
+<script>
+document.getElementById('createSheetForm')?.addEventListener('submit', function(e) {
+    const input = document.getElementById('sheet_name');
+    if (!input.value.trim()) {
+        e.preventDefault();
+        input.classList.add('is-invalid');
+    } else {
+        input.classList.remove('is-invalid');
+    }
+});
+</script>
 <?php include './partials/layouts/layoutBottom.php'; ?>

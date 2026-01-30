@@ -3,108 +3,71 @@
 
 header('Content-Type: application/json');
 include 'partials/connection.php';
+
 $data = json_decode(file_get_contents('php://input'), true);
 
-if (!$data || empty($data['name'])) {
-    echo json_encode(['success' => false, 'error' => 'Name is required']);
+if (!$data || empty($data['id']) || !is_numeric($data['id'])) {
+    http_response_code(400);
+    echo json_encode([
+        'success' => false,
+        'error'   => 'Missing or invalid sheet ID'
+    ]);
     exit;
 }
 
-$name        = trim($data['name']);
-$rows        = (int)($data['rows'] ?? 10);
-$cols        = (int)($data['cols'] ?? 4);
-$headers     = $data['headers']     ?? [];
-$columnTypes = $data['columnTypes'] ?? [];
-$cells       = $data['cells']       ?? [];
-$id          = isset($data['id']) ? (int)$data['id'] : 0;
+$id = (int)$data['id'];
 
 // ────────────────────────────────────────────────
-// 1. Check for duplicate name (exclude current record if updating)
-$query = "SELECT id FROM sheets WHERE name = ? AND id != ?";
-$stmt = $conn->prepare($query);
-$stmt->bind_param("si", $name, $id);
+// Verify the sheet actually exists
+// (extra safety — prevents updating non-owned or deleted records)
+$stmt = $conn->prepare("SELECT id FROM sheets WHERE id = ? LIMIT 1");
+$stmt->bind_param("i", $id);
 $stmt->execute();
 $result = $stmt->get_result();
 
-if ($result->num_rows > 0) {
+if ($result->num_rows === 0) {
     echo json_encode([
         'success' => false,
-        'error'   => "A sheet with the name \"$name\" already exists. Please choose a different name."
+        'error'   => 'Sheet not found or access denied'
     ]);
+    $stmt->close();
+    $conn->close();
     exit;
 }
 $stmt->close();
 
 // ────────────────────────────────────────────────
-// 2. Proceed with INSERT or UPDATE
+// Prepare the JSON data blob (structure remains the same)
 $jsonData = json_encode([
-    'rows'        => $rows,
-    'cols'        => $cols,
-    'headers'     => $headers,
-    'columnTypes' => $columnTypes,
-    'cells'       => $cells
+    'rows'        => (int)($data['rows'] ?? 10),
+    'cols'        => (int)($data['cols'] ?? 4),
+    'headers'     => $data['headers']     ?? [],
+    'columnTypes' => $data['columnTypes'] ?? [],
+    'cells'       => $data['cells']       ?? []
 ]);
 
-if ($id > 0) {
-    // ──────────────── UPDATE ────────────────
-    $stmt = $conn->prepare("UPDATE sheets SET name = ?, data = ?, updated_at = NOW() WHERE id = ?");
-    $stmt->bind_param("ssi", $name, $jsonData, $id);
-    
-    $success = $stmt->execute();
+// ────────────────────────────────────────────────
+// UPDATE only — no name change here
+$stmt = $conn->prepare("
+    UPDATE sheets 
+    SET data = ?, 
+        updated_at = NOW() 
+    WHERE id = ?
+");
 
-    //  ←←← PASTE HERE for UPDATE
-    if (!$success) {
-        if ($conn->errno === 1062) { // duplicate key violation
-            echo json_encode([
-                'success' => false,
-                'error'   => "A sheet named \"$name\" already exists. Please choose a different name."
-            ]);
-        } else {
-            echo json_encode([
-                'success' => false,
-                'error'   => $conn->error
-            ]);
-        }
-        $stmt->close();
-        $conn->close();
-        exit;
-    }
-    // ────────────────────────────────────────
+$stmt->bind_param("si", $jsonData, $id);
 
+if ($stmt->execute()) {
+    echo json_encode([
+        'success' => true,
+        'id'      => $id
+    ]);
 } else {
-    // ──────────────── INSERT ────────────────
-    $stmt = $conn->prepare("INSERT INTO sheets (name, data, created_at, updated_at) VALUES (?, ?, NOW(), NOW())");
-    $stmt->bind_param("ss", $name, $jsonData);
-    
-    $success = $stmt->execute();
-
-    //  ←←← PASTE HERE for INSERT
-    if (!$success) {
-        if ($conn->errno === 1062) {
-            echo json_encode([
-                'success' => false,
-                'error'   => "A sheet named \"$name\" already exists. Please choose a different name."
-            ]);
-        } else {
-            echo json_encode([
-                'success' => false,
-                'error'   => $conn->error
-            ]);
-        }
-        $stmt->close();
-        $conn->close();
-        exit;
-    }
-    // ────────────────────────────────────────
-
-    $newId = $conn->insert_id;
+    echo json_encode([
+        'success' => false,
+        'error'   => $conn->error ?: 'Database update failed'
+    ]);
 }
-
-// success response
-echo json_encode([
-    'success' => true,
-    'id'      => $id > 0 ? $id : $newId
-]);
 
 $stmt->close();
 $conn->close();

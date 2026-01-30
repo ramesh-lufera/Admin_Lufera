@@ -469,12 +469,14 @@
                     $mail->Password   = $_ENV['GMAIL_APP_PASSWORD'];
                     $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
                     $mail->Port       = 587;
-
+                    $mail->CharSet = 'UTF-8';
+                    $mail->Encoding = 'base64';
                     $mail->setFrom($_ENV['EMAIL_USERNAME'], 'Lufera Infotech');
                     $mail->addAddress($toEmail, $toName);
-
                     $mail->isHTML(true);
                     $mail->Subject = "Renewal Confirmation - Order #$receipt_id";
+                    $mail->ContentType = 'text/html; charset=UTF-8';
+
                     $mail->Body = '
                         <!DOCTYPE html>
                         <html>
@@ -931,13 +933,13 @@
                     $mail->Password   = $_ENV['GMAIL_APP_PASSWORD'];
                     $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
                     $mail->Port       = 587;
-
+                    $mail->CharSet = 'UTF-8';
+                    $mail->Encoding = 'base64';
                     $mail->setFrom($_ENV['EMAIL_USERNAME'], 'Lufera Infotech');
                     $mail->addAddress($toEmail, $toName);
-
                     $mail->isHTML(true);
-                    
                     $mail->Subject = "$mail_text Confirmation - Order #$receipt_id";
+                    $mail->ContentType = 'text/html; charset=UTF-8';
                     
                     $mail->Body = '
                         <!DOCTYPE html>
@@ -1032,12 +1034,14 @@
                 $mail->Password   = $_ENV['GMAIL_APP_PASSWORD'];
                 $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
                 $mail->Port       = 587;
-
+                $mail->CharSet = 'UTF-8';
+                $mail->Encoding = 'base64';
                 $mail->setFrom($toEmail, $username); // from purchaser
                 $mail->addAddress($adminEmail, $adminName);
-
                 $mail->isHTML(true);
                 $mail->Subject = "Payment Request from $username";
+                $mail->ContentType = 'text/html; charset=UTF-8';
+
                 $mail->Body = '
                     <!DOCTYPE html>
                     <html>

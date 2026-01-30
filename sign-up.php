@@ -115,13 +115,14 @@
                 $mail->Password   = $_ENV['GMAIL_APP_PASSWORD'];
                 $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
                 $mail->Port       = 587;
-
+                $mail->CharSet = 'UTF-8';
+                $mail->Encoding = 'base64';
                 $mail->setFrom($_ENV['EMAIL_USERNAME'], 'Lufera Infotech');
                 $mail->addAddress($email, $username);
-
                 $mail->isHTML(true);
                 $mail->Subject = "Verify your Admin Dashboard Account";
-
+                $mail->ContentType = 'text/html; charset=UTF-8';
+                
                 $mail->Body = '
                     <!DOCTYPE html>
                     <html>
