@@ -307,6 +307,17 @@ tr:hover .bell-icon {
     font-size: 0.85rem;
     margin-top: 4px;
 }
+.attachment-row{
+    width: max-content;
+    padding: 2px 8px;
+}
+.file-name{
+    display: block;
+    white-space: nowrap;
+    width: 180px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
 </style>
   
 </head>
@@ -315,7 +326,7 @@ tr:hover .bell-icon {
 
 <div class="dashboard-main-body">
     <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-24">
-        <a onclick="history.back()" class="cursor-pointer fw-bold">
+        <a onclick="handleBack()" class="cursor-pointer fw-bold">
             <span class="fa fa-arrow-left"></span> Back
         </a>
         <div class="text-center flex-grow-1">
@@ -327,29 +338,30 @@ tr:hover .bell-icon {
     <div class="card radius-12 h-100">
         <div class="card-body p-24">
 
-            <div class="toolbar mb-3 d-flex gap-2 align-items-center">                
-                <!-- FILE DROPDOWN -->
+            <!-- <div class="toolbar mb-3 d-flex gap-2 align-items-center">                
                 <div class="dropdown">
                     <button class="dropdown-btn">File</button>
                     <div class="dropdown-menu">
-                        <!-- <button class="new_sheet" onclick="Redirect()">New</button> -->
+                        <button class="new_sheet" onclick="Redirect()">New</button>
                         <button id="export-csv">Export</button>
                         <button id="load-db">Open</button>
                         <button id="clear">Clear</button>
                     </div>
                 </div>
 
-                <!-- FORM DROPDOWN -->
                 <div class="dropdown">
                     <button class="dropdown-btn px-3">Form</button>
                     <div class="dropdown-menu">
                         <button id="export-to-form">Create Form</button>
                     </div>
                 </div>                
-            </div>
+            </div> -->
 
-            <div class="mb-3">
-                <button id="save-db"><span class="fa fa-save text-xxl"></span></button>
+            <div class="mb-3 d-flex gap-3 align-items-center toolbar">
+                <button id="save-db"><span class="fa fa-save text-xxl text-primary"></span></button>
+                <button id="export-csv"><span class="fa fa-download text-xxl text-success"></span></button>
+                <button id="load-db"><span class="fa fa-folder-open text-xxl text-warning"></span></button>
+                <button id="clear"><span class="fa fa-close text-xxl text-danger"></span></button>
             </div>
             <div class="sheet" id="sheet"></div>
         </div>
@@ -357,76 +369,77 @@ tr:hover .bell-icon {
 </div>
 
 <script>
+let hasUnsavedChanges = false;
 let isAddingNewColumn = false;
 function Redirect() {
     window.location = "sheets.php";
 }
-document.getElementById("export-to-form").onclick = () => {
-    // Use the actual saved sheet name from DB
-    let formTitle = "Untitled Sheet";
+// document.getElementById("export-to-form").onclick = () => {
+//     // Use the actual saved sheet name from DB
+//     let formTitle = "Untitled Sheet";
 
-    <?php if ($sheetData): ?>
-        <?php 
-            // $row is from the query: SELECT * FROM sheets WHERE id = $id
-            // So $row['name'] is the saved sheet name
-            $currentSheetName = $row['name'] ?? 'Untitled Sheet';
-        ?>
-        formTitle = <?= json_encode($currentSheetName) ?>;
-    <?php endif; ?>
+//     <?php if ($sheetData): ?>
+//         <?php 
+//             // $row is from the query: SELECT * FROM sheets WHERE id = $id
+//             // So $row['name'] is the saved sheet name
+//             $currentSheetName = $row['name'] ?? 'Untitled Sheet';
+//         ?>
+//         formTitle = <?= json_encode($currentSheetName) ?>;
+//     <?php endif; ?>
 
-    // Fallback if no name
-    if (!formTitle || formTitle.trim() === "") {
-        formTitle = "New Form";
-    }
+//     // Fallback if no name
+//     if (!formTitle || formTitle.trim() === "") {
+//         formTitle = "New Form";
+//     }
 
-    const tempFields = [];
+//     const tempFields = [];
 
-    for (let c = 2; c <= COLS; c++) {
-        const label = (columnHeaders[c] || defaultFieldName(c - 1)).trim();
-        if (!label) continue;
+//     for (let c = 2; c <= COLS; c++) {
+//         const label = (columnHeaders[c] || defaultFieldName(c - 1)).trim();
+//         if (!label) continue;
 
-        const colConfig = columnTypes[c] || { type: "text" };
-        const colType = colConfig.type;
+//         const colConfig = columnTypes[c] || { type: "text" };
+//         const colType = colConfig.type;
 
-        let formType = "text";
-        if (colType === "number") formType = "number";
-        else if (colType === "date") formType = "datetime";
-        else if (colType === "dropdown") formType = "select";
-        else if (colType === "checkbox") formType = "checkbox";
+//         let formType = "text";
+//         if (colType === "number") formType = "number";
+//         else if (colType === "date") formType = "datetime";
+//         else if (colType === "dropdown") formType = "select";
+//         else if (colType === "checkbox") formType = "checkbox";
 
-        // Get dropdown options (only if it's a dropdown)
-        const options = (colType === "dropdown" && colConfig.options && colConfig.options.length > 0)
-            ? colConfig.options
-            : (formType === "checkbox" ? ["Yes"] : ["Option 1", "Option 2"]);
+//         // Get dropdown options (only if it's a dropdown)
+//         const options = (colType === "dropdown" && colConfig.options && colConfig.options.length > 0)
+//             ? colConfig.options
+//             : (formType === "checkbox" ? ["Yes"] : ["Option 1", "Option 2"]);
 
-        tempFields.push({
-            id: Date.now() + c,
-            type: formType,
-            label: label,
-            placeholder: "",
-            required: false,
-            options: options,
-            value: "",  // ← ALWAYS EMPTY — no prefill!
-            validation: ""
-        });
-    }
+//         tempFields.push({
+//             id: Date.now() + c,
+//             type: formType,
+//             label: label,
+//             placeholder: "",
+//             required: false,
+//             options: options,
+//             value: "",  // ← ALWAYS EMPTY — no prefill!
+//             validation: ""
+//         });
+//     }
 
-    if (tempFields.length === 0) {
-        Swal.fire({
-            icon: 'warning',
-            title: 'Nothing to export',
-            text: 'No columns to export (only Tasks column found).',
-            confirmButtonText: 'OK'
-        });
-        return;
-    }
+//     if (tempFields.length === 0) {
+//         Swal.fire({
+//             icon: 'warning',
+//             title: 'Nothing to export',
+//             text: 'No columns to export (only Tasks column found).',
+//             confirmButtonText: 'OK'
+//         });
+//         return;
+//     }
 
-    const params = new URLSearchParams();
-    params.append('pre_title', formTitle);
-    params.append('pre_fields', JSON.stringify(tempFields));
+//     const params = new URLSearchParams();
+//     params.append('pre_title', formTitle);
+//     params.append('pre_fields', JSON.stringify(tempFields));
 
-    window.location.href = `form_builder.php?${params.toString()}`;
-};
+//     window.location.href = `form_builder.php?${params.toString()}`;
+// };
 
 /* ------------------------------------------------------------
    BASE VARIABLES (init first)
@@ -566,6 +579,16 @@ function renderCellContent(cellEl, col) {
             });
             break;
 
+        case "file":
+            // Treat as a file/url field stored as plain text.
+            // User can paste a file URL or relative path (e.g. uploads/...).
+            input = document.createElement("input");
+            input.type = "text";
+            input.placeholder = "Enter file URL or path";
+            input.value = saved;
+            cellEl.classList.add("text");
+            break;
+
         case "text":
         default:
             cellEl.textContent = saved;
@@ -598,6 +621,13 @@ function buildTable() {
     hRow.appendChild(document.createElement("th"));
 
     for (let c = 1; c <= COLS; c++) {
+        const config = columnTypes[c] || { type: "text" };
+
+        // Hide file-type columns entirely from the visible sheet
+        if (c !== 1 && config.type === "file") {
+            continue;
+        }
+
         const th = document.createElement("th");
         th.dataset.c = c;
 
@@ -691,6 +721,13 @@ function buildTable() {
         tr.appendChild(rh);
 
         for (let c = 1; c <= COLS; c++) {
+            const config = columnTypes[c] || { type: "text" };
+
+            // Skip rendering file-type data columns in the grid
+            if (c !== 1 && config.type === "file") {
+                continue;
+            }
+
             const td = document.createElement("td");
             const container = document.createElement("div");
             container.className = "cell";
@@ -788,8 +825,23 @@ function updateTaskActivityIcons(row) {
     const attachCount   = rowAttachments[row] || 0;
     const reminderCount = rowReminders[row]  || 0;
 
+    // Check if this row has any non-empty FILE-type cells (for attachment highlight)
+    let hasFileInRow = false;
+    for (let c = 1; c <= COLS; c++) {
+        const cfg = columnTypes[c] || { type: "text" };
+        if (cfg.type !== "file") continue;
+        const id = cellId(row, c);
+        const raw = data[id]?.raw;
+        if (raw && raw.toString().trim() !== "") {
+            hasFileInRow = true;
+            break;
+        }
+    }
+
     const hasComment    = commentCount > 0;
-    const hasAttach     = attachCount > 0;
+    // Paperclip highlights if DB attachments OR file-type cell values exist
+    const hasAttach     = (attachCount > 0) || hasFileInRow;
+    // Bell only depends on reminders now
     const hasReminder   = reminderCount > 0;
 
     const hasAnyActivity = hasComment || hasAttach || hasReminder;
@@ -1061,19 +1113,17 @@ function onEdit(e) {
     const cell = e.target.closest(".cell");
     if (!cell || cell.dataset.c == 1) return;
 
+    hasUnsavedChanges = true; // ← ADD THIS
+
     const id = cell.id;
     const col = parseInt(cell.dataset.c);
     const config = columnTypes[col] || { type: "text" };
     const type = config.type;
 
     let value;
-    if (type === "checkbox") {
-        value = e.target.checked;
-    } else if (["number", "date", "dropdown"].includes(type)) {
-        value = e.target.value;
-    } else {
-        value = cell.textContent;
-    }
+    if (type === "checkbox") value = e.target.checked;
+    else if (["number", "date", "dropdown"].includes(type)) value = e.target.value;
+    else value = cell.textContent;
 
     data[id] = { raw: value.toString() };
     recalcAll();
@@ -1191,6 +1241,7 @@ document.getElementById("save-db").onclick = async () => {
         const out = await res.json();
 
         if (out.success) {
+            hasUnsavedChanges = false;
             Swal.fire({
                 icon: 'success',
                 title: 'Saved!',
@@ -1217,7 +1268,12 @@ document.getElementById("save-db").onclick = async () => {
         });
     }
 };
+window.addEventListener("beforeunload", function (e) {
+    if (!hasUnsavedChanges) return;
 
+    e.preventDefault();
+    e.returnValue = ""; // Required for modern browsers
+});
 /* ------------------------------------------------------------
    INITIAL BUILD & LOAD
 ------------------------------------------------------------ */
@@ -1226,22 +1282,76 @@ buildTable();
 document.addEventListener("DOMContentLoaded", () => {
 
     document.getElementById("export-csv").onclick = () => {
-        const out = [];
-        for (let r = 1; r <= ROWS; r++) {
-            const row = [];
-            for (let c = 1; c <= COLS; c++) {
-                const id = cellId(r, c);
-                const raw = data[id]?.raw || document.getElementById(id)?.textContent || "";
-                row.push('"' + raw.replace(/"/g, '""') + '"');
+    const wsData = [];
+
+    // ───────────────────────────────
+    // 1. HEADER ROW (skip Tasks column)
+    // ───────────────────────────────
+    const headerRow = [];
+
+    for (let c = 2; c <= COLS; c++) {
+        const th = document.querySelector(`thead th[data-c="${c}"] span`);
+        headerRow.push(th ? th.textContent.trim() : "");
+    }
+
+    wsData.push(headerRow);
+
+    // ───────────────────────────────
+    // 2. DATA ROWS
+    // ───────────────────────────────
+    for (let r = 1; r <= ROWS; r++) {
+        const row = [];
+
+        for (let c = 2; c <= COLS; c++) {
+            const id = cellId(r, c);
+            const type = columnTypes[c]?.type || "text";
+
+            let value = "";
+
+            if (type === "dropdown") {
+                // ✅ dropdown: export ONLY selected value
+                value = data[id]?.raw || "";
+            } else {
+                value = data[id]?.raw ??
+                        document.getElementById(id)?.textContent ??
+                        "";
             }
-            out.push(row.join(","));
+
+            row.push(value);
         }
-        const blob = new Blob([out.join("\n")], { type: "text/csv" });
-        const a = document.createElement("a");
-        a.href = URL.createObjectURL(blob);
-        a.download = "sheet.csv";
-        a.click();
-    };
+
+        wsData.push(row);
+    }
+
+    // ───────────────────────────────
+    // 3. CREATE WORKBOOK
+    // ───────────────────────────────
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.aoa_to_sheet(wsData);
+
+    // ───────────────────────────────
+    // 4. BOLD HEADER ROW
+    // ───────────────────────────────
+    const range = XLSX.utils.decode_range(ws["!ref"]);
+    for (let c = range.s.c; c <= range.e.c; c++) {
+        const cellRef = XLSX.utils.encode_cell({ r: 0, c });
+        if (ws[cellRef]) {
+            ws[cellRef].s = {
+                font: { bold: true }
+            };
+        }
+    }
+
+    // Optional: auto column width
+    ws["!cols"] = headerRow.map(h => ({ wch: Math.max(12, h.length + 4) }));
+
+    XLSX.utils.book_append_sheet(wb, ws, "Sheet");
+
+    // ───────────────────────────────
+    // 5. DOWNLOAD
+    // ───────────────────────────────
+    XLSX.writeFile(wb, "sheet.xlsx");
+};
 
     document.getElementById("clear").onclick = () => {
         //if (!confirm("Clear all data?")) return;
@@ -1449,8 +1559,7 @@ async function loadComments() {
         div.innerHTML = `
             <div>${c.comment}</div>
             <small>${c.created_at} • 
-                <button class="btn btn-link btn-sm p-0 text-primary" 
-                        onclick="showReplyBox(${c.id}, this)">Reply</button>
+                <button class="btn btn-link btn-sm p-0 text-primary" onclick="showReplyBox(${c.id}, this)">Reply</button>
             </small>
         `;
         list.appendChild(div);
@@ -1494,24 +1603,36 @@ function saveComment() {
 
 // Show reply box below a specific comment
 function showReplyBox(commentId, parentElement) {
-    // Remove any existing reply boxes first (only one open at a time)
+    // Remove any existing reply boxes first
     document.querySelectorAll('.reply-box').forEach(box => box.remove());
 
     const replyBox = document.createElement('div');
     replyBox.className = 'reply-box mt-2';
     replyBox.innerHTML = `
-        <textarea class="form-control form-control-sm" rows="2" placeholder="Write your reply..." id="replyText_${commentId}"></textarea>
+        <textarea class="form-control form-control-sm" rows="2" 
+                  placeholder="Write your reply..." 
+                  id="replyText_${commentId}"></textarea>
         <div class="mt-1 text-end">
-            <button class="btn btn-sm btn-secondary me-2" onclick="cancelReply('${commentId}')">Cancel</button>
-            <button class="btn btn-sm lufera-bg text-white" onclick="saveReply(${commentId})">Send Reply</button>
+            <button class="btn btn-sm btn-secondary me-2" 
+                    onclick="cancelReply('${commentId}')">Cancel</button>
+            <button class="btn btn-sm lufera-bg text-white" 
+                    onclick="saveReply(${commentId})">Send Reply</button>
         </div>
     `;
 
-    // Insert right after the comment content
     const commentDiv = parentElement.closest('.comment');
     if (commentDiv) {
         commentDiv.appendChild(replyBox);
-        document.getElementById(`replyText_${commentId}`).focus();
+
+        const textareaId = `replyText_${commentId}`;
+
+        // ─── Attach smart Enter behavior ───
+        makeTextareaSmartSend(textareaId, () => {
+            saveReply(commentId);
+        });
+
+        // Auto-focus
+        document.getElementById(textareaId).focus();
     }
 }
 
@@ -1615,22 +1736,97 @@ function closeAttachments() {
 async function loadAttachments() {
     const res = await fetch(`attachments.php?sheet_id=${activeSheetId}&row=${activeAttachRow}`);
     const files = await res.json();
-
     rowAttachments[activeAttachRow] = files.length;
-    updateTaskActivityIcons(activeAttachRow);   // fixed
+    updateTaskActivityIcons(activeAttachRow);
 
     const list = document.getElementById("attachmentList");
     list.innerHTML = "";
 
+    // Helper to render one attachment row
+    // meta object: { rowLabel: string, createdLabel?: string }
+    function renderAttachmentItem(filePath, displayName, meta, fileSize = null, createdAt = null, extra = {}) {
+    if (!filePath) return;
+
+    const div = document.createElement("div");
+    div.className = "comment";
+    div.style.cursor = "pointer";
+
+    const ext = (displayName || filePath).split(".").pop().toLowerCase();
+    const isImage = ["jpg","jpeg","png","gif","webp"].includes(ext);
+
+    div.innerHTML = `
+        <div style="display:inline-flex; align-items:center; gap:12px;">
+            ${isImage ? `<img src="${filePath}" style="width:100px;height:90px;object-fit:cover;border-radius:6px;border:1px solid #e5e7eb;" />` : ""}
+        </div>
+        <div class="d-inline-block ms-3">
+            <span class="file-name">${displayName}</span>
+            ${meta?.rowLabel    ? `<small class="attachment-row d-block bg-success text-white px-3 py-1 mt-1">${meta.rowLabel}</small>` : ""}
+            ${meta?.createdLabel ? `<small class="d-block text-muted">${meta.createdLabel}</small>` : ""}
+        </div>`;
+
+    div.onclick = () => {
+        openPreviewModal(
+            filePath,
+            displayName,
+            fileSize,           // ← pass real size if you have it
+            createdAt,          // ← pass real timestamp if available
+            extra               // ← optional {row, column, source...}
+        );
+    };
+
+    list.appendChild(div);
+}
+
+    // 1) Attachments from sheet_attachments table
+    // 1) Attachments from sheet_attachments table
     files.forEach(f => {
-        const div = document.createElement("div");
-        div.className = "comment";
-        div.innerHTML = `
-            <a href="${f.file_path}" target="_blank">${f.original_name}</a>
-            <br><small>${f.created_at}</small>
-        `;
-        list.appendChild(div);
+        const rowInfo = f.sheet_row ? `Row ${f.sheet_row}` : `Row ${activeAttachRow}`;
+
+        renderAttachmentItem(
+            f.file_path,
+            f.original_name,
+            { 
+                rowLabel: rowInfo, 
+                createdLabel: f.created_at ? new Date(f.created_at).toLocaleString() : "—"                            
+            },
+            f.file_size,           // file size
+            f.created_at,          // upload date
+            f.uploaded_by,         // ←★★★ USE THIS ★★★ real name!
+            { source: "Uploaded attachment" }
+        );
     });
+
+    // 2) File-type cells from the current row in the main sheet
+    for (let c = 1; c <= COLS; c++) {
+        const config = columnTypes[c] || { type: "text" };
+        if (config.type !== "file") continue;
+
+        const id = cellId(activeAttachRow, c);   // e.g. B3
+        const cell = data[id];
+        const rawValue = cell && cell.raw ? cell.raw.toString().trim() : "";
+        if (!rawValue) continue;
+
+        // Derive a nice display name from the path or URL
+        const parts = rawValue.split(/[\\/]/);
+        const displayName = parts[parts.length - 1] || rawValue;
+
+        // ...
+const colLabel = columnHeaders[c] || colName(c);
+renderAttachmentItem(
+    rawValue,
+    displayName,
+    {
+        rowLabel: `Row ${activeAttachRow}`,
+        createdLabel: `From column: ${colLabel}`
+    },
+    null,
+    null,   // no real size known here
+    null,   // no upload date known
+    { source: "File-type column value" }
+);
+
+        renderAttachmentItem(rawValue, displayName, meta);
+    }
 }
 
 async function uploadAttachment() {
@@ -1812,7 +2008,7 @@ function deleteColumn(col) {
             rebuildPreserveData();
 
             // Success feedback
-            Swal.fire({
+            Swal.fire({ 
                 icon: 'success',
                 title: 'Deleted!',
                 text: `Column "${colNameDisplay}" has been removed.`,
@@ -1849,11 +2045,44 @@ let currentReminderRow = null;
 function openReminderModal(row) {
     currentReminderRow = row;
     document.getElementById("reminderRow").textContent = row;
-    
-    // Optional: pre-fill if already exists (future improvement)
-    document.getElementById("reminderDate").value = "";
-    document.getElementById("reminderMessage").value = "";
-    
+
+    // Reset fields by default (new reminder entry)
+    const dateInput = document.getElementById("reminderDate");
+    const msgInput  = document.getElementById("reminderMessage");
+    const historyEl = document.getElementById("reminderHistory");
+
+    if (dateInput) dateInput.value = "";
+    if (msgInput)  msgInput.value  = "";
+    if (historyEl) {
+        historyEl.innerHTML = "";
+        historyEl.style.display = "none";
+    }
+
+    // Load ALL existing reminders for this row and list them above the fields
+    if (activeSheetId && row) {
+        fetch(`get_reminder.php?sheet_id=${activeSheetId}&row=${row}`)
+            .then(res => res.json())
+            .then(data => {
+                if (data && data.success && Array.isArray(data.reminders) && data.reminders.length > 0 && historyEl) {
+                    // Build simple list of previous reminders (latest first)
+                    const items = data.reminders.map(r => {
+                        const safeDate = r.display_at || r.remind_at || "";
+                        const safeMsg  = r.message || "";
+                        return `<div style="padding:6px 4px; border-bottom:1px solid #f3f4f6;">
+                                    <div style="font-size:12px; color:#6b7280;">${safeDate}</div>
+                                    <div style="font-size:13px;">${safeMsg}</div>
+                                </div>`;
+                    }).join("");
+
+                    historyEl.innerHTML = `<div style="font-weight:600; margin-bottom:4px;">Existing reminders</div>${items}`;
+                    historyEl.style.display = "block";
+                }
+            })
+            .catch(err => {
+                console.error("Failed to load reminder", err);
+            });
+    }
+
     document.getElementById("modalBackdropReminder").style.display = "block";
     document.getElementById("reminderModal").style.display = "block";
 }
@@ -1931,8 +2160,8 @@ async function saveReminder() {
 
 <div id="attachmentPanel" class="comment-panel">
     <div class="comment-header">
-        <strong>Task Attachments</strong>
-        <button onclick="closeAttachments()">✖</button>
+        <h6 class="d-inline mb-0">Task Attachments</h6>
+        <h6 class="mb-0 cursor-pointer" onclick="closeAttachments()">&times;</h6>
     </div>
 
     <div id="attachmentList" class="comment-list"></div>
@@ -1961,6 +2190,7 @@ async function saveReminder() {
             <option value="date">Date</option>
             <option value="checkbox">Checkbox</option>
             <option value="dropdown">Dropdown List</option>
+            <option value="file">File (URL / path)</option>
         </select>
     </div>
 
@@ -1979,16 +2209,20 @@ async function saveReminder() {
 
 <div id="reminderModal" class="modal" style="height:auto; display:none; position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); background:white; padding:24px; border-radius:8px; box-shadow:0 4px 20px rgba(0,0,0,0.25); z-index:10001; width:420px;">
     <h6 class="mb-16">Set Reminder for Row <span id="reminderRow"></span></h6>
-    
+
+    <!-- Existing reminders list -->
+    <div id="reminderHistory" class="mb-16" style="max-height:160px; overflow-y:auto; border:1px solid #e5e7eb; border-radius:6px; padding:8px; display:none;">
+        <!-- Filled dynamically from get_reminder.php -->
+    </div>
+
     <div class="mb-16">
         <label class="form-label fw-500">Reminder Date</label>
-        <input type="date" id="reminderDate" class="form-control" required>
+        <input type="datetime-local" id="reminderDate" class="form-control" required>
     </div>
     
     <div class="mb-20">
         <label class="form-label fw-500">Message / Note</label>
-        <textarea id="reminderMessage" class="form-control" rows="3" 
-                  placeholder="e.g. Follow up with client, send invoice, call supplier..."></textarea>
+        <textarea id="reminderMessage" class="form-control" rows="3" onkeydown="handleReminderKey(event)"></textarea>
     </div>
     
     <div class="text-end">
@@ -1996,6 +2230,221 @@ async function saveReminder() {
         <button class="btn btn-sm lufera-bg text-white" onclick="saveReminder()">Save Reminder</button>
     </div>
 </div>
+
+<!-- Attachment Preview Modal -->
+<div id="modalBackdropPreview" class="backdrop" onclick="closePreviewModal()"></div>
+
+<div id="previewModal" class="modal-preview" style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); width:100%; max-width:100%; background:#000; border-radius:0px; box-shadow:0 10px 40px rgba(0,0,0,0.4); z-index:10002; overflow:auto; height:100%">
+    <div style="display: flex; height: 100%;">
+        <!-- Left: Preview Area -->
+        <div id="previewContent" style="flex: 1; padding: 16px; overflow: auto; background: #000; display: flex; align-items: center; justify-content: center;">
+            <!-- Image / iframe / message will go here -->
+        </div>
+
+        <!-- Right: File Info Sidebar -->
+        <div id="previewSidebar" style="width: 320px; background: #fff; padding: 20px; overflow-y: auto; color:#000">
+            <h6 class="mb-4 d-inline">File Details</h6>
+            <h6 class="float-end cursor-pointer" onclick="closePreviewModal()">&times;</h6>
+            <div class="my-3">
+                <strong>File Name:</strong>
+                <div id="previewFileName" class="text-break"></div>
+            </div>
+            <div class="mb-3">
+                <strong>File Size:</strong>
+                <div id="previewFileSize"></div>
+            </div>
+            <div class="mb-3">
+                <strong>Date Uploaded:</strong>
+                <div id="previewUploaded"></div>
+            </div>
+            <div class="mb-3">
+                <strong>Created By</strong>
+                <div id="createdBy"></div>
+            </div>
+            <!-- Optional: extra info like row, column, mime type, etc. -->
+            <div class="mb-3" id="previewExtraInfo" style="display:none;"></div>
+
+            <a id="downloadLink" class="btn btn-lg lufera-bg text-white me-10" href="#" download>Download</a>
+            <!-- <button class="btn btn-lg btn-secondary" onclick="closePreviewModal()">Close</button> -->
+        </div>
+    </div>
+</div>
+
+<style>
+    .backdrop {
+        display:none;
+        position:fixed; inset:0;
+        background:rgba(0,0,0,0.5);
+        z-index:10001;
+    }
+    .backdrop.open { display:block; }
+    .modal-preview.open { display:block; }
+</style>
+
+<script>
+    // ────────────────────────────────────────────────
+    // Helper: make any textarea support Enter=send, Shift+Enter=newline
+    // ────────────────────────────────────────────────
+    function makeTextareaSmartSend(textareaId, sendCallback) {
+        const textarea = document.getElementById(textareaId);
+        if (!textarea) return;
+
+        textarea.addEventListener("keydown", function(e) {
+            if (e.key === "Enter") {
+                if (e.shiftKey) {
+                    // Allow new line (default behavior)
+                    return;
+                } else {
+                    // Enter without shift → send
+                    e.preventDefault();
+                    sendCallback();
+                }
+            }
+        });
+    }   
+    function handleReminderKey(event) {
+    if (event.key === "Enter") {
+        if (event.shiftKey) {
+            // Shift + Enter → allow new line
+            return;
+        } else {
+            // Enter only → submit
+            event.preventDefault();
+            saveReminder();
+        }
+    }
+}
+
+function openPreviewModal(filePath, fileName, fileSize = null, createdAt = null, uploadedBy = null, extra = {}) {
+    const modal     = document.getElementById("previewModal");
+    const backdrop  = document.getElementById("modalBackdropPreview");
+    const content   = document.getElementById("previewContent");
+    const nameEl    = document.getElementById("previewFileName");
+    const sizeEl    = document.getElementById("previewFileSize");
+    const dateEl    = document.getElementById("previewUploaded");
+    const createdByEl = document.getElementById("createdBy");
+    const extraEl   = document.getElementById("previewExtraInfo");
+    const download  = document.getElementById("downloadLink");
+
+    if (!modal || !backdrop) return;
+
+    // ── Metadata ───────────────────────────────────────────────
+    nameEl.textContent   = fileName || "Unnamed file";
+    createdByEl.textContent = uploadedBy || "Form User";
+
+    // File size formatting
+    if (fileSize && !isNaN(fileSize) && fileSize > 0) {
+        const units = ['B', 'KB', 'MB', 'GB'];
+        let size = fileSize;
+        let i = 0;
+        while (size >= 1024 && i < units.length - 1) {
+            size /= 1024;
+            i++;
+        }
+        sizeEl.textContent = size.toFixed(1) + " " + units[i];
+    } else {
+        sizeEl.textContent = "—";
+    }
+
+    // Date
+    dateEl.textContent = createdAt ? new Date(createdAt).toLocaleString() : "—";
+
+    // Extra info
+    if (extra && Object.keys(extra).length > 0) {
+        let html = "";
+        if (extra.row)    html += `<div><strong>Row:</strong> ${extra.row}</div>`;
+        if (extra.column) html += `<div><strong>Column:</strong> ${extra.column}</div>`;
+        if (extra.source) html += `<div><strong>Source:</strong> ${extra.source}</div>`;
+        extraEl.innerHTML = html;
+        extraEl.style.display = "block";
+    } else {
+        extraEl.style.display = "none";
+    }
+
+    download.href = filePath;
+    download.download = fileName || "download";
+
+    // ── Preview content ────────────────────────────────────────
+    content.innerHTML = "";
+    const ext = (fileName || filePath).split('.').pop().toLowerCase();
+
+    if (['jpg','jpeg','png','gif','webp'].includes(ext)) {
+        const img = document.createElement("img");
+        img.src = filePath;
+        img.style.maxWidth = "100%";
+        img.style.maxHeight = "75vh";
+        img.style.objectFit = "contain";
+        img.style.borderRadius = "6px";
+        content.appendChild(img);
+    }
+    else if (ext === 'pdf') {
+        const iframe = document.createElement("iframe");
+        iframe.src = filePath;
+        iframe.style.width = "100%";
+        iframe.style.height = "100%";
+        iframe.style.border = "none";
+        content.appendChild(iframe);
+    }
+    else {
+        content.innerHTML = `
+            <div style="text-align:center; color:#aaa; padding:60px;">
+                <h4>No preview available</h4>
+                <p>File type: .${ext}</p>
+                <p>Use the Download button below.</p>
+            </div>
+        `;
+    }
+
+    // Show modal
+    modal.style.display = "block";
+    backdrop.style.display = "block";
+}
+
+function closePreviewModal() {
+    const modal    = document.getElementById("previewModal");
+    const backdrop = document.getElementById("modalBackdropPreview");
+
+    if (modal) {
+        modal.style.display = "none";
+        modal.classList.remove("open");
+    }
+    if (backdrop) {
+        backdrop.style.display = "none";
+        backdrop.classList.remove("open");
+    }
+}
+
+function handleBack() {
+    if (!hasUnsavedChanges) {
+        history.back();
+        return;
+    }
+
+    Swal.fire({
+        title: 'Unsaved changes',
+        text: 'You have unsaved changes. What would you like to do?',
+        icon: 'warning',
+        showCancelButton: true,
+        showDenyButton: true,
+        confirmButtonText: 'Save & Go Back',
+        denyButtonText: 'Discard Changes',
+        cancelButtonText: 'Stay'
+    }).then(async (result) => {
+        if (result.isConfirmed) {
+            await document.getElementById("save-db").click();
+            hasUnsavedChanges = false;
+            history.back();
+        } 
+        else if (result.isDenied) {
+            hasUnsavedChanges = false;
+            history.back();
+        }
+        // Cancel → do nothing
+    });
+}
+
+</script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 
 </body>
 </html>

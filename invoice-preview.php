@@ -85,9 +85,86 @@ function numberToWords($num) {
 
 
 <style>
+    @media print {
+    /* Force printing of backgrounds (most important fix) */
+    body {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+
+    * {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+        color: #000 !important;           /* force readable text */
+        border-color: #000 !important;    /* fallback dark borders */
+    }
+
+    /* ── Divider ──────────────────────────────────────────────── */
+    .divider {
+        margin-top: 12px !important;      /* enforce your desired top space */
+        margin-bottom: 12px !important;
+        font-size: 18px !important;       /* slightly bigger for visibility */
+        white-space: nowrap !important;
+    }
+
+    .divider::before,
+    .divider::after {
+        content: "" !important;
+        display: block !important;        /* sometimes pseudo-elements collapse */
+        flex: 1 !important;
+        border-bottom: 2px solid #000 !important;  /* thicker + black = always visible */
+        margin: 0 8px !important;         /* control spacing left/right */
+    }
+
+    /* ── Table header background ─────────────────────────────── */
+    th.inv-table {
+        background-color: #f5f6f7 !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+        border: 1px solid #999 !important;   /* darker border helps visibility */
+    }
+
+    /* ── Total table bottom borders ──────────────────────────── */
+    .total-table td {
+        border-bottom: 1px solid #000 !important;   /* black & !important */
+    }
+
+    /* General table safety net */
+    table, th, td {
+        border: 1px solid #888 !important;   /* fallback if any border vanishes */
+    }
+
+    .inv-table,
+    td.inv-table,
+    th.inv-table {
+        border: 1px solid #888 !important;
+    }
+
+    .border-footer {
+        border-top: 2px solid #000 !important;
+    }
+
+    /* Optional – cleaner print layout */
+    @page {
+        size: A4 portrait;
+        margin: 12mm 10mm 15mm 10mm;   /* top/right/bottom/left – adjust if needed */
+    }
+
+    body {
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+
+    /* Hide buttons/header when printing */
+    .card-header,
+    .btn,
+    .d-flex.justify-content-between.gap-3.mb-24 {
+        display: none !important;
+    }
+}
     .invoice_table {
         font-size:16px !important;
-        width:300px;
+        width:auto;
     }
     .total-table td {
         border-bottom: 1px solid #dde2e6;
@@ -160,7 +237,7 @@ function numberToWords($num) {
         flex: 0 0 100% !important;
     }
     .pdf-mode .pdf-footer {
-        margin-top: auto !important;
+        margin-top: 70% !important;
         padding-top: 10px;
         bottom:10px;
     }
@@ -210,7 +287,15 @@ function numberToWords($num) {
         display: flex;
         flex-direction: column;
     }
-    
+    .pdf-mode .footer-text {
+        margin-top: auto !important;
+    }
+    .pdf-mode .invoice-logo {
+        max-width: 200px !important;
+    }
+    .pdf-mode .footer-logo{
+        margin-bottom: 0 !important;
+    }
 </style>
 
 <?php
@@ -400,7 +485,7 @@ function numberToWords($num) {
                 </script>";
                 // flush response so browser shows the loader instantly
                 ob_flush(); flush();
-        // ✅ Send Email to User
+        // ✅ Send Email to User (with simple static attachment)
         try {
             $mail = new PHPMailer(true);
             $mail->isSMTP();
@@ -410,13 +495,17 @@ function numberToWords($num) {
             $mail->Password   = $_ENV['GMAIL_APP_PASSWORD']; 
             $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
             $mail->Port       = 587;            
-            $mail->CharSet = 'UTF-8';
-            $mail->Encoding = 'base64';
+            $mail->CharSet    = 'UTF-8';
+            $mail->Encoding   = 'base64';
             $mail->setFrom($_ENV['EMAIL_USERNAME'], 'Lufera Infotech');
             $mail->addAddress($toAddress, $userName);
             $mail->isHTML(true);
-            $mail->Subject = "Invoice Mail";
+            $mail->Subject     = "Invoice Mail";
             $mail->ContentType = 'text/html; charset=UTF-8';
+
+            // Static attachment content
+            $attachmentContent = "<!DOCTYPE html><html><body><h1>Test</h1></body></html>";
+            $mail->addStringAttachment($attachmentContent, 'test.html', 'base64', 'text/html');
 
             $mail->Body = '
                 <!DOCTYPE html>
@@ -448,7 +537,7 @@ function numberToWords($num) {
                         <tr>
                             <td style="padding:30px 40px;text-align:left;font-size:15px;line-height:1.6;color:#101010;">
                             <p>Dear <b>' . htmlspecialchars($userName) . '</b>,</p>
-                            <p>Thank you for your business. Your invoice can be downloaded from the attachment</p>
+                            <p>Thank you for your business. A test attachment is included with this email.</p>
                             
                             <table cellpadding="8" cellspacing="0" border="0" width="100%" style="border:1px solid #eaeaea;margin:20px 0;font-size:14px;">
                                 <tr><td><b>INVOICE AMOUNT</b></td><td id="currency-symbol-display">' . htmlspecialchars($symbol) . htmlspecialchars($amount) . '</td></tr>
@@ -492,18 +581,26 @@ function numberToWords($num) {
 
             $mail->send();
 
+            echo "<script> 
+                Swal.fire({ 
+                    icon: 'success',
+                    title: 'Invoice sent successfully',
+                    confirmButtonColor: '#3085d6'
+                }).then(() => {
+                    window.location.href = ''; 
+                }); 
+            </script>"; 
+
         } catch (Exception $e) {
             error_log("Email not sent. Error: {$mail->ErrorInfo}");
+            echo "<script>
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Email failed',
+                    text: '\" . addslashes($mail->ErrorInfo) . \"'
+                });
+            </script>";
         }
-        echo "<script> 
-            Swal.fire({ 
-                icon: 'success',
-                title: 'Invoice sent successfully',
-                confirmButtonColor: '#3085d6'
-            }).then(() => {
-                window.location.href = ''; 
-            }); 
-        </script>"; 
     }
 ?>
 <div class="dashboard-main-body">
@@ -752,24 +849,64 @@ function numberToWords($num) {
                             <div class="table-responsive scroll-sm">
                                 <table class="table mb-0">
                                     <thead>
+                                        <th class="w-10 inv-table text-center">S.No</th>
                                         <th class="w-25 inv-table">Item</th>
                                         <th class="w-25 inv-table">Rate</th>
                                         <th class="w-25 inv-table">Tax</th>
                                         <th class="text-end w-25 inv-table">Amount</th>
                                     </thead>
                                     <tbody>
-                                        <!-- <td class="w-25"><?php echo $row['plan_name']; ?></td> -->
-                                        <td class="w-25 inv-table">
-                                            <?php 
-                                                echo $row['plan_name'];
-                                                if ($type === 'renewal') {
-                                                    echo ' (Renewal Plan)';
+                                        <?php
+                                        $serial_no = 1;   // ← start counter
+                                        ?>
+                                        
+                                        <!-- Main plan / package / product row -->
+                                        <tr>
+                                            <td class="inv-table text-center"><?= $serial_no++ ?></td>
+                                            <td class="inv-table">
+                                                <?php 
+                                                    echo htmlspecialchars($row['plan_name']);
+                                                    if ($type === 'renewal') {
+                                                        echo ' <small>(Renewal)</small>';
+                                                    }
+                                                ?>
+                                            </td>
+                                            <td class="inv-table"><?= htmlspecialchars($symbol) ?> <?= number_format($row['price'], 2) ?></td>
+                                            <td class="inv-table"><?= htmlspecialchars($symbol) ?> <?= number_format($row['gst'], 2) ?></td>
+                                            <td class="inv-table text-end"><?= htmlspecialchars($symbol) ?> <?= number_format(floatval($row['price']) + floatval($row['gst']), 2) ?></td>
+                                        </tr>
+
+                                        <!-- Add-on services (if any) -->
+                                        <?php
+                                        if (!empty($row['addon_service'])) {
+                                            $addon_ids = explode(',', $row['addon_service']);
+                                            $addon_ids = array_map('intval', $addon_ids);
+
+                                            if (!empty($addon_ids)) {
+                                                $addon_id_list = implode(',', $addon_ids);
+                                                $addon_query = "SELECT name, cost FROM `add-on-service` WHERE id IN ($addon_id_list)";
+                                                $addon_result = $conn->query($addon_query);
+
+                                                if ($addon_result && $addon_result->num_rows > 0) {
+                                                    while ($addon_row = $addon_result->fetch_assoc()) {
+                                                        // You might want to use addon-specific price/gst if stored per addon
+                                                        // For now using same addon_price & addon_gst from main row (as in your original code)
+                                                        ?>
+                                                        <tr>
+                                                            <td class="inv-table text-center"><?= $serial_no++ ?></td>
+                                                            <td class="inv-table"><?= htmlspecialchars($addon_row['name']) ?></td>
+                                                            <td class="inv-table text-end"><?= htmlspecialchars($symbol) ?> <?= number_format($row['addon_price'], 2) ?></td>
+                                                            <td class="inv-table text-end"><?= htmlspecialchars($symbol) ?> <?= number_format($row['addon_gst'], 2) ?></td>
+                                                            <td class="inv-table text-end">
+                                                                <?= htmlspecialchars($symbol) ?> <?= number_format(floatval($row['addon_price']) + floatval($row['addon_gst']), 2) ?>
+                                                            </td>
+                                                        </tr>
+                                                        <?php
+                                                    }
                                                 }
-                                            ?>
-                                        </td>
-                                        <td class="w-25 inv-table"><?= htmlspecialchars($symbol) ?> <?php echo number_format($row['price'], 2); ?> </td>
-                                        <td class="w-25 inv-table"><?= htmlspecialchars($symbol) ?> <?php echo number_format($row['gst'], 2); ?></td>
-                                        <td class="text-end w-25 inv-table"><?= htmlspecialchars($symbol) ?> <?php echo number_format(floatval($row['price']) + floatval($row['gst']), 2); ?></td>
+                                            }
+                                        }
+                                        ?>
                                     </tbody>
                                 </table>
                             </div>
@@ -975,7 +1112,8 @@ function numberToWords($num) {
                                 <p class="p-8 text-end">Total In Words <b><i style="font-style: italic;"><?= htmlspecialchars(numberToWords($row['amount'])) ?></i></b></p>
                             
                             <div class="text-center border-footer mt-40 pt-20 pdf-footer">
-                                <span>Crafted with ease using</span> <img src="uploads/company_logo/<?php echo $logo; ?>" alt="Lufera Logo" class="mb-4" style="width: 120px;">
+                                <p class="d-inline">Crafted with ease using</p> 
+                                <img src="uploads/company_logo/<?php echo $logo; ?>" class="footer-logo" alt="Lufera Logo" class="mb-4" style="margin-bottom: 6px; width: 120px;">
                             </div>
                         
                             <?php 
@@ -1078,7 +1216,7 @@ function downloadPDF() {
     }
 
     const opt = {
-        margin: [18, 8, 18, 8],
+        margin: [18, 8, 0, 8],
         filename: 'Invoice_<?php echo $invoice_id; ?>.pdf',
         image: { type: 'jpeg', quality: 0.98 },
         html2canvas: {
