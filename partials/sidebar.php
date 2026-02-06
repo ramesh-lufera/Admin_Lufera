@@ -682,7 +682,7 @@
                         </a>
                     </li> -->
             <?php } ?>
-
+            <?php if ($row['role'] == "1" || $row['role'] == "2") { ?>
             <li>
                 <a href="form_dashboard.php">
                 <iconify-icon icon="solar:clipboard-text-outline" class="menu-icon"></iconify-icon>
@@ -694,7 +694,7 @@
                     <span>Sheets</span>
                 </a>
             </li>
-
+            <?php } ?>
             </ul>
             <ul class="sidebar-menu bottom-menu" id="sidebar-menu" style="border-top: 1px solid #eee; ">
             <!-- <li>

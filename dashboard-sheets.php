@@ -137,6 +137,7 @@ $remindersResult->data_seek(0); // reset again for display
                             $isToday = ($rem['remind_at'] === $today);
                             $dueClass = $isToday ? 'text-danger fw-bold' : 'text-warning';
                         ?>
+                    <a href="sheets.php?id=<?= $rem['sheet_id'] ?>&row=<?= $rem['sheet_row'] ?>&mark_read=1" class="text-decoration-none text-dark">
                         <div class="list-group-item list-group-item-action border-bottom px-4 py-3">
                             <div class="d-flex align-items-start">
                                 <div class="me-3 mt-4">
@@ -159,6 +160,7 @@ $remindersResult->data_seek(0); // reset again for display
                                 </div>
                             </div>
                         </div>
+                    </a>
                     <?php endwhile; ?>
                 </div>
             <?php endif; ?>
