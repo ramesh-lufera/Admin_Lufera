@@ -18,9 +18,10 @@
             })
         })()
         </script>';?>
+        
 <?php include './partials/layouts/layoutTop.php' ?>
+
 <style>
-    
     .card-form {
       background: #fff;
       width: 100%;
@@ -108,7 +109,8 @@
     input[type=number] {
       -moz-appearance: textfield;
     }
-  </style>
+</style>
+
 <?php
 
 ini_set('display_errors', 1);
@@ -150,6 +152,7 @@ if (isset($_POST['save'])) {
   $description = $_POST['description'];
   $category = $_POST['category'];
   $tags = $_POST['tags'];
+  $feature_item = isset($_POST['feature_item']) ? 'Yes' : 'No';
   $updated_at = date("Y-m-d H:i:s");
   $duration_value = isset($_POST['duration_value']) ? intval($_POST['duration_value']) : 0;
   $duration_unit = isset($_POST['duration_unit']) ? $_POST['duration_unit'] : '';
@@ -184,8 +187,8 @@ if (isset($_POST['save'])) {
       }
   }
 
-  $stmt = $conn->prepare("UPDATE products SET name=?, title=?, subtitle=?, price=?, description=?, category=?, tags=?, product_image=?, duration=?, cat_id=?, created_at=?, template=? WHERE id=?");
-  $stmt->bind_param("sssssssssissi", $name, $title, $subtitle, $price, $description, $category, $tags, $product_image, $duration, $cat_id, $updated_at, $module, $get_product_id);
+  $stmt = $conn->prepare("UPDATE products SET name=?, title=?, subtitle=?, price=?, description=?, category=?, tags=?, feature_item=?, product_image=?, duration=?, cat_id=?, created_at=?, template=? WHERE id=?");
+  $stmt->bind_param("sssdssssssissi", $name, $title, $subtitle, $price, $description, $category, $tags, $feature_item, $product_image, $duration, $cat_id, $updated_at, $module, $get_product_id);
 
 
   if ($stmt->execute()) {
@@ -332,6 +335,24 @@ if (isset($_POST['save'])) {
                                 <div class="invalid-feedback">
                                 Tags is required
                                 </div>
+                            </div>
+                        </div>
+                        <div class="form-group mb-2">
+                            <label class="form-label">Feature item</label>
+
+                            <div class="form-check d-flex align-items-center gap-2">
+                                <input 
+                                    type="checkbox"
+                                    id="feature_item"
+                                    name="feature_item"
+                                    value="Yes"
+                                    class="form-check-input"
+                                    <?php echo ($product['feature_item'] === 'Yes') ? 'checked' : ''; ?>
+                                >
+
+                                <label for="feature_item" class="form-check-label mb-0">
+                                    Mark as featured product
+                                </label>
                             </div>
                         </div>
                         <!-- Submit Button -->

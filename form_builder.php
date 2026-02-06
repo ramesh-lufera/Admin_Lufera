@@ -1,4 +1,12 @@
-<?php include './partials/connection.php'; ?>
+<?php
+    $isViewMode = isset($_GET['mode']) && $_GET['mode'] === 'view';
+
+    if ($isViewMode) {
+        include './partials/connection.php';
+    } else {
+        include './partials/layouts/layoutTop.php';
+    }
+?>
 
 <?php
     if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['sheet_data'])) {
@@ -149,11 +157,201 @@
             $stmt->execute();
         }
 
-        echo "<div style='padding:12px;background:#d1fae5;border:1px solid #10b981;border-radius:6px;margin:12px'>
-                Sheet row saved successfully
-            </div>";
+        // echo "<div style='padding:12px;background:#d1fae5;border:1px solid #10b981;border-radius:6px;margin:12px'>
+        //         Sheet row saved successfully
+        //     </div>";
 
-        return;
+        // return;
+
+        echo '
+            <style>
+            html,body{
+                margin:0;
+                padding:0;
+                height:100%;
+                background:#f4e9a8;
+            }
+
+            /* Page wrapper */
+            .success-wrap{
+                min-height:100vh;
+                background:#f4e9a8;
+                display:flex;
+                justify-content:center;
+                align-items:flex-start;
+                padding-top:120px;
+                padding-left:20px;
+                padding-right:20px;
+                position:relative;
+            }
+
+            /* Floating top brand */
+            .page-brand{
+                position:absolute;
+                top:36px;
+                left:50%;
+                transform:translateX(-50%);
+                display:flex;
+                align-items:center;
+                gap:12px;
+                font-size:28px;
+                font-weight:800;
+                color:#111827;
+            }
+
+            .brand-logo{
+                width:34px;
+                height:34px;
+                border-radius:6px;
+                object-fit:cover;
+            }
+
+            /* Card */
+            .success-card{
+                width:100%;
+                max-width:620px;
+                background:#fffaf0;
+                border-radius:16px;
+                padding:60px 48px 54px;
+                text-align:center;
+                box-shadow:0 18px 45px rgba(0,0,0,.14);
+            }
+
+            /* Icon area */
+            .icon-zone{margin-bottom:26px;}
+
+            .doc-wrap{
+                position:relative;
+                width:110px;
+                height:135px;
+                background:#faefc2;
+                border-radius:16px;
+                margin:0 auto;
+                padding:18px;
+                display:flex;
+                flex-direction:column;
+                gap:8px;
+            }
+
+            .doc-line{
+                height:5px;
+                background:#fec700;
+                border-radius:5px;
+            }
+
+            /* Success tick */
+            .check{
+                position:absolute;
+                top:-18px;
+                right:-18px;
+                width:54px;
+                height:54px;
+                background:#fec700;
+                border-radius:50%;
+                display:flex;
+                align-items:center;
+                justify-content:center;
+                font-size:26px;
+                font-weight:900;
+                color:#1f2933;
+                box-shadow:0 10px 24px rgba(254,199,0,.45);
+            }
+
+            /* Text */
+            .title{
+                font-size:28px;
+                font-weight:800;
+                margin:12px 0 6px;
+            }
+
+            .sub{
+                font-size:15px;
+                color:#374151;
+            }
+
+            /* Footer */
+            .footer{
+                margin-top:38px;
+                font-size:14px;
+                color:#374151;
+                line-height:1.6;
+            }
+
+            .footer-brand{
+                display:flex;
+                justify-content:center;
+                align-items:center;
+                gap:8px;
+                margin-top:6px;
+                font-weight:700;
+            }
+
+            .footer-brand a{
+                color:inherit;
+                text-decoration:none;
+            }
+
+            .footer-brand a:hover{
+                text-decoration:underline;
+            }
+
+            /* Responsive */
+            @media(max-width:640px){
+                .success-wrap{
+                    padding-top:100px;
+                }
+                .success-card{
+                    padding:44px 28px;
+                }
+                .title{
+                    font-size:24px;
+                }
+                .page-brand{
+                    font-size:22px;
+                }
+            }
+            </style>
+
+            <div class="success-wrap">
+
+                <!-- Top brand (outside card) -->
+                <div class="page-brand">
+                    <img src="assets/images/Image.jfif" class="brand-logo">
+                    Lufera Infotech
+                </div>
+
+                <!-- Success card -->
+                <div class="success-card">
+
+                    <div class="icon-zone">
+                        <div class="doc-wrap">
+                            <div class="doc-line"></div>
+                            <div class="doc-line" style="width:85%"></div>
+                            <div class="doc-line" style="width:70%"></div>
+                            <div class="doc-line" style="width:90%"></div>
+                            <div class="check">✓</div>
+                        </div>
+                    </div>
+
+                    <div class="title">Success!</div>
+                    <div class="sub">We\'ve captured your response.</div>
+
+                    <div class="footer">
+                        Put work on easy mode with work management that adapts to your needs.
+                        <div class="footer-brand">
+                            Powered by
+                            <img src="assets/images/Image.jfif" class="brand-logo">
+                            <a href="https://luferatech.com/" target="_blank">
+                                Lufera Infotech
+                            </a>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        ';
+
+        exit;
     }
 ?>
 
@@ -634,10 +832,30 @@
 
                 /* ✅ CREATE EMPTY SHEET IMMEDIATELY */
 
+                // $emptySheetData = json_encode([
+                //     "rows" => 10,        // ✅ fixed initial rows
+                //     "cols" => 0,
+                //     "headers" => [],
+                //     "columnTypes" => [],
+                //     "cells" => []
+                // ]);
+
+                /* BUILD HEADERS FROM FORM STRUCTURE */
+                $decodedFields = json_decode($json, true) ?? [];
+
+                $headers = [];
+                $cols = 0;
+
+                foreach ($decodedFields as $field) {
+                    $headers[] = $field['label'] ?? '';
+                    $cols++;
+                }
+
+                /* CREATE EMPTY SHEET WITH HEADERS (KEEP COLUMN A RESERVED) */
                 $emptySheetData = json_encode([
-                    "rows" => 10,        // ✅ fixed initial rows
-                    "cols" => 0,
-                    "headers" => [],
+                    "rows" => 10,
+                    "cols" => $cols + 1,
+                    "headers" => $headers,
                     "columnTypes" => [],
                     "cells" => []
                 ]);
@@ -765,10 +983,10 @@
     </div>
 
     <!-- Hidden POST Form -->
-    <form id="saveFormPOST" method="POST" style="display:none">
-    <input type="hidden" name="form_id" id="postFormId">
-    <input type="hidden" name="formTitle" id="postTitle">
-    <input type="hidden" name="formJSON" id="postJSON">
+    <form id="saveFormPOST" method="POST" target="_blank" style="display:none">
+        <input type="hidden" name="form_id" id="postFormId">
+        <input type="hidden" name="formTitle" id="postTitle">
+        <input type="hidden" name="formJSON" id="postJSON">
     </form>
 
     <form id="sheetForm" method="POST" style="display:none">
@@ -1239,3 +1457,9 @@ btn.onclick = () => {
 
 </body>
 </html>
+
+<?php
+    if (!$isViewMode) {
+        include './partials/layouts/layoutBottom.php';
+    }
+?>

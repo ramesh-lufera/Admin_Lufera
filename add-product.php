@@ -19,8 +19,8 @@
         })()
         </script>';?>
 <?php include './partials/layouts/layoutTop.php' ?>
+
 <style>
-    
     .card-form {
       background: #fff;
       width: 100%;
@@ -107,7 +107,8 @@
     input[type=number] {
       -moz-appearance: textfield;
     }
-  </style>
+</style>
+
 <?php
 if (isset($_POST['save_product'])) {
     $name = $_POST['name'];
@@ -118,6 +119,7 @@ if (isset($_POST['save_product'])) {
     $category = $_POST['category'];
     $tags = $_POST['tags'];
     $created_at = date("Y-m-d H:i:s");
+    $feature_item = isset($_POST['feature_item']) ? 'Yes' : 'No';
     $cat_id = $_GET['id'];
     $template = $_GET['template'];
     $slug = isset($_GET['slug']) ? $_GET['slug'] : '';
@@ -164,10 +166,10 @@ if (isset($_POST['save_product'])) {
     }
     // Insert into database
     $stmt = $conn->prepare("INSERT INTO products 
-    (name, title, subtitle, price, description, category, tags, product_image, cat_id, duration, template, created_at) 
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+    (name, title, subtitle, price, description, category, tags, feature_item, product_image, cat_id, duration, template, created_at) 
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
 
-$stmt->bind_param("ssssssssisss", $name, $title, $subtitle, $price, $description, $category, $tags, $product_image, $cat_id, $duration, $template,  $created_at);
+$stmt->bind_param("sssdsssssisss", $name, $title, $subtitle, $price, $description, $category, $tags, $feature_item, $product_image, $cat_id, $duration, $template,  $created_at);
 
 if ($stmt->execute()) {
     logActivity(
@@ -330,6 +332,22 @@ if ($stmt->execute()) {
                                 <div class="invalid-feedback">
                                 Tags is required
                                 </div>
+                            </div>
+                        </div>
+                        <div class="form-group mb-2">
+                            <label class="form-label">Feature item</label>
+
+                            <div class="form-check d-flex align-items-center gap-2">
+                                <input 
+                                    type="checkbox" 
+                                    id="feature_item" 
+                                    name="feature_item" 
+                                    value="Yes"
+                                    class="form-check-input"
+                                >
+                                <label for="feature_item" class="form-check-label mb-0">
+                                    Mark as featured product
+                                </label>
                             </div>
                         </div>
                         <!-- Submit Button -->
