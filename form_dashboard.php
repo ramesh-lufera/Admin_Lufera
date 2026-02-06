@@ -197,12 +197,12 @@
 
                     <div class="card-actions">
                         <!-- VIEW MODE -->
-                        <a href="form_builder.php?id=<?= $row['id'] ?>&mode=view" class="view-btn">
+                        <a href="form_builder.php?id=<?= $row['id'] ?>&mode=view" target="_blank" class="view-btn">
                             View
                         </a>
 
                         <!-- EDIT MODE -->
-                        <a href="form_builder.php?id=<?= $row['id'] ?>" class="edit-btn">
+                        <a href="form_builder.php?id=<?= $row['id'] ?>" target="_blank" class="edit-btn">
                             Edit
                         </a>
                     </div>

@@ -124,240 +124,405 @@
   createChart('total-profit-chart', '#00b8f2');
   // ================================== Crm Home widgets charts End =================================
 
+  // ================================ Earning Statistics bar chart Start ================================
+  
+    let earningChart;
+
+    function renderEarningChart(data) {
+
+        if (earningChart) earningChart.destroy();
+
+        let labels = [];
+        const type = document.getElementById("earningFilter").value;
+
+        // ===== X AXIS LABELS =====
+        if (type === "yearly") {
+            labels = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+        }
+        else if (type === "weekly") {
+            labels = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+        }
+        else if (type === "monthly") {
+            const daysInMonth = new Date(
+                new Date().getFullYear(),
+                new Date().getMonth() + 1,
+                0
+            ).getDate();
+
+            for (let i = 1; i <= daysInMonth; i++) {
+                labels.push(i.toString());
+            }
+        }
+        else {
+            labels = ['Morning','Afternoon','Evening'];
+        }
+
+        // ===== FILL EMPTY DAYS WITH ZERO =====
+        const filledData = Array.from(
+            { length: labels.length },
+            (_, i) => data[i] ?? 0
+        );
+
+        earningChart = new ApexCharts(document.querySelector("#barChart"), {
+
+            series: [{
+                name: "Sales",
+                data: filledData
+            }],
+
+            chart: {
+                type: 'bar',
+                height: 310,
+                toolbar: { show: false }
+            },
+
+            legend: {
+                show: false
+            },
+
+            plotOptions: {
+                bar: {
+                    borderRadius: 6,
+                    endingShape: 'rounded',
+
+                    // 👉 FULL WIDTH FOR WEEKLY/TODAY
+                    columnWidth: filledData.length <= 7 ? '55%' : '22%',
+                    distributed: filledData.length <= 7
+                }
+            },
+
+            dataLabels: { enabled: false },
+
+            fill: {
+                type: 'gradient',
+                colors: ['#fec700'],
+                gradient: {
+                    shade: 'light',
+                    type: 'vertical',
+                    shadeIntensity: 0.6,
+                    gradientToColors: ['#fec700'],
+                    opacityFrom: 1,
+                    opacityTo: 0.85,
+                    stops: [0, 100]
+                }
+            },
+
+            grid: {
+                show: true,
+                borderColor: '#e5e7eb',
+                strokeDashArray: 4
+            },
+
+            xaxis: {
+                categories: labels,
+
+                labels: {
+                    show: true,
+
+                    formatter: function (val) {
+
+                        const type = document.getElementById("earningFilter").value;
+
+                        // 👉 Monthly view: show only key days
+                        if (type === "monthly") {
+
+                            const day = parseInt(val);
+
+                            return [1,5,10,15,20,25,31].includes(day) ? day : '';
+                        }
+
+                        // 👉 Other views unchanged
+                        return val;
+                    },
+
+                    style: { fontSize: '12px' }
+                }
+            },
+
+            yaxis: {
+                labels: {
+                    formatter: v => "₹" + (v / 1000).toFixed(0) + "k"
+                }
+            },
+
+            tooltip: {
+                x: {
+                    formatter: function (val) {
+
+                        const type = document.getElementById("earningFilter").value;
+
+                        if (type === "monthly") {
+
+                            const today = new Date();
+                            const year  = today.getFullYear();
+                            const month = today.toLocaleString('default', { month: 'short' });
+
+                            return `${month} ${val}, ${year}`;
+                        }
+
+                        return val;
+                    }
+                },
+
+                y: {
+                    formatter: v => "₹" + v.toLocaleString()
+                }
+            }
+        });
+
+        earningChart.render();
+    }
+
+    // ===== INITIAL LOAD =====
+    renderEarningChart(window.revenueData.yearly);
+
+    // ===== DROPDOWN CHANGE =====
+    document.getElementById("earningFilter").addEventListener("change", function () {
+        renderEarningChart(window.revenueData[this.value]);
+    });
+
+    // INITIAL LOAD (YEARLY)
+    renderEarningChart(window.revenueData.yearly);
+
+    document.getElementById("earningFilter").addEventListener("change", function () {
+    renderEarningChart(window.revenueData[this.value]);
+    });
+
+  // ================================ Earning Statistics bar chart End ================================ 
 
   // ================================ Revenue Growth Area Chart Start ================================ 
-  function createChartTwo(chartId, chartColor) {
+//   function createChartTwo(chartId, chartColor) {
     
-    var options = {
-      series: [
-          {
-            name: 'This Day',
-            // data: [4, 18, 13, 40, 30, 50, 30, 60, 40, 75, 45, 90],
-            data: window.revenueChartData || [],
-          },
-      ],
-      chart: {
-          type: 'area',
-          width: '100%',
-          height: 162,
-          sparkline: {
-            enabled: false // Remove whitespace
-          },
-          toolbar: {
-              show: false
-          },
-          padding: {
-              left: 0,
-              right: 0,
-              top: 0,
-              bottom: 0
-          }
-      },
-      dataLabels: {
-          enabled: false
-      },
-      stroke: {
-          curve: 'smooth',
-          width: 2,
-          colors: [chartColor],
-          lineCap: 'round'
-      },
-      grid: {
-          show: true,
-          borderColor: 'red',
-          strokeDashArray: 0,
-          position: 'back',
-          xaxis: {
-              lines: {
-                  show: false
-              }
-          },   
-          yaxis: {
-              lines: {
-                  show: false
-              }
-          },  
-          row: {
-              colors: undefined,
-              opacity: 0.5
-          },  
-          column: {
-              colors: undefined,
-              opacity: 0.5
-          },  
-          padding: {
-              top: -30,
-              right: 0,
-              bottom: -10,
-              left: 0
-          },  
-      },
-      fill: {
-          type: 'gradient',
-          colors: [chartColor], // Set the starting color (top color) here
-          gradient: {
-              shade: 'light', // Gradient shading type
-              type: 'vertical',  // Gradient direction (vertical)
-              shadeIntensity: 0.5, // Intensity of the gradient shading
-              gradientToColors: [`${chartColor}00`], // Bottom gradient color (with transparency)
-              inverseColors: false, // Do not invert colors
-              opacityFrom: .6, // Starting opacity
-              opacityTo: 0.3,  // Ending opacity
-              stops: [0, 100],
-          },
-      },
-      // Customize the circle marker color on hover
-      markers: {
-        colors: [chartColor],
-        strokeWidth: 3,
-        size: 0,
-        hover: {
-          size: 10
-        }
-      },
-      xaxis: {
-          labels: {
-              show: false
-          },
-          categories: [`Jan`, `Feb`, `Mar`, `Apr`, `May`, `Jun`, `Jul`, `Aug`, `Sep`, `Oct`, `Nov`, `Dec`],
-          tooltip: {
-              enabled: false,
-          },
-          tooltip: {
-            enabled: false
-          },
-          labels: {
-            formatter: function (value) {
-              return value;
-            },
-            style: {
-              fontSize: "14px"
-            }
-          },
-      },
-      yaxis: {
-          labels: {
-              show: false
-          },
-      },
-      tooltip: {
-          x: {
-              format: 'dd/MM/yy HH:mm'
-          },
-      },
-    };
+//     var options = {
+//       series: [
+//           {
+//             name: 'This Day',
+//             // data: [4, 18, 13, 40, 30, 50, 30, 60, 40, 75, 45, 90],
+//             data: window.revenueChartData || [],
+//           },
+//       ],
+//       chart: {
+//           type: 'area',
+//           width: '100%',
+//           height: 162,
+//           sparkline: {
+//             enabled: false // Remove whitespace
+//           },
+//           toolbar: {
+//               show: false
+//           },
+//           padding: {
+//               left: 0,
+//               right: 0,
+//               top: 0,
+//               bottom: 0
+//           }
+//       },
+//       dataLabels: {
+//           enabled: false
+//       },
+//       stroke: {
+//           curve: 'smooth',
+//           width: 2,
+//           colors: [chartColor],
+//           lineCap: 'round'
+//       },
+//       grid: {
+//           show: true,
+//           borderColor: 'red',
+//           strokeDashArray: 0,
+//           position: 'back',
+//           xaxis: {
+//               lines: {
+//                   show: false
+//               }
+//           },   
+//           yaxis: {
+//               lines: {
+//                   show: false
+//               }
+//           },  
+//           row: {
+//               colors: undefined,
+//               opacity: 0.5
+//           },  
+//           column: {
+//               colors: undefined,
+//               opacity: 0.5
+//           },  
+//           padding: {
+//               top: -30,
+//               right: 0,
+//               bottom: -10,
+//               left: 0
+//           },  
+//       },
+//       fill: {
+//           type: 'gradient',
+//           colors: [chartColor], // Set the starting color (top color) here
+//           gradient: {
+//               shade: 'light', // Gradient shading type
+//               type: 'vertical',  // Gradient direction (vertical)
+//               shadeIntensity: 0.5, // Intensity of the gradient shading
+//               gradientToColors: [`${chartColor}00`], // Bottom gradient color (with transparency)
+//               inverseColors: false, // Do not invert colors
+//               opacityFrom: .6, // Starting opacity
+//               opacityTo: 0.3,  // Ending opacity
+//               stops: [0, 100],
+//           },
+//       },
+//       // Customize the circle marker color on hover
+//       markers: {
+//         colors: [chartColor],
+//         strokeWidth: 3,
+//         size: 0,
+//         hover: {
+//           size: 10
+//         }
+//       },
+//       xaxis: {
+//           labels: {
+//               show: false
+//           },
+//           categories: [`Jan`, `Feb`, `Mar`, `Apr`, `May`, `Jun`, `Jul`, `Aug`, `Sep`, `Oct`, `Nov`, `Dec`],
+//           tooltip: {
+//               enabled: false,
+//           },
+//           tooltip: {
+//             enabled: false
+//           },
+//           labels: {
+//             formatter: function (value) {
+//               return value;
+//             },
+//             style: {
+//               fontSize: "14px"
+//             }
+//           },
+//       },
+//       yaxis: {
+//           labels: {
+//               show: false
+//           },
+//       },
+//       tooltip: {
+//           x: {
+//               format: 'dd/MM/yy HH:mm'
+//           },
+//       },
+//     };
 
-    var chart = new ApexCharts(document.querySelector(`#${chartId}`), options);
-    chart.render();
-  }
+//     var chart = new ApexCharts(document.querySelector(`#${chartId}`), options);
+//     chart.render();
+//   }
 //   createChartTwo('revenue-chart', '#487fff');
-  createChartTwo('revenue-chart', '#fec700');
+//   createChartTwo('revenue-chart', '#fec700');
   // ================================ Revenue Growth Area Chart End ================================ 
 
   // ================================ Earning Statistics bar chart Start ================================ 
-    var options = {
-      series: [{
-          name: "Sales",
-          data: [{
-              x: 'Jan',
-              y: 85000,
-          }, {
-              x: 'Feb',
-              y: 70000,
-          }, {
-              x: 'Mar',
-              y: 40000,
-          }, {
-              x: 'Apr',
-              y: 50000,
-          }, {
-              x: 'May',
-              y: 60000,
-          }, {
-              x: 'Jun',
-              y: 50000,
-          }, {
-              x: 'Jul',
-              y: 40000,
-          }, {
-              x: 'Aug',
-              y: 50000,
-          }, {
-              x: 'Sep',
-              y: 40000,
-          }, {
-              x: 'Oct',
-              y: 60000,
-          }, {
-              x: 'Nov',
-              y: 30000,
-          }, {
-              x: 'Dec',
-              y: 50000,
-          }]
-      }],
-      chart: {
-          type: 'bar',
-          height: 310,
-          toolbar: {
-              show: false
-          }
-      },
-      plotOptions: {
-          bar: {
-              borderRadius: 4,
-              horizontal: false,
-              columnWidth: '23%',
-              endingShape: 'rounded',
-          }
-      },
-      dataLabels: {
-          enabled: false
-      },
-      fill: {
-          type: 'gradient',
-        //   colors: ['#487FFF'], // Set the starting color (top color) here
-          colors: ['#fec700'], // Set the starting color (top color) here
-          gradient: {
-              shade: 'light', // Gradient shading type
-              type: 'vertical',  // Gradient direction (vertical)
-              shadeIntensity: 0.5, // Intensity of the gradient shading
-            //   gradientToColors: ['#487FFF'], // Bottom gradient color (with transparency)
-              gradientToColors: ['#fec700'], // Bottom gradient color (with transparency)
-              inverseColors: false, // Do not invert colors
-              opacityFrom: 1, // Starting opacity
-              opacityTo: 1,  // Ending opacity
-              stops: [0, 100],
-          },
-      },
-      grid: {
-          show: true,
-          borderColor: '#D1D5DB',
-          strokeDashArray: 4, // Use a number for dashed style
-          position: 'back',
-      },
-      xaxis: {
-          type: 'category',
-          categories: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
-      },
-      yaxis: {
-          labels: {
-              formatter: function (value) {
-                  return (value / 1000).toFixed(0) + 'k';
-              }
-          }
-      },
-      tooltip: {
-          y: {
-              formatter: function (value) {
-                  return value / 1000 + 'k';
-              }
-          }
-      }
-    };
+    // var options = {
+    //   series: [{
+    //       name: "Sales",
+    //       data: [{
+    //           x: 'Jan',
+    //           y: 85000,
+    //       }, {
+    //           x: 'Feb',
+    //           y: 70000,
+    //       }, {
+    //           x: 'Mar',
+    //           y: 40000,
+    //       }, {
+    //           x: 'Apr',
+    //           y: 50000,
+    //       }, {
+    //           x: 'May',
+    //           y: 60000,
+    //       }, {
+    //           x: 'Jun',
+    //           y: 50000,
+    //       }, {
+    //           x: 'Jul',
+    //           y: 40000,
+    //       }, {
+    //           x: 'Aug',
+    //           y: 50000,
+    //       }, {
+    //           x: 'Sep',
+    //           y: 40000,
+    //       }, {
+    //           x: 'Oct',
+    //           y: 60000,
+    //       }, {
+    //           x: 'Nov',
+    //           y: 30000,
+    //       }, {
+    //           x: 'Dec',
+    //           y: 50000,
+    //       }]
+    //   }],
+    //   chart: {
+    //       type: 'bar',
+    //       height: 310,
+    //       toolbar: {
+    //           show: false
+    //       }
+    //   },
+    //   plotOptions: {
+    //       bar: {
+    //           borderRadius: 4,
+    //           horizontal: false,
+    //           columnWidth: '23%',
+    //           endingShape: 'rounded',
+    //       }
+    //   },
+    //   dataLabels: {
+    //       enabled: false
+    //   },
+    //   fill: {
+    //       type: 'gradient',
+    //     //   colors: ['#487FFF'], // Set the starting color (top color) here
+    //       colors: ['#fec700'], // Set the starting color (top color) here
+    //       gradient: {
+    //           shade: 'light', // Gradient shading type
+    //           type: 'vertical',  // Gradient direction (vertical)
+    //           shadeIntensity: 0.5, // Intensity of the gradient shading
+    //         //   gradientToColors: ['#487FFF'], // Bottom gradient color (with transparency)
+    //           gradientToColors: ['#fec700'], // Bottom gradient color (with transparency)
+    //           inverseColors: false, // Do not invert colors
+    //           opacityFrom: 1, // Starting opacity
+    //           opacityTo: 1,  // Ending opacity
+    //           stops: [0, 100],
+    //       },
+    //   },
+    //   grid: {
+    //       show: true,
+    //       borderColor: '#D1D5DB',
+    //       strokeDashArray: 4, // Use a number for dashed style
+    //       position: 'back',
+    //   },
+    //   xaxis: {
+    //       type: 'category',
+    //       categories: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+    //   },
+    //   yaxis: {
+    //       labels: {
+    //           formatter: function (value) {
+    //               return (value / 1000).toFixed(0) + 'k';
+    //           }
+    //       }
+    //   },
+    //   tooltip: {
+    //       y: {
+    //           formatter: function (value) {
+    //               return value / 1000 + 'k';
+    //           }
+    //       }
+    //   }
+    // };
 
-    var chart = new ApexCharts(document.querySelector("#barChart"), options);
-    chart.render();
+    // var chart = new ApexCharts(document.querySelector("#barChart"), options);
+    // chart.render();
   // ================================ Earning Statistics bar chart End ================================ 
 
   // ================================ Custom Overview Donut chart Start ================================ 
@@ -574,3 +739,213 @@
   }); 
   // ================================ J Vector Map End ================================ 
   
+  // ================================ Revenue Growth Chart Start ================================
+
+    let revenueChart;
+
+    function renderRevenue(data) {
+
+        if (revenueChart) {
+            revenueChart.destroy();
+        }
+
+        let labels = [];
+
+        const selectedType = document.getElementById("revenueFilter").value;
+
+        if (selectedType === "yearly") {
+            labels = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+        }
+
+        else if (selectedType === "weekly") {
+            labels = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+        }
+
+        else if (selectedType === "monthly") {
+            const daysInMonth = new Date(
+                new Date().getFullYear(),
+                new Date().getMonth() + 1,
+                0
+            ).getDate();
+
+            for (let i = 1; i <= daysInMonth; i++) {
+                labels.push(i.toString());
+            }
+        }
+
+        else {
+            labels = ['Morning','Afternoon','Evening'];
+        }
+
+        revenueChart = new ApexCharts(
+            document.querySelector("#revenue-chart"),
+            {
+            series: [{
+                name: "Revenue",
+                data: data
+            }],
+
+            chart: {
+                type: "area",
+                height: 162,
+                toolbar: { show: false }
+            },
+
+            stroke: {
+                curve: "smooth",
+                width: 2,
+                colors: ["#fec700"]
+            },
+
+            fill: {
+                type: "gradient",
+                colors: ["#fec700"],
+                gradient: {
+                shade: "light",
+                type: "vertical",
+                opacityFrom: 0.6,
+                opacityTo: 0.3,
+                stops: [0, 100]
+                }
+            },
+
+            markers: {
+                colors: ["#fec700"],
+                size: 0,
+                hover: { size: 8 }
+            },
+
+            dataLabels: { enabled: false },
+
+            xaxis: {
+                type: 'category',
+                categories: labels,
+
+                labels: {
+                    show: true,
+
+                    formatter: function (val, index) {
+
+                        const type = document.getElementById("revenueFilter").value;
+
+                        // 👉 Monthly: show only key days
+                        if (type === "monthly") {
+
+                            const day = parseInt(val);
+
+                            return [1,5,10,15,20,25,31].includes(day) ? day : '';
+                        }
+
+                        // 👉 Other views unchanged
+                        return val;
+                    },
+
+                    rotate: -35,
+                    trim: false,
+                    offsetY: 4,
+                    style: { 
+                        fontSize: '12px',
+                        padding: 6
+                    }
+                }
+            },
+
+            yaxis: {
+                labels: {
+                show: true,
+                formatter: v => "₹" + (v / 1000).toFixed(0) + "k"
+                }
+            },
+
+            grid: {
+                show: true,
+                borderColor: '#e5e7eb',
+                strokeDashArray: 4
+            },
+
+            tooltip: {
+                x: {
+                    formatter: function (val) {
+
+                        const type = document.getElementById("revenueFilter").value;
+
+                        if (type === "monthly") {
+
+                            const today = new Date();
+                            const year  = today.getFullYear();
+                            const month = today.toLocaleString('default', { month: 'short' });
+
+                            return `${month} ${val}, ${year}`;
+                        }
+
+                        return val;
+                    }
+                },
+
+                y: {
+                    formatter: v => "₹" + v.toLocaleString()
+                }
+            }
+
+            }
+        );
+
+        revenueChart.render();
+    }
+
+    // ===== INITIAL LOAD (YEARLY) =====
+    renderRevenue(window.revenueData.monthly);
+
+    // ===== DROPDOWN SWITCH =====
+    document.getElementById("revenueFilter").addEventListener("change", function () {
+
+        const type = this.value;
+
+        let count = 0;
+
+        if (type === "monthly") {
+            const now = new Date();
+            count = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+        }
+        else if (type === "weekly") {
+            count = 7;
+        }
+        else if (type === "yearly") {
+            count = 12;
+        }
+        else {
+            count = 3;
+        }
+
+        const filledData = Array.from({ length: count }, (_, i) =>
+            window.revenueData[type][i] ?? 0
+        );
+
+        renderRevenue(filledData);
+
+        document.getElementById("revenueTotalText").innerText =
+            "₹" + Number(window.revenueTotals[type]).toLocaleString("en-IN", {
+                minimumFractionDigits: 2
+            });
+    });
+
+  // ================================ Revenue Growth Chart End ================================
+
+    // ===== EARNING STAT CARDS =====
+
+    const earningSelect = document.querySelector("#section-earning select");
+
+    function updateEarningStats(type){
+    const d = window.earningStats[type];
+
+    salesValue.innerText   = "₹" + d.sales.toLocaleString("en-IN",{minimumFractionDigits:2});
+    paidValue.innerText    = "₹" + d.paid.toLocaleString("en-IN",{minimumFractionDigits:2});
+    pendingValue.innerText= "₹" + d.pending.toLocaleString("en-IN",{minimumFractionDigits:2});
+    }
+
+    // default yearly
+    updateEarningStats("yearly");
+
+    earningSelect.addEventListener("change", e=>{
+    updateEarningStats(e.target.value);
+    });
