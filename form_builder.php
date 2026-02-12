@@ -1,6 +1,9 @@
 <?php
     $isViewMode = isset($_GET['mode']) && $_GET['mode'] === 'view';
 
+    $sheet_id_from_url = isset($_GET['sheet_id']) && is_numeric($_GET['sheet_id'])
+    ? (int)$_GET['sheet_id']: 0;
+
     if ($isViewMode) {
         include './partials/connection.php';
     } else {
@@ -1578,82 +1581,271 @@
         // }
 
         /* SAVE OR UPDATE FORM STRUCTURE */
-        elseif ($_SERVER['REQUEST_METHOD'] === 'POST') {
+        // elseif ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
+        //     $formId = isset($_POST['form_id']) && is_numeric($_POST['form_id'])
+        //         ? (int)$_POST['form_id']
+        //         : null;
+
+        //     $title = $_POST['formTitle'] ?? '';
+        //     $json  = $_POST['formJSON'] ?? '';
+        //     $settings = $_POST['formSettings'] ?? '';
+
+        //     if ($formId) {
+        //         // UPDATE existing form
+        //         $stmt = $conn->prepare(
+        //             "UPDATE form_builder SET form_title = ?, form_json = ?, form_settings = ? WHERE id = ?"
+        //         );
+        //         $stmt->bind_param("sssi", $title, $json, $settings, $formId);
+        //         $stmt->execute();
+        //         $redirectId = $formId;
+        //     } else {
+        //         // CREATE new form
+        //         $stmt = $conn->prepare(
+        //             "INSERT INTO form_builder (form_title, form_json, form_settings) VALUES (?, ?, ?)"
+        //         );
+        //         $stmt->bind_param("sss", $title, $json, $settings);
+        //         $stmt->execute();
+        //         $redirectId = $conn->insert_id;
+
+        //         /* ✅ CREATE EMPTY SHEET IMMEDIATELY */
+
+        //         // $emptySheetData = json_encode([
+        //         //     "rows" => 10,        // ✅ fixed initial rows
+        //         //     "cols" => 0,
+        //         //     "headers" => [],
+        //         //     "columnTypes" => [],
+        //         //     "cells" => []
+        //         // ]);
+
+        //         /* BUILD HEADERS FROM FORM STRUCTURE */
+        //         $decodedFields = json_decode($json, true) ?? [];
+
+        //         $headers = [];
+        //         $cols = 0;
+
+        //         foreach ($decodedFields as $field) {
+        //             $headers[] = $field['label'] ?? '';
+        //             $cols++;
+        //         }
+
+        //         /* CREATE EMPTY SHEET WITH HEADERS (KEEP COLUMN A RESERVED) */
+        //         $emptySheetData = json_encode([
+        //             "rows" => 10,
+        //             "cols" => $cols + 1,
+        //             "headers" => $headers,
+        //             "columnTypes" => [],
+        //             "cells" => []
+        //         ]);
+
+        //         $stmtSheet = $conn->prepare(
+        //             "INSERT INTO sheets (form_id, name, data, created_at, updated_at)
+        //             VALUES (?, ?, ?, NOW(), NOW())"
+        //         );
+        //         $stmtSheet->bind_param(
+        //             "iss",
+        //             $redirectId,     // form_id
+        //             $title,          // sheet name = form title
+        //             $emptySheetData
+        //         );
+        //         $stmtSheet->execute();
+        //     }
+
+        //     // ✅ REDIRECT TO INDIVIDUAL FORM PAGE
+        //     // header("Location: form_builder.php?id={$redirectId}&mode=view");
+        //     // exit;
+
+        //     echo "<script>
+        //         window.location.href = 'form_builder.php?id={$redirectId}&mode=view';
+        //     </script>";
+        //     exit;
+        // }
+
+        /* SAVE OR UPDATE FORM STRUCTURE */
+        elseif ($_SERVER['REQUEST_METHOD'] === 'POST') {
+ 
             $formId = isset($_POST['form_id']) && is_numeric($_POST['form_id'])
                 ? (int)$_POST['form_id']
                 : null;
-
+ 
             $title = $_POST['formTitle'] ?? '';
             $json  = $_POST['formJSON'] ?? '';
             $settings = $_POST['formSettings'] ?? '';
-
-            if ($formId) {
-                // UPDATE existing form
-                $stmt = $conn->prepare(
-                    "UPDATE form_builder SET form_title = ?, form_json = ?, form_settings = ? WHERE id = ?"
-                );
-                $stmt->bind_param("sssi", $title, $json, $settings, $formId);
-                $stmt->execute();
-                $redirectId = $formId;
-            } else {
-                // CREATE new form
-                $stmt = $conn->prepare(
-                    "INSERT INTO form_builder (form_title, form_json, form_settings) VALUES (?, ?, ?)"
-                );
-                $stmt->bind_param("sss", $title, $json, $settings);
-                $stmt->execute();
-                $redirectId = $conn->insert_id;
-
-                /* ✅ CREATE EMPTY SHEET IMMEDIATELY */
-
-                // $emptySheetData = json_encode([
-                //     "rows" => 10,        // ✅ fixed initial rows
-                //     "cols" => 0,
-                //     "headers" => [],
-                //     "columnTypes" => [],
-                //     "cells" => []
-                // ]);
-
-                /* BUILD HEADERS FROM FORM STRUCTURE */
+ 
+            // If no explicit form_id but we have a sheet_id, try to find an existing form for that sheet
+            if (!$formId && $sheet_id_from_url > 0) {
+                $stmtLookup = $conn->prepare("SELECT id FROM form_builder WHERE sheet_id = ? LIMIT 1");
+                $stmtLookup->bind_param("i", $sheet_id_from_url);
+                $stmtLookup->execute();
+                $resLookup = $stmtLookup->get_result();
+                if ($resLookup && $resLookup->num_rows === 1) {
+                    $rowLookup = $resLookup->fetch_assoc();
+                    $formId = (int)$rowLookup['id'];
+                }
+            }
+ 
+            /* Build sheet structure (headers, columnTypes, etc.) from form JSON
+               so we can either update an existing sheet row or insert a new one. */
+            $emptySheetData = null;
+            if (!empty($json)) {
                 $decodedFields = json_decode($json, true) ?? [];
-
+ 
                 $headers = [];
                 $cols = 0;
-
+                $columnTypes = [];
+ 
+                $colIndex = 2; // Start from column B = 2
+ 
                 foreach ($decodedFields as $field) {
-                    $headers[] = $field['label'] ?? '';
+                    $headers[] = $field['label'] ?? 'Field ' . $colIndex;
+ 
+                    // Map field type → sheet column type
+                    $sheetType = match (strtolower($field['type'] ?? '')) {
+                        'text', 'paragraph'         => 'text',
+                        'email'                     => 'email',
+                        'phone'                     => 'text',     // or 'phone'
+                        'number'                    => 'number',
+                        'select', 'radio'           => 'text',
+                        'checkbox'                  => 'text',     // could be 'multi'
+                        'datetime'                  => 'datetime',
+                        'file'                      => 'file',
+                        'signature'                 => 'text',
+                        default                     => 'text',
+                    };
+ 
+                    $columnTypes[$colIndex] = ['type' => $sheetType];
+ 
+                    $colIndex++;
                     $cols++;
                 }
-
-                /* CREATE EMPTY SHEET WITH HEADERS (KEEP COLUMN A RESERVED) */
+ 
                 $emptySheetData = json_encode([
-                    "rows" => 10,
-                    "cols" => $cols + 1,
-                    "headers" => $headers,
-                    "columnTypes" => [],
-                    "cells" => []
+                    "rows"         => 10,
+                    "cols"         => $cols + 1,   // +1 because A is reserved
+                    "headers"      => $headers,
+                    "columnTypes"  => $columnTypes,
+                    "cells"        => []
                 ]);
-
-                $stmtSheet = $conn->prepare(
-                    "INSERT INTO sheets (form_id, name, data, created_at, updated_at)
-                    VALUES (?, ?, ?, NOW(), NOW())"
+            }
+            if ($formId) {
+                // UPDATE existing form, ensure sheet_id is filled once known
+                $stmt = $conn->prepare(
+                    "UPDATE form_builder
+                     SET form_title = ?,
+                         form_json  = ?,
+                         form_settings = ?,
+                         sheet_id   = COALESCE(sheet_id, ?)
+                     WHERE id = ?"
                 );
-                $stmtSheet->bind_param(
-                    "iss",
-                    $redirectId,     // form_id
-                    $title,          // sheet name = form title
-                    $emptySheetData
+                $sheetIdForForm = $sheet_id_from_url > 0 ? $sheet_id_from_url : null;
+                $stmt->bind_param("sssii", $title, $json, $settings, $sheetIdForForm, $formId);
+                $stmt->execute();
+                $redirectId = $formId;
+ 
+                /* Sync the linked sheet, if any.
+                   If sheet_id is known (exported from an existing sheet), update that row.
+                   Otherwise, try to update by form_id; if no row exists yet, insert one. */
+                if ($emptySheetData !== null) {
+                    if ($sheet_id_from_url > 0) {
+                        $stmtSheet = $conn->prepare(
+                            "UPDATE sheets
+                             SET name = ?, data = ?, form_id = ?, updated_at = NOW()
+                             WHERE id = ?"
+                        );
+                        $stmtSheet->bind_param(
+                            "ssii",
+                            $title,
+                            $emptySheetData,
+                            $redirectId,
+                            $sheet_id_from_url
+                        );
+                        $stmtSheet->execute();
+                    } else {
+                        // Try update by form_id first
+                        $stmtSheet = $conn->prepare(
+                            "UPDATE sheets
+                             SET name = ?, data = ?, updated_at = NOW()
+                             WHERE form_id = ?"
+                        );
+                        $stmtSheet->bind_param(
+                            "ssi",
+                            $title,
+                            $emptySheetData,
+                            $redirectId
+                        );
+                        $stmtSheet->execute();
+ 
+                        // If no existing sheet row was updated, insert a new one
+                        if ($stmtSheet->affected_rows === 0) {
+                            $stmtSheetInsert = $conn->prepare(
+                                "INSERT INTO sheets (form_id, name, data, created_at, updated_at)
+                                 VALUES (?, ?, ?, NOW(), NOW())"
+                            );
+                            $stmtSheetInsert->bind_param(
+                                "iss",
+                                $redirectId,
+                                $title,
+                                $emptySheetData
+                            );
+                            $stmtSheetInsert->execute();
+                        }
+                    }
+                }
+            } else {
+                // CREATE new form, link to sheet_id (if provided)
+                $stmt = $conn->prepare(
+                    "INSERT INTO form_builder (form_title, form_json, form_settings, sheet_id) VALUES (?, ?, ?, ?)"
                 );
-                $stmtSheet->execute();
+                $sheetIdForForm = $sheet_id_from_url > 0 ? $sheet_id_from_url : null;
+                $stmt->bind_param("sssi", $title, $json, $settings, $sheetIdForForm);
+                $stmt->execute();
+                $redirectId = $conn->insert_id;
+ 
+                /* CREATE / UPDATE SHEET ROW
+                   - If coming from an existing sheet (export-to-form), update that sheet.
+                   - Otherwise, create a new sheet row linked by form_id. */
+                if ($emptySheetData !== null) {
+                    if ($sheet_id_from_url > 0) {
+                        // Update the existing sheet record instead of inserting a new one
+                        $stmtSheet = $conn->prepare(
+                            "UPDATE sheets
+                             SET name = ?, data = ?, form_id = ?, updated_at = NOW()
+                             WHERE id = ?"
+                        );
+                        $stmtSheet->bind_param(
+                            "ssii",
+                            $title,
+                            $emptySheetData,
+                            $redirectId,
+                            $sheet_id_from_url
+                        );
+                        $stmtSheet->execute();
+                    } else {
+                        // No existing sheet row → insert a new one
+                        $stmtSheet = $conn->prepare(
+                            "INSERT INTO sheets (form_id, name, data, created_at, updated_at)
+                             VALUES (?, ?, ?, NOW(), NOW())"
+                        );
+                        $stmtSheet->bind_param(
+                            "iss",
+                            $redirectId,     // form_id
+                            $title,          // sheet name = form title
+                            $emptySheetData
+                        );
+                        $stmtSheet->execute();
+                    }
+                }
             }
 
             // ✅ REDIRECT TO INDIVIDUAL FORM PAGE
-            // header("Location: form_builder.php?id={$redirectId}&mode=view");
-            // exit;
-
+            $redirectUrl = "form_builder.php?id={$redirectId}&mode=view";
+            
+            if ($sheet_id_from_url > 0) {
+                $redirectUrl .= "&sheet_id=" . (int)$sheet_id_from_url;
+            }
+ 
             echo "<script>
-                window.location.href = 'form_builder.php?id={$redirectId}&mode=view';
+                window.location.href = '{$redirectUrl}';
             </script>";
             exit;
         }
@@ -1661,18 +1853,46 @@
         /* LOAD FORM FOR EDITING */
         $editForm = null;
 
+        $formId = null;
+
         $isViewMode = isset($_GET['mode']) && $_GET['mode'] === 'view';
 
         if (isset($_GET['id']) && is_numeric($_GET['id'])) {
             $formId = (int)$_GET['id'];
 
-            $stmt = $conn->prepare("SELECT form_title, form_json, form_settings, is_active FROM form_builder WHERE id = ?");
+            $stmt = $conn->prepare("SELECT form_title, form_json, form_settings, is_active, sheet_id FROM form_builder WHERE id = ?");
             $stmt->bind_param("i", $formId);
             $stmt->execute();
             $result = $stmt->get_result();
 
             if ($result && $result->num_rows === 1) {
-                $editForm = $result->fetch_assoc();
+                // $editForm = $result->fetch_assoc();
+
+                $row = $result->fetch_assoc();
+                $editForm = [
+                    'form_title' => $row['form_title'],
+                    'form_json'  => $row['form_json'],
+                ];
+                // If this form is already linked to a sheet, keep that relationship
+                if (!empty($row['sheet_id']) && !$sheet_id_from_url) {
+                    $sheet_id_from_url = (int)$row['sheet_id'];
+                }
+            }
+        }
+        // No explicit form id, but we have a sheet_id → try loading by sheet_id
+        elseif ($sheet_id_from_url > 0) {
+            $stmt = $conn->prepare("SELECT id, form_title, form_json FROM form_builder WHERE sheet_id = ? LIMIT 1");
+            $stmt->bind_param("i", $sheet_id_from_url);
+            $stmt->execute();
+            $result = $stmt->get_result();
+ 
+            if ($result && $result->num_rows === 1) {
+                $row = $result->fetch_assoc();
+                $formId = (int)$row['id'];
+                $editForm = [
+                    'form_title' => $row['form_title'],
+                    'form_json'  => $row['form_json'],
+                ];
             }
         }
 
@@ -1937,6 +2157,7 @@
     <form id="sheetForm" method="POST" enctype="multipart/form-data" style="display:none">
         <input type="hidden" name="sheet_name" value="Sheet1">
         <input type="hidden" name="form_id" value="<?= (int)$formId ?>">
+        <input type="hidden" name="sheet_id" value="<?= (int)$sheet_id_from_url ?>">
         <input type="hidden" name="sheet_data" id="sheetJSON">
     </form>
 
@@ -2202,7 +2423,8 @@
         let selectedIndex = -1;
         let elDragIndex = null;
 
-        const editFormId = <?= isset($_GET['id']) && is_numeric($_GET['id']) ? (int)$_GET['id'] : 'null' ?>;
+        // const editFormId = <?= isset($_GET['id']) && is_numeric($_GET['id']) ? (int)$_GET['id'] : 'null' ?>;
+        const editFormId = <?= isset($formId) && is_numeric($formId) ? (int)$formId : 'null' ?>;
 
         if (isViewMode) {
             const left = document.querySelector(".panel.left");
