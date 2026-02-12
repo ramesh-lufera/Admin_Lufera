@@ -11,15 +11,16 @@ $data = json_decode(file_get_contents('php://input'), true);
 
 $stmt = $conn->prepare("
     INSERT INTO sheet_reminders 
-    (sheet_id, sheet_row, remind_at, message, created_at)
-    VALUES (?, ?, ?, ?, NOW())
+    (sheet_id, sheet_row, remind_at, message, recipient_email, created_at)
+    VALUES (?, ?, ?, ?, ?, NOW())
 ");
 
 $stmt->bind_param("iiss",
     $data['sheet_id'],
     $data['sheet_row'],
     $data['remind_at'],
-    $data['message']
+    $data['message'],
+    $data['recipient_email'] ?? null
 );
 
 $ok = $stmt->execute();

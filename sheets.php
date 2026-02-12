@@ -1,6 +1,8 @@
 <?php
 include 'partials/layouts/layoutTop.php';
-
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
 $sheetId   = isset($_GET['id']) ? intval($_GET['id']) : 0;
 $sheetName = "Untitled Sheet";
 
@@ -223,13 +225,12 @@ input, select{
     border: none;
     background: none;
     cursor: pointer;
-}
+} 
 
 .dropdown-menu button:hover {
     background: #f3f4f6;
 }
 
-/* Show dropdown */
 .dropdown.open .dropdown-menu {
     display: block;
 }
@@ -338,7 +339,7 @@ tr:hover .bell-icon {
     <div class="card radius-12 h-100">
         <div class="card-body p-24">
 
-            <!-- <div class="toolbar mb-3 d-flex gap-2 align-items-center">                
+            <div class="toolbar mb-3 d-flex gap-2 align-items-center">                
                 <div class="dropdown">
                     <button class="dropdown-btn">File</button>
                     <div class="dropdown-menu">
@@ -355,7 +356,7 @@ tr:hover .bell-icon {
                         <button id="export-to-form">Create Form</button>
                     </div>
                 </div>                
-            </div> -->
+            </div>
 
             <div class="mb-3 d-flex gap-3 align-items-center toolbar">
                 <button id="save-db"><span class="fa fa-save text-xxl text-primary"></span></button>
@@ -374,72 +375,58 @@ let isAddingNewColumn = false;
 function Redirect() {
     window.location = "sheets.php";
 }
-// document.getElementById("export-to-form").onclick = () => {
-//     // Use the actual saved sheet name from DB
-//     let formTitle = "Untitled Sheet";
 
-//     <?php if ($sheetData): ?>
-//         <?php 
-//             // $row is from the query: SELECT * FROM sheets WHERE id = $id
-//             // So $row['name'] is the saved sheet name
-//             $currentSheetName = $row['name'] ?? 'Untitled Sheet';
-//         ?>
-//         formTitle = <?= json_encode($currentSheetName) ?>;
-//     <?php endif; ?>
+document.getElementById("export-to-form").onclick = () => {
+    let formTitle = <?= json_encode($sheetName) ?>;   // Use sheet name as form title
 
-//     // Fallback if no name
-//     if (!formTitle || formTitle.trim() === "") {
-//         formTitle = "New Form";
-//     }
+    const tempFields = [];
+    for (let c = 2; c <= COLS; c++) {
+        const label = (columnHeaders[c] || defaultFieldName(c - 1)).trim();
+        if (!label) continue;
 
-//     const tempFields = [];
+        const colConfig = columnTypes[c] || { type: "text" };
+        const colType   = colConfig.type;
 
-//     for (let c = 2; c <= COLS; c++) {
-//         const label = (columnHeaders[c] || defaultFieldName(c - 1)).trim();
-//         if (!label) continue;
+        let formType = "text";
+        if (colType === "number")    formType = "number";
+        else if (colType === "date") formType = "datetime";
+        else if (colType === "dropdown") formType = "select";
+        else if (colType === "checkbox") formType = "checkbox";
+        // you can map more types if needed
 
-//         const colConfig = columnTypes[c] || { type: "text" };
-//         const colType = colConfig.type;
+        const options = (colType === "dropdown" && colConfig.options?.length > 0)
+            ? colConfig.options
+            : (formType === "checkbox" ? ["Yes"] : ["Option 1", "Option 2"]);
 
-//         let formType = "text";
-//         if (colType === "number") formType = "number";
-//         else if (colType === "date") formType = "datetime";
-//         else if (colType === "dropdown") formType = "select";
-//         else if (colType === "checkbox") formType = "checkbox";
+        tempFields.push({
+            id: Date.now() + c,
+            type: formType,
+            label: label,
+            placeholder: "",
+            required: false,
+            options: options,
+            value: "",           // important: always empty on template
+            validation: ""
+        });
+    }
 
-//         // Get dropdown options (only if it's a dropdown)
-//         const options = (colType === "dropdown" && colConfig.options && colConfig.options.length > 0)
-//             ? colConfig.options
-//             : (formType === "checkbox" ? ["Yes"] : ["Option 1", "Option 2"]);
+    if (tempFields.length === 0) {
+        Swal.fire({
+            icon: 'warning',
+            title: 'Nothing to export',
+            text: 'No columns to export (only Tasks column found).',
+        });
+        return;
+    }
 
-//         tempFields.push({
-//             id: Date.now() + c,
-//             type: formType,
-//             label: label,
-//             placeholder: "",
-//             required: false,
-//             options: options,
-//             value: "",  // ← ALWAYS EMPTY — no prefill!
-//             validation: ""
-//         });
-//     }
+    const params = new URLSearchParams();
+    params.append('sheet_id',   activeSheetId);              // link form to this sheet
+    params.append('pre_title',  formTitle);                  // use sheet name as formTitle
+    params.append('sheet_name', formTitle);                  // explicit sheet name if needed
+    params.append('pre_fields', JSON.stringify(tempFields)); // initial form structure
 
-//     if (tempFields.length === 0) {
-//         Swal.fire({
-//             icon: 'warning',
-//             title: 'Nothing to export',
-//             text: 'No columns to export (only Tasks column found).',
-//             confirmButtonText: 'OK'
-//         });
-//         return;
-//     }
-
-//     const params = new URLSearchParams();
-//     params.append('pre_title', formTitle);
-//     params.append('pre_fields', JSON.stringify(tempFields));
-
-//     window.location.href = `form_builder.php?${params.toString()}`;
-// };
+    window.location.href = `form_builder.php?${params.toString()}`;
+};
 
 /* ------------------------------------------------------------
    BASE VARIABLES (init first)
@@ -1284,32 +1271,45 @@ document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("export-csv").onclick = () => {
     const wsData = [];
 
-    // ───────────────────────────────
-    // 1. HEADER ROW (skip Tasks column)
-    // ───────────────────────────────
+    // ────────────────────────────────────────────────
+    // 1. Collect HEADER ROW — only non-file columns
+    // ────────────────────────────────────────────────
     const headerRow = [];
+    const includedColumns = []; // remember which column indexes we actually export
 
-    for (let c = 2; c <= COLS; c++) {
+    for (let c = 2; c <= COLS; c++) {           // start from 2 = skip Tasks
+        const config = columnTypes[c] || { type: "text" };
+        if (config.type === "file") continue;   // ← skip file columns
+
         const th = document.querySelector(`thead th[data-c="${c}"] span`);
-        headerRow.push(th ? th.textContent.trim() : "");
+        const headerText = th ? th.textContent.trim() : `Col ${c}`;
+        headerRow.push(headerText);
+        includedColumns.push(c);                // track real column index
+    }
+
+    if (headerRow.length === 0) {
+        Swal.fire({
+            icon: 'warning',
+            title: 'Nothing to export',
+            text: 'No non-file columns found.',
+        });
+        return;
     }
 
     wsData.push(headerRow);
 
-    // ───────────────────────────────
-    // 2. DATA ROWS
-    // ───────────────────────────────
+    // ────────────────────────────────────────────────
+    // 2. Collect DATA ROWS — only for included columns
+    // ────────────────────────────────────────────────
     for (let r = 1; r <= ROWS; r++) {
         const row = [];
 
-        for (let c = 2; c <= COLS; c++) {
+        for (const c of includedColumns) {      // only columns we decided to keep
             const id = cellId(r, c);
             const type = columnTypes[c]?.type || "text";
-
             let value = "";
 
             if (type === "dropdown") {
-                // ✅ dropdown: export ONLY selected value
                 value = data[id]?.raw || "";
             } else {
                 value = data[id]?.raw ??
@@ -1323,34 +1323,36 @@ document.addEventListener("DOMContentLoaded", () => {
         wsData.push(row);
     }
 
-    // ───────────────────────────────
-    // 3. CREATE WORKBOOK
-    // ───────────────────────────────
+    // ────────────────────────────────────────────────
+    // 3. Create workbook
+    // ────────────────────────────────────────────────
     const wb = XLSX.utils.book_new();
     const ws = XLSX.utils.aoa_to_sheet(wsData);
 
-    // ───────────────────────────────
-    // 4. BOLD HEADER ROW
-    // ───────────────────────────────
+    // ────────────────────────────────────────────────
+    // 4. Style header row (bold)
+    // ────────────────────────────────────────────────
     const range = XLSX.utils.decode_range(ws["!ref"]);
     for (let c = range.s.c; c <= range.e.c; c++) {
         const cellRef = XLSX.utils.encode_cell({ r: 0, c });
         if (ws[cellRef]) {
-            ws[cellRef].s = {
-                font: { bold: true }
-            };
+            ws[cellRef].s = { font: { bold: true } };
         }
     }
 
-    // Optional: auto column width
-    ws["!cols"] = headerRow.map(h => ({ wch: Math.max(12, h.length + 4) }));
+    // Optional: auto-size columns roughly
+    ws["!cols"] = headerRow.map(h => ({
+        wch: Math.max(10, (h || "").length + 4)
+    }));
 
-    XLSX.utils.book_append_sheet(wb, ws, "Sheet");
+    XLSX.utils.book_append_sheet(wb, ws, "Sheet1");
 
-    // ───────────────────────────────
-    // 5. DOWNLOAD
-    // ───────────────────────────────
-    XLSX.writeFile(wb, "sheet.xlsx");
+    // ────────────────────────────────────────────────
+    // 5. Download
+    // ────────────────────────────────────────────────
+    const sheetName = document.querySelector("h6.fw-semibold")?.textContent?.trim() || "Exported_Sheet";
+    const safeName = "sheets";
+    XLSX.writeFile(wb, `${safeName}.xlsx`);
 };
 
     document.getElementById("clear").onclick = () => {
@@ -2219,6 +2221,11 @@ async function saveReminder() {
         <label class="form-label fw-500">Reminder Date</label>
         <input type="datetime-local" id="reminderDate" class="form-control" required>
     </div>
+
+    <div class="mb-20">
+        <label class="form-label fw-500">Send reminder to (email)</label>
+        <input type="email" id="reminderEmail" class="form-control" placeholder="someone@example.com" title="Reminder email will be sent to this address">
+    </div>
     
     <div class="mb-20">
         <label class="form-label fw-500">Message / Note</label>
@@ -2226,7 +2233,7 @@ async function saveReminder() {
     </div>
     
     <div class="text-end">
-        <button class="btn btn-sm btn-secondary me-3" onclick="closeReminderModal()">Cancel</button>
+        <button class="btn btn-sm btn-secondary me-1" onclick="closeReminderModal()">Cancel</button>
         <button class="btn btn-sm lufera-bg text-white" onclick="saveReminder()">Save Reminder</button>
     </div>
 </div>
@@ -2264,7 +2271,7 @@ async function saveReminder() {
             <!-- Optional: extra info like row, column, mime type, etc. -->
             <div class="mb-3" id="previewExtraInfo" style="display:none;"></div>
 
-            <a id="downloadLink" class="btn btn-lg lufera-bg text-white me-10" href="#" download>Download</a>
+            <a id="downloadLink" class="btn btn-sm lufera-bg text-white me-10" href="#" download>Download</a>
             <!-- <button class="btn btn-lg btn-secondary" onclick="closePreviewModal()">Close</button> -->
         </div>
     </div>

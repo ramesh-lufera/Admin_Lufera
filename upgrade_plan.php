@@ -364,7 +364,7 @@
                                                         <div class="height-fixed">
                                                             <h4 class="h-my-16 text-center text-muted">You are on the highest plan</h4>
                                                         </div>
-                                                        <ul id="upgradeFeatures" class="mt-3">
+                                                        <ul id="upgradeFeatures" class="mt-3 text-center">
                                                             <li class="text-muted">No upgrade options available</li>
                                                         </ul>
                                                         <?php endif; ?>

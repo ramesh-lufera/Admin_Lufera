@@ -1,19 +1,23 @@
 <?php include './partials/layouts/layoutTop.php';
     require_once __DIR__ . '/vendor/autoload.php';
+    require_once __DIR__ . '/vendor_pdf/autoload.php';
     use Dotenv\Dotenv;
     use PHPMailer\PHPMailer\PHPMailer;
     use PHPMailer\PHPMailer\Exception;
-
+    use Dompdf\Dompdf;
+    use Dompdf\Options;
     $dotenv = Dotenv::createImmutable(__DIR__);
     $dotenv->load();
 ?>
 <?php $script = '<script>
                     function printInvoice() {
-                        var printContents = document.getElementById("invoice").innerHTML;
-                        var originalContents = document.body.innerHTML;
-                        document.body.innerHTML = printContents;
+                        // Optional: You can still add pdf-mode if you want the same font/color tweaks
+                        document.body.classList.add("pdf-mode");
+                    
                         window.print();
-                        document.body.innerHTML = originalContents;
+                    
+                        // Restore (only needed if you added pdf-mode)
+                        document.body.classList.remove("pdf-mode");
                     }
                 </script>';?>
 <?php
@@ -83,85 +87,82 @@ function numberToWords($num) {
 }
 ?>
 
-
 <style>
-    @media print {
-    /* Force printing of backgrounds (most important fix) */
-    body {
-        -webkit-print-color-adjust: exact !important;
-        print-color-adjust: exact !important;
-    }
-
-    * {
-        -webkit-print-color-adjust: exact !important;
-        print-color-adjust: exact !important;
-        color: #000 !important;           /* force readable text */
-        border-color: #000 !important;    /* fallback dark borders */
-    }
-
-    /* ── Divider ──────────────────────────────────────────────── */
-    .divider {
-        margin-top: 12px !important;      /* enforce your desired top space */
-        margin-bottom: 12px !important;
-        font-size: 18px !important;       /* slightly bigger for visibility */
-        white-space: nowrap !important;
-    }
-
-    .divider::before,
-    .divider::after {
-        content: "" !important;
-        display: block !important;        /* sometimes pseudo-elements collapse */
-        flex: 1 !important;
-        border-bottom: 2px solid #000 !important;  /* thicker + black = always visible */
-        margin: 0 8px !important;         /* control spacing left/right */
-    }
-
-    /* ── Table header background ─────────────────────────────── */
-    th.inv-table {
-        background-color: #f5f6f7 !important;
-        -webkit-print-color-adjust: exact !important;
-        print-color-adjust: exact !important;
-        border: 1px solid #999 !important;   /* darker border helps visibility */
-    }
-
-    /* ── Total table bottom borders ──────────────────────────── */
-    .total-table td {
-        border-bottom: 1px solid #000 !important;   /* black & !important */
-    }
-
-    /* General table safety net */
-    table, th, td {
-        border: 1px solid #888 !important;   /* fallback if any border vanishes */
-    }
-
-    .inv-table,
-    td.inv-table,
-    th.inv-table {
-        border: 1px solid #888 !important;
-    }
-
-    .border-footer {
-        border-top: 2px solid #000 !important;
-    }
-
-    /* Optional – cleaner print layout */
-    @page {
-        size: A4 portrait;
-        margin: 12mm 10mm 15mm 10mm;   /* top/right/bottom/left – adjust if needed */
-    }
-
-    body {
+/* Hide everything by default when printing */
+@media print {
+    body * {
+        color: #000;
+        visibility: hidden;
+        /* Optional: remove margins/padding that browsers add */
         margin: 0 !important;
         padding: 0 !important;
     }
 
-    /* Hide buttons/header when printing */
+    /* Only show the invoice and its children */
+    #invoice,
+    #invoice * {
+        visibility: visible;
+    }
+
+    /* Position it properly on the printed page */
+    #invoice {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        /* Optional: better control over page breaks */
+        page-break-inside: avoid;
+    }
+
+    /* Hide buttons, modals, sidebars etc. (extra safety) */
     .card-header,
-    .btn,
-    .d-flex.justify-content-between.gap-3.mb-24 {
+    .modal,
+    .navbar-header,
+    .sidebar,
+    .d-footer,
+    .titlesec,
+    button[onclick*="printInvoice"],
+    button[onclick*="downloadPDF"] {
         display: none !important;
     }
+    .col-sec{
+        width:100% !important;
+        flex: 0 0 auto;
+    }
+    .pdf-footer {
+        position: fixed !important;  /* ← fixed instead of absolute */
+        bottom: 0mm !important;     /* matches the @page bottom margin */
+        left: 0mm;
+        right: 0mm;
+        width: -webkit-fill-available !important;   /* = left + right margin */
+        text-align: center;
+        padding-top: 8px;
+        border-top: 1px solid #dde2e6;
+        font-size: 11px;
+        color: #555;
+    }
+    td.inv-table{
+        border: 1px solid #000 !important;
+    }
+     th.inv-table {
+        border: 1px solid #000 !important;
+    }
+    .total-table td{
+        border-bottom: 1px solid #000 !important;
+    }
+    .border-footer{
+        border-top: 1px solid #000 !important;
+    }
+    .divider::before,
+    .divider::after {
+        border-bottom: 1px solid #000;
+    }
 }
+
+ .col-sec{
+        width:66.66666667%;
+        flex: 0 0 auto;
+    }
     .invoice_table {
         font-size:16px !important;
         width:auto;
@@ -176,7 +177,7 @@ function numberToWords($num) {
     .divider {
         display: flex;
         align-items: center;
-        margin-top:10px;
+        margin-top:1rem;
     }
     .divider::before,
     .divider::after {
@@ -216,6 +217,9 @@ function numberToWords($num) {
     .invoice-logo {
         max-width: 250px;
     }
+    
+    
+    
     .pdf-mode * {
         color: #000 !important;
         font-family: system-ui, sans-serif !important;
@@ -295,6 +299,10 @@ function numberToWords($num) {
     }
     .pdf-mode .footer-logo{
         margin-bottom: 0 !important;
+    }
+    .pdf-mode .col-sec{
+        width:100% !important;
+        flex: 0 0 auto;
     }
 </style>
 
@@ -430,45 +438,45 @@ function numberToWords($num) {
 
 
 <?php
-// ADMIN approves → Notify USER
-    if (isset($_POST['send_invoice'])) {
-        
-        $orderId = $_POST['order_id'];
-        $toAddress = $_POST['toAddress'];
-        // For Notifications..
-        date_default_timezone_set('Asia/Kolkata');
+// ADMIN approves → Notify USER + Send PDF Invoice
+if (isset($_POST['send_invoice'])) {
 
-        // Get user_id for notification
-        $res = $conn->query("SELECT user_id FROM orders WHERE id = $orderId");
-        $user = $res->fetch_assoc();
-        $IdFromOrders = $user['user_id'];
+    $orderId = $_POST['order_id'];
+    $toAddress = $_POST['toAddress'];
+    // For Notifications..
+    date_default_timezone_set('Asia/Kolkata');
 
-        // Get matching user_id from users table
-        $resUser = $conn->query("SELECT user_id FROM users WHERE id = $IdFromOrders");
-        $userRow = $resUser->fetch_assoc(); // fetch the row
-        $userId = $userRow['user_id']; // matched user_id from users table
+    // Get user_id for notification
+    $res = $conn->query("SELECT user_id FROM orders WHERE id = $orderId");
+    $user = $res->fetch_assoc();
+    $IdFromOrders = $user['user_id'];
 
-        // Add notification
-        $msg = "Your payment has been approved.";
-        $createdAt = date('Y-m-d H:i:s');
-        $stmt = $conn->prepare("INSERT INTO notifications (user_id, message, n_photo, created_at) VALUES (?, ?, ?, ?)");
-        $stmt->bind_param("ssss", $userId, $msg, $photo, $createdAt);
-        $stmt->execute();
+    // Get matching user_id from users table
+    $resUser = $conn->query("SELECT user_id FROM users WHERE id = $IdFromOrders");
+    $userRow = $resUser->fetch_assoc(); // fetch the row
+    $userId = $userRow['user_id']; // matched user_id from users table
 
-        // Get order + user details
-        $res = $conn->query("SELECT o.invoice_id, o.plan, o.amount, o.created_on, u.email, u.first_name, u.last_name 
-                             FROM orders o 
-                             INNER JOIN users u ON o.user_id = u.id 
-                             WHERE o.id = $orderId");
-        $order = $res->fetch_assoc();
+    // Add notification
+    $msg = "Your payment has been approved.";
+    $createdAt = date('Y-m-d H:i:s');
+    $stmt = $conn->prepare("INSERT INTO notifications (user_id, message, n_photo, created_at) VALUES (?, ?, ?, ?)");
+    $stmt->bind_param("ssss", $userId, $msg, $photo, $createdAt);
+    $stmt->execute();
 
-        $userEmail = $order['email'];
+    // Get order + user details
+    $res = $conn->query("SELECT o.invoice_id, o.plan, o.amount, o.created_on, u.email, u.first_name, u.last_name 
+                         FROM orders o 
+                         INNER JOIN users u ON o.user_id = u.id 
+                         WHERE o.id = $orderId");
+    $order = $res->fetch_assoc();
+    $userEmail = $order['email'];
         $userName  = $order['first_name'] . " " . $order['last_name'];
         $planName  = $order['plan'];
         $invoiceId = $order['invoice_id'];
         $amount    = $order['amount'];
         $created_on = $order['created_on'];
-            echo "
+        
+        echo "
                 <script>
                     Swal.fire({
                         title: 'Processing...',
@@ -485,29 +493,508 @@ function numberToWords($num) {
                 </script>";
                 // flush response so browser shows the loader instantly
                 ob_flush(); flush();
-        // ✅ Send Email to User (with simple static attachment)
-        try {
-            $mail = new PHPMailer(true);
-            $mail->isSMTP();
-            $mail->Host       = 'smtp.gmail.com';
-            $mail->SMTPAuth   = true;
-            $mail->Username   = $_ENV['EMAIL_USERNAME']; 
-            $mail->Password   = $_ENV['GMAIL_APP_PASSWORD']; 
-            $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
-            $mail->Port       = 587;            
-            $mail->CharSet    = 'UTF-8';
-            $mail->Encoding   = 'base64';
-            $mail->setFrom($_ENV['EMAIL_USERNAME'], 'Lufera Infotech');
-            $mail->addAddress($toAddress, $userName);
-            $mail->isHTML(true);
-            $mail->Subject     = "Invoice Mail";
-            $mail->ContentType = 'text/html; charset=UTF-8';
 
-            // Static attachment content
-            $attachmentContent = "<!DOCTYPE html><html><body><h1>Test</h1></body></html>";
-            $mail->addStringAttachment($attachmentContent, 'test.html', 'base64', 'text/html');
+    // ───────────────────────────────────────────────
+    //  1. Prepare invoice HTML (same as displayed)
+    // ───────────────────────────────────────────────
+    ob_start();
+    ?>
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="UTF-8">
+        <title>Invoice #<?php echo $invoice_id; ?></title>
+        <link href="https://admin2.luferatech.com/assets/css/lib/bootstrap.min.css" rel="stylesheet">
+        <link href="https://admin2.luferatech.com/assets/css/style.css" rel="stylesheet">
+        <style>
+            .pdf-mode * {
+        color: #000 !important;
+        font-family: system-ui, sans-serif !important;
+    }
+    .pdf-mode body {
+        color: #000 !important;
+        font-family: system-ui, sans-serif !important;
+    }
+    .pdf-mode .shadow-4,
+    .pdf-mode .border,
+    .pdf-mode .radius-8 {
+        box-shadow: none !important;
+        border: none !important;
+        border-radius: 0 !important;
+    }
+    .pdf-mode .pdf-full-width {
+        width: 100% !important;
+        max-width: 100% !important;
+        flex: 0 0 100% !important;
+    }
+    .pdf-mode .pdf-footer {
+        margin-top: 70% !important;
+        padding-top: 10px;
+        bottom:10px;
+    }
+    .pdf-mode {
+    font-size: 10px !important;
+    }
+    .pdf-mode p,
+    .pdf-mode span,
+    .pdf-mode td,
+    .pdf-mode th,
+    .pdf-mode div,
+    .pdf-mode li {
+        font-size: 10px !important;
+        line-height: 1.4 !important;
+    }
+    /* Headings slightly larger */
+    .pdf-mode h1 { font-size: 20px !important; }
+    .pdf-mode h2 { font-size: 18px !important; }
+    .pdf-mode h3 { font-size: 16px !important; }
+    .pdf-mode h4,
+    .pdf-mode h5,
+    .pdf-mode h6 { font-size: 12px !important; }
+    .pdf-mode .divider { font-size: 16px !important; }
 
-            $mail->Body = '
+    /* Tables tighter */
+    .pdf-mode table td,
+    .pdf-mode table th {
+        padding: 8px !important;
+    }
+    .pdf-mode .invoice_table td,
+    .pdf-mode .invoice_table th {
+        padding: 2px 8px !important;
+    }
+    .pdf-mode .total-table td,
+    .pdf-mode .total-table th {
+        padding: 4px 8px !important;
+    }
+    .pdf-mode .bill_to {
+        margin-bottom: 4px !important;
+    }
+    .pdf-mode #invoice {
+    display: flex;
+    flex-direction: column;
+    }
+    .pdf-mode #invoice > div {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+    }
+    .pdf-mode .footer-text {
+        margin-top: auto !important;
+    }
+    .pdf-mode .invoice-logo {
+        max-width: 200px !important;
+    }
+    .pdf-mode .footer-logo{
+        margin-bottom: 0 !important;
+    }
+    .pdf-mode .col-sec{
+        width:100% !important;
+        flex: 0 0 auto;
+    }
+        </style>
+    </head>
+    <body class="pdf-mode">
+        <div class="row justify-content-center" id="invoice">
+                <div class="col-sec">
+                    <div class="shadow-4 border radius-8">
+                        <div class="p-20">
+                            <div class="d-flex justify-content-between gap-3 row">
+                                <div class="align-content-end col-lg-6">
+                                    <img src="https://admin2.luferatech.com/uploads/company_logo/<?php echo $company_row['logo']; ?>" alt="site logo" class="invoice-logo">
+                                </div>
+
+                                <div class="text-end col-lg-6">
+                                    <h6 class="mb-0 text-xl"><?php echo $company_row['full_name']; ?></h6>
+                                    <p class="mb-0 text-sm">
+                                        <?php echo $company_row['address']; ?>,
+                                        <?php echo $company_row['city']; ?>,
+                                        <?php echo $company_row['state']; ?>,
+                                        <?php echo $company_row['zip_code']; ?>,
+                                        <?php echo $company_row['country']; ?>
+                                    </p>
+                                    <p class="mb-0 text-sm"><?php echo $company_row['phone_no']; ?></p>
+                                    <p class="mb-0 text-sm"><?php echo $company_row['website']; ?></p>
+                                    <p class="mb-0 text-sm">GSTIN: <?php echo $company_row['gst_in']; ?></p>
+                                </div>
+                            </div>
+                            <div class="text-center">
+                                <?php if($row['balance_due'] != "0.00" ){ ?> 
+                                    <p class="divider text-xl">Proforma Invoice</p>
+                                <?php } else {?>
+                                    <p class="divider text-xl text-danger">Tax Invoice</p>
+                                <?php } ?>
+                                
+                            </div>
+                            <div class="d-flex align-items-start justify-content-between gap-3 mt-3 row">
+                                <div class="col-lg-6">
+                                    <p class="text-md mb-0 bill_to">Bill To:</p>
+                                    <h6 class="text-md mb-0 bill_to"><?php echo $rows['business_name']; ?></h6>
+                                    <p class="text-md mb-0 bill_to"><?php echo $rows['address']; ?></p>
+                                    <p class="text-md mb-0 bill_to"><?php echo $rows['city']; ?> <?php echo $rows['pincode']; ?></p>
+                                    <p class="text-md mb-0 bill_to"><?php echo $rows['state']; ?>, <?php echo $rows['country']; ?></p>
+                                    <p class="text-md mb-0 bill_to">GSTIN: <?php echo $rows['gst_in']; ?></p>
+                                </div>
+                                <div class="col-lg-6">
+                                    <table class="invoice_table text-start mt-10">
+                                        <tr>
+                                            <td class="pe-64 p-4 fw-semibold">Invoice#</td>
+                                            <td class="text-md p-4"><?php echo $row['invoice_id']; ?></td>
+                                        </tr>
+                                        <tr>
+                                            <td class="pe-64 p-4 fw-semibold">Invoice Date</td>
+                                            <td class="text-md p-4"><?php echo date('d/m/Y', strtotime($row['created_on'])); ?></td>
+                                        </tr>
+                                        <tr>
+                                            <td class="pe-64 p-4 fw-semibold">Terms</td>
+                                            <td class="text-md p-4"><?php echo $row['payment_method']; ?></b></td>
+                                        </tr>
+                                        <tr>
+                                            <td class="pe-64 p-4 fw-semibold">Status</td>
+                                            <td class="text-md p-4"><?php echo $row['status']; ?></td>
+                                        </tr>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="py-28 px-20">
+                            <div class="table-responsive scroll-sm">
+                                <table class="table mb-0">
+                                    <thead>
+                                        <th class="w-10 inv-table text-center">S.No</th>
+                                        <th class="w-25 inv-table">Items</th>
+                                        <th class="w-25 inv-table">Rate</th>
+                                        <th class="w-25 inv-table">Tax</th>
+                                        <th class="text-end w-25 inv-table">Amount</th>
+                                    </thead>
+                                    <tbody>
+                                        <?php
+                                        $serial_no = 1;   // ← start counter
+                                        ?>
+                                        
+                                        <!-- Main plan / package / product row -->
+                                        <tr>
+                                            <td class="inv-table text-center"><?= $serial_no++ ?></td>
+                                            <td class="inv-table">
+                                                <?php 
+                                                    echo htmlspecialchars($row['plan_name']);
+                                                    if ($type === 'renewal') {
+                                                        echo ' <small>(Renewal)</small>';
+                                                    }
+                                                ?>
+                                            </td>
+                                            <td class="inv-table"><?= htmlspecialchars($symbol) ?> <?= number_format($row['price'], 2) ?></td>
+                                            <td class="inv-table"><?= htmlspecialchars($symbol) ?> <?= number_format($row['gst'], 2) ?></td>
+                                            <td class="inv-table text-end"><?= htmlspecialchars($symbol) ?> <?= number_format(floatval($row['price']) + floatval($row['gst']), 2) ?></td>
+                                        </tr>
+
+                                        <!-- Add-on services (if any) -->
+                                        <?php
+                                        if (!empty($row['addon_service'])) {
+                                            $addon_ids = explode(',', $row['addon_service']);
+                                            $addon_ids = array_map('intval', $addon_ids);
+
+                                            if (!empty($addon_ids)) {
+                                                $addon_id_list = implode(',', $addon_ids);
+                                                $addon_query = "SELECT name, cost FROM `add-on-service` WHERE id IN ($addon_id_list)";
+                                                $addon_result = $conn->query($addon_query);
+
+                                                if ($addon_result && $addon_result->num_rows > 0) {
+                                                    while ($addon_row = $addon_result->fetch_assoc()) {
+                                                        // You might want to use addon-specific price/gst if stored per addon
+                                                        // For now using same addon_price & addon_gst from main row (as in your original code)
+                                                        ?>
+                                                        <tr>
+                                                            <td class="inv-table text-center"><?= $serial_no++ ?></td>
+                                                            <td class="inv-table"><?= htmlspecialchars($addon_row['name']) ?></td>
+                                                            <td class="inv-table text-end"><?= htmlspecialchars($symbol) ?> <?= number_format($row['addon_price'], 2) ?></td>
+                                                            <td class="inv-table text-end"><?= htmlspecialchars($symbol) ?> <?= number_format($row['addon_gst'], 2) ?></td>
+                                                            <td class="inv-table text-end">
+                                                                <?= htmlspecialchars($symbol) ?> <?= number_format(floatval($row['addon_price']) + floatval($row['addon_gst']), 2) ?>
+                                                            </td>
+                                                        </tr>
+                                                        <?php
+                                                    }
+                                                }
+                                            }
+                                        }
+                                        ?>
+                                    </tbody>
+                                </table>
+                            </div>
+
+                                <?php
+                                // Add-on services table
+                                if (!empty($row['addon_service'])) {
+                                    $addon_ids = explode(',', $row['addon_service']);
+                                    $addon_ids = array_map('intval', $addon_ids); // sanitize IDs
+
+                                    if (!empty($addon_ids)) {
+                                        $addon_id_list = implode(',', $addon_ids);
+                                        $addon_query = "SELECT name, cost FROM `add-on-service` WHERE id IN ($addon_id_list)";
+                                        $addon_result = $conn->query($addon_query);
+
+                                        if ($addon_result->num_rows > 0) {
+                                            echo '
+                                            <table class="table table-bordered w-100">
+                                                <tbody>';
+
+                                            while ($addon_row = $addon_result->fetch_assoc()) {
+                                                echo "<tr>
+                                                        <td class='w-25'>" . htmlspecialchars($addon_row['name']) . "</td>
+                                                        <td class='w-25'>" . htmlspecialchars($symbol) . " " . number_format($row['addon_price'], 2) . "</td>
+                                                        <td class='w-25'>" . htmlspecialchars($symbol) . " " . htmlspecialchars($row['addon_gst']) . "</td>
+                                                        <td class='w-25 text-end'>
+                                                            <span class='text-primary-light'>"
+                                                            . htmlspecialchars($symbol) . " " . number_format(floatval($row['addon_price']) + floatval($row['addon_gst']), 2) .
+                                                            "</span>
+                                                        </td>
+                                                    </tr>";
+                                                }
+                                            echo '</tbody>
+                                            </table>';
+                                        }
+                                    }
+                                }
+                                ?>
+                                
+                                <div class="d-flex flex-wrap justify-content-end gap-3" style="display:flex; justify-content: flex-end">
+                                    <table class="invoice_table text-end mt-10 total-table">
+                                        <tbody>
+                                            <!-- <?php
+                                                // ✅ GST logic reused (same as above)
+                                                $tax_rate = 0;
+                                                $tax_name = "No Tax";
+
+                                                if (!empty($row['plan'])) {
+                                                    $plan_id = intval($row['plan']);
+
+                                                    if ($type === 'renewal') {
+                                                        $tax_query = $conn->query("
+                                                            SELECT t.tax_name, t.rate
+                                                            FROM package p
+                                                            LEFT JOIN taxes t ON p.gst_id = t.id
+                                                            INNER JOIN renewal_invoices r ON r.plan = p.id
+                                                            WHERE r.plan = $plan_id
+                                                            LIMIT 1
+                                                        ");
+                                                    } else {
+                                                        $tax_query = $conn->query("
+                                                            SELECT t.tax_name, t.rate
+                                                            FROM package p
+                                                            LEFT JOIN taxes t ON p.gst_id = t.id
+                                                            INNER JOIN orders o ON o.plan = p.id
+                                                            WHERE o.plan = $plan_id
+                                                            LIMIT 1
+                                                        ");
+                                                    }
+
+                                                    if ($tax_query && $tax_query->num_rows > 0) {
+                                                        $tax_row = $tax_query->fetch_assoc();
+                                                        if (!empty($tax_row['rate'])) $tax_rate = floatval($tax_row['rate']);
+                                                        if (!empty($tax_row['tax_name'])) $tax_name = $tax_row['tax_name'];
+                                                    }
+                                                }
+
+                                                // ✅ Compute GST amount and new totals
+                                                $gst_amount = $row['subtotal'] * ($tax_rate / 100);
+                                                $total_after_gst = floatval($row['subtotal']) + floatval($gst_amount) - floatval($row['discount_amount']);
+                                                $balance_due = $total_after_gst - $row['payment_made'];
+                                            ?> -->
+                                            <?php
+                                                // ✅ GST logic reused (same as above)
+                                                $tax_rate = 0;
+                                                $tax_name = "No Tax";
+
+                                                if (!empty($row['plan'])) {
+                                                    $plan_id = intval($row['plan']);
+
+                                                    // ================================
+                                                    //   RENEWAL TIME (PACKAGE ONLY)
+                                                    // ================================
+                                                    if ($type === 'renewal') {
+
+                                                        $tax_query = $conn->query("
+                                                            SELECT t.tax_name, t.rate
+                                                            FROM package p
+                                                            LEFT JOIN taxes t ON p.gst_id = t.id
+                                                            INNER JOIN renewal_invoices r ON r.plan = p.id
+                                                            WHERE r.plan = $plan_id
+                                                            LIMIT 1
+                                                        ");
+
+                                                    } else {
+
+                                                        // ================================
+                                                        //   NORMAL TIME (PACKAGE + PRODUCT)
+                                                        // ================================
+
+                                                        if ($row['type'] === 'package') {
+
+                                                            // ⭐ Normal Time → Package Logic (Already working)
+                                                            $tax_query = $conn->query("
+                                                                SELECT t.tax_name, t.rate
+                                                                FROM package p
+                                                                LEFT JOIN taxes t ON p.gst_id = t.id
+                                                                INNER JOIN orders o ON o.plan = p.id
+                                                                WHERE o.plan = $plan_id
+                                                                LIMIT 1
+                                                            ");
+
+                                                        } else if ($row['type'] === 'product') {
+
+                                                            // ⭐ Normal Time → PRODUCT Logic (NEW)
+                                                            // products.gst column contains tax ID
+                                                            $tax_query = $conn->query("
+                                                                SELECT t.tax_name, t.rate
+                                                                FROM products pr
+                                                                LEFT JOIN taxes t ON pr.gst = t.id
+                                                                INNER JOIN orders o ON o.plan = pr.id
+                                                                WHERE o.plan = $plan_id
+                                                                LIMIT 1
+                                                            ");
+
+                                                        }
+                                                    }
+
+                                                    // ================================
+                                                    //   Fetch the tax details
+                                                    // ================================
+                                                    if (!empty($tax_query) && $tax_query->num_rows > 0) {
+                                                        $tax_row = $tax_query->fetch_assoc();
+                                                        if (!empty($tax_row['rate'])) $tax_rate = floatval($tax_row['rate']);
+                                                        if (!empty($tax_row['tax_name'])) $tax_name = $tax_row['tax_name'];
+                                                    }
+                                                }
+
+                                                // ================================
+                                                // Compute GST + Totals
+                                                // ================================
+                                                $gst_amount = $row['subtotal'] * ($tax_rate / 100);
+                                                $total_after_gst = floatval($row['subtotal']) + floatval($gst_amount) - floatval($row['discount_amount']);
+                                                $balance_due = $total_after_gst - $row['payment_made'];
+                                            ?>
+                                            <!-- <tr>
+                                                <td class="pe-64 p-4 fw-semibold"><?php echo htmlspecialchars($tax_name); ?> (<?php echo $tax_rate; ?>%)</td>
+                                                <td class="p-4">
+                                                    <span class="text-primary-light" id="currency-symbol-display"><?= htmlspecialchars($symbol) ?> <?= number_format($gst_amount, 2); ?></span>
+                                                </td>
+                                            </tr> -->
+                                            <?php if ($row['existing_balance']) { ?>
+                                                <tr>
+                                                    <td class="pe-64 p-8 fw-semibold">Existing Plan</td>
+                                                    <td class="p-8">
+                                                        <span class="text-primary-light" id="currency-symbol-display"><?= htmlspecialchars($symbol) ?> <?php echo number_format($row['existing_balance'], 2); ?></span>
+                                                    </td>
+                                                </tr>
+                                            <?php } ?>
+                                            <tr>
+                                                <td class="pe-64 p-8 fw-semibold">
+                                                    <span class="text-primary-light">Total</span>
+                                                </td>
+                                                <td class="p-8">
+                                                <span class="text-primary-light" id="currency-symbol-display">
+                                                    <?= htmlspecialchars($symbol) ?>
+                                                    <?= number_format(floatval($row['amount']), 2); ?>
+                                                </span>
+
+                                                </td>
+                                            </tr>
+                                            <?php if ($row['payment_made'] != null) { ?>
+                                                <tr>
+                                                    <td class="pe-64 p-8 fw-semibold">
+                                                        <span class="text-primary-light">Payment Made</span>
+                                                    </td>
+                                                    <td class="p-8">
+                                                        <span class="text-primary-light" id="currency-symbol-display"><?= htmlspecialchars($symbol) ?> <?= number_format($row['payment_made'], 2); ?></span>
+                                                    </td>
+                                                </tr>
+                                            <?php } ?>
+                                            <tr>
+                                                <td class="pe-64 p-8 fw-semibold">
+                                                    <span class="text-primary-light">Balance Due</span>
+                                                </td>
+                                                <td class="p-8">
+                                                    <span class="text-primary-light" id="currency-symbol-display"><?= htmlspecialchars($symbol) ?> <?= number_format($row['balance_due'], 2); ?></span>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <p class="p-8 text-end">Total In Words <b><i style="font-style: italic;"><?= htmlspecialchars(numberToWords($row['amount'])) ?></i></b></p>
+                            
+                            <div class="text-center border-footer mt-40 pt-20 pdf-footer">
+                                <p class="d-inline">Crafted with ease using</p> 
+                                <img src="https://admin2.luferatech.com/uploads/company_logo/<?php echo $company_row['logo']; ?>" class="footer-logo" alt="Lufera Logo" class="mb-4" style="margin-bottom: 6px; width: 120px;">
+                            </div>
+                        
+                            <?php 
+                                $tc_sql = "SELECT * FROM terms_conditions where apply_for = 'invoice'";
+                                $tc_result = $conn->query($tc_sql);
+                                if ($tc_result->num_rows > 0) {
+                                    $tc_row = $tc_result->fetch_assoc();
+                                    $id = $tc_row['id'];
+                                    $title = $tc_row['title'];
+                                    $content = $tc_row['content'];
+                                }
+                                if ($tc_result->num_rows > 0) { ?>
+                                <p>Terms & Conditions</p>
+                                <?php echo $content; ?>
+                            <?php } ?>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+    </body>
+    
+    </html>
+    <?php
+    $invoiceHtml = ob_get_clean();
+
+    // ───────────────────────────────────────────────
+    //  2. Generate PDF using dompdf
+    // ───────────────────────────────────────────────
+    
+
+    $options = new Options();
+    $options->set('isRemoteEnabled', true);           // allow loading images from URL
+    $options->set('isHtml5ParserEnabled', true);
+    $options->set('defaultFont', 'DejaVu Sans');      // better support for Indian Rupee symbol
+
+    $dompdf = new Dompdf($options);
+    $dompdf->loadHtml($invoiceHtml);
+    $dompdf->setPaper('A4', 'portrait');
+    $dompdf->render();
+
+    $pdfOutput = $dompdf->output();   // binary PDF content
+
+    // ───────────────────────────────────────────────
+    //  3. Send email with PDF attachment
+    // ───────────────────────────────────────────────
+    try {
+        $mail = new PHPMailer(true);
+        $mail->isSMTP();
+        $mail->Host       = 'smtp.gmail.com';
+        $mail->SMTPAuth   = true;
+        $mail->Username   = $_ENV['EMAIL_USERNAME'];
+        $mail->Password   = $_ENV['GMAIL_APP_PASSWORD'];
+        $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
+        $mail->Port       = 587;
+        $mail->CharSet    = 'UTF-8';
+        $mail->Encoding = 'base64';
+        // Sender
+        $mail->setFrom($_ENV['EMAIL_USERNAME'], 'Lufera Infotech');
+
+        // Recipient
+        $mail->addAddress($toAddress);
+
+        // Content
+        $mail->isHTML(true);
+        $mail->Subject = "Invoice #{$invoice_id} - Lufera Infotech";
+        $mail->ContentType = 'text/html; charset=UTF-8';
+
+        $mail->Body = '
                 <!DOCTYPE html>
                 <html>
                 <head>
@@ -540,7 +1027,7 @@ function numberToWords($num) {
                             <p>Thank you for your business. A test attachment is included with this email.</p>
                             
                             <table cellpadding="8" cellspacing="0" border="0" width="100%" style="border:1px solid #eaeaea;margin:20px 0;font-size:14px;">
-                                <tr><td><b>INVOICE AMOUNT</b></td><td id="currency-symbol-display">' . htmlspecialchars($symbol) . htmlspecialchars($amount) . '</td></tr>
+                                <tr><td><b>Invoice Amount</b></td><td id="currency-symbol-display">' . htmlspecialchars($symbol) . number_format($amount) . '</td></tr>
                                 <tr><td><b>Invoice No</b></td><td>' . htmlspecialchars($invoiceId) . '</td></tr>
                                 <tr><td><b>Invoice Date</b></td><td>' . date('d/m/Y', strtotime($created_on)) . '</td></tr>
                             </table>
@@ -579,34 +1066,40 @@ function numberToWords($num) {
                 </html>
             ';
 
-            $mail->send();
+        // Attach the PDF
+        $mail->addStringAttachment($pdfOutput, "Invoice_{$invoice_id}.pdf", 'base64', 'application/pdf');
 
-            echo "<script> 
-                Swal.fire({ 
-                    icon: 'success',
-                    title: 'Invoice sent successfully',
-                    confirmButtonColor: '#3085d6'
-                }).then(() => {
-                    window.location.href = ''; 
-                }); 
-            </script>"; 
+        $mail->send();
 
-        } catch (Exception $e) {
-            error_log("Email not sent. Error: {$mail->ErrorInfo}");
-            echo "<script>
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Email failed',
-                    text: '\" . addslashes($mail->ErrorInfo) . \"'
-                });
-            </script>";
-        }
+        // Success message
+        echo "
+        <script>
+            Swal.fire({ 
+                icon: 'success',
+                title: 'Invoice sent successfully',
+                confirmButtonColor: '#3085d6'
+            }).then(() => {
+                window.location.href = ''; 
+            }); 
+        </script>";
     }
+    catch (Exception $e) {
+        error_log("Email error: " . $mail->ErrorInfo);
+        echo "
+        <script>
+            Swal.fire({
+                icon: 'error',
+                title: 'Failed to send invoice',
+                text: '" . addslashes($mail->ErrorInfo) . "'
+            });
+        </script>";
+    }
+}
 ?>
 <div class="dashboard-main-body">
     <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-24">
-        <a class="cursor-pointer fw-bold" onclick="history.back()"><span class="fa fa-arrow-left"></span>&nbsp; Back</a>    
-        <h6 class="fw-semibold mb-0">Invoice Preview</h6>
+        <a class="cursor-pointer fw-bold titlesec" onclick="history.back()"><span class="fa fa-arrow-left"></span>&nbsp; Back</a>    
+        <h6 class="fw-semibold mb-0 titlesec">Invoice Preview</h6>
         <a class="cursor-pointer fw-bold visibility-hidden" onclick="history.back()"><span class="fa fa-arrow-left"></span>&nbsp; Back</a> 
     </div>
 
@@ -784,10 +1277,10 @@ function numberToWords($num) {
 
         <div class="card-body py-40">
             <div class="row justify-content-center" id="invoice">
-                <div class="col-lg-8">
+                <div class="col-sec">
                     <div class="shadow-4 border radius-8">
                         <div class="p-20">
-                            <div class="d-flex justify-content-between gap-3">
+                            <div class="d-flex justify-content-between gap-3 mb-3">
                                 <div class="align-content-end">
                                     <img src="uploads/company_logo/<?php echo $logo; ?>" alt="site logo" class="invoice-logo">
                                 </div>
