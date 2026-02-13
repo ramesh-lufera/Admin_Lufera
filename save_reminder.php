@@ -1,31 +1,174 @@
 <?php
+// save_reminder.php – FINAL VERSION WITH EMAIL NOTIFICATION
 header('Content-Type: application/json');
+header('Access-Control-Allow-Origin: *');
+header('Access-Control-Allow-Methods: POST, OPTIONS');
+header('Access-Control-Allow-Headers: Content-Type');
+
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    http_response_code(200);
+    exit;
+}
+
+// Optional: Keep debug logging during development
+file_put_contents(
+    __DIR__ . '/save_reminder_debug.log',
+    date('Y-m-d H:i:s') . " → Request received\n" . file_get_contents('php://input') . "\n\n",
+    FILE_APPEND | LOCK_EX
+);
+
 include './partials/connection.php';
+require_once __DIR__ . '/vendor/autoload.php';
+
+use Dotenv\Dotenv;
+use PHPMailer\PHPMailer\PHPMailer;
+use PHPMailer\PHPMailer\Exception;
+
+$dotenv = Dotenv::createImmutable(__DIR__);
+$dotenv->load();
 
 $data = json_decode(file_get_contents('php://input'), true);
 
-// if (!$data || empty($data['sheet_id']) || empty($data['sheet_row']) || empty($data['remind_at'])) {
-//     echo json_encode(['success' => false, 'error' => 'Missing required fields']);
-//     exit;
-// }
+if (!$data || !isset($data['sheet_id']) || !isset($data['sheet_row']) || !isset($data['remind_at'])) {
+    echo json_encode(['success' => false, 'error' => 'Missing required fields']);
+    exit;
+}
+
+// Normalize datetime format: 2025-02-10T18:30 → 2025-02-10 18:30:00
+$remind_at_raw = $data['remind_at'];
+$remind_at = str_replace('T', ' ', $remind_at_raw);
+if (strlen($remind_at) === 16) {
+    $remind_at .= ':00';
+}
+
+// Optional: Convert to more human-readable format for email
+$remind_at_display = date('d M Y, h:i A', strtotime($remind_at));
 
 $stmt = $conn->prepare("
     INSERT INTO sheet_reminders 
-    (sheet_id, sheet_row, remind_at, message, recipient_email, created_at)
-    VALUES (?, ?, ?, ?, ?, NOW())
+    (sheet_id, sheet_row, remind_at, message, recipient_email, created_at, created_by, is_read, notified)
+    VALUES (?, ?, ?, ?, ?, NOW(), 'user', 0, 0)
 ");
 
-$stmt->bind_param("iiss",
+$stmt->bind_param(
+    "iisss",
     $data['sheet_id'],
     $data['sheet_row'],
-    $data['remind_at'],
+    $remind_at,
     $data['message'],
-    $data['recipient_email'] ?? null
+    $data['recipient_email']
 );
 
-$ok = $stmt->execute();
+$success = $stmt->execute();
 
-echo json_encode([
-    'success' => $ok,
-    'error'   => $ok ? null : $conn->error
-]);
+$response = [
+    'success' => $success,
+    'error'   => $success ? null : $stmt->error,
+    'id'      => $success ? $conn->insert_id : null
+];
+
+$stmt->close();
+
+// ────────────────────────────────────────────────
+// Send email only if insert was successful
+// ────────────────────────────────────────────────
+if ($success && !empty($data['recipient_email']) && filter_var($data['recipient_email'], FILTER_VALIDATE_EMAIL)) {
+    $recipient_email = $data['recipient_email'];
+    $message_content = !empty($data['message']) ? nl2br(htmlspecialchars($data['message'])) : 'No additional message provided.';
+
+    try {
+        $mail = new PHPMailer(true);
+        $mail->isSMTP();
+        $mail->Host       = 'smtp.gmail.com';
+        $mail->SMTPAuth   = true;
+        $mail->Username   = $_ENV['EMAIL_USERNAME'];
+        $mail->Password   = $_ENV['GMAIL_APP_PASSWORD'];
+        $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
+        $mail->Port       = 587;
+
+        $mail->CharSet  = 'UTF-8';
+        $mail->Encoding = 'base64';
+
+        // Sender
+        $mail->setFrom($_ENV['EMAIL_USERNAME'], 'Lufera Infotech');
+
+        // Recipient
+        $mail->addAddress($recipient_email);
+
+        $mail->isHTML(true);
+        $mail->Subject = 'Reminder Created – Action Required';
+
+        // ───── Beautiful HTML Email Template ─────
+        $mail->Body = '
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Reminder Notification</title>
+        </head>
+        <body>
+            <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
+                <tr>
+                    <td style="padding: 20px 0;">
+                        <table role="presentation" align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 580px; background:#ffffff; border-radius:12px; overflow:hidden; box-shadow:0 4px 12px rgba(0,0,0,0.08);">
+                            <!-- Content -->
+                            <tr>
+                                <td style="padding: 40px 30px;">
+                                    <h2 style="margin-top:0; color:#1f2937; font-size:22px;">Hello,</h2>
+                                    <p style="font-size:16px; line-height:1.6; margin:0 0 24px;">A new reminder has been created for you in the system.</p>
+
+                                    <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="background:#f8fafc; border-radius:8px; padding:20px; margin:24px 0;">
+                                        <tr>
+                                            <td style="font-weight:bold; width:140px; padding-bottom:12px;">Date & Time:</td>
+                                            <td style="padding-bottom:12px;">' . htmlspecialchars($remind_at_display) . '</td>
+                                        </tr>
+                                        <tr>
+                                            <td style="font-weight:bold; width:140px; padding-bottom:12px; vertical-align:top;">Message:</td>
+                                            <td style="padding-bottom:12px;">' . $message_content . '</td>
+                                        </tr>
+                                    </table>
+
+                                    <p style="font-size:16px; line-height:1.6; margin:24px 0 0;">
+                                        Please take the necessary action at the scheduled time.<br>
+                                        You can view this reminder in your sheet.
+                                    </p>
+
+                                    <div style="margin: 32px 0; text-align:center;">
+                                        <a href="https://admin2.luferatech.com/sheets.php?id='.$data['sheet_id'].'" style="background:#fec700; color:#ffffff; padding:14px 32px; text-decoration:none; border-radius:8px; font-weight:500; font-size:16px; display:inline-block;">
+                                            View in Sheet
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+
+                            <!-- Footer -->
+                            <tr>
+                                <td style="background:#f1f5f9; padding:24px 30px; text-align:center; font-size:14px; color:#64748b;">
+                                    <p style="margin:0 0 8px;">Lufera Infotech – Task & Reminder System</p>
+                                    <p style="margin:0;">This is an automated message. Please do not reply directly to this email.</p>
+                                </td>
+                            </tr>
+                        </table>
+                    </td>
+                </tr>
+            </table>
+        </body>
+        </html>';
+
+        $mail->AltBody = "Reminder Scheduled\n\nDate & Time: $remind_at_display\nMessage:\n" . ($data['message'] ?? 'No message') . "\n\nThis is an automated reminder from Lufera Infotech.";
+
+        $mail->send();
+
+        // Optional: Update notified = 1
+        $conn->query("UPDATE sheet_reminders SET notified = 1 WHERE id = " . $conn->insert_id);
+
+    } catch (Exception $e) {
+        error_log("Reminder email failed → " . $mail->ErrorInfo);
+        // You can also log to a separate email_errors.log if needed
+        // Don't fail the whole API call just because email failed
+    }
+}
+
+echo json_encode($response);
+exit;
