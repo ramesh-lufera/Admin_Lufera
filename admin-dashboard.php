@@ -1005,6 +1005,13 @@
         AND YEAR(created_at) = YEAR(CURDATE())
     ")->fetch_assoc()['c'];
 
+    /* ===== Active Subscriptions (TOTAL user) ===== */
+    $activeSubsTotal = $conn->query("
+        SELECT COUNT(*) c
+        FROM websites
+        WHERE user_id = $uid
+    ")->fetch_assoc()['c'];
+
     /* ===== Upcoming Renewals (next 2 months) ===== */
     $upcomingUserRenewals = $conn->query("
         SELECT COUNT(*) c
@@ -1013,6 +1020,15 @@
         AND expired_at IS NOT NULL
         AND expired_at BETWEEN CURDATE() 
         AND DATE_ADD(CURDATE(), INTERVAL 2 MONTH)
+    ")->fetch_assoc()['c'];
+
+    /* ===== DUE RENEWALS (expired as of today) ===== */
+    $dueUserRenewals = $conn->query("
+        SELECT COUNT(*) c
+        FROM websites
+        WHERE user_id = $uid
+        AND expired_at IS NOT NULL
+        AND DATE(expired_at) <= CURDATE()
     ")->fetch_assoc()['c'];
 
     /* ===== Pending Payments (this month non-zero balance) ===== */
@@ -1035,6 +1051,14 @@
             AND MONTH(created_on) = MONTH(CURDATE())
             AND YEAR(created_on) = YEAR(CURDATE())
         ) AS c
+    ")->fetch_assoc()['c'];
+
+    /* ===== Pending Payments TOTAL (orders table only) ===== */
+    $pendingPaymentsTotal = $conn->query("
+        SELECT COUNT(*) c
+        FROM orders
+        WHERE user_id = $uid
+        AND balance_due > 0
     ")->fetch_assoc()['c'];
 ?>
 
@@ -1553,7 +1577,7 @@
                                             </span>
                                             <div>
                                                 <h6 class="fw-semibold mb-0">
-                                                    <?= number_format($activeSubsMonth) ?>
+                                                    <?= number_format($activeSubsTotal) ?>
                                                 </h6>
                                                 <span class="fw-medium text-secondary-light text-md">
                                                     Active Subscriptions
@@ -1581,7 +1605,7 @@
                                             </span>
                                             <div>
                                                 <h6 class="fw-semibold mb-0">
-                                                    <?= number_format($upcomingUserRenewals) ?>
+                                                    <?= number_format($dueUserRenewals) ?>
                                                 </h6>
                                                 <span class="fw-medium text-secondary-light text-md">
                                                     Upcoming Renewals
@@ -1609,7 +1633,7 @@
                                             </span>
                                             <div>
                                                 <h6 class="fw-semibold mb-0">
-                                                    <?= number_format($pendingPaymentsMonth) ?>
+                                                    <?= number_format($pendingPaymentsTotal) ?>
                                                 </h6>
                                                 <span class="fw-medium text-secondary-light text-md">
                                                     Pending Payments
