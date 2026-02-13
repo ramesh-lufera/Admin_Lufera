@@ -1,13 +1,13 @@
 <?php include './partials/layouts/layoutTop.php';
-    require_once __DIR__ . '/vendor/autoload.php';
-    require_once __DIR__ . '/vendor_pdf/autoload.php';
-    use Dotenv\Dotenv;
-    use PHPMailer\PHPMailer\PHPMailer;
-    use PHPMailer\PHPMailer\Exception;
-    use Dompdf\Dompdf;
-    use Dompdf\Options;
-    $dotenv = Dotenv::createImmutable(__DIR__);
-    $dotenv->load();
+    // require_once __DIR__ . '/vendor/autoload.php';
+    // require_once __DIR__ . '/vendor_pdf/autoload.php';
+    // use Dotenv\Dotenv;
+    // use PHPMailer\PHPMailer\PHPMailer;
+    // use PHPMailer\PHPMailer\Exception;
+    // use Dompdf\Dompdf;
+    // use Dompdf\Options;
+    // $dotenv = Dotenv::createImmutable(__DIR__);
+    // $dotenv->load();
 ?>
 <?php $script = '<script>
                     function printInvoice() {
@@ -433,6 +433,37 @@ function numberToWords($num) {
     $symbol = "$"; // default
     if ($row1 = $result1->fetch_assoc()) {
         $symbol = $row1['symbol'];
+    }
+
+    /**
+     * Frozen invoice snapshot:
+     * - When balance_due becomes 0.00 we want the invoice to stop reflecting
+     *   future DB changes in related tables.
+     * - We assume an `invoice_snapshot` LONGTEXT column exists on both
+     *   `orders` and `renewal_invoices` tables, containing JSON.
+     * - If that snapshot exists and balance_due == 0 we prefer the stored data.
+     */
+    $invoiceSnapshot = null;
+    $useSnapshot = false;
+    if (!empty($row['invoice_snapshot']) && isset($row['balance_due']) && (float)$row['balance_due'] == 0.0) {
+        $decodedSnapshot = json_decode($row['invoice_snapshot'], true);
+        if (json_last_error() === JSON_ERROR_NONE && is_array($decodedSnapshot)) {
+            $invoiceSnapshot = $decodedSnapshot;
+            $useSnapshot = true;
+
+            if (isset($invoiceSnapshot['company'])) {
+                $company_row = $invoiceSnapshot['company'];
+            }
+            if (isset($invoiceSnapshot['order'])) {
+                $row = $invoiceSnapshot['order'];
+            }
+            if (isset($invoiceSnapshot['user'])) {
+                $rows = $invoiceSnapshot['user'];
+            }
+            if (isset($invoiceSnapshot['currency_symbol'])) {
+                $symbol = $invoiceSnapshot['currency_symbol'];
+            }
+        }
     }
 ?>
 
@@ -1610,18 +1641,58 @@ if (isset($_POST['send_invoice'])) {
                             </div>
                         
                             <?php 
-                                $tc_sql = "SELECT * FROM terms_conditions where apply_for = 'invoice'";
-                                $tc_result = $conn->query($tc_sql);
-                                if ($tc_result->num_rows > 0) {
-                                    $tc_row = $tc_result->fetch_assoc();
-                                    $id = $tc_row['id'];
-                                    $title = $tc_row['title'];
-                                    $content = $tc_row['content'];
+                                // Resolve Terms & Conditions, preferring frozen snapshot content when available
+                                $termsContent = null;
+
+                                if ($useSnapshot && isset($invoiceSnapshot['terms_content']) && $invoiceSnapshot['terms_content'] !== '') {
+                                    $termsContent = $invoiceSnapshot['terms_content'];
+                                } else {
+                                    $tc_sql = "SELECT * FROM terms_conditions where apply_for = 'invoice'";
+                                    $tc_result = $conn->query($tc_sql);
+                                    if ($tc_result && $tc_result->num_rows > 0) {
+                                        $tc_row = $tc_result->fetch_assoc();
+                                        $id = $tc_row['id'];
+                                        $title = $tc_row['title'];
+                                        $content = $tc_row['content'];
+                                        $termsContent = $content;
+                                    }
                                 }
-                                if ($tc_result->num_rows > 0) { ?>
-                                <p>Terms & Conditions</p>
-                                <?php echo $content; ?>
-                            <?php } ?>
+
+                                if (!empty($termsContent)) { ?>
+                                    <p>Terms & Conditions</p>
+                                    <?php echo $termsContent; ?>
+                                <?php }
+
+                                // If invoice is fully paid and no snapshot stored yet, create one now
+                                if ((float)$row['balance_due'] == 0.0 && empty($row['invoice_snapshot']) && !$useSnapshot) {
+                                    $snapshotData = [
+                                        'company'         => $company_row,
+                                        'order'           => $row,
+                                        'user'            => $rows,
+                                        'currency_symbol' => $symbol,
+                                        'terms_content'   => $termsContent,
+                                    ];
+
+                                    $snapshotJson = json_encode($snapshotData, JSON_UNESCAPED_UNICODE);
+
+                                    if ($snapshotJson !== false) {
+                                        if ($type === 'renewal') {
+                                            $stmtSnap = $conn->prepare("UPDATE renewal_invoices SET invoice_snapshot = ? WHERE invoice_id = ?");
+                                        } else {
+                                            $stmtSnap = $conn->prepare("UPDATE orders SET invoice_snapshot = ? WHERE invoice_id = ?");
+                                        }
+
+                                        if ($stmtSnap) {
+                                            $stmtSnap->bind_param('ss', $snapshotJson, $invoice_id);
+                                            $stmtSnap->execute();
+                                        }
+                                    }
+
+                                    // Use this snapshot for the remainder of this request
+                                    $invoiceSnapshot = $snapshotData;
+                                    $useSnapshot = true;
+                                }
+                            ?>
                         </div>
                     </div>
                 </div>
