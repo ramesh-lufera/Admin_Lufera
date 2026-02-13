@@ -72,30 +72,48 @@ if (isset($_GET['id'])) {
     width:360px;
     z-index:10000;
   }
-  #columnTypeModal.open {display:block;}
-  #modalBackdrop {
-    display:none;
-    position:fixed;
-    inset:0;
-    background:rgba(0,0,0,0.4);
-    z-index:9999;
-  }
-  #modalBackdrop.open {display:block;}
-    .comment-panel {
+#columnTypeModal.open {display:block;}
+#modalBackdrop {
+display:none;
+position:fixed;
+inset:0;
+background:rgba(0,0,0,0.4);
+z-index:9999;
+}
+#modalBackdrop.open {display:block;}
+.side-backdrop {
     position: fixed;
-    right: -360px;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.4);     /* lighter black – adjust opacity as needed */
+    z-index: 998;                       /* below panels (9999) but above content */
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.25s ease, visibility 0.25s ease;
+    pointer-events: none;               /* important: allows click-through until open */
+}
+
+.side-backdrop.active {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;               /* now catches clicks */
+}
+.comment-panel {
+    position: fixed;
+    right: -380px;
     top: 0;
-    width: 360px;
+    width: 380px;
     height: 100%;
     background: #fff;
-    border-left: 1px solid #ddd;
-    box-shadow: -2px 0 6px rgba(0,0,0,.1);
+    border-left: 1px solid #d1d5db;
+    box-shadow: -2px 0 6px rgba(0,0,0,0.15);
     transition: right .3s ease;
     z-index: 9999;
     display: flex;
     flex-direction: column;
-    }
-
+}
+body.side-panel-open {
+    overflow: hidden;
+}
     .comment-panel.open { right: 0; }
 
     .comment-header {
@@ -1526,16 +1544,6 @@ document.addEventListener("DOMContentLoaded", () => {
 /* ------------------------------------------------------------
    COMMENTS & ATTACHMENTS
 ------------------------------------------------------------ */
-function openComments(row) {
-    activeRow = row;
-    document.getElementById("commentPanel").classList.add("open");
-    loadComments();
-}
-
-function closeComments() {
-    document.getElementById("commentPanel").classList.remove("open");
-}
-
 function scrollCommentListToBottom() {
     const list = document.getElementById("commentList");
     if (list) {
@@ -1723,16 +1731,6 @@ function saveReply(parentId) {
         console.error(err);
         alert("Network error");
     });
-}
-
-function openAttachments(row) {
-    activeAttachRow = row;
-    document.getElementById("attachmentPanel").classList.add("open");
-    loadAttachments();
-}
-
-function closeAttachments() {
-    document.getElementById("attachmentPanel").classList.remove("open");
 }
 
 async function loadAttachments() {
@@ -2146,6 +2144,8 @@ async function saveReminder() {
 }
 </script>
 
+<div id="sidePanelBackdrop" class="side-backdrop"></div>
+
 <div id="commentPanel" class="comment-panel">
     <div class="comment-header">
         <strong>Comments</strong>
@@ -2162,8 +2162,8 @@ async function saveReminder() {
 
 <div id="attachmentPanel" class="comment-panel">
     <div class="comment-header">
-        <h6 class="d-inline mb-0">Task Attachments</h6>
-        <h6 class="mb-0 cursor-pointer" onclick="closeAttachments()">&times;</h6>
+        <strong>Task Attachments</strong>
+        <button onclick="closeAttachments()">✖</button>
     </div>
 
     <div id="attachmentList" class="comment-list"></div>
@@ -2449,7 +2449,67 @@ function handleBack() {
         // Cancel → do nothing
     });
 }
+function openSidePanel(panelId) {
+    const panel = document.getElementById(panelId);
+    const backdrop = document.getElementById("sidePanelBackdrop");
 
+    if (!panel || !backdrop) return;
+
+    // Show panel + backdrop
+    panel.classList.add("open");
+    backdrop.classList.add("active");
+
+    // Optional: prevent body scroll
+    document.body.classList.add("side-panel-open");
+
+    // Load content depending on which panel
+    if (panelId === "commentPanel") {
+        loadComments();
+    } else if (panelId === "attachmentPanel") {
+        loadAttachments();
+    }
+}
+
+function closeSidePanel() {
+    const panels = document.querySelectorAll(".comment-panel");
+    const backdrop = document.getElementById("sidePanelBackdrop");
+
+    panels.forEach(p => p.classList.remove("open"));
+    backdrop.classList.remove("active");
+
+    // Restore body scroll
+    document.body.classList.remove("side-panel-open");
+
+    // Optional: clear active row tracking
+    activeRow = null;
+    activeAttachRow = null;
+}
+
+// Close when clicking backdrop
+document.getElementById("sidePanelBackdrop")?.addEventListener("click", () => {
+    closeSidePanel();
+});
+
+// Update your open functions to use the shared logic
+function openComments(row) {
+    activeRow = row;
+    openSidePanel("commentPanel");
+}
+
+function openAttachments(row) {
+    activeAttachRow = row;
+    openSidePanel("attachmentPanel");
+}
+
+// You can still keep individual close functions if needed,
+// but now they can just call the shared one:
+function closeComments() {
+    closeSidePanel();
+}
+
+function closeAttachments() {
+    closeSidePanel();
+}
 </script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 
