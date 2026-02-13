@@ -1872,6 +1872,8 @@
                 $editForm = [
                     'form_title' => $row['form_title'],
                     'form_json'  => $row['form_json'],
+                    'form_settings'  => $row['form_settings'],
+                    'is_active'  => $row['is_active'],
                 ];
                 // If this form is already linked to a sheet, keep that relationship
                 if (!empty($row['sheet_id']) && !$sheet_id_from_url) {
@@ -1881,7 +1883,7 @@
         }
         // No explicit form id, but we have a sheet_id → try loading by sheet_id
         elseif ($sheet_id_from_url > 0) {
-            $stmt = $conn->prepare("SELECT id, form_title, form_json FROM form_builder WHERE sheet_id = ? LIMIT 1");
+            $stmt = $conn->prepare("SELECT id, form_title, form_json, form_settings, is_active FROM form_builder WHERE sheet_id = ? LIMIT 1");
             $stmt->bind_param("i", $sheet_id_from_url);
             $stmt->execute();
             $result = $stmt->get_result();
@@ -1892,6 +1894,8 @@
                 $editForm = [
                     'form_title' => $row['form_title'],
                     'form_json'  => $row['form_json'],
+                    'form_settings'  => $row['form_settings'],
+                    'is_active'  => $row['is_active'],
                 ];
             }
         }
