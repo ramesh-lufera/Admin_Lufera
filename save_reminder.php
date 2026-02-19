@@ -1,6 +1,7 @@
 <?php
-// save_reminder.php – FINAL VERSION WITH EMAIL NOTIFICATION
-header('Content-Type: application/json');
+ob_start();
+// save_reminder.php – FINAL VERSION WITH DIRECT EMAIL NOTIFICATION
+header('Content-Type: application/json; charset=utf-8');
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: POST, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type');
@@ -34,47 +35,57 @@ if (!$data || !isset($data['sheet_id']) || !isset($data['sheet_row']) || !isset(
     exit;
 }
 
-// Normalize datetime format: 2025-02-10T18:30 → 2025-02-10 18:30:00
+// Normalize datetime: 2025-02-10T18:30 → 2025-02-10 18:30:00
 $remind_at_raw = $data['remind_at'];
 $remind_at = str_replace('T', ' ', $remind_at_raw);
+$recipient_email = trim($data['recipient_email'] ?? '');
+
 if (strlen($remind_at) === 16) {
     $remind_at .= ':00';
 }
 
-// Optional: Convert to more human-readable format for email
+// Human-readable format for display
 $remind_at_display = date('d M Y, h:i A', strtotime($remind_at));
 
 $stmt = $conn->prepare("
-    INSERT INTO sheet_reminders 
+    INSERT INTO sheet_reminders
     (sheet_id, sheet_row, remind_at, message, recipient_email, created_at, created_by, is_read, notified)
-    VALUES (?, ?, ?, ?, ?, NOW(), 'user', 0, 0)
+    VALUES (?, ?, ?, ?, ?, NOW(), ?, 0, 0)
 ");
 
+$created_by = 0; // ← adjust if you have user ID / session
+
 $stmt->bind_param(
-    "iisss",
+    "iisssi",
     $data['sheet_id'],
     $data['sheet_row'],
     $remind_at,
     $data['message'],
-    $data['recipient_email']
+    $recipient_email,
+    $created_by
 );
 
 $success = $stmt->execute();
 
 $response = [
-    'success' => $success,
-    'error'   => $success ? null : $stmt->error,
-    'id'      => $success ? $conn->insert_id : null
+    'success'     => $success,
+    'error'       => $success ? null : $stmt->error,
+    'id'          => $success ? $conn->insert_id : null,
+    'email_sent'  => false,
 ];
+
+$reminder_id = $success ? (int)$conn->insert_id : 0;
 
 $stmt->close();
 
 // ────────────────────────────────────────────────
-// Send email only if insert was successful
+// Send email directly (if valid recipient exists)
 // ────────────────────────────────────────────────
-if ($success && !empty($data['recipient_email']) && filter_var($data['recipient_email'], FILTER_VALIDATE_EMAIL)) {
-    $recipient_email = $data['recipient_email'];
-    $message_content = !empty($data['message']) ? nl2br(htmlspecialchars($data['message'])) : 'No additional message provided.';
+if ($success && $reminder_id > 0 && !empty($recipient_email) && filter_var($recipient_email, FILTER_VALIDATE_EMAIL)) {
+
+    $sheet_id = (int)$data['sheet_id'];           // for the link
+    $message_raw = (string)($data['message'] ?? '');
+    $message_content = $message_raw !== '' ? nl2br(htmlspecialchars($message_raw)) : 'No additional message provided.';
 
     try {
         $mail = new PHPMailer(true);
@@ -85,20 +96,16 @@ if ($success && !empty($data['recipient_email']) && filter_var($data['recipient_
         $mail->Password   = $_ENV['GMAIL_APP_PASSWORD'];
         $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
         $mail->Port       = 587;
-
         $mail->CharSet  = 'UTF-8';
         $mail->Encoding = 'base64';
 
-        // Sender
         $mail->setFrom($_ENV['EMAIL_USERNAME'], 'Lufera Infotech');
-
-        // Recipient
         $mail->addAddress($recipient_email);
 
         $mail->isHTML(true);
-        $mail->Subject = 'Reminder Created – Action Required';
+        $mail->Subject = "Reminder Created – Action Required";
 
-        // ───── Beautiful HTML Email Template ─────
+        // Fixed HTML email body (corrected $sheetId → $sheet_id)
         $mail->Body = '
         <!DOCTYPE html>
         <html lang="en">
@@ -112,12 +119,11 @@ if ($success && !empty($data['recipient_email']) && filter_var($data['recipient_
                 <tr>
                     <td style="padding: 20px 0;">
                         <table role="presentation" align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 580px; background:#ffffff; border-radius:12px; overflow:hidden; box-shadow:0 4px 12px rgba(0,0,0,0.08);">
-                            <!-- Content -->
                             <tr>
                                 <td style="padding: 40px 30px;">
                                     <h2 style="margin-top:0; color:#1f2937; font-size:22px;">Hello,</h2>
                                     <p style="font-size:16px; line-height:1.6; margin:0 0 24px;">A new reminder has been created for you in the system.</p>
-
+                                    
                                     <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="background:#f8fafc; border-radius:8px; padding:20px; margin:24px 0;">
                                         <tr>
                                             <td style="font-weight:bold; width:140px; padding-bottom:12px;">Date & Time:</td>
@@ -135,14 +141,13 @@ if ($success && !empty($data['recipient_email']) && filter_var($data['recipient_
                                     </p>
 
                                     <div style="margin: 32px 0; text-align:center;">
-                                        <a href="https://admin2.luferatech.com/sheets.php?id='.$data['sheet_id'].'" style="background:#fec700; color:#ffffff; padding:14px 32px; text-decoration:none; border-radius:8px; font-weight:500; font-size:16px; display:inline-block;">
+                                        <a href="https://admin2.luferatech.com/sheets.php?id=' . $sheet_id . '" 
+                                           style="background:#fec700; color:#ffffff; padding:14px 32px; text-decoration:none; border-radius:8px; font-weight:500; font-size:16px; display:inline-block;">
                                             View in Sheet
                                         </a>
                                     </div>
                                 </td>
                             </tr>
-
-                            <!-- Footer -->
                             <tr>
                                 <td style="background:#f1f5f9; padding:24px 30px; text-align:center; font-size:14px; color:#64748b;">
                                     <p style="margin:0 0 8px;">Lufera Infotech – Task & Reminder System</p>
@@ -156,19 +161,26 @@ if ($success && !empty($data['recipient_email']) && filter_var($data['recipient_
         </body>
         </html>';
 
-        $mail->AltBody = "Reminder Scheduled\n\nDate & Time: $remind_at_display\nMessage:\n" . ($data['message'] ?? 'No message') . "\n\nThis is an automated reminder from Lufera Infotech.";
+        $mail->AltBody = "Reminder Scheduled\n\n"
+                       . "Date & Time: $remind_at_display\n"
+                       . "Message:\n" . ($message_raw ?: 'No message') . "\n\n"
+                       . "View here: https://admin2.luferatech.com/sheets.php?id=$sheet_id\n"
+                       . "This is an automated reminder from Lufera Infotech.";
 
         $mail->send();
 
-        // Optional: Update notified = 1
-        $conn->query("UPDATE sheet_reminders SET notified = 1 WHERE id = " . $conn->insert_id);
+        // Mark as notified
+        $conn->query("UPDATE sheet_reminders SET notified = 1 WHERE id = $reminder_id");
+
+        $response['email_sent'] = true;
 
     } catch (Exception $e) {
-        error_log("Reminder email failed → " . $mail->ErrorInfo);
-        // You can also log to a separate email_errors.log if needed
-        // Don't fail the whole API call just because email failed
+        error_log("Reminder email failed (id=$reminder_id) → " . $mail->ErrorInfo);
+        $response['email_error'] = $mail->ErrorInfo; // optional – for debugging
+        // Do NOT fail the whole request — reminder is still saved
     }
 }
 
+ob_end_clean();
 echo json_encode($response);
 exit;
