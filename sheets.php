@@ -357,7 +357,7 @@ tr:hover .bell-icon {
     <div class="card radius-12 h-100">
         <div class="card-body p-24">
 
-            <div class="toolbar mb-3 d-flex gap-2 align-items-center">                
+            <!--<div class="toolbar mb-3 d-flex gap-2 align-items-center">                
                 <div class="dropdown">
                     <button class="dropdown-btn">File</button>
                     <div class="dropdown-menu">
@@ -374,13 +374,14 @@ tr:hover .bell-icon {
                         <button id="export-to-form">Create Form</button>
                     </div>
                 </div>                
-            </div>
+            </div>-->
 
             <div class="mb-3 d-flex gap-3 align-items-center toolbar">
                 <button id="save-db"><span class="fa fa-save text-xxl text-primary"></span></button>
                 <button id="export-csv"><span class="fa fa-download text-xxl text-success"></span></button>
                 <button id="load-db"><span class="fa fa-folder-open text-xxl text-warning"></span></button>
                 <button id="clear"><span class="fa fa-close text-xxl text-danger"></span></button>
+                <button id="export-to-form"><span class="fa fa-share text-xxl text-secondary"></span></button>
             </div>
             <div class="sheet" id="sheet"></div>
         </div>
@@ -2096,6 +2097,7 @@ function closeReminderModal() {
 async function saveReminder() {
     const dateStr = document.getElementById("reminderDate").value;
     const msg = document.getElementById("reminderMessage").value.trim();
+    const email = document.getElementById("reminderEmail").value.trim();
 
     if (!dateStr) {
         alert("Please select a reminder date.");
@@ -2105,7 +2107,10 @@ async function saveReminder() {
         alert("Please enter a reminder message.");
         return;
     }
-
+    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        alert("Please enter a valid email address.");
+        return;
+    }
     try {
         const res = await fetch("save_reminder.php", {
             method: "POST",
@@ -2114,11 +2119,23 @@ async function saveReminder() {
                 sheet_id: activeSheetId,
                 sheet_row: currentReminderRow,
                 remind_at: dateStr,
-                message: msg
+                message: msg,
+                recipient_email: email
             })
         });
 
-        const result = await res.json();
+        const raw = await res.text();
+        let result = null;
+        try {
+            result = JSON.parse(raw);
+        } catch (e) {
+            console.error("save_reminder.php returned non-JSON:", raw);
+            throw new Error("Invalid JSON response from server");
+        }
+
+        if (!res.ok) {
+            throw new Error(result?.error || `HTTP ${res.status}`);
+        }
         if (result.success) {
             // Visual feedback
             //const bell = document.querySelector(`.cell[data-r="${currentReminderRow}"][data-c="1"] .bell-icon`);
@@ -2139,7 +2156,7 @@ async function saveReminder() {
         }
     } catch (err) {
         console.error(err);
-        alert("Network error");
+        alert(err?.message || "Network error");
     }
 }
 </script>
