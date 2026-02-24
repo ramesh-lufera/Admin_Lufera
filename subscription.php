@@ -380,7 +380,15 @@
                 websites.expired_at,
                 websites.created_at,
                 websites.duration,
-                websites.renewal_duration
+                websites.renewal_duration,
+
+                websites.plan        AS website_plan,
+                websites.type        AS website_type,
+                websites.duration    AS website_duration,
+                websites.status      AS website_status,
+                websites.invoice_id  AS website_invoice_id,
+                websites.created_at  AS website_created_at,
+                websites.expired_at  AS website_expired_at
 
                 FROM orders
                 INNER JOIN users ON orders.user_id = users.id
@@ -409,7 +417,15 @@
                 websites.expired_at,
                 websites.created_at,
                 websites.duration,
-                websites.renewal_duration
+                websites.renewal_duration,
+
+                websites.plan        AS website_plan,
+                websites.type        AS website_type,
+                websites.duration    AS website_duration,
+                websites.status      AS website_status,
+                websites.invoice_id  AS website_invoice_id,
+                websites.created_at  AS website_created_at,
+                websites.expired_at  AS website_expired_at
 
                 FROM orders
                 INNER JOIN users ON orders.user_id = users.id
@@ -421,6 +437,38 @@
         ";
     }
     $result = mysqli_query($conn, $query);
+
+    /* ===============================
+    GLOBAL PLAN DETAILS FROM QUERY
+    (WEBSITES TABLE ONLY)
+    =============================== */
+
+    $Plan = $Duration = $InvoiceId = $Status = $CreatedAt = $expiredAt = $planId = $type = null;
+
+    if ($result && mysqli_num_rows($result) > 0) {
+
+        $firstRow = mysqli_fetch_assoc($result);
+
+        // ✅ PLAN NAME (for display, renewal modal, cart page)
+        $Plan = $firstRow['plan_name'] ?? null;
+
+        // ✅ WEBSITE VALUES
+        $Duration  = $firstRow['website_duration'] ?? null;
+        $InvoiceId = $firstRow['website_invoice_id'] ?? null;
+
+        $Status = isset($firstRow['website_status'])
+            ? strtolower($firstRow['website_status'])
+            : null;
+
+        $CreatedAt = $firstRow['website_created_at'] ?? null;
+        $expiredAt = $firstRow['website_expired_at'] ?? null;
+
+        // ✅ KEEP THESE FOR LOGIC (DO NOT USE FOR DISPLAY)
+        $planId = $firstRow['website_plan'] ?? null;
+        $type   = $firstRow['website_type'] ?? null;
+
+        mysqli_data_seek($result, 0);
+    }
 
     // JOIN orders with users for Inactive Plans
     $inactiveQuery = "
@@ -533,6 +581,212 @@
                     window.history.back();
                 </script>";
             }
+    }
+
+    /* ===============================
+    RENEWAL ENGINE (WEBSITES ONLY)
+    =============================== */
+
+    if (!empty($InvoiceId) && !empty($Duration) && !empty($CreatedAt)) {
+
+        /* ---------- VALIDITY CALCULATION ---------- */
+
+        $startDate = new DateTime($CreatedAt);
+        $endDate   = (clone $startDate)->modify("+{$Duration}");
+        $calculatedEnd = $endDate->format("d-m-Y");
+
+        if (!empty($expiredAt) && $expiredAt !== '0000-00-00 00:00:00') {
+            $Validity = (new DateTime($expiredAt))->format("d-m-Y");
+        } else {
+            $Validity = $calculatedEnd;
+        }
+
+
+        /* ---------- CURRENT PLAN PRICE ---------- */
+
+        $currentPrice = "N/A";
+
+        if (!empty($planId) && !empty($type)) {
+
+            if ($type === 'package') {
+
+                $priceStmt = $conn->prepare("
+                    SELECT d.price
+                    FROM durations d
+                    INNER JOIN package p ON d.package_id = p.id
+                    WHERE p.id = ?
+                    ORDER BY d.id ASC
+                    LIMIT 1
+                ");
+
+            } elseif ($type === 'product') {
+
+                $priceStmt = $conn->prepare("
+                    SELECT price 
+                    FROM products 
+                    WHERE id = ?
+                ");
+            }
+
+            if (isset($priceStmt)) {
+
+                $priceStmt->bind_param("i", $planId);
+                $priceStmt->execute();
+                $priceResult = $priceStmt->get_result();
+
+                if ($priceResult && $priceResult->num_rows > 0) {
+                    $priceRow = $priceResult->fetch_assoc();
+                    $currentPrice = floatval($priceRow['price']);
+                }
+
+                $priceStmt->close();
+            }
+        }
+
+
+        /* ---------- NORMALIZE DURATION ---------- */
+
+        $durationStr = strtolower(trim($Duration));
+
+        preg_match('/\d+/', $durationStr, $matches);
+        $number = isset($matches[0]) ? (int)$matches[0] : 1;
+
+        $durationType = 'month';
+
+        if (preg_match('/year/', $durationStr)) {
+            $durationType = 'year';
+        } elseif (preg_match('/month/', $durationStr)) {
+            $durationType = 'month';
+        } elseif (preg_match('/day/', $durationStr)) {
+            $durationType = 'day';
+        }
+
+
+        /* ---------- MONTHLY PRICE CALCULATION ---------- */
+
+        if ($durationType === 'year' || ($durationType === 'month' && $number >= 1)) {
+
+            $months = ($durationType === 'year') ? $number * 12 : $number;
+
+            $monthlyPrice = $currentPrice / $months;
+            $monthlyPriceFormatted = number_format($monthlyPrice, 2);
+
+            $showMo = true;
+
+        } else {
+
+            $monthlyPrice = $currentPrice;
+            $monthlyPriceFormatted = number_format($monthlyPrice, 2);
+
+            $showMo = false;
+        }
+
+
+        /* ---------- GET WEBSITE CATEGORY USING INVOICE ID ---------- */
+
+        $websiteQuery = $conn->prepare("
+            SELECT cat_id
+            FROM websites
+            WHERE invoice_id = ?
+            LIMIT 1
+        ");
+
+        $websiteQuery->bind_param("s", $InvoiceId);
+        $websiteQuery->execute();
+
+        $websiteResult = $websiteQuery->get_result();
+        $website = $websiteResult->fetch_assoc();
+
+        $websiteQuery->close();
+
+        $catId = $website['cat_id'] ?? null;
+
+
+        /* ---------- GET CURRENT PLAN TITLE ---------- */
+
+        if ($type === 'package') {
+            $stmt = $conn->prepare("SELECT title FROM package WHERE id = ?");
+        } else {
+            $stmt = $conn->prepare("SELECT title FROM products WHERE id = ?");
+        }
+
+        $stmt->bind_param("i", $planId);
+        $stmt->execute();
+
+        $res = $stmt->get_result();
+        $currentPlanTitle = $res->fetch_assoc()['title'] ?? '';
+
+        $stmt->close();
+
+
+        /* ---------- GET ALL DURATIONS & PRICES ---------- */
+
+        $durationPrices = [];
+        $durations = [];
+
+        if ($type === 'package') {
+
+            $recordsQuery = $conn->prepare("
+                SELECT d.duration, d.price, d.preview_price
+                FROM durations d
+                INNER JOIN package p ON d.package_id = p.id
+                WHERE p.cat_id = ? AND p.title = ?
+                ORDER BY LENGTH(d.duration), d.duration
+            ");
+
+        } else {
+
+            $recordsQuery = $conn->prepare("
+                SELECT duration, price
+                FROM products
+                WHERE cat_id = ? AND title = ?
+                ORDER BY LENGTH(duration), duration
+            ");
+        }
+
+        $recordsQuery->bind_param("is", $catId, $currentPlanTitle);
+        $recordsQuery->execute();
+
+        $recordsResult = $recordsQuery->get_result();
+
+        while ($row = $recordsResult->fetch_assoc()) {
+
+            $durations[] = trim($row['duration']);
+
+            $durationKey = trim(strtolower($row['duration']));
+
+            if ($type === 'package') {
+
+                $durationPrices[$durationKey] = [
+                    'price' => (float)$row['price'],
+                    'preview_price' => (float)$row['preview_price']
+                ];
+
+            } else {
+
+                $durationPrices[$durationKey] = [
+                    'price' => (float)$row['price'],
+                    'preview_price' => (float)$row['price']
+                ];
+            }
+        }
+
+        $recordsQuery->close();
+
+
+        /* ---------- FALLBACK ---------- */
+
+        if (empty($durations)) {
+
+            $durations[] = '1 Year';
+
+            $durationPrices['1 year'] = [
+                'price' => $currentPrice,
+                'preview_price' => $currentPrice * 1.1
+            ];
+        }
+
+        $showMo = false;
     }
 ?>
 
@@ -852,7 +1106,9 @@
                                                 </button>
                                             <?php } ?>
 
-                                            <button class="btn text-white lufera-bg text-sm mb-10">Renew</button>
+                                            <!-- <button class="btn text-white lufera-bg text-sm mb-10">Renew</button> -->
+
+                                            <button type="button" class="btn text-white lufera-bg text-sm mb-10" data-bs-toggle="modal" data-bs-target="#renewal-modal">Renew</button>
 
                                             <!-- *** UPGRADE BUTTON *** -->
                                             <a href="upgrade_plan.php?web_id=<?= $webId ?>&prod_id=<?= $prodId ?>&duration=<?= $duration ?>">
@@ -1332,6 +1588,55 @@
         });
         })();
     </script>
+
+    <?php
+
+        /* ===============================
+        PREPARE VARIABLES FOR RENEWAL.PHP
+        (DO NOT MODIFY renewal.php)
+        =============================== */
+
+        // websiteId from invoice_id
+        $websiteId = null;
+
+        if (!empty($InvoiceId)) {
+            $webQ = $conn->prepare("SELECT id FROM websites WHERE invoice_id = ? LIMIT 1");
+            $webQ->bind_param("s", $InvoiceId);
+            $webQ->execute();
+            $webRes = $webQ->get_result();
+            $websiteId = $webRes->fetch_assoc()['id'] ?? null;
+            $webQ->close();
+        }
+
+        // Build endDate for modal expiration display
+        if (!empty($CreatedAt) && !empty($Duration)) {
+            $startDate = new DateTime($CreatedAt);
+            $endDate = (clone $startDate)->modify("+{$Duration}");
+        }
+
+        // monthlyPrice safety
+        if (!isset($monthlyPrice) || !is_numeric($monthlyPrice)) {
+            $monthlyPrice = is_numeric($currentPrice ?? null) ? $currentPrice : 0;
+        }
+
+        // durations fallback
+        if (empty($durations)) {
+            $durations = [$Duration ?: '1 Year'];
+        }
+
+        // durationPrices fallback
+        if (empty($durationPrices)) {
+            $durationPrices = [
+                strtolower($Duration ?: '1 year') => [
+                    'price' => $currentPrice ?? 0,
+                    'preview_price' => ($currentPrice ?? 0) * 1.1
+                ]
+            ];
+        }
+
+    ?>
+
+    <?php include 'renewal.php'; ?>
 
     <?php if (isset($_SESSION['order_approved']) && $_SESSION['order_approved'] === true): ?>
         <script>

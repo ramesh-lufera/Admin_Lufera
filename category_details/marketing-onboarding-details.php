@@ -1,4 +1,5 @@
     <?php include './partials/layouts/layoutTop.php' ?>
+        
         <?php
             $Id = $_SESSION['user_id'];
             $websiteId = isset($_GET['website_id']) ? (int)$_GET['website_id'] : 0;
@@ -198,132 +199,6 @@
                 $insta_id = $data['insta_id'];
                 $password_2 = $data['password_2'];
             }
-
-            // // For Renewal..
-            // // === Get current plan price ===
-            // $currentPrice = "N/A";
-            // if (!empty($planId) && !empty($type)) {
-            //     if ($type == 'package') {
-            //         // ✅ Changed: Get price from durations table (joined with package)
-            //         $priceStmt = $conn->prepare("
-            //             SELECT d.price 
-            //             FROM durations d
-            //             INNER JOIN package p ON d.package_id = p.id
-            //             WHERE p.id = ?
-            //             ORDER BY d.id ASC 
-            //             LIMIT 1
-            //         ");
-            //     } elseif ($type == 'product') {
-            //         $priceStmt = $conn->prepare("SELECT price FROM products WHERE id = ?");
-            //     }
-
-            //     if (isset($priceStmt)) {
-            //         $priceStmt->bind_param("i", $planId);
-            //         $priceStmt->execute();
-            //         $priceResult = $priceStmt->get_result();
-            //         if ($priceResult && $priceResult->num_rows > 0) {
-            //             $priceRow = $priceResult->fetch_assoc();
-            //             $currentPrice = floatval($priceRow['price']); // ensure numeric
-            //         }
-            //         $priceStmt->close();
-            //     }
-            // }
-
-            // // === Normalize duration string ===
-            // $durationStr = strtolower(trim($Duration)); // from DB
-            // preg_match('/\d+/', $durationStr, $matches);
-            // $number = isset($matches[0]) ? (int)$matches[0] : 1;
-
-            // // Determine duration type
-            // $durationType = 'month';
-            // if (preg_match('/year/', $durationStr)) {
-            //     $durationType = 'year';
-            // } elseif (preg_match('/month/', $durationStr)) {
-            //     $durationType = 'month';
-            // } elseif (preg_match('/day/', $durationStr)) {
-            //     $durationType = 'day';
-            // }
-
-            // // === Calculate monthly price for display ===
-            // if ($durationType === 'year' || ($durationType === 'month' && $number >= 1)) {
-            //     $months = ($durationType === 'year') ? $number * 12 : $number;
-            //     $monthlyPrice = $currentPrice / $months;
-            //     $monthlyPriceFormatted = number_format($monthlyPrice, 2);
-            //     $showMo = true; // show /mo
-            // } else {
-            //     // duration in days or <1 month → show total price directly
-            //     $monthlyPrice = $currentPrice; 
-            //     $monthlyPriceFormatted = number_format($monthlyPrice, 2);
-            //     $showMo = false; // no /mo
-            // }
-
-            // // --- STEP 1: Get current website info ---
-            // $websiteQuery = $conn->prepare("SELECT type, cat_id, plan FROM websites WHERE id = ?");
-            // $websiteQuery->bind_param("i", $websiteId);
-            // $websiteQuery->execute();
-            // $websiteResult = $websiteQuery->get_result();
-            // $website = $websiteResult->fetch_assoc();
-            // $websiteQuery->close();
-
-            // $type = $website['type'];
-            // $catId = $website['cat_id'];
-            // $planId = $website['plan'];
-
-            // // --- STEP 2: Get plan title of the current website's plan ---
-            // if ($type === 'package') {
-            //     $stmt = $conn->prepare("SELECT title FROM package WHERE id = ?");
-            // } else { // product
-            //     $stmt = $conn->prepare("SELECT title FROM products WHERE id = ?");
-            // }
-            // $stmt->bind_param("i", $planId);
-            // $stmt->execute();
-            // $res = $stmt->get_result();
-            // $currentPlanTitle = $res->fetch_assoc()['title'] ?? '';
-            // $stmt->close();
-
-            // // --- STEP 3: Get all records for durations (new structure) ---
-            // $durationPrices = [];
-
-            // if ($type === 'package') {
-            //     // ✅ Fetch duration, price, preview_price
-            //     $recordsQuery = $conn->prepare("
-            //         SELECT d.duration, d.price, d.preview_price
-            //         FROM durations d
-            //         INNER JOIN package p ON d.package_id = p.id
-            //         WHERE p.cat_id = ? AND p.title = ?
-            //         ORDER BY LENGTH(d.duration), d.duration
-            //     ");
-            // } else { // product
-            //     $recordsQuery = $conn->prepare("
-            //         SELECT duration, price AS price, preview_price AS preview_price
-            //         FROM products
-            //         WHERE cat_id = ? AND title = ?
-            //         ORDER BY LENGTH(duration), duration
-            //     ");
-            // }
-
-            // $recordsQuery->bind_param("is", $catId, $currentPlanTitle);
-            // $recordsQuery->execute();
-            // $recordsResult = $recordsQuery->get_result();
-
-            // $durations = [];
-            // while ($row = $recordsResult->fetch_assoc()) {
-            //     $durations[] = trim($row['duration']);
-            //     $durationPrices[trim(strtolower($row['duration']))] = [
-            //         'price' => (float)$row['price'],
-            //         'preview_price' => (float)$row['preview_price']
-            //     ];
-            // }
-            // $recordsQuery->close();
-
-            // // --- STEP 4: Fallback to current website duration if none found ---
-            // if (empty($durations)) {
-            //     $durations[] = '1 Year';
-            //     $durationPrices['1 year'] = ['price' => $currentPrice, 'preview_price' => $currentPrice * 1.1];
-            // }
-
-            // // ✅ Remove all “monthly” calculations
-            // $showMo = false;
 
             // For Renewal..
             // === Get current plan price ===
@@ -527,13 +402,13 @@
                         include 'record_payment.php'; 
                     endif; ?>
                     <?php if (strtolower($Status) === 'approved'): ?>
-                <button type="button" class="btn btn-sm btn-renewal" data-bs-toggle="modal" data-bs-target="#renewal-modal">
-                    Renewal
-                </button>
-                    <?php include 'renewal.php'; ?>
-                <a href="upgrade_plan.php?web_id=<?= $websiteId ?>&prod_id=<?= $productId?>&duration=<?= $Duration ?>"><button type="button" class="btn btn-sm btn-upgrade">Upgrade</button></a>
+                        <button type="button" class="btn btn-sm btn-renewal" data-bs-toggle="modal" data-bs-target="#renewal-modal">
+                            Renew
+                        </button>
+                        <?php include 'renewal.php'; ?>
+                        <a href="upgrade_plan.php?web_id=<?= $websiteId ?>&prod_id=<?= $productId?>&duration=<?= $Duration ?>"><button type="button" class="btn btn-sm btn-upgrade">Upgrade</button></a>
                     <?php endif; ?>
-                <a href="./marketing-onboarding-wizard.php?id=<?= $websiteId ?>&prod_id=<?= $productId ?>"><button type="button" class="btn btn-sm btn-edit-website">Wizard</button></a>
+                    <a href="./marketing-onboarding-wizard.php?id=<?= $websiteId ?>&prod_id=<?= $productId ?>"><button type="button" class="btn btn-sm btn-edit-website">Wizard</button></a>
                 </div>
             </div>
             <form method="post" autocomplete="off">
@@ -639,4 +514,5 @@
                 });
             }
         </script>
+
     <?php include './partials/layouts/layoutBottom.php' ?> 
