@@ -204,7 +204,9 @@
     // ADMIN cancels → Update status
     if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['cancel_id']) && ($role === '1' || $role === '2')) {
         $orderId = intval($_POST['cancel_id']);
-        $conn->query("UPDATE orders SET status = 'Cancelled' WHERE id = $orderId");
+        $conn->query("UPDATE orders 
+              SET status = 'Cancelled', is_Active = 0 
+              WHERE id = $orderId");
         $_SESSION['order_cancelled'] = true;
 
         // For Notifications..
@@ -1250,6 +1252,8 @@
 
                                     $orderId = $row['id']; // unique identifier
 
+                                    $isRejectedInactive = ($row['status'] === 'Cancelled' && $row['is_Active'] == 0);
+
                                     $statusColor = "";
                                     $statusText = "";
 
@@ -1402,7 +1406,8 @@
 
                                         <div class="mt-20">
                                             <?php if($role == "1" || $role == "2") {?>  
-                                                <button class="btn text-white btn-primary text-sm mb-10 record-payment-btn"
+                                                <!-- <button class="btn text-white btn-primary text-sm mb-10 record-payment-btn" -->
+                                                <button class="btn text-white btn-primary text-sm mb-10 record-payment-btn <?= $isRejectedInactive ? 'disabled' : '' ?>"
                                                         data-bs-toggle="modal" data-bs-target="#exampleModal"
                                                         data-invoice="<?=htmlspecialchars($row['invoice_id'])?>"
                                                         data-order="<?=htmlspecialchars($row['id'])?>"
@@ -1412,19 +1417,33 @@
                                                 </button>
                                             <?php } ?>
                                             
-                                            <button class="btn text-white lufera-bg text-sm mb-10">Renew</button>
+                                            <!-- <button class="btn text-white lufera-bg text-sm mb-10">Renew</button> -->
+
+                                            <button class="btn text-white lufera-bg text-sm mb-10 <?= $isRejectedInactive ? 'disabled' : '' ?>">Renew</button>
 
                                             <!-- *** UPGRADE BUTTON *** -->
-                                            <a href="upgrade_plan.php?web_id=<?= $webId ?>&prod_id=<?= $prodId ?>&duration=<?= $duration ?>">
+                                            <!-- <a href="upgrade_plan.php?web_id=<?= $webId ?>&prod_id=<?= $prodId ?>&duration=<?= $duration ?>">
                                                 <button class="btn text-white btn-warning text-sm mb-10">Upgrade</button>
+                                            </a> -->
+
+                                            <a href="<?= $isRejectedInactive ? 'javascript:void(0)' : "upgrade_plan.php?web_id=<?= $webId ?>&prod_id=<?= $prodId ?>&duration=<?= $duration" ?>">
+                                                <button class="btn text-white btn-warning text-sm mb-10 <?= $isRejectedInactive ? 'disabled' : '' ?>">Upgrade</button>
                                             </a>
 
-                                            <a href="invoice-preview.php?id=<?=$row['invoice_id']?>">
+                                            <!-- <a href="invoice-preview.php?id=<?=$row['invoice_id']?>">
                                                 <button class="btn text-white btn-success text-sm mb-10">Invoice</button>
+                                            </a> -->
+
+                                            <a href="<?= $isRejectedInactive ? 'javascript:void(0)' : "invoice-preview.php?id=".$row['invoice_id'] ?>">
+                                                <button class="btn text-white btn-success text-sm mb-10 <?= $isRejectedInactive ? 'disabled' : '' ?>">Invoice</button>
                                             </a>
 
-                                            <a href="order-summary.php?id=<?=$row['invoice_id']?>">
+                                            <!-- <a href="order-summary.php?id=<?=$row['invoice_id']?>">
                                                 <button class="btn text-white btn-danger text-sm mb-10">View More</button>
+                                            </a> -->
+
+                                            <a href="<?= $isRejectedInactive ? 'javascript:void(0)' : "order-summary.php?id=".$row['invoice_id'] ?>">
+                                                <button class="btn text-white btn-danger text-sm mb-10 <?= $isRejectedInactive ? 'disabled' : '' ?>">View More</button>
                                             </a>
                                         </div>
                                 </div>
@@ -1636,8 +1655,6 @@
 
     ?>
 
-    <?php include 'renewal.php'; ?>
-
     <?php if (isset($_SESSION['order_approved']) && $_SESSION['order_approved'] === true): ?>
         <script>
             Swal.fire({
@@ -1664,3 +1681,5 @@
 </html>
 
 <?php include './partials/layouts/layoutBottom.php' ?>
+
+<?php include 'renewal.php'; ?>
