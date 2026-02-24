@@ -1663,15 +1663,12 @@
 
         /* SAVE OR UPDATE FORM STRUCTURE */
         elseif ($_SERVER['REQUEST_METHOD'] === 'POST') {
- 
             $formId = isset($_POST['form_id']) && is_numeric($_POST['form_id'])
                 ? (int)$_POST['form_id']
                 : null;
- 
             $title = $_POST['formTitle'] ?? '';
-            $json  = $_POST['formJSON'] ?? '';
+            $json = $_POST['formJSON'] ?? '';
             $settings = $_POST['formSettings'] ?? '';
- 
             // If no explicit form_id but we have a sheet_id, try to find an existing form for that sheet
             if (!$formId && $sheet_id_from_url > 0) {
                 $stmtLookup = $conn->prepare("SELECT id FROM form_builder WHERE sheet_id = ? LIMIT 1");
@@ -1683,48 +1680,43 @@
                     $formId = (int)$rowLookup['id'];
                 }
             }
- 
             /* Build sheet structure (headers, columnTypes, etc.) from form JSON
                so we can either update an existing sheet row or insert a new one. */
             $emptySheetData = null;
+            $headers = [];
+            $columnTypes = [];
+            $cols = 0;
             if (!empty($json)) {
                 $decodedFields = json_decode($json, true) ?? [];
- 
-                $headers = [];
-                $cols = 0;
-                $columnTypes = [];
- 
                 $colIndex = 2; // Start from column B = 2
- 
                 foreach ($decodedFields as $field) {
                     $headers[] = $field['label'] ?? 'Field ' . $colIndex;
- 
                     // Map field type → sheet column type
                     $sheetType = match (strtolower($field['type'] ?? '')) {
-                        'text', 'paragraph'         => 'text',
-                        'email'                     => 'email',
-                        'phone'                     => 'text',     // or 'phone'
-                        'number'                    => 'number',
-                        'select', 'radio'           => 'text',
-                        'checkbox'                  => 'text',     // could be 'multi'
-                        'datetime'                  => 'datetime',
-                        'file'                      => 'file',
-                        'signature'                 => 'text',
-                        default                     => 'text',
+                        'text', 'paragraph' => 'text',
+                        'email' => 'email',
+                        'phone' => 'text', // or 'phone'
+                        'number' => 'number',
+                        'select' => 'select',
+                        'checkbox' => 'checkbox', // could be 'multi'
+                        'datetime' => 'datetime',
+                        'datetime-local' => 'datetime-local',
+                        'file' => 'file',
+                        'date' => 'date',
+                        'signature' => 'text',
+                        'dropdown' => 'dropdown',
+                        default => 'text',
                     };
- 
                     $columnTypes[$colIndex] = ['type' => $sheetType];
- 
                     $colIndex++;
                     $cols++;
                 }
- 
                 $emptySheetData = json_encode([
-                    "rows"         => 10,
-                    "cols"         => $cols + 1,   // +1 because A is reserved
-                    "headers"      => $headers,
-                    "columnTypes"  => $columnTypes,
-                    "cells"        => []
+                    "rows" => 10,
+                    "cols" => $cols + 1, // +1 because A is reserved
+                    "headers" => $headers,
+                    "columnTypes" => $columnTypes,
+                    "cells" => []
                 ]);
             }
             if ($formId) {
@@ -1732,65 +1724,15 @@
                 $stmt = $conn->prepare(
                     "UPDATE form_builder
                      SET form_title = ?,
-                         form_json  = ?,
+                         form_json = ?,
                          form_settings = ?,
-                         sheet_id   = COALESCE(sheet_id, ?)
+                         sheet_id = COALESCE(sheet_id, ?)
                      WHERE id = ?"
                 );
                 $sheetIdForForm = $sheet_id_from_url > 0 ? $sheet_id_from_url : null;
                 $stmt->bind_param("sssii", $title, $json, $settings, $sheetIdForForm, $formId);
                 $stmt->execute();
                 $redirectId = $formId;
- 
-                /* Sync the linked sheet, if any.
-                   If sheet_id is known (exported from an existing sheet), update that row.
-                   Otherwise, try to update by form_id; if no row exists yet, insert one. */
-                if ($emptySheetData !== null) {
-                    if ($sheet_id_from_url > 0) {
-                        $stmtSheet = $conn->prepare(
-                            "UPDATE sheets
-                             SET name = ?, data = ?, form_id = ?, updated_at = NOW()
-                             WHERE id = ?"
-                        );
-                        $stmtSheet->bind_param(
-                            "ssii",
-                            $title,
-                            $emptySheetData,
-                            $redirectId,
-                            $sheet_id_from_url
-                        );
-                        $stmtSheet->execute();
-                    } else {
-                        // Try update by form_id first
-                        $stmtSheet = $conn->prepare(
-                            "UPDATE sheets
-                             SET name = ?, data = ?, updated_at = NOW()
-                             WHERE form_id = ?"
-                        );
-                        $stmtSheet->bind_param(
-                            "ssi",
-                            $title,
-                            $emptySheetData,
-                            $redirectId
-                        );
-                        $stmtSheet->execute();
- 
-                        // If no existing sheet row was updated, insert a new one
-                        if ($stmtSheet->affected_rows === 0) {
-                            $stmtSheetInsert = $conn->prepare(
-                                "INSERT INTO sheets (form_id, name, data, created_at, updated_at)
-                                 VALUES (?, ?, ?, NOW(), NOW())"
-                            );
-                            $stmtSheetInsert->bind_param(
-                                "iss",
-                                $redirectId,
-                                $title,
-                                $emptySheetData
-                            );
-                            $stmtSheetInsert->execute();
-                        }
-                    }
-                }
             } else {
                 // CREATE new form, link to sheet_id (if provided)
                 $stmt = $conn->prepare(
@@ -1800,50 +1742,60 @@
                 $stmt->bind_param("sssi", $title, $json, $settings, $sheetIdForForm);
                 $stmt->execute();
                 $redirectId = $conn->insert_id;
- 
-                /* CREATE / UPDATE SHEET ROW
-                   - If coming from an existing sheet (export-to-form), update that sheet.
-                   - Otherwise, create a new sheet row linked by form_id. */
-                if ($emptySheetData !== null) {
-                    if ($sheet_id_from_url > 0) {
-                        // Update the existing sheet record instead of inserting a new one
-                        $stmtSheet = $conn->prepare(
-                            "UPDATE sheets
-                             SET name = ?, data = ?, form_id = ?, updated_at = NOW()
-                             WHERE id = ?"
-                        );
-                        $stmtSheet->bind_param(
-                            "ssii",
-                            $title,
-                            $emptySheetData,
-                            $redirectId,
-                            $sheet_id_from_url
-                        );
-                        $stmtSheet->execute();
-                    } else {
-                        // No existing sheet row → insert a new one
-                        $stmtSheet = $conn->prepare(
-                            "INSERT INTO sheets (form_id, name, data, created_at, updated_at)
-                             VALUES (?, ?, ?, NOW(), NOW())"
-                        );
-                        $stmtSheet->bind_param(
-                            "iss",
-                            $redirectId,     // form_id
-                            $title,          // sheet name = form title
-                            $emptySheetData
-                        );
-                        $stmtSheet->execute();
+            }
+            // Now handle sheet (if structure was built)
+            if (!empty($headers)) {  // Use $headers as indicator
+                if ($sheet_id_from_url > 0) {
+                    // Fetch current sheet data to preserve cells
+                    $stmtCurrent = $conn->prepare("SELECT data FROM sheets WHERE id = ? LIMIT 1");
+                    $stmtCurrent->bind_param("i", $sheet_id_from_url);
+                    $stmtCurrent->execute();
+                    $resultCurrent = $stmtCurrent->get_result();
+                    $currentData = [];
+                    if ($resultCurrent->num_rows === 1) {
+                        $rowCurrent = $resultCurrent->fetch_assoc();
+                        $currentData = json_decode($rowCurrent['data'], true) ?? [];
                     }
+                    // Merge new structure, preserve data
+                    $currentData['headers'] = $headers;
+                    $currentData['columnTypes'] = $columnTypes;
+                    $currentData['cols'] = $cols + 1;
+                    // Keep existing rows, cells
+                    if (!isset($currentData['rows'])) $currentData['rows'] = 10;
+                    if (!isset($currentData['cells'])) $currentData['cells'] = [];
+                    $updatedSheetData = json_encode($currentData);
+                    // Update sheet
+                    $stmtSheet = $conn->prepare(
+                        "UPDATE sheets SET name = ?, data = ?, form_id = ?, updated_at = NOW() WHERE id = ?"
+                    );
+                    $stmtSheet->bind_param("ssii", $title, $updatedSheetData, $redirectId, $sheet_id_from_url);
+                    $stmtSheet->execute();
+                } else {
+                    // Insert new empty sheet
+                    $stmtSheet = $conn->prepare(
+                        "INSERT INTO sheets (form_id, name, data, created_at, updated_at)
+                         VALUES (?, ?, ?, NOW(), NOW())"
+                    );
+                    $stmtSheet->bind_param(
+                        "iss",
+                        $redirectId,
+                        $title,
+                        $emptySheetData
+                    );
+                    $stmtSheet->execute();
+                    // Update form with new sheet_id
+                    $newSheetId = $conn->insert_id;
+                    $stmtUpdateForm = $conn->prepare("UPDATE form_builder SET sheet_id = ? WHERE id = ?");
+                    $stmtUpdateForm->bind_param("ii", $newSheetId, $redirectId);
+                    $stmtUpdateForm->execute();
                 }
             }
-
             // ✅ REDIRECT TO INDIVIDUAL FORM PAGE
             $redirectUrl = "form_builder.php?id={$redirectId}&mode=view";
-            
+           
             if ($sheet_id_from_url > 0) {
                 $redirectUrl .= "&sheet_id=" . (int)$sheet_id_from_url;
             }
- 
             echo "<script>
                 window.location.href = '{$redirectUrl}';
             </script>";
@@ -2523,6 +2475,9 @@
                         `;
                     break;
                     case "datetime":
+                        inputHTML = `<input type="datetime-local" name="fields[${i}]" />`;
+                        break;
+                    case "datetime-local":
                         inputHTML = `<input type="datetime-local" name="fields[${i}]" />`;
                         break;
                     case "file":

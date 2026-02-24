@@ -91,7 +91,7 @@ function numberToWords($num) {
     /* Hide everything by default when printing */
 @media print {
     body * {
-        color: #000;
+        /* color: #000; */
         visibility: hidden;
         /* Optional: remove margins/padding that browsers add */
         margin: 0 !important;
@@ -140,22 +140,6 @@ function numberToWords($num) {
         border-top: 1px solid #dde2e6;
         font-size: 11px;
         color: #555;
-    }
-    td.inv-table{
-        border: 1px solid #000 !important;
-    }
-     th.inv-table {
-        border: 1px solid #000 !important;
-    }
-    .total-table td{
-        border-bottom: 1px solid #000 !important;
-    }
-    .border-footer{
-        border-top: 1px solid #000 !important;
-    }
-    .divider::before,
-    .divider::after {
-        border-bottom: 1px solid #000;
     }
 }
 
