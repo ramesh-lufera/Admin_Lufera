@@ -2,7 +2,7 @@
 <!DOCTYPE html>
 <html lang="en" data-theme="light">
 <head>
-<title>Orders</title>
+<title>Invoice</title>
 <style>
     /* Styling for disabled button to appear blurred */
     .disabled {
