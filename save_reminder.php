@@ -1,4 +1,5 @@
 <?php
+session_start();
 ob_start();
 // save_reminder.php – FINAL VERSION WITH DIRECT EMAIL NOTIFICATION
 header('Content-Type: application/json; charset=utf-8');
@@ -28,21 +29,38 @@ use PHPMailer\PHPMailer\Exception;
 $dotenv = Dotenv::createImmutable(__DIR__);
 $dotenv->load();
 
+$loggedInUserId = isset($_SESSION['user_id']) ? $_SESSION['user_id'] : 0;
+
+$user_fetch = "select first_name, last_name, email from users where id = $loggedInUserId";
+$user_result = $conn ->query($user_fetch);
+$user_row = $user_result ->fetch_assoc();
+$user_name = $user_row['first_name']. " " . $user_row['last_name'];
+$user_email = $user_row['email'];
+
 $data = json_decode(file_get_contents('php://input'), true);
 
 if (!$data || !isset($data['sheet_id']) || !isset($data['sheet_row']) || !isset($data['remind_at'])) {
     echo json_encode(['success' => false, 'error' => 'Missing required fields']);
     exit;
 }
-
-// Normalize datetime: 2025-02-10T18:30 → 2025-02-10 18:30:00
-$remind_at_raw = $data['remind_at'];
-$remind_at = str_replace('T', ' ', $remind_at_raw);
 $recipient_email = trim($data['recipient_email'] ?? '');
+// Normalize datetime: 2025-02-10T18:30 → 2025-02-10 18:30:00
+// Incoming time is in IST (Asia/Kolkata = +05:30)
+$remind_at_raw = $data['remind_at'];           // e.g. "2026-02-26T16:54:00"
 
-if (strlen($remind_at) === 16) {
-    $remind_at .= ':00';
-}
+// Make it a proper DateTime object assuming it's IST
+$remind_at_obj = new DateTime($remind_at_raw, new DateTimeZone('Asia/Kolkata'));
+
+// Convert to UTC
+$remind_at_obj->setTimezone(new DateTimeZone('UTC'));
+
+// Now format for MySQL (UTC time)
+$remind_at = $remind_at_obj->format('Y-m-d H:i:s');
+
+// Optional: still create display version in IST for the email
+$remind_at_display_obj = clone $remind_at_obj;
+$remind_at_display_obj->setTimezone(new DateTimeZone('Asia/Kolkata'));
+$remind_at_display = $remind_at_display_obj->format('d M Y, h:i A');
 
 // Human-readable format for display
 $remind_at_display = date('d M Y, h:i A', strtotime($remind_at));
@@ -52,9 +70,17 @@ $stmt = $conn->prepare("
     (sheet_id, sheet_row, remind_at, message, recipient_email, created_at, created_by, is_read, notified)
     VALUES (?, ?, ?, ?, ?, NOW(), ?, 0, 0)
 ");
-
-$created_by = 0; // ← adjust if you have user ID / session
-
+    if ($stmt->execute()) {
+        logActivity(
+            $conn,
+            $loggedInUserId,
+            "Sheets",                   // module
+            "Reminder schedule at $remind_at"  // description
+        );
+        echo json_encode(["success" => true]);
+    } else {
+        echo json_encode(["success" => false, "error" => $stmt->error]);
+    }
 $stmt->bind_param(
     "iisssi",
     $data['sheet_id'],
@@ -62,7 +88,7 @@ $stmt->bind_param(
     $remind_at,
     $data['message'],
     $recipient_email,
-    $created_by
+    $loggedInUserId
 );
 
 $success = $stmt->execute();
@@ -118,7 +144,7 @@ if ($success && $reminder_id > 0 && !empty($recipient_email) && filter_var($reci
             <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
                 <tr>
                     <td style="padding: 20px 0;">
-                        <table role="presentation" align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 580px; background:#ffffff; border-radius:12px; overflow:hidden; box-shadow:0 4px 12px rgba(0,0,0,0.08);">
+                        <table role="presentation" align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 580px; background:#ffffff; border-radius:12px; overflow:hidden; border: 1px solid #ccc;">
                             <tr>
                                 <td style="padding: 40px 30px;">
                                     <h2 style="margin-top:0; color:#1f2937; font-size:22px;">Hello,</h2>
@@ -139,6 +165,12 @@ if ($success && $reminder_id > 0 && !empty($recipient_email) && filter_var($reci
                                         Please take the necessary action at the scheduled time.<br>
                                         You can view this reminder in your sheet.
                                     </p>
+                                    
+                                    <p style="font-size:16px; line-height:1.6; margin:24px 0 0;">
+                                        <b>Organizer</b><br>
+                                        ' . $user_name . '<br>
+                                        ' . $user_email . '
+                                    </p>
 
                                     <div style="margin: 32px 0; text-align:center;">
                                         <a href="https://admin2.luferatech.com/sheets.php?id=' . $sheet_id . '" 
@@ -146,12 +178,6 @@ if ($success && $reminder_id > 0 && !empty($recipient_email) && filter_var($reci
                                             View in Sheet
                                         </a>
                                     </div>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td style="background:#f1f5f9; padding:24px 30px; text-align:center; font-size:14px; color:#64748b;">
-                                    <p style="margin:0 0 8px;">Lufera Infotech – Task & Reminder System</p>
-                                    <p style="margin:0;">This is an automated message. Please do not reply directly to this email.</p>
                                 </td>
                             </tr>
                         </table>
@@ -170,7 +196,7 @@ if ($success && $reminder_id > 0 && !empty($recipient_email) && filter_var($reci
         $mail->send();
 
         // Mark as notified
-        $conn->query("UPDATE sheet_reminders SET notified = 1 WHERE id = $reminder_id");
+        //$conn->query("UPDATE sheet_reminders SET notified = 1 WHERE id = $reminder_id");
 
         $response['email_sent'] = true;
 
