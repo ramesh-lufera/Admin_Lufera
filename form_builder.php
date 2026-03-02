@@ -1798,7 +1798,7 @@
                      SET form_title = ?,
                          form_json  = ?,
                          form_settings = ?,
-                         sheet_id   = COALESCE(sheet_id, ?)
+                         sheet_id = COALESCE(sheet_id, ?)
                      WHERE id = ?"
                 );
                 $sheetIdForForm = $sheet_id_from_url > 0 ? $sheet_id_from_url : null;
@@ -1824,6 +1824,14 @@
                             $sheet_id_from_url
                         );
                         $stmtSheet->execute();
+
+                        // For Sheet Id Storing..
+                        /* 🔥 LINK FORM → SHEET (THIS IS THE FIX) */
+                        $stmtUpdateForm = $conn->prepare(
+                            "UPDATE form_builder SET sheet_id = ? WHERE id = ?"
+                        );
+                        $stmtUpdateForm->bind_param("ii", $sheet_id_from_url, $redirectId);
+                        $stmtUpdateForm->execute();
                     } else {
                         // Try update by form_id first
                         $stmtSheet = $conn->prepare(
@@ -1852,6 +1860,17 @@
                                 $emptySheetData
                             );
                             $stmtSheetInsert->execute();
+
+                            // For Sheet Id Storing..
+                            /* 🔥 GET NEW SHEET ID */
+                            $newSheetId = $conn->insert_id;
+
+                            /* 🔥 SAVE INTO FORM_BUILDER */
+                            $stmtUpdateForm = $conn->prepare(
+                                "UPDATE form_builder SET sheet_id = ? WHERE id = ?"
+                            );
+                            $stmtUpdateForm->bind_param("ii", $newSheetId, $redirectId);
+                            $stmtUpdateForm->execute();
                         }
                     }
                 }
@@ -1884,6 +1903,14 @@
                             $sheet_id_from_url
                         );
                         $stmtSheet->execute();
+
+                        // For Sheet Id Storing..
+                        /* 🔥 LINK FORM → SHEET (THIS IS THE FIX) */
+                        $stmtUpdateForm = $conn->prepare(
+                            "UPDATE form_builder SET sheet_id = ? WHERE id = ?"
+                        );
+                        $stmtUpdateForm->bind_param("ii", $sheet_id_from_url, $redirectId);
+                        $stmtUpdateForm->execute();
                     } else {
                         // No existing sheet row → insert a new one
                         $stmtSheet = $conn->prepare(
@@ -1897,6 +1924,17 @@
                             $emptySheetData
                         );
                         $stmtSheet->execute();
+
+                        // For Sheet Id Storing..
+                        /* 🔥 GET NEW SHEET ID */
+                        $newSheetId = $conn->insert_id;
+
+                        /* 🔥 UPDATE FORM WITH SHEET ID */
+                        $stmtUpdateForm = $conn->prepare(
+                            "UPDATE form_builder SET sheet_id = ? WHERE id = ?"
+                        );
+                        $stmtUpdateForm->bind_param("ii", $newSheetId, $redirectId);
+                        $stmtUpdateForm->execute();
                     }
                 }
             }
