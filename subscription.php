@@ -205,7 +205,7 @@
     if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['cancel_id']) && ($role === '1' || $role === '2')) {
         $orderId = intval($_POST['cancel_id']);
         $conn->query("UPDATE orders 
-              SET status = 'Cancelled', is_Active = 0 
+              SET status = 'Cancelled', is_Active = 0 , price = 0 , addon_price = 0, addon_gst = 0, subtotal = 0, gst = 0, amount = 0, balance_due = 0, payment_made = 0
               WHERE id = $orderId");
         $_SESSION['order_cancelled'] = true;
 
@@ -1184,11 +1184,11 @@
                                             <div class="mt-20">
                                                 <h6 class="text-md mb-10">Order Approvals Management</h6>
                                                 <p class="text-muted">This section will display all order approval and rejected buttons for this section.</p>
-                                                <div class="d-flex gap-3 mt-10">
+                                                <div class="d-flex mt-10">
                                                     <!-- Approve Button -->
                                                     <form method="POST" style="display:inline;">
                                                         <input type="hidden" name="approve_id" value="<?= $orderId; ?>">
-                                                        <button type="submit" class="btn btn-success text-white text-sm d-flex align-items-center"
+                                                        <button type="submit" class="btn btn-success text-white text-sm d-flex align-items-center me-3"
                                                             <?= ($row['status'] === 'Approved') ? 'disabled' : ''; ?>>
                                                             <i class="fa fa-check me-2"></i> Approve
                                                         </button>

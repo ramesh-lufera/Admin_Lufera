@@ -358,7 +358,7 @@ tr:hover .bell-icon {
         <div class="card-body p-24">
 
             <!--<div class="toolbar mb-3 d-flex gap-2 align-items-center">                
-                <div class="dropdown">
+                 <div class="select">
                     <button class="dropdown-btn">File</button>
                     <div class="dropdown-menu">
                         <button class="new_sheet" onclick="Redirect()">New</button>
@@ -366,9 +366,9 @@ tr:hover .bell-icon {
                         <button id="load-db">Open</button>
                         <button id="clear">Clear</button>
                     </div>
-                </div>
+                </div> 
 
-                <div class="dropdown">
+                <div class="select">
                     <button class="dropdown-btn px-3">Form</button>
                     <div class="dropdown-menu">
                         <button id="export-to-form">Create Form</button>
@@ -407,13 +407,14 @@ document.getElementById("export-to-form").onclick = () => {
         const colType   = colConfig.type;
 
         let formType = "text";
-        if (colType === "number")    formType = "number";
-        else if (colType === "date") formType = "datetime";
-        else if (colType === "dropdown") formType = "select";
+        if (colType === "number") formType = "number";
+        else if (colType === "datetime-local") formType = "datetime-local";
+        else if (colType === "select") formType = "select";
         else if (colType === "checkbox") formType = "checkbox";
+        else if (colType === "email") formType = "email";
         // you can map more types if needed
 
-        const options = (colType === "dropdown" && colConfig.options?.length > 0)
+        const options = (colType === "select" && colConfig.options?.length > 0)
             ? colConfig.options
             : (formType === "checkbox" ? ["Yes"] : ["Option 1", "Option 2"]);
 
@@ -552,10 +553,16 @@ function renderCellContent(cellEl, col) {
             input.value = saved;
             cellEl.classList.add("number");
             break;
-
-        case "date":
+        case "email":
             input = document.createElement("input");
-            input.type = "date";
+            input.type = "email";
+            input.value = saved;
+            cellEl.classList.add("email");
+            break;
+
+        case "datetime-local":
+            input = document.createElement("input");
+            input.type = "datetime-local";
             input.value = saved;
             break;
 
@@ -567,7 +574,7 @@ function renderCellContent(cellEl, col) {
             cellEl.classList.add("checkbox");
             break;
 
-        case "dropdown":
+        case "select":
             input = document.createElement("select");
             const options = config.options && config.options.length > 0 ? config.options : ["Option 1", "Option 2"];
 
@@ -589,10 +596,10 @@ function renderCellContent(cellEl, col) {
             // Treat as a file/url field stored as plain text.
             // User can paste a file URL or relative path (e.g. uploads/...).
             input = document.createElement("input");
-            input.type = "text";
+            input.type = "file";
             input.placeholder = "Enter file URL or path";
             input.value = saved;
-            cellEl.classList.add("text");
+            cellEl.classList.add("file");
             break;
 
         case "text":
@@ -988,7 +995,7 @@ function openColumnTypeModal(col) {
     const dropdownDiv     = document.getElementById("dropdownOptions");
     const dropdownTextarea = document.getElementById("dropdownValues");
 
-    if (config.type === "dropdown") {
+    if (config.type === "select") {
         dropdownDiv.style.display = "block";
         dropdownTextarea.value = (config.options || []).join(", ");
     } else {
@@ -998,7 +1005,7 @@ function openColumnTypeModal(col) {
 
     // Update dropdown visibility when type changes
     typeSelect.onchange = function() {
-        dropdownDiv.style.display = (this.value === "dropdown") ? "block" : "none";
+        dropdownDiv.style.display = (this.value === "select") ? "block" : "none";
     };
 
     // Show the modal
@@ -1080,14 +1087,14 @@ function applyColumnType() {
     // Apply selected type
     const selectedType = document.getElementById("modalColType").value;
 
-    if (selectedType === "dropdown") {
+    if (selectedType === "select") {
         const raw = document.getElementById("dropdownValues").value;
         const options = raw.split(/[\n,]+/)
                           .map(v => v.trim())
                           .filter(v => v.length > 0);
 
         columnTypes[currentColumnForType] = {
-            type: "dropdown",
+            type: "select",
             options: options.length > 0 ? options : ["Option 1", "Option 2"]
         };
     } else {
@@ -1128,7 +1135,7 @@ function onEdit(e) {
 
     let value;
     if (type === "checkbox") value = e.target.checked;
-    else if (["number", "date", "dropdown"].includes(type)) value = e.target.value;
+    else if (["number", "datetime-local", "select", "email"].includes(type)) value = e.target.value;
     else value = cell.textContent;
 
     data[id] = { raw: value.toString() };
@@ -1328,7 +1335,7 @@ document.addEventListener("DOMContentLoaded", () => {
             const type = columnTypes[c]?.type || "text";
             let value = "";
 
-            if (type === "dropdown") {
+            if (type === "select") {
                 value = data[id]?.raw || "";
             } else {
                 value = data[id]?.raw ??
@@ -2028,7 +2035,7 @@ document.querySelectorAll(".dropdown-btn").forEach(btn => {
         e.stopPropagation();
 
         // Close others
-        document.querySelectorAll(".dropdown").forEach(d => {
+        document.querySelectorAll(".select").forEach(d => {
             if (d !== btn.parentElement) d.classList.remove("open");
         });
 
@@ -2038,7 +2045,7 @@ document.querySelectorAll(".dropdown-btn").forEach(btn => {
 
 // Close dropdowns when clicking outside
 document.addEventListener("click", () => {
-    document.querySelectorAll(".dropdown").forEach(d => d.classList.remove("open"));
+    document.querySelectorAll(".select").forEach(d => d.classList.remove("open"));
 });
 
 let currentReminderRow = null;
@@ -2205,11 +2212,12 @@ async function saveReminder() {
         <label style="display:block; margin-bottom: 6px; font-weight:600;">Column Type</label>
         <select id="modalColType" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px;">
             <option value="text">Text</option>
+            <option value="email">Email</option>
             <option value="number">Number</option>
-            <option value="date">Date</option>
+            <option value="datetime-local">DateTime</option>
             <option value="checkbox">Checkbox</option>
-            <option value="dropdown">Dropdown List</option>
-            <option value="file">File (URL / path)</option>
+            <option value="select">Dropdown List</option>
+            <!--<option value="file">File (URL / path)</option>-->
         </select>
     </div>
 

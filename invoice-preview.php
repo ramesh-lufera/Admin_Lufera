@@ -91,7 +91,7 @@ function numberToWords($num) {
     /* Hide everything by default when printing */
 @media print {
     body * {
-        /* color: #000; */
+        /*color: #000;*/
         visibility: hidden;
         /* Optional: remove margins/padding that browsers add */
         margin: 0 !important;
@@ -982,8 +982,7 @@ if (isset($_POST['send_invoice'])) {
                                     </tbody>
                                 </table>
                             </div>
-                            <p class="p-8 text-end">Total In Words <b><i style="font-style: italic;"><?= htmlspecialchars(numberToWords($row['amount'])) ?></i></b></p>
-                        
+                                <p class="p-8 text-end">Total In Words <b><i style="font-style: italic;"><?= htmlspecialchars(numberToWords($row['amount'])) ?></i></b></p>
                         <div class="text-center border-footer mt-40 pt-20 pdf-footer">
                             <p class="d-inline">Crafted with ease using</p> 
                             <img src="https://admin2.luferatech.com/uploads/company_logo/<?php echo $company_row['logo']; ?>" class="footer-logo" alt="Lufera Logo" class="mb-4" style="margin-bottom: 6px; width: 120px;">
@@ -1661,8 +1660,7 @@ if (isset($_POST['send_invoice'])) {
                                         </tbody>
                                     </table>
                                 </div>
-                                <p class="p-8 text-end">Total In Words <b><i style="font-style: italic;"><?= htmlspecialchars(numberToWords($row['amount'])) ?></i></b></p>
-                            
+                                    <p class="p-8 text-end">Total In Words <b><i style="font-style: italic;"><?= htmlspecialchars(numberToWords($row['amount'])) ?></i></b></p>
                             <div class="text-center border-footer mt-40 pt-20 pdf-footer">
                                 <p class="d-inline">Crafted with ease using</p> 
                                 <img src="uploads/company_logo/<?php echo $logo; ?>" class="footer-logo" alt="Lufera Logo" class="mb-4" style="margin-bottom: 6px; width: 120px;">
