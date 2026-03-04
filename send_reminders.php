@@ -8,9 +8,9 @@ use Dotenv\Dotenv;
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
 
-// $dotenv = Dotenv::createImmutable(__DIR__);
-// $dotenv->load();
-//$dotenv = Dotenv\Dotenv::createImmutable(__DIR__);
+$dotenv = Dotenv::createImmutable(__DIR__);
+$dotenv->load();
+$dotenv = Dotenv\Dotenv::createImmutable(__DIR__);
 $dotenv = Dotenv::createImmutable(__DIR__);
 $dotenv->load();
 $now       = new DateTime();
@@ -51,6 +51,10 @@ while ($row = $result->fetch_assoc()) {
     $toEmail = $row["recipient_email"];
     $sheet_id = $row["sheet_id"];
     $toName  = "ramesh lufera";
+    
+    $timestamp =$row["remind_at"];
+    $adjusted = date('Y-m-d H:i:s', strtotime($timestamp . ' +5 hours 30 minutes'));
+    
     try {
         // VERY IMPORTANT when reusing same mail object
         $mail->clearAddresses();
@@ -58,17 +62,16 @@ while ($row = $result->fetch_assoc()) {
         //$mail->Subject = "Reminder: Row {$row["sheet_row"]} – due soon";
         $mail->Subject = "Reminder Alert Received Before Scheduled Time";
         $mail->Body = '
-            <div style="border: 1px solid #ccc; padding: 10px; align-items: center; align-content: center; border-radius:12px">
+            <div style="padding: 10px; align-items: center; align-content: center; border-radius:12px">
                 <h2>Upcoming Reminder Alert</h2>
                 <p><strong>Row:</strong> '.$row["sheet_row"].'</p>
                 <p>' .nl2br(htmlspecialchars($row["message"])) . '</p>
                 <p><strong>Scheduled time:</strong> 
-                ' .date("d M Y H:i", strtotime($row["remind_at"])) . '</p>
+                ' .date("d M Y H:i", strtotime($adjusted)) . '</p>
                 <a href="https://admin2.luferatech.com/sheets.php?id=' . $sheet_id . '" 
                    style="background:#fec700; color:#ffffff; padding:14px 32px; text-decoration:none; border-radius:8px; font-weight:500; font-size:16px; display:inline-block;">
                     View in Sheet
-                </a>
-                <small>Sent ~10 minutes before due time</small>';
+                </a>';
         $mail->send();
         // Mark as notified
         $update = $conn->prepare("UPDATE sheet_reminders SET notified = 1 WHERE id = ?");

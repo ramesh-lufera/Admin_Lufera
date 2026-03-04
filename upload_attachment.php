@@ -1,14 +1,14 @@
 <?php
 include 'partials/connection.php';
 include 'partials/check_login.php';
-
+include "log.php";
 // Make sure user is logged in
 if (!isset($_SESSION['user_id']) || !is_numeric($_SESSION['user_id'])) {
     http_response_code(401);
     echo json_encode(["success" => false, "error" => "Not authenticated"]);
     exit;
 }
-
+$loggedInUserId = isset($_SESSION['user_id']) ? $_SESSION['user_id'] : 0;
 $created_by = (int) $_SESSION['user_id'];
 
 if (!isset($_FILES['file']) || $_FILES['file']['error'] !== UPLOAD_ERR_OK) {
@@ -64,6 +64,13 @@ $success = $stmt->execute();
 
 if ($success) {
     echo json_encode(["success" => true]);
+    logActivity(
+        $conn,
+        $loggedInUserId,
+        "Sheets",
+        "Uploaded attachment '{$original}' for sheet ID {$sheet}, row {$row}"
+    );
+    
 } else {
     // Optional: delete the file if DB insert failed
     @unlink($path);

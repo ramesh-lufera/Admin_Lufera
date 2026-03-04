@@ -1,5 +1,6 @@
 <?php
 session_start();
+date_default_timezone_set('Asia/Kolkata');
 ob_start();
 // save_reminder.php – FINAL VERSION WITH DIRECT EMAIL NOTIFICATION
 header('Content-Type: application/json; charset=utf-8');
@@ -20,6 +21,7 @@ file_put_contents(
 );
 
 include './partials/connection.php';
+include "log.php";
 require_once __DIR__ . '/vendor/autoload.php';
 
 use Dotenv\Dotenv;
@@ -65,22 +67,14 @@ $remind_at_display = $remind_at_display_obj->format('d M Y, h:i A');
 // Human-readable format for display
 $remind_at_display = date('d M Y, h:i A', strtotime($remind_at));
 
+$adjusted = date('Y-m-d H:i:s', strtotime($remind_at_display . ' +5 hours 30 minutes'));
+
 $stmt = $conn->prepare("
     INSERT INTO sheet_reminders
     (sheet_id, sheet_row, remind_at, message, recipient_email, created_at, created_by, is_read, notified)
     VALUES (?, ?, ?, ?, ?, NOW(), ?, 0, 0)
 ");
-    if ($stmt->execute()) {
-        logActivity(
-            $conn,
-            $loggedInUserId,
-            "Sheets",                   // module
-            "Reminder schedule at $remind_at"  // description
-        );
-        echo json_encode(["success" => true]);
-    } else {
-        echo json_encode(["success" => false, "error" => $stmt->error]);
-    }
+   
 $stmt->bind_param(
     "iisssi",
     $data['sheet_id'],
@@ -92,7 +86,14 @@ $stmt->bind_param(
 );
 
 $success = $stmt->execute();
-
+if ($success) {
+    logActivity(
+        $conn,
+        $loggedInUserId,
+        "Sheets",
+        "Created reminder for sheet ID {$data['sheet_id']} (Row {$data['sheet_row']}) to be sent at {$remind_at_display}"
+    );
+}
 $response = [
     'success'     => $success,
     'error'       => $success ? null : $stmt->error,
@@ -122,8 +123,8 @@ if ($success && $reminder_id > 0 && !empty($recipient_email) && filter_var($reci
         $mail->Password   = $_ENV['GMAIL_APP_PASSWORD'];
         $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
         $mail->Port       = 587;
-        $mail->CharSet  = 'UTF-8';
-        $mail->Encoding = 'base64';
+        $mail->CharSet    = 'UTF-8';
+        $mail->Encoding   = 'base64';
 
         $mail->setFrom($_ENV['EMAIL_USERNAME'], 'Lufera Infotech');
         $mail->addAddress($recipient_email);
@@ -153,7 +154,7 @@ if ($success && $reminder_id > 0 && !empty($recipient_email) && filter_var($reci
                                     <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="background:#f8fafc; border-radius:8px; padding:20px; margin:24px 0;">
                                         <tr>
                                             <td style="font-weight:bold; width:140px; padding-bottom:12px;">Date & Time:</td>
-                                            <td style="padding-bottom:12px;">' . htmlspecialchars($remind_at_display) . '</td>
+                                            <td style="padding-bottom:12px;">' . htmlspecialchars($adjusted) . '</td>
                                         </tr>
                                         <tr>
                                             <td style="font-weight:bold; width:140px; padding-bottom:12px; vertical-align:top;">Message:</td>

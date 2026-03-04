@@ -1,4 +1,6 @@
-<?php include './partials/layouts/layoutTop.php'; ?>
+<?php include './partials/layouts/layoutTop.php';
+date_default_timezone_set('Asia/Kolkata');
+?>
 <style>
     .fa-file{
         padding: 10px 20px;
@@ -21,6 +23,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         
         if ($stmt->execute()) {
             $new_sheet_id = $conn->insert_id;
+            logActivity(
+                $conn,
+                $loggedInUserId,
+                "Sheets",
+                "Created new sheet: {$sheet_name}"
+            );
             echo "<script>window.location.href='sheets.php?id={$new_sheet_id}';</script>";
             exit;
         } else {
@@ -154,8 +162,12 @@ $remindersResult->data_seek(0); // reset again for display
                                         Row <strong><?= $rem['sheet_row'] ?></strong><br>
                                         <?= nl2br(htmlspecialchars($rem['message'])) ?>
                                     </p>
+                                    <?php
+                                    $timestamp = $rem['created_at'] ?? $rem['remind_at'];
+                                    $adjusted = date('Y-m-d H:i:s', strtotime($timestamp . ' +5 hours 30 minutes'));
+                                    ?>
                                     <small class="text-muted">
-                                        <?= date('M d, Y h:i A', strtotime($rem['created_at'] ?? $rem['remind_at'])) ?>
+                                        <?= date('M d, Y h:i A', strtotime($adjusted)) ?>
                                     </small>
                                 </div>
                             </div>
@@ -217,11 +229,15 @@ $remindersResult->data_seek(0); // reset again for display
                 <div class="card radius-12 cursor-pointer h-100" onclick="window.location='sheets.php?id=<?= $sheet['id'] ?>'">
                 <img src="assets/images/sheets.png" style="border-radius: 10px 10px 0 0;">
                     <div class="card-body p-24">
+                    <span class="float-end" style="margin-top: -25px">ID: <?= htmlspecialchars($sheet['id']) ?></span>
                     <span class="fa fa-thin fa-file"></span>
                         <h6 class="fw-semibold mb-8"><?= htmlspecialchars($sheet['name']) ?></h6>
                         <p class="text-muted mb-0" style="font-size: 14px;">
                             Last Updated: <br>
-                            <strong><?= date("M d, Y H:i", strtotime($sheet['updated_at'])) ?></strong>
+                            <?php
+                            $adjusted_updated = date('Y-m-d H:i:s', strtotime($sheet['updated_at'] . ' +5 hours 30 minutes'));
+                            ?>
+                            <strong><?= date("M d, Y H:i", strtotime($adjusted_updated)) ?></strong>
                         </p>
                     </div>
                 </div>

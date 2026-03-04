@@ -4,7 +4,6 @@ ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
 $sheetId   = isset($_GET['id']) ? intval($_GET['id']) : 0;
-$sheetName = "Untitled Sheet";
 
 if ($sheetId <= 0) {
     header("Location: dashboard-sheets.php");
@@ -349,7 +348,7 @@ tr:hover .bell-icon {
             <span class="fa fa-arrow-left"></span> Back
         </a>
         <div class="text-center flex-grow-1">
-            <h6 class="fw-semibold mb-0"><?= htmlspecialchars($sheetName) ?></h6>
+            <h6 class="fw-semibold mb-0 sheet_title"><?= htmlspecialchars($sheetName) ?></h6>
         </div>
         <div style="width:120px"></div> <!-- spacer to balance layout -->
     </div>
@@ -416,7 +415,7 @@ document.getElementById("export-to-form").onclick = () => {
 
         const options = (colType === "select" && colConfig.options?.length > 0)
             ? colConfig.options
-            : (formType === "checkbox" ? ["Yes"] : ["Option 1", "Option 2"]);
+            : (formType === "checkbox" ? [""] : ["Option 1", "Option 2"]);
 
         tempFields.push({
             id: Date.now() + c,
@@ -1376,9 +1375,21 @@ document.addEventListener("DOMContentLoaded", () => {
     // ────────────────────────────────────────────────
     // 5. Download
     // ────────────────────────────────────────────────
-    const sheetName = document.querySelector("h6.fw-semibold")?.textContent?.trim() || "Exported_Sheet";
-    const safeName = "sheets";
-    XLSX.writeFile(wb, `${safeName}.xlsx`);
+    const sheetName = document.querySelector("h6.sheet_title")?.textContent?.trim() || "Exported_Sheet";
+    XLSX.writeFile(wb, `${sheetName}.xlsx`);
+
+    // ✅ NEW — Log activity in backend
+    fetch("log_activity.php", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+            sheet_name: sheetName
+        })
+    })
+    .catch(err => console.error("Activity log failed:", err));
+    
 };
 
     document.getElementById("clear").onclick = () => {
