@@ -741,7 +741,8 @@
             display:flex;
             gap:18px;
             min-height:100vh;
-            padding:80px 18px 18px 18px;
+            /* padding:80px 18px 18px 18px; */
+            padding:30px 18px 18px 18px;
             flex-wrap:wrap;
             position:relative;
         }
@@ -1542,8 +1543,10 @@
 
         .panel.center .sheet-details-box{
             position:absolute;
-            top:-60px;
-            right:-18px;
+            /* top:-60px; */
+            top:-20px;
+            /* right:-18px; */
+            right:-10px;
 
             background:#ffffff;
             border:1px solid var(--border);
@@ -1551,7 +1554,8 @@
 
             padding:14px 20px 12px;
 
-            min-width:240px;
+            /* min-width:240px; */
+            min-width:200px;
             max-width:300px;
             width:auto;
 
@@ -1561,7 +1565,7 @@
             flex-direction:column;
             justify-content:center;
 
-            z-index:999;
+            /* z-index:999; */
         }
 
         /* TITLE */
@@ -1612,118 +1616,6 @@
                     Form submitted successfully
                 </div>";
         }
-
-        // /* SAVE OR UPDATE FORM STRUCTURE */
-        // elseif ($_SERVER['REQUEST_METHOD'] === 'POST') {
-
-        //     $formId = isset($_POST['form_id']) && is_numeric($_POST['form_id'])
-        //         ? (int)$_POST['form_id']
-        //         : null;
-
-        //     $title = $_POST['formTitle'] ?? '';
-        //     $json  = $_POST['formJSON'] ?? '';
-
-        //     if ($formId) {
-        //         $stmt = $conn->prepare(
-        //             "UPDATE form_builder SET form_title = ?, form_json = ? WHERE id = ?"
-        //         );
-        //         $stmt->bind_param("ssi", $title, $json, $formId);
-        //         $stmt->execute();
-        //         $message = "Form Updated Successfully";
-        //     } else {
-        //         $stmt = $conn->prepare(
-        //             "INSERT INTO form_builder (form_title, form_json) VALUES (?, ?)"
-        //         );
-        //         $stmt->bind_param("ss", $title, $json);
-        //         $stmt->execute();
-        //         $message = "Form Created Successfully";
-        //     }
-
-        //     echo "<div style='padding:10px;background:#d1fae5;border:1px solid #10b981;margin:10px;border-radius:6px'>
-        //             {$message}
-        //           </div>";
-        // }
-
-        /* SAVE OR UPDATE FORM STRUCTURE */
-        // elseif ($_SERVER['REQUEST_METHOD'] === 'POST') {
-
-        //     $formId = isset($_POST['form_id']) && is_numeric($_POST['form_id'])
-        //         ? (int)$_POST['form_id']
-        //         : null;
-
-        //     $title = $_POST['formTitle'] ?? '';
-        //     $json  = $_POST['formJSON'] ?? '';
-        //     $settings = $_POST['formSettings'] ?? '';
-
-        //     if ($formId) {
-        //         // UPDATE existing form
-        //         $stmt = $conn->prepare(
-        //             "UPDATE form_builder SET form_title = ?, form_json = ?, form_settings = ? WHERE id = ?"
-        //         );
-        //         $stmt->bind_param("sssi", $title, $json, $settings, $formId);
-        //         $stmt->execute();
-        //         $redirectId = $formId;
-        //     } else {
-        //         // CREATE new form
-        //         $stmt = $conn->prepare(
-        //             "INSERT INTO form_builder (form_title, form_json, form_settings) VALUES (?, ?, ?)"
-        //         );
-        //         $stmt->bind_param("sss", $title, $json, $settings);
-        //         $stmt->execute();
-        //         $redirectId = $conn->insert_id;
-
-        //         /* ✅ CREATE EMPTY SHEET IMMEDIATELY */
-
-        //         // $emptySheetData = json_encode([
-        //         //     "rows" => 10,        // ✅ fixed initial rows
-        //         //     "cols" => 0,
-        //         //     "headers" => [],
-        //         //     "columnTypes" => [],
-        //         //     "cells" => []
-        //         // ]);
-
-        //         /* BUILD HEADERS FROM FORM STRUCTURE */
-        //         $decodedFields = json_decode($json, true) ?? [];
-
-        //         $headers = [];
-        //         $cols = 0;
-
-        //         foreach ($decodedFields as $field) {
-        //             $headers[] = $field['label'] ?? '';
-        //             $cols++;
-        //         }
-
-        //         /* CREATE EMPTY SHEET WITH HEADERS (KEEP COLUMN A RESERVED) */
-        //         $emptySheetData = json_encode([
-        //             "rows" => 10,
-        //             "cols" => $cols + 1,
-        //             "headers" => $headers,
-        //             "columnTypes" => [],
-        //             "cells" => []
-        //         ]);
-
-        //         $stmtSheet = $conn->prepare(
-        //             "INSERT INTO sheets (form_id, name, data, created_at, updated_at)
-        //             VALUES (?, ?, ?, NOW(), NOW())"
-        //         );
-        //         $stmtSheet->bind_param(
-        //             "iss",
-        //             $redirectId,     // form_id
-        //             $title,          // sheet name = form title
-        //             $emptySheetData
-        //         );
-        //         $stmtSheet->execute();
-        //     }
-
-        //     // ✅ REDIRECT TO INDIVIDUAL FORM PAGE
-        //     // header("Location: form_builder.php?id={$redirectId}&mode=view");
-        //     // exit;
-
-        //     echo "<script>
-        //         window.location.href = 'form_builder.php?id={$redirectId}&mode=view';
-        //     </script>";
-        //     exit;
-        // }
 
         /* SAVE OR UPDATE FORM STRUCTURE */
         elseif ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -1810,20 +1702,55 @@
                    If sheet_id is known (exported from an existing sheet), update that row.
                    Otherwise, try to update by form_id; if no row exists yet, insert one. */
                 if ($emptySheetData !== null) {
-                    if ($sheet_id_from_url > 0) {
-                        $stmtSheet = $conn->prepare(
-                            "UPDATE sheets
-                             SET name = ?, data = ?, form_id = ?, updated_at = NOW()
-                             WHERE id = ?"
+                    if ($sheet_id_from_url > 0) {   
+                        /* ==============================
+                        SAFE SHEET UPDATE (BY ID)
+                        ============================== */
+
+                        $stmtFetchSheet = $conn->prepare(
+                            "SELECT data FROM sheets WHERE id = ? LIMIT 1"
                         );
-                        $stmtSheet->bind_param(
-                            "ssii",
-                            $title,
-                            $emptySheetData,
-                            $redirectId,
-                            $sheet_id_from_url
-                        );
-                        $stmtSheet->execute();
+                        $stmtFetchSheet->bind_param("i", $sheet_id_from_url);
+                        $stmtFetchSheet->execute();
+                        $resSheet = $stmtFetchSheet->get_result();
+
+                        if ($resSheet && $resSheet->num_rows === 1) {
+
+                            $existingSheet = json_decode(
+                                $resSheet->fetch_assoc()['data'],
+                                true
+                            ) ?? [];
+
+                            $existingCells = $existingSheet['cells'] ?? [];
+
+                            $newStructure = json_decode($emptySheetData, true);
+
+                            $mergedSheet = [
+                                "rows"        => $existingSheet['rows'] ?? 10,
+                                "cols"        => $newStructure['cols'],
+                                "headers"     => $newStructure['headers'],
+                                "columnTypes" => $newStructure['columnTypes'],
+                                "cells"       => $existingCells
+                            ];
+
+                            $finalJSON = json_encode($mergedSheet);
+
+                            $stmtSheet = $conn->prepare(
+                                "UPDATE sheets
+                                SET name = ?, data = ?, form_id = ?, updated_at = NOW()
+                                WHERE id = ?"
+                            );
+
+                            $stmtSheet->bind_param(
+                                "ssii",
+                                $title,
+                                $finalJSON,
+                                $redirectId,
+                                $sheet_id_from_url
+                            );
+
+                            $stmtSheet->execute();
+                        }
 
                         // For Sheet Id Storing..
                         /* 🔥 LINK FORM → SHEET (THIS IS THE FIX) */
@@ -1834,18 +1761,53 @@
                         $stmtUpdateForm->execute();
                     } else {
                         // Try update by form_id first
-                        $stmtSheet = $conn->prepare(
-                            "UPDATE sheets
-                             SET name = ?, data = ?, updated_at = NOW()
-                             WHERE form_id = ?"
+
+                        /* ==============================
+                        SAFE UPDATE BY form_id
+                        ============================== */
+
+                        $stmtFetchSheet = $conn->prepare(
+                            "SELECT id, data FROM sheets WHERE form_id = ? LIMIT 1"
                         );
-                        $stmtSheet->bind_param(
-                            "ssi",
-                            $title,
-                            $emptySheetData,
-                            $redirectId
-                        );
-                        $stmtSheet->execute();
+                        $stmtFetchSheet->bind_param("i", $redirectId);
+                        $stmtFetchSheet->execute();
+                        $resSheet = $stmtFetchSheet->get_result();
+
+                        if ($resSheet && $resSheet->num_rows === 1) {
+
+                            $rowSheet = $resSheet->fetch_assoc();
+                            $sheetId  = (int)$rowSheet['id'];
+
+                            $existingSheet = json_decode($rowSheet['data'], true) ?? [];
+                            $existingCells = $existingSheet['cells'] ?? [];
+
+                            $newStructure = json_decode($emptySheetData, true);
+
+                            $mergedSheet = [
+                                "rows"        => $existingSheet['rows'] ?? 10,
+                                "cols"        => $newStructure['cols'],
+                                "headers"     => $newStructure['headers'],
+                                "columnTypes" => $newStructure['columnTypes'],
+                                "cells"       => $existingCells
+                            ];
+
+                            $finalJSON = json_encode($mergedSheet);
+
+                            $stmtSheetUpdate = $conn->prepare(
+                                "UPDATE sheets
+                                SET name = ?, data = ?, updated_at = NOW()
+                                WHERE id = ?"
+                            );
+
+                            $stmtSheetUpdate->bind_param(
+                                "ssi",
+                                $title,
+                                $finalJSON,
+                                $sheetId
+                            );
+
+                            $stmtSheetUpdate->execute();
+                        }
  
                         // If no existing sheet row was updated, insert a new one
                         if ($stmtSheet->affected_rows === 0) {
@@ -2385,55 +2347,6 @@
     </script>
 
     <script>
-        // function buildSheetPayload() {
-
-        //     const cells = {};
-        //     const headers = [];
-        //     const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
-
-        //     let colIndex = 1; // Start from B (skip A)
-        //     const row = 1;
-
-        //     fields.forEach((f, i) => {
-
-        //         const col = alphabet[colIndex];
-
-        //         let value = "";
-
-        //         const input = document.querySelector(`[name="fields[${i}]"]`);
-        //         const checkboxes = document.querySelectorAll(`[name="fields[${i}][]"]`);
-        //         const radio = document.querySelector(`[name="fields[${i}]"]:checked`);
-
-        //         if (checkboxes.length > 0) {
-        //             value = [...checkboxes]
-        //                 .filter(cb => cb.checked)
-        //                 .map(cb => cb.value)
-        //                 .join(", ");
-        //         }
-        //         else if (radio) {
-        //             value = radio.value;
-        //         }
-        //         else if (input) {
-        //             value = input.value || "";
-        //         }
-
-        //         cells[`${col}${row}`] = value;
-
-        //         // ✅ HEADER = FIELD LABEL
-        //         headers.push(f.label || col);
-
-        //         colIndex++;
-        //     });
-
-        //     return {
-        //         rows: 10,
-        //         cols: colIndex,
-        //         headers: headers,
-        //         columnTypes: [],
-        //         cells: cells
-        //     };
-        // }
-
         function buildSheetPayload() {
 
             const cells = {};
