@@ -10,7 +10,7 @@ if ($sheetId <= 0) {
     exit;
 }
 
-$stmt = $conn->prepare("SELECT name FROM sheets WHERE id = ? LIMIT 1");
+$stmt = $conn->prepare("SELECT name, form_id FROM sheets WHERE id = ? LIMIT 1");
 $stmt->bind_param("i", $sheetId);
 $stmt->execute();
 $result = $stmt->get_result();
@@ -22,6 +22,7 @@ if ($result->num_rows === 0) {
 
 $sheetRow  = $result->fetch_assoc();
 $sheetName = $sheetRow['name'] ?? "Untitled Sheet";
+$form_id = $sheetRow['form_id'] ?? null;
 $stmt->close();
 
 $sheetData = null;
@@ -395,7 +396,8 @@ function Redirect() {
 }
 
 document.getElementById("export-to-form").onclick = () => {
-    let formTitle = <?= json_encode($sheetName) ?>;   // Use sheet name as form title
+    let formTitle = <?= json_encode($sheetName) ?>; 
+    let formId = <?= json_encode($form_id) ?>;   // Use sheet name as form title
 
     const tempFields = [];
     for (let c = 2; c <= COLS; c++) {
@@ -443,6 +445,7 @@ document.getElementById("export-to-form").onclick = () => {
     params.append('pre_title',  formTitle);                  // use sheet name as formTitle
     params.append('sheet_name', formTitle);                  // explicit sheet name if needed
     params.append('pre_fields', JSON.stringify(tempFields)); // initial form structure
+    params.append('id', formId); // form id send
 
     window.location.href = `form_builder.php?${params.toString()}`;
 };
@@ -2226,7 +2229,7 @@ async function saveReminder() {
             <option value="email">Email</option>
             <option value="number">Number</option>
             <option value="datetime-local">DateTime</option>
-            <option value="checkbox">Checkbox</option>
+            <!-- <option value="checkbox">Checkbox</option> -->
             <option value="select">Dropdown List</option>
             <!--<option value="file">File (URL / path)</option>-->
         </select>

@@ -917,7 +917,7 @@
         .canvas input,
         .canvas textarea,
         .canvas select{
-            background:#ffffff !important;
+            /* background:#ffffff !important; */
             border:1px solid var(--border) !important;
             padding:10px !important;
             border-radius:6px !important;
@@ -1663,7 +1663,7 @@
                         'number'                    => 'number',
                         'select', 'radio'           => 'text',
                         'checkbox'                  => 'text',     // could be 'multi'
-                        'datetime'                  => 'datetime',
+                        'datetime-local'            => 'datetime-local',
                         'file'                      => 'file',
                         'signature'                 => 'text',
                         default                     => 'text',
@@ -2537,13 +2537,16 @@
                             <div style="display:flex;flex-direction:column;gap:6px">
                                 ${f.options.map(o =>
                                     `<label style="font-weight:500">
-                                        <input type="checkbox" name="fields[${i}][]" value="${o}"> ${o}
+                                        <input type="checkbox" class="form-check-input" name="fields[${i}][]" value="${o}"> ${o}
                                     </label>`
                                 ).join("")}
                             </div>
                         `;
                     break;
                     case "datetime":
+                        inputHTML = `<input type="datetime-local" name="fields[${i}]" />`;
+                        break;
+                    case "datetime-local":
                         inputHTML = `<input type="datetime-local" name="fields[${i}]" />`;
                         break;
                     case "file":
