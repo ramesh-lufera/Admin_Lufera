@@ -1,9 +1,11 @@
 <?php
 // save.php
-
+session_start();
 header('Content-Type: application/json');
 include 'partials/connection.php';
+include "log.php";
 
+$loggedInUserId = $_SESSION['user_id'] ?? 0;
 $data = json_decode(file_get_contents('php://input'), true);
 
 if (!$data || empty($data['id']) || !is_numeric($data['id'])) {
@@ -62,6 +64,12 @@ if ($stmt->execute()) {
         'success' => true,
         'id'      => $id
     ]);
+    logActivity(
+        $conn,
+        $loggedInUserId,
+        "Sheets",
+        "Updated sheet: ID {$id}"
+    );
 } else {
     echo json_encode([
         'success' => false,
