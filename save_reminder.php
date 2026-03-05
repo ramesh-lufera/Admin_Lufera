@@ -67,7 +67,7 @@ $remind_at_display = $remind_at_display_obj->format('d M Y, h:i A');
 // Human-readable format for display
 $remind_at_display = date('d M Y, h:i A', strtotime($remind_at));
 
-$adjusted = date('Y-m-d H:i:s', strtotime($remind_at_display . ' +5 hours 30 minutes'));
+$adjusted = date('d M Y, h:i A', strtotime($remind_at_display . ' +5 hours 30 minutes'));
 
 $stmt = $conn->prepare("
     INSERT INTO sheet_reminders
@@ -91,7 +91,7 @@ if ($success) {
         $conn,
         $loggedInUserId,
         "Sheets",
-        "Created reminder for sheet ID {$data['sheet_id']} (Row {$data['sheet_row']}) to be sent at {$remind_at_display}"
+        "Created reminder for sheet ID {$data['sheet_id']} (Row {$data['sheet_row']}) to be sent at {$adjusted}"
     );
 }
 $response = [
