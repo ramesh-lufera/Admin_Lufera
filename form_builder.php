@@ -504,6 +504,21 @@
             }
         }
 
+        /* ===============================
+        AFTER SUBMIT ACTION: RELOAD FORM
+        =============================== */
+        if ($afterSubmitAction === 'reload') {
+
+            $reloadUrl = $_SERVER['REQUEST_URI'];
+
+            // add success flag
+            $reloadUrl .= (strpos($reloadUrl, '?') !== false ? '&' : '?') .
+                'submitted=1&msg=' . urlencode($confirmMessage);
+
+            header("Location: " . $reloadUrl);
+            exit;
+        }
+
         // echo "<div style='padding:12px;background:#d1fae5;border:1px solid #10b981;border-radius:6px;margin:12px'>
         //         Sheet row saved successfully
         //     </div>";
@@ -1596,6 +1611,45 @@
 
 <body>
 
+    <?php if (isset($_GET['submitted']) && isset($_GET['msg'])): ?>
+        <script>
+        document.addEventListener("DOMContentLoaded", function(){
+
+            const toast = document.createElement("div");
+
+            toast.style.position = "fixed";
+            toast.style.top = "20px";
+            toast.style.left = "50%";
+            toast.style.transform = "translateX(-50%)";
+            toast.style.background = "#111827";
+            toast.style.color = "#fff";
+            toast.style.padding = "12px 22px";
+            toast.style.borderRadius = "8px";
+            toast.style.fontWeight = "600";
+            toast.style.boxShadow = "0 10px 25px rgba(0,0,0,.2)";
+            toast.style.zIndex = "9999";
+
+            toast.innerText = <?= json_encode($_GET['msg']) ?>;
+
+            document.body.appendChild(toast);
+
+            setTimeout(()=>{
+                toast.style.opacity = "0";
+                toast.style.transition = "0.4s";
+            },2500);
+
+            setTimeout(()=>{
+                toast.remove();
+            },3000);
+
+            /* 🔥 REMOVE QUERY PARAMETERS AFTER SHOWING TOAST */
+            const cleanURL = window.location.origin + window.location.pathname + window.location.search.replace(/([?&])(submitted|msg)=[^&]*/g,'').replace(/[?&]$/,'');
+            window.history.replaceState({}, document.title, cleanURL);
+
+        });
+        </script>
+    <?php endif; ?>
+
     <?php
         /* SAVE FORM SUBMISSION (USER FILLED DATA) */
         if (
@@ -2161,8 +2215,8 @@
 
                 <select id="afterSubmitAction" style="width:100%;padding:10px;border:1px solid #d1d5db;border-radius:6px">
                     <option value="message">Display this confirmation message</option>
-                    <option value="redirect">Send the user to link (dropdown)</option>
                     <option value="reload">Reload the same form for another entry</option>
+                    <option value="redirect">Send the user to link (dropdown)</option>
                 </select>
 
                 <textarea id="confirmBox"
@@ -2912,17 +2966,20 @@
         const redirectBox = document.getElementById("redirectBox");
 
         function updateSubmitView(){
+
             if(actionSelect.value === "message"){
                 confirmBox.style.display = "block";
                 redirectBox.style.display = "none";
             }
+
+            else if(actionSelect.value === "reload"){
+                confirmBox.style.display = "block";   // show textarea
+                redirectBox.style.display = "none";
+            }
+
             else if(actionSelect.value === "redirect"){
                 confirmBox.style.display = "none";
                 redirectBox.style.display = "block";
-            }
-            else{
-                confirmBox.style.display = "none";
-                redirectBox.style.display = "none";
             }
         }
 
