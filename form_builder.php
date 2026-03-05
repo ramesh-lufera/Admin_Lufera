@@ -1710,20 +1710,38 @@
                     $headers[] = $field['label'] ?? 'Field ' . $colIndex;
  
                     // Map field type → sheet column type
-                    $sheetType = match (strtolower($field['type'] ?? '')) {
-                        'text', 'paragraph'         => 'text',
-                        'email'                     => 'email',
-                        'phone'                     => 'text',     // or 'phone'
-                        'number'                    => 'number',
-                        'select', 'radio'           => 'text',
-                        'checkbox'                  => 'text',     // could be 'multi'
-                        'datetime-local'            => 'datetime-local',
-                        'file'                      => 'file',
-                        'signature'                 => 'text',
-                        default                     => 'text',
+                    $fieldType = strtolower($field['type'] ?? '');
+                    $sheetType = match ($fieldType) {
+                        'text', 'paragraph'                     => 'text',
+                        'email'                                 => 'email',
+                        'phone'                                 => 'text',     // or 'phone'
+                        'number'                                => 'number',
+                        'select', 'radio', 'checkbox'           => 'select',
+                        'datetime-local','datetime'             => 'datetime-local',
+                        'file'                                  => 'file',
+                        'signature'                             => 'text',
+                        default                                 => 'text',
                     };
  
-                    $columnTypes[$colIndex] = ['type' => $sheetType];
+                    $colMeta = ['type' => $sheetType];
+                    if (in_array($fieldType, ['select', 'radio', 'checkbox'], true)) {
+                        $optsRaw = $field['options'] ?? [];
+                        if (is_string($optsRaw)) {
+                            $optsRaw = explode(',', $optsRaw);
+                        }
+                        if (!is_array($optsRaw)) {
+                            $optsRaw = [];
+                        }
+
+                        $opts = array_values(array_filter(array_map(
+                            fn($o) => trim((string)$o),
+                            $optsRaw
+                        ), fn($o) => $o !== ''));
+
+                        $colMeta['options'] = $opts;
+                    }
+
+                    $columnTypes[$colIndex] = $colMeta;
  
                     $colIndex++;
                     $cols++;

@@ -1,10 +1,10 @@
 <?php
 include 'partials/layouts/layoutTop.php';
-ini_set('display_errors', 1);
-ini_set('display_startup_errors', 1);
-error_reporting(E_ALL);
+// ini_set('display_errors', 1);
+// ini_set('display_startup_errors', 1);
+// error_reporting(E_ALL);
 $sheetId   = isset($_GET['id']) ? intval($_GET['id']) : 0;
-
+date_default_timezone_set('Asia/Kolkata');
 if ($sheetId <= 0) {
     header("Location: dashboard-sheets.php");
     exit;
@@ -50,8 +50,8 @@ if (isset($_GET['id'])) {
     .sheet{border:1px solid #ddd;overflow:auto;max-width:100%;box-shadow:0 2px 6px rgba(0,0,0,0.04)}
     table{border-collapse:collapse;min-width:900px}
     th,td{border-right:1px solid #e6e6e6;border-bottom:1px solid #e6e6e6;padding:0;margin:0;}
-    th{background:var(--header-bg);position:sticky;top:0;z-index:3;text-align:center;font-weight:600}
-    .row-header{position:sticky;left:0;z-index:2;background:var(--header-bg);width:40px;text-align:center}
+    th{position:sticky;top:0;z-index:3;text-align:center;font-weight:600;background:var(--header-bg)}
+    .row-header{position:sticky;left:0;z-index:100;width:40px;text-align:center;background:var(--header-bg);border-right: 1px solid #f3f4f6;}
     .cell{font-size:14px;height:var(--cell-height);min-width:var(--cell-width);padding:4px;box-sizing:border-box;cursor:text;}
     .cell:focus{outline:2px solid #2563eb}
     .selected{background:rgba(37,99,235,0.08)}
@@ -633,7 +633,7 @@ function buildTable() {
 
     const thead = document.createElement("thead");
     const hRow = document.createElement("tr");
-    hRow.appendChild(document.createElement("th"));
+    hRow.appendChild(Object.assign(document.createElement("th"), { className: "row-header" }));
 
     for (let c = 1; c <= COLS; c++) {
         const config = columnTypes[c] || { type: "text" };
@@ -1563,6 +1563,19 @@ document.addEventListener("DOMContentLoaded", () => {
         });
 });
 
+function formatDate(dateString) {
+    const d = new Date(dateString);
+
+    return d.toLocaleString("en-GB", {
+        timeZone: "Asia/Kolkata",
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: true
+    }).replace(",", "");
+}
 /* ------------------------------------------------------------
    COMMENTS & ATTACHMENTS
 ------------------------------------------------------------ */
@@ -1590,20 +1603,20 @@ async function loadComments() {
         div.className = "comment";
         div.innerHTML = `
             <div>${c.comment}</div>
-            <small>${c.created_at} • 
+            <small>${formatDate(c.created_at)} • 
                 <button class="btn btn-link btn-sm p-0 text-primary" onclick="showReplyBox(${c.id}, this)">Reply</button>
             </small>
         `;
         list.appendChild(div);
 
-        // Render replies (indented)
+        // Render replies
         if (c.replies && c.replies.length > 0) {
             c.replies.forEach(r => {
                 const rd = document.createElement("div");
                 rd.className = "comment reply";
                 rd.innerHTML = `
                     <div>${r.comment}</div>
-                    <small>${r.created_at}</small>
+                    <small>${formatDate(r.created_at)}</small>
                 `;
                 list.appendChild(rd);
             });
@@ -2091,7 +2104,7 @@ function openReminderModal(row) {
                         const safeDate = r.display_at || r.remind_at || "";
                         const safeMsg  = r.message || "";
                         return `<div style="padding:6px 4px; border-bottom:1px solid #f3f4f6;">
-                                    <div style="font-size:12px; color:#6b7280;">${safeDate}</div>
+                                    <div style="font-size:12px; color:#6b7280;">${formatDate(r.safeDate)}</div>
                                     <div style="font-size:13px;">${safeMsg}</div>
                                 </div>`;
                     }).join("");

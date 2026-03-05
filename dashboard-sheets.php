@@ -237,7 +237,7 @@ $remindersResult->data_seek(0); // reset again for display
                             <?php
                             $adjusted_updated = date('Y-m-d H:i:s', strtotime($sheet['updated_at'] . ' +5 hours 30 minutes'));
                             ?>
-                            <strong><?= date("M d, Y H:i", strtotime($adjusted_updated)) ?></strong>
+                            <strong><?= date("M d, Y h:i A", strtotime($adjusted_updated)) ?></strong>
                         </p>
                     </div>
                 </div>
