@@ -1824,12 +1824,31 @@
 
                             $newStructure = json_decode($emptySheetData, true);
 
+                            /* REMOVE CELLS FROM DELETED COLUMNS */
+
+                            $maxAllowedColIndex = $newStructure['cols'];
+
+                            $filteredCells = [];
+
+                            foreach ($existingCells as $cellKey => $value) {
+
+                                if (preg_match('/^([A-Z]+)/', $cellKey, $m)) {
+
+                                    $col = $m[1];
+                                    $colIndex = ord($col) - 64;
+
+                                    if ($colIndex <= $maxAllowedColIndex) {
+                                        $filteredCells[$cellKey] = $value;
+                                    }
+                                }
+                            }
+
                             $mergedSheet = [
                                 "rows"        => $existingSheet['rows'] ?? 10,
                                 "cols"        => $newStructure['cols'],
                                 "headers"     => $newStructure['headers'],
                                 "columnTypes" => $newStructure['columnTypes'],
-                                "cells"       => $existingCells
+                                "cells"       => $filteredCells
                             ];
 
                             $finalJSON = json_encode($mergedSheet);
@@ -1895,12 +1914,31 @@
 
                             $newStructure = json_decode($emptySheetData, true);
 
+                            /* REMOVE CELLS FROM DELETED COLUMNS */
+
+                            $maxAllowedColIndex = $newStructure['cols'];
+
+                            $filteredCells = [];
+
+                            foreach ($existingCells as $cellKey => $value) {
+
+                                if (preg_match('/^([A-Z]+)/', $cellKey, $m)) {
+
+                                    $col = $m[1];
+                                    $colIndex = ord($col) - 64;
+
+                                    if ($colIndex <= $maxAllowedColIndex) {
+                                        $filteredCells[$cellKey] = $value;
+                                    }
+                                }
+                            }
+
                             $mergedSheet = [
                                 "rows"        => $existingSheet['rows'] ?? 10,
                                 "cols"        => $newStructure['cols'],
                                 "headers"     => $newStructure['headers'],
                                 "columnTypes" => $newStructure['columnTypes'],
-                                "cells"       => $existingCells
+                                "cells"       => $filteredCells
                             ];
 
                             $finalJSON = json_encode($mergedSheet);
