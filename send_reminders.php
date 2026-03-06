@@ -10,9 +10,7 @@ use PHPMailer\PHPMailer\Exception;
 
 $dotenv = Dotenv::createImmutable(__DIR__);
 $dotenv->load();
-$dotenv = Dotenv\Dotenv::createImmutable(__DIR__);
-$dotenv = Dotenv::createImmutable(__DIR__);
-$dotenv->load();
+
 $now       = new DateTime();
 $windowMin = (clone $now)->modify('+8 minutes')->format('Y-m-d H:i:s');
 $windowMax = (clone $now)->modify('+12 minutes')->format('Y-m-d H:i:s');

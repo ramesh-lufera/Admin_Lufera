@@ -222,7 +222,7 @@
             $stmt->bind_param(
                 "iss",
                 $formId,
-                $sheetName,
+                $finalSheetName, // sheet name = form title
                 $sheetJSON
             );
             $stmt->execute();
@@ -728,7 +728,19 @@
             "UPDATE form_builder SET is_active = ? WHERE id = ?"
         );
         $stmt->bind_param("ii", $isActive, $formId);
-        $stmt->execute();
+        if ($stmt->execute()) {
+            $new_sheet_id = $conn->insert_id;
+            logActivity(
+                $conn,
+                $loggedInUserId,
+                "Form builder",
+                "Toggled form ID {$formId} to " . ($isActive ? "active" : "inactive")
+            );
+            echo "<script>window.location.href='sheets.php?id={$new_sheet_id}';</script>";
+            exit;
+        } else {
+            $error = "Database error: " . $conn->error;
+        }
 
         exit;
     }
@@ -1679,6 +1691,8 @@
                 : null;
  
             $title = $_POST['formTitle'] ?? '';
+            $finalFormTitle = trim($title) !== '' ? trim($title) : 'Untitled Form';
+            $finalSheetName  = trim($title) !== '' ? trim($title) : 'Untitled Sheet';
             $json  = $_POST['formJSON'] ?? '';
             $settings = $_POST['formSettings'] ?? '';
  
@@ -1766,8 +1780,21 @@
                      WHERE id = ?"
                 );
                 $sheetIdForForm = $sheet_id_from_url > 0 ? $sheet_id_from_url : null;
-                $stmt->bind_param("sssii", $title, $json, $settings, $sheetIdForForm, $formId);
-                $stmt->execute();
+                $stmt->bind_param("sssii", $finalFormTitle, $json, $settings, $sheetIdForForm, $formId);
+                //$stmt->execute();
+                if ($stmt->execute()) {
+                    $new_sheet_id = $conn->insert_id;
+                    logActivity(
+                        $conn,
+                        $loggedInUserId,
+                        "Form builder",
+                        "Updated form ID {$formId}" . ($sheetIdForForm ? " with linked sheet ID {$sheetIdForForm}" : "")
+                    );
+                    echo "<script>window.location.href='sheets.php?id={$new_sheet_id}';</script>";
+                    exit;
+                } else {
+                    $error = "Database error: " . $conn->error;
+                }
                 $redirectId = $formId;
  
                 /* Sync the linked sheet, if any.
@@ -1830,7 +1857,20 @@
                             "UPDATE form_builder SET sheet_id = ? WHERE id = ?"
                         );
                         $stmtUpdateForm->bind_param("ii", $sheet_id_from_url, $redirectId);
-                        $stmtUpdateForm->execute();
+                        //$stmtUpdateForm->execute();
+                        if ($stmtUpdateForm->execute()) {
+                            $new_sheet_id = $conn->insert_id;
+                            logActivity(
+                                $conn,
+                                $loggedInUserId,
+                                "Form builder",
+                                "Toggled form ID {$formId} to " . ($isActive ? "active" : "inactive")
+                            );
+                            echo "<script>window.location.href='sheets.php?id={$new_sheet_id}';</script>";
+                            exit;
+                        } else {
+                            $error = "Database error: " . $conn->error;
+                        }
                     } else {
                         // Try update by form_id first
 
@@ -1890,7 +1930,7 @@
                             $stmtSheetInsert->bind_param(
                                 "iss",
                                 $redirectId,
-                                $title,
+                                $finalSheetName,
                                 $emptySheetData
                             );
                             $stmtSheetInsert->execute();
@@ -1904,7 +1944,20 @@
                                 "UPDATE form_builder SET sheet_id = ? WHERE id = ?"
                             );
                             $stmtUpdateForm->bind_param("ii", $newSheetId, $redirectId);
-                            $stmtUpdateForm->execute();
+                            
+                            if ($stmtUpdateForm->execute()) {
+                                $new_sheet_id = $conn->insert_id;
+                                logActivity(
+                                    $conn,
+                                    $loggedInUserId,
+                                    "Form builder",
+                                    "" . ($formId ? "Updated form ID {$formId}" : "Created new form ID {$redirectId}") . " with linked sheet ID {$newSheetId}"
+                                );
+                                echo "<script>window.location.href='sheets.php?id={$new_sheet_id}';</script>";
+                                exit;
+                            } else {
+                                $error = "Database error: " . $conn->error;
+                            }
                         }
                     }
                 }
@@ -1914,7 +1967,7 @@
                     "INSERT INTO form_builder (form_title, form_json, form_settings, sheet_id) VALUES (?, ?, ?, ?)"
                 );
                 $sheetIdForForm = $sheet_id_from_url > 0 ? $sheet_id_from_url : null;
-                $stmt->bind_param("sssi", $title, $json, $settings, $sheetIdForForm);
+                $stmt->bind_param("sssi", $finalFormTitle, $json, $settings, $sheetIdForForm);
                 $stmt->execute();
                 $redirectId = $conn->insert_id;
  
@@ -1944,7 +1997,22 @@
                             "UPDATE form_builder SET sheet_id = ? WHERE id = ?"
                         );
                         $stmtUpdateForm->bind_param("ii", $sheet_id_from_url, $redirectId);
-                        $stmtUpdateForm->execute();
+                        //$stmtUpdateForm->execute();
+
+                        if ($stmtUpdateForm->execute()) {
+                            $new_sheet_id = $conn->insert_id;
+                            logActivity(
+                                $conn,
+                                $loggedInUserId,
+                                "Form builder",
+                                "Created new form - {$finalFormTitle} linked to existing sheet ID {$sheet_id_from_url}"
+                            );
+                            echo "<script>window.location.href='sheets.php?id={$new_sheet_id}';</script>";
+                            exit;
+                        } else {
+                            $error = "Database error: " . $conn->error;
+                        }
+
                     } else {
                         // No existing sheet row → insert a new one
                         $stmtSheet = $conn->prepare(
@@ -1954,11 +2022,11 @@
                         $stmtSheet->bind_param(
                             "iss",
                             $redirectId,     // form_id
-                            $title,          // sheet name = form title
+                            $finalSheetName,          // sheet name = form title
                             $emptySheetData
                         );
                         $stmtSheet->execute();
-
+                        
                         // For Sheet Id Storing..
                         /* 🔥 GET NEW SHEET ID */
                         $newSheetId = $conn->insert_id;
@@ -1968,7 +2036,19 @@
                             "UPDATE form_builder SET sheet_id = ? WHERE id = ?"
                         );
                         $stmtUpdateForm->bind_param("ii", $newSheetId, $redirectId);
-                        $stmtUpdateForm->execute();
+                        //$stmtUpdateForm->execute();
+
+                        if ($stmtUpdateForm->execute()) {
+                            $new_sheet_id = $conn->insert_id;
+                            logActivity(
+                                $conn,
+                                $loggedInUserId,
+                                "Form builder",
+                                " Created new form - {$finalFormTitle} and linked to new sheet ID {$newSheetId}"
+                            );                           
+                        } else {
+                            $error = "Database error: " . $conn->error;
+                        }
                     }
                 }
             }
