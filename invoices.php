@@ -487,7 +487,7 @@
         LEFT JOIN package ON (orders.type = 'package' AND orders.plan = package.id)
         LEFT JOIN products ON (orders.type = 'product' AND orders.plan = products.id)
         LEFT JOIN websites ON orders.invoice_id = websites.invoice_id
-
+        WHERE orders.is_deleted != 1 AND orders.is_Active != 2
         UNION ALL
 
         SELECT

@@ -1834,9 +1834,16 @@
                                             $expiryFormatted = date("Y-m-d", strtotime($order['expired_at']));
                                         } else {
                                             // Normal case: calculate expiry based on created_on + duration
+                                            
                                             $createdOn = new DateTime($order['created_on']);
-                                            $duration  = $order['duration'];
-                                            $expiryDate = (clone $createdOn)->modify("+$duration");
+                                            $duration  = trim($order['duration'] ?? '');
+                                            if (!empty($duration)) {
+                                                $expiryDate = (clone $createdOn)->modify("+$duration");
+                                            } else {
+                                                // fallback (avoid crash)
+                                                $expiryDate = clone $createdOn;
+                                            }
+                                            
                                             $expiryFormatted = $expiryDate->format("Y-m-d");
                                         }
 

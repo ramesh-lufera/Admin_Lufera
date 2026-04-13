@@ -679,7 +679,6 @@
                         \$user = "select * from users where id = \$Id";
                         \$res = \$conn ->query(\$user);
                         \$row = \$res ->fetch_assoc();
-                        \$UserId = \$row['user_id'];
                         \$UserId = \$row['id'];
                         \$role = \$row['role'];
 

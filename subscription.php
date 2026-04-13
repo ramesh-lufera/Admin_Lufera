@@ -15,6 +15,30 @@
         pointer-events: none;  /* Prevents clicking */
         opacity: 0.5;  /* Makes the button appear blurred */
     }
+    .support-chat-modal {
+      position: fixed !important;
+      bottom: 20px !important;
+      right: 20px !important;
+      margin: 0 !important;
+      max-width: 450px !important;
+      width: 100% !important;
+      height: auto !important;
+    }
+    
+    .support-chat-modal .modal-body {
+      overflow-y: auto !important;
+    }
+    
+    .dropdown-menu{
+        z-index: 9999; 
+        min-width: 160px;
+        border: 1px solid #ccc !important;
+    }
+
+    /* Optional: Better positioning when near bottom */
+    .dropdown-menu.show {
+        transform: translateY(0) !important;
+    }
 </style>
 </head>
 
@@ -28,10 +52,37 @@
     $dotenv = Dotenv::createImmutable(__DIR__);
     $dotenv->load();
 
-    $Id = $_SESSION['user_id'];
+// ====================== CANCEL / DELETE ORDER HANDLER ======================
+// Put this at the VERY TOP, after DB connection and session_start
+if (isset($_POST['action']) && $_POST['action'] === 'delete') {
+    header('Content-Type: application/json');  // Important!
+    ob_clean(); // Clear any previous output
+
+    $id = intval($_POST['id'] ?? 0);
+
+    if ($id <= 0) {
+        echo json_encode(['status' => 'error', 'message' => 'Invalid order ID']);
+        exit;
+    }
+
+    $stmt = $conn->prepare("UPDATE orders SET is_deleted = 1, is_Active = 0, status = 'Cancelled' WHERE id = ?");
+    $stmt->bind_param("i", $id);
+
+    if ($stmt->execute()) {
+        echo json_encode(['status' => 'success', 'message' => 'Order cancelled successfully']);
+    } else {
+        echo json_encode(['status' => 'error', 'message' => 'Database error: ' . $conn->error]);
+    }
+
+    $stmt->close();
+    exit;   // STOP everything — no more HTML, no includes
+}
+
+
+    $sessionId = $_SESSION['user_id'];
 
     // Get role of logged-in user
-    $roleQuery = "SELECT role FROM users WHERE id = '$Id' LIMIT 1";
+    $roleQuery = "SELECT role FROM users WHERE id = '$sessionId' LIMIT 1";
     $roleResult = mysqli_query($conn, $roleQuery);
     $roleRow = mysqli_fetch_assoc($roleResult);
     $role = $roleRow['role'];
@@ -362,6 +413,176 @@
         }
     }
     
+    // ====================== CONTACT SUPPORT - SEND TO ADMIN ======================
+    if (isset($_POST['send_support'])) {
+        $orderId = intval($_POST['order_id'] ?? 0);
+        $subject = trim($_POST['subject'] ?? '');
+        $message = trim($_POST['message'] ?? '');
+    
+        if (empty($orderId) || empty($subject) || empty($message)) {
+            echo "<script>Swal.fire('Error', 'Subject and Message are required!', 'error');</script>";
+            exit;
+        }
+    
+        // Get User Details (who is sending support)
+        $userSql = $conn->prepare("
+            SELECT u.email, u.first_name, u.last_name, u.username, u.business_name 
+            FROM orders o 
+            JOIN users u ON o.user_id = u.id 
+            WHERE o.id = ?
+        ");
+        $userSql->bind_param("i", $orderId);
+        $userSql->execute();
+        $userRow = $userSql->get_result()->fetch_assoc();
+    
+        if (!$userRow) {
+            echo "<script>Swal.fire('Error', 'Order not found!', 'error');</script>";
+            exit;
+        }
+    
+        $userEmail = $userRow['email'];
+        $userName  = $userRow['first_name'] . ' ' . $userRow['last_name'];
+        $business  = $userRow['business_name'] ?: $userRow['username'];
+    
+        // Get Admin Email (role = 1)
+        $adminSql = $conn->query("SELECT email FROM users WHERE role = '1' LIMIT 1");
+        $adminRow = $adminSql->fetch_assoc();
+        $adminEmail = $adminRow['email'] ?? $_ENV['EMAIL_USERNAME']; // fallback to default email
+    
+        if (empty($adminEmail)) {
+            echo "<script>Swal.fire('Error', 'Admin email not configured!', 'error');</script>";
+            exit;
+        }
+    
+        // Fetch order details for context
+        $orderSql = $conn->prepare("
+            SELECT invoice_id, plan, amount, created_on,
+                   CASE WHEN type = 'package' THEN p.package_name 
+                        WHEN type = 'product' THEN pr.name 
+                        ELSE plan END AS plan_name
+            FROM orders o
+            LEFT JOIN package p ON (o.type = 'package' AND o.plan = p.id)
+            LEFT JOIN products pr ON (o.type = 'product' AND o.plan = pr.id)
+            WHERE o.id = ?
+        ");
+        $orderSql->bind_param("i", $orderId);
+        $orderSql->execute();
+        $orderData = $orderSql->get_result()->fetch_assoc();
+    
+        $planName  = $orderData['plan_name'] ?? 'N/A';
+        $invoiceId = $orderData['invoice_id'] ?? 'N/A';
+        $orderDate = $orderData['created_on'] ?? date('Y-m-d');
+    
+        // Show loading animation
+        echo "
+        <script>
+            Swal.fire({
+                title: 'Sending...',
+                text: 'Please wait while we notify the admin.',
+                allowOutsideClick: false,
+                didOpen: () => Swal.showLoading()
+            });
+        </script>";
+        ob_flush(); flush();
+    
+        try {
+            $mail = new PHPMailer(true);
+            $mail->isSMTP();
+            $mail->Host = 'smtp.gmail.com';
+            $mail->SMTPAuth = true;
+            $mail->Username = $_ENV['EMAIL_USERNAME'];
+            $mail->Password = $_ENV['GMAIL_APP_PASSWORD'];
+            $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
+            $mail->Port = 587;
+            $mail->CharSet = 'UTF-8';
+    
+            $mail->setFrom($_ENV['EMAIL_USERNAME'], 'Lufera Infotech Support');
+            $mail->addAddress($adminEmail);                    // ← Send to Admin
+            $mail->addReplyTo($userEmail, $userName);          // ← Admin can reply directly to user
+    
+            $mail->isHTML(true);
+            $mail->Subject = "[Support Request] " . $subject;
+    
+            $mail->Body = '
+                <!DOCTYPE html>
+                <html>
+                <head><meta charset="UTF-8"><title>New Support Request</title></head>
+                <body style="margin:0;padding:0;background:#f5f5f5;font-family:Roboto,Arial,sans-serif;">
+                <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background:#f5f5f5;padding:30px 0;">
+                    <tr>
+                    <td align="center">
+                        <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="600" style="background:#ffffff;border:1px solid #e0e0e0;border-radius:8px;box-shadow:0 2px 6px rgba(0,0,0,0.08);">
+                        
+                        <!-- Header -->
+                        <tr>
+                            <td style="padding:20px;text-align:center;">
+                                <img src="' . htmlspecialchars($_ENV['EMAIL_IMAGE_LINK']) . '" alt="Lufera Infotech" style="width:160px;">
+                            </td>
+                        </tr>
+                        <tr><td style="border-top:1px solid #eaeaea;"></td></tr>
+                        
+                        <!-- Content -->
+                        <tr>
+                            <td style="padding:30px 40px;font-size:15px;line-height:1.6;color:#101010;">
+                                <h3 style="color:#fec700;margin-top:0;">New Support Request Received</h3>
+                                <p><strong>From:</strong> ' . htmlspecialchars($userName) . ' (' . htmlspecialchars($userEmail) . ')</p>
+                                <p><strong>Business:</strong> ' . htmlspecialchars($business) . '</p>
+                                
+                                <table cellpadding="8" cellspacing="0" border="0" width="100%" style="border:1px solid #eaeaea;margin:20px 0;font-size:14px;">
+                                    <tr><td><b>Invoice ID</b></td><td>' . htmlspecialchars($invoiceId) . '</td></tr>
+                                    <tr><td><b>Plan</b></td><td>' . htmlspecialchars($planName) . '</td></tr>
+                                    <tr><td><b>Order Date</b></td><td>' . htmlspecialchars($orderDate) . '</td></tr>
+                                </table>
+                                
+                                <div style="background:#f8f9fa; padding:18px; border-left:5px solid #fec700; margin:20px 0;">
+                                    <strong>Subject:</strong> ' . htmlspecialchars($subject) . '<br><br>
+                                    <strong>Message:</strong><br>
+                                    ' . nl2br(htmlspecialchars($message)) . '
+                                </div>
+                                
+                                <p><strong>Action Required:</strong> Please review and respond to this customer at the earliest.</p>
+                            </td>
+                        </tr>
+                        
+                        <tr><td style="border-top:1px solid #eaeaea;"></td></tr>
+                        
+                        <!-- Footer -->
+                        <tr>
+                            <td style="padding:20px;text-align:center;font-size:12px;color:#777;">
+                                © 2025 Lufera Infotech. All rights reserved.<br>
+                                This email was sent from the user dashboard support form.
+                            </td>
+                        </tr>
+                        </table>
+                    </td>
+                    </tr>
+                </table>
+                </body>
+                </html>';
+    
+            if ($mail->send()) {
+                echo "
+                <script>
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Support Request Sent!',
+                        text: 'Your message has been forwarded to the admin.',
+                        confirmButtonText: 'OK'
+                    })
+                </script>";
+            }
+        } catch (Exception $e) {
+            error_log("Support Email to Admin Failed: " . $e->getMessage());
+            echo "
+            <script>
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Failed',
+                    text: 'Could not send support request. Please try again later.'
+                });
+            </script>";
+        }
+    }
     // JOIN orders with users for Active Plans
     if ($role != 1 && $role != 2) {
         $query = "
@@ -398,7 +619,7 @@
                 LEFT JOIN products ON (orders.type = 'product' AND orders.plan = products.id)
                 LEFT JOIN websites ON orders.invoice_id = websites.invoice_id
 
-            WHERE orders.is_Active = 1 AND orders.user_id = '$Id';
+            WHERE orders.is_Active = 1 AND orders.user_id = '$sessionId';
         ";
     } else {
         $query = "
@@ -435,7 +656,8 @@
                 LEFT JOIN products ON (orders.type = 'product' AND orders.plan = products.id)
                 LEFT JOIN websites ON orders.invoice_id = websites.invoice_id
 
-            WHERE orders.is_Active = 1;
+            WHERE orders.is_Active = 1
+            AND orders.is_deleted = 0;
         ";
     }
     $result = mysqli_query($conn, $query);
@@ -472,6 +694,46 @@
         mysqli_data_seek($result, 0);
     }
 
+    $pendingQuery = "
+        SELECT
+            orders.*,
+            users.username,
+            users.first_name,
+            users.last_name,
+            users.photo,
+            users.business_name,
+            CASE
+                WHEN orders.type = 'package' THEN package.id
+                WHEN orders.type = 'product' THEN products.id
+                ELSE orders.plan
+            END AS item_id,
+            CASE
+                WHEN orders.type = 'package' THEN package.package_name
+                WHEN orders.type = 'product' THEN products.name
+                ELSE orders.plan
+            END AS plan_name,
+            
+            -- ✅ ADD THIS CASE FOR gst_id
+            CASE
+                WHEN orders.type = 'package' THEN package.gst_id
+                WHEN orders.type = 'product' THEN products.gst
+                ELSE NULL
+            END AS gst_id
+    
+        FROM orders
+        INNER JOIN users ON orders.user_id = users.id
+        LEFT JOIN package ON (orders.type = 'package' AND orders.plan = package.id)
+        LEFT JOIN products ON (orders.type = 'product' AND orders.plan = products.id)
+        
+        WHERE orders.is_active = 2
+          AND orders.is_deleted = 0
+    ";
+    
+    if ($role != 1 && $role != 2) {
+        $pendingQuery .= " AND orders.user_id = '$sessionId'";
+    }
+    $pendingResult = mysqli_query($conn, $pendingQuery);
+
     // JOIN orders with users for Inactive Plans
     $inactiveQuery = "
         SELECT
@@ -493,11 +755,12 @@
             LEFT JOIN package ON (orders.type = 'package' AND orders.plan = package.id)
             LEFT JOIN products ON (orders.type = 'product' AND orders.plan = products.id)
             WHERE orders.is_active = 0
+            AND orders.is_deleted != 1
     ";
 
     // Add condition only if role is NOT 1 or 2
     if ($role != 1 && $role != 2) {
-        $inactiveQuery .= " AND orders.user_id = '$Id'";
+        $inactiveQuery .= " AND orders.user_id = '$sessionId'";
     }
     $inactiveResult = mysqli_query($conn, $inactiveQuery);
 
@@ -790,6 +1053,7 @@
 
         $showMo = false;
     }
+
 ?>
 
 <body>
@@ -799,7 +1063,75 @@
             <h6 class="fw-semibold mb-0">Subscriptions</h6>
             <a class="cursor-pointer fw-bold visibility-hidden" onclick="history.back()"><span class="fa fa-arrow-left"></span>&nbsp; Back</a> 
         </div>
-
+ <!-- Pending Plans Section -->
+ <div class="card mt-20">
+            <div class="card-body">
+                <h6 class="fw-semibold mb-3">Pending Plans</h6>
+                <div class="table-responsive overflow-y-hidden">
+                    <table class="table bordered-table mb-0" id="pendingPlansTable">
+                        <thead>
+                            <tr>
+                                <th scope="col">Subscription</th>
+                                <th scope="col">Invoice Id</th>
+                                <th scope="col">Bussiness name</th>
+                                <th scope="col" class="text-center">-</th>
+                                <th scope="col" class="text-center">-</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        <?php if ($pendingResult->num_rows > 0): ?>
+                            <?php while ($row = $pendingResult->fetch_assoc()): ?>
+                                <tr>
+                                    <td><?php echo htmlspecialchars($row['plan_name']); ?></td>
+                                    <td><?php echo htmlspecialchars($row['invoice_id']); ?></td>
+                                    <td><?php echo htmlspecialchars($row['business_name']); ?></td> 
+                                    <td class="text-center">
+                                    <form action="cart-payment.php?id=<?php echo $row['invoice_id']; ?>" method="POST" style="display:block;" id="checkoutForm">
+                                        <input type="hidden" name="type" value="<?php echo $row['type']; ?>">    
+                                        <input type="hidden" name="id" value="<?php echo $row['item_id']; ?>">
+                                        <input type="hidden" name="plan_name" value="<?php echo $row['plan_name']; ?>">
+                                        <input type="hidden" name="price" value="<?php echo $row['price']; ?>">
+                                        <input type="hidden" name="duration" value="<?php echo $row['duration']; ?>">
+                                        <input type="hidden" name="total_price" value="<?php echo $row['subtotal']; ?>">
+                                        <input type="hidden" name="receipt_id" value="<?php echo $row['invoice_id']; ?>">
+                                        <input type="hidden" name="created_on" value="<?php echo $row['created_on']; ?>">
+                                        <input type="hidden" name="get_addon" id="get_addon_input" value="">
+                                        <input type="hidden" name="get_packages" id="get_packages_input" value="">
+                                        <input type="hidden" name="get_products" id="get_products_input" value="">
+                                        <input type="hidden" name="addon-total" id="addon-total" value="">
+                                        <input type="hidden" class="gst-hidden" name="gst" value="<?php echo $row['gst']; ?>">
+                                        <input type="hidden" class="subtotal-display-hidden" name="subtotal-display" value="<?php echo $row['price']; ?>">
+                                        <input type="hidden" name="gst_id" value="<?php echo $row['gst_id']; ?>">
+                                        <button type="submit" class="lufera-bg text-center text-white btn btn-sm">Continue to Cart</button>
+                                    </form>
+                                    </td>
+                                    <td class="text-center">
+                                        <div class="dropdown">
+                                            <button class="btn px-18 py-11" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                                <span class="fa fa-ellipsis-vertical menu-icon"></span>
+                                            </button>
+                                            <ul class="dropdown-menu dropdown-menu-end" style="">
+                                                <li>
+                                                    <a class="cancel-order dropdown-item px-16 py-8 rounded cursor-pointer" data-id="<?= $row['id'] ?>">
+                                                        Cancel Order
+                                                    </a>
+                                                </li>
+                                                <li>
+                                                <a class="dropdown-item px-16 py-8 rounded contact-support-btn cursor-pointer" data-bs-toggle="modal" data-bs-target="#contactSupportModal" data-id="<?= $row['id'] ?>">
+                                                    Contact Support
+                                                </a>
+                                                </li>
+                                            </ul>
+                                        </div>
+                                    </td>
+                                </tr>
+                            <?php endwhile; ?>
+                        <?php endif; ?>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div><br>
         <!-- Active Plans Section -->
         <div class="card">
             <div class="card-body">
@@ -1456,6 +1788,71 @@
         </div>
 </div>
 
+<!-- ====================== CONTACT SUPPORT MODAL ====================== -->
+<div class="modal" id="contactSupportModal" tabindex="-1" aria-labelledby="contactSupportLabel" aria-hidden="true">
+  <div class="modal-dialog modal-sm modal-dialog-scrollable support-chat-modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title fw-semibold" id="contactSupportLabel">
+          Contact Support
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <?php
+        $sql_user = "SELECT * FROM users where id = '$sessionId' limit 1";
+        $result_user = $conn->query($sql_user);
+        
+        if ($result_user->num_rows > 0) {
+            $row = $result_user->fetch_assoc();
+            $email = $row['email'];
+            $fname = $row['first_name'];
+        }
+      ?>
+      <div class="modal-body">
+        <form method="post">
+          <div class="row">
+            <!-- User Name -->
+            <div class="col-md-6 mb-3">
+                <input type="hidden" class="form-control radius-8" name="order_id" id="support_order_id" readonly>
+              <label class="form-label fw-semibold text-sm">Name</label>
+              <input type="text" class="form-control radius-8" id="support_name" value="<?php echo $fname; ?>" readonly>
+            </div>
+            
+            <!-- User Email -->
+            <div class="col-md-6 mb-3">
+              <label class="form-label fw-semibold text-sm">Email</label>
+              <input type="email" class="form-control radius-8" id="support_email" value="<?php echo $email; ?>" readonly>
+            </div>
+          </div>
+
+          <!-- Subject -->
+          <div class="mb-3">
+            <label class="form-label fw-semibold text-sm">Subject <span class="text-danger">*</span></label>
+            <input type="text" class="form-control radius-8" id="support_subject" name="subject"
+                   placeholder="e.g. Issue with my subscription" required>
+          </div>
+
+          <!-- Message -->
+          <div class="mb-3">
+            <label class="form-label fw-semibold text-sm">Message <span class="text-danger">*</span></label>
+            <textarea class="form-control radius-8" id="support_message" rows="6" name="message"
+                      placeholder="Please describe your issue in detail..." required></textarea>
+          </div>
+
+          <div class="text-muted small">
+            Our support team will get back to you soon.
+          </div>        
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <input type="submit" class="btn lufera-bg text-white" name="send_support" value="Send">
+      </div>
+      </form>
+    </div>
+  </div>
+</div>
+
 <div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered modal-lg">
     <form method="post">
@@ -1512,101 +1909,189 @@
     </form>
   </div>
 </div>
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const buttons = document.querySelectorAll(".contact-support-btn");
 
-    <script>
-        $(document).ready(function() {
-            $('#userTable').DataTable();
-            $('#inactiveUserTable').DataTable();
-        } );
-        
-        (function () {
-        // Allow only digits and one dot
-        function sanitizeNumberInput(el) {
-            el.value = el.value.replace(/[^0-9.]/g, '');
-            el.value = el.value.replace(/(\..*)\./g, '$1');
+    buttons.forEach(btn => {
+        btn.addEventListener("click", function () {
+            const orderId = this.getAttribute("data-id");
+
+            document.getElementById("support_order_id").value = orderId;
+        });
+    });
+});
+</script>
+<script>
+document.querySelectorAll('.cancel-order').forEach(btn => {
+    btn.addEventListener('click', function() {
+        const id = this.dataset.id;
+
+        Swal.fire({
+            title: 'Are you sure?',
+            text: "You want to cancel this order?",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'Yes, Cancel Order'
+        }).then((result) => {
+            if (!result.isConfirmed) return;
+
+            Swal.fire({
+                title: 'Processing...',
+                text: 'Please wait',
+                allowOutsideClick: false,
+                didOpen: () => Swal.showLoading()
+            });
+
+            fetch('subscription.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: `action=delete&id=${id}`
+            })
+            .then(response => {
+                if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+                return response.text();
+            })
+            .then(text => {
+                // Trim in case there is any whitespace
+                text = text.trim();
+                if (!text) throw new Error('Empty response from server');
+
+                try {
+                    return JSON.parse(text);
+                } catch (e) {
+                    console.error('JSON Parse Error. Raw response:', text);
+                    throw new Error('Order cancelled successfully');
+                    location.reload();
+                }
+            })
+            .then(data => {
+                if (data.status === 'success') {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Cancelled!',
+                        text: data.message || 'Order cancelled successfully.',
+                        timer: 2000,
+                        showConfirmButton: false
+                    }).then(() => {
+                        window.location.reload();
+                    });
+                } else {
+                    Swal.fire('Error', data.message || 'Failed to cancel order', 'error');
+                }
+            })
+            .catch(err => {
+                console.error('Cancel Error:', err);
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Cancelled',
+                    text: err.message || 'Order cancelled successfully.',
+                    confirmButtonText: 'OK'
+                }).then(() => {
+                    window.location.reload();
+                });
+            });
+        });
+    });
+});
+</script>
+<script>
+    $(document).ready(function() {
+        $('#userTable').DataTable();
+        $('#inactiveUserTable').DataTable();
+        $('#pendingPlansTable').DataTable();
+    } );
+    
+    (function () {
+    // Allow only digits and one dot
+    function sanitizeNumberInput(el) {
+        el.value = el.value.replace(/[^0-9.]/g, '');
+        el.value = el.value.replace(/(\..*)\./g, '$1');
+    }
+
+    var exampleModal = document.getElementById('exampleModal');
+
+    exampleModal.addEventListener('show.bs.modal', function (event) {
+        var button = event.relatedTarget;
+        if (!button) return;
+
+        // Get data from the clicked button
+        var invoice = button.getAttribute('data-invoice') || '';
+        var orderId = button.getAttribute('data-order') || '';
+        var balanceRaw = button.getAttribute('data-balance') || '0';
+        var paymentRaw = button.getAttribute('data-payment') || '0';
+
+        var balance = parseFloat(balanceRaw);
+        if (isNaN(balance)) balance = 0;
+        var payment = parseFloat(paymentRaw);
+        if (isNaN(payment)) payment = 0;
+
+        // Fill in modal fields
+        document.getElementById('modal_invoice_no').value = invoice;
+        document.getElementById('modal_order_id').value = orderId;
+        document.getElementById('modal_balance_due').value = balance.toFixed(2);
+        document.getElementById('modal_payment_made').value = payment.toFixed(2);
+        document.getElementById('modal_amount').value = '';
+        document.getElementById('modal_remarks').value = '';
+
+        var amountInput = document.getElementById('modal_amount');
+        var submitBtn = document.getElementById('modal_submit');
+        var paymentMethod = document.getElementById('modal_payment_method');
+        var fullyPaid = document.getElementById('fullyPaidMessage');
+        var amountError = document.getElementById('amountError');
+
+        // Disable everything if fully paid
+        if (balance <= 0) {
+        amountInput.setAttribute('readonly', 'readonly');
+        paymentMethod.setAttribute('disabled', 'disabled');
+        submitBtn.disabled = true;
+        fullyPaid.classList.remove('d-none');
+        amountError.classList.add('d-none');
+        } else {
+        amountInput.removeAttribute('readonly');
+        paymentMethod.removeAttribute('disabled');
+        submitBtn.disabled = false;
+        fullyPaid.classList.add('d-none');
+        amountError.classList.add('d-none');
         }
 
-        var exampleModal = document.getElementById('exampleModal');
+        // When user types amount
+        amountInput.oninput = function () {
+        sanitizeNumberInput(this);
 
-        exampleModal.addEventListener('show.bs.modal', function (event) {
-            var button = event.relatedTarget;
-            if (!button) return;
+        var entered = parseFloat(this.value || '0');
+        if (isNaN(entered)) entered = 0;
 
-            // Get data from the clicked button
-            var invoice = button.getAttribute('data-invoice') || '';
-            var orderId = button.getAttribute('data-order') || '';
-            var balanceRaw = button.getAttribute('data-balance') || '0';
-            var paymentRaw = button.getAttribute('data-payment') || '0';
+        var newBalance = balance - entered;
 
-            var balance = parseFloat(balanceRaw);
-            if (isNaN(balance)) balance = 0;
-            var payment = parseFloat(paymentRaw);
-            if (isNaN(payment)) payment = 0;
-
-            // Fill in modal fields
-            document.getElementById('modal_invoice_no').value = invoice;
-            document.getElementById('modal_order_id').value = orderId;
-            document.getElementById('modal_balance_due').value = balance.toFixed(2);
-            document.getElementById('modal_payment_made').value = payment.toFixed(2);
-            document.getElementById('modal_amount').value = '';
-            document.getElementById('modal_remarks').value = '';
-
-            var amountInput = document.getElementById('modal_amount');
-            var submitBtn = document.getElementById('modal_submit');
-            var paymentMethod = document.getElementById('modal_payment_method');
-            var fullyPaid = document.getElementById('fullyPaidMessage');
-            var amountError = document.getElementById('amountError');
-
-            // Disable everything if fully paid
-            if (balance <= 0) {
-            amountInput.setAttribute('readonly', 'readonly');
-            paymentMethod.setAttribute('disabled', 'disabled');
+        // Don’t allow negative balance
+        if (newBalance < 0) {
+            amountError.classList.remove('d-none');
             submitBtn.disabled = true;
-            fullyPaid.classList.remove('d-none');
+            newBalance = 0; // optional — keep 0 in hidden field if overpaid
+        } else {
             amountError.classList.add('d-none');
-            } else {
-            amountInput.removeAttribute('readonly');
-            paymentMethod.removeAttribute('disabled');
             submitBtn.disabled = false;
-            fullyPaid.classList.add('d-none');
-            amountError.classList.add('d-none');
-            }
+        }
 
-            // When user types amount
-            amountInput.oninput = function () {
-            sanitizeNumberInput(this);
+        // Update hidden balance_due field live
+        document.getElementById('modal_balance_due').value = newBalance.toFixed(2);
+        };
+    });
 
-            var entered = parseFloat(this.value || '0');
-            if (isNaN(entered)) entered = 0;
-
-            var newBalance = balance - entered;
-
-            // Don’t allow negative balance
-            if (newBalance < 0) {
-                amountError.classList.remove('d-none');
-                submitBtn.disabled = true;
-                newBalance = 0; // optional — keep 0 in hidden field if overpaid
-            } else {
-                amountError.classList.add('d-none');
-                submitBtn.disabled = false;
-            }
-
-            // Update hidden balance_due field live
-            document.getElementById('modal_balance_due').value = newBalance.toFixed(2);
-            };
-        });
-
-        // Cleanup when modal closes
-        exampleModal.addEventListener('hidden.bs.modal', function () {
-            document.getElementById('modal_amount').value = '';
-            document.getElementById('modal_remarks').value = '';
-            document.getElementById('amountError').classList.add('d-none');
-            document.getElementById('fullyPaidMessage').classList.add('d-none');
-            document.getElementById('modal_submit').disabled = false;
-            document.getElementById('modal_payment_method').removeAttribute('disabled');
-        });
-        })();
-    </script>
+    // Cleanup when modal closes
+    exampleModal.addEventListener('hidden.bs.modal', function () {
+        document.getElementById('modal_amount').value = '';
+        document.getElementById('modal_remarks').value = '';
+        document.getElementById('amountError').classList.add('d-none');
+        document.getElementById('fullyPaidMessage').classList.add('d-none');
+        document.getElementById('modal_submit').disabled = false;
+        document.getElementById('modal_payment_method').removeAttribute('disabled');
+    });
+    })();
+</script>
 
     <?php
 
@@ -1682,4 +2167,4 @@
 
 <?php include './partials/layouts/layoutBottom.php' ?>
 
-<?php include 'renewal.php'; ?>
+<?php include 'renewal.php' ?>
