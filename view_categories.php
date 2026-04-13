@@ -551,7 +551,9 @@
                                         </div>
                                         <div class="manage-btn-wrapper">
                                             <?php if (\$role == '1' || \$role == '2' || \$role == '7') { ?>
-                                                <p class="mb-0"><?php echo htmlspecialchars(\$site['business_name']); ?></p>
+                                                <p class="mb-0 view-user-btn cursor-pointer" data-id=<?php echo htmlspecialchars(\$site['id']); ?> data-bs-toggle="modal" data-bs-target="#viewUserModal">
+                                                    <?php echo htmlspecialchars(\$site['business_name']); ?>
+                                                </p>
                                             <?php } ?>
                                             <a href="$manageLink?website_id=<?php echo (int)\$site['web_id']; ?>&product_id=<?php echo (int)\$site['product_id']; ?>&type=<?php echo \$site['type']; ?>" class="dashboard-btn">Manage</a>
                                         </div>
@@ -579,7 +581,20 @@
 
                             <!-- </div> -->
                             </div>
-
+                            <div class="modal fade" id="viewUserModal" tabindex="-1" role="dialog" aria-hidden="true">
+                                <div class="modal-dialog modal-dialog-centered" role="document">
+                                    <div class="modal-content radius-12 p-4">
+                                    <div class="modal-header">
+                                        <h5 class="modal-title">View User</h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                    </div>
+                                    <div class="modal-body" id="userDetailContent">
+                                        <!-- User info will be loaded here -->
+                                        <p>Loading...</p>
+                                    </div>
+                                    </div>
+                                </div>
+                            </div>
                             <script>
                             const searchInput = document.getElementById('searchInput');
                             searchInput.addEventListener('keyup', function () {
@@ -590,6 +605,25 @@
                                 item.style.display = text.includes(filter) ? '' : 'none';
                                 });
                             });
+                            </script>
+                            <script>
+                                $(document).ready(function () {
+                                    $('.view-user-btn').click(function () {
+                                        var userId = $(this).data('id');
+                            
+                                        $.ajax({
+                                            url: 'fetch-user.php',
+                                            type: 'POST',
+                                            data: { id: userId },
+                                            success: function (response) {
+                                                $('#userDetailContent').html(response);
+                                            },
+                                            error: function () {
+                                                $('#userDetailContent').html('Error loading user details.');
+                                            }
+                                        });
+                                    });
+                                });
                             </script>
 
                         </body>
@@ -1321,6 +1355,21 @@
     </div>
 </div>
 
+<div class="modal fade" id="viewUserModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content radius-12 p-4">
+            <div class="modal-header">
+                <h5 class="modal-title">View User</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="userDetailContent">
+                <!-- User info will be loaded here -->
+                <p>Loading...</p>
+            </div>
+        </div>
+    </div>
+</div>
+
 <div class="modal fade" id="add-category-modal" tabindex="-1" aria-labelledby="assignRoleModalLabel" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content">
@@ -1354,7 +1403,6 @@
     </div>
   </div>
 </div>
-  
 <script>
     $(document).ready(function() {
         $('#productPackageTable').DataTable();

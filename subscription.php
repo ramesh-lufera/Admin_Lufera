@@ -702,6 +702,7 @@ if (isset($_POST['action']) && $_POST['action'] === 'delete') {
             users.last_name,
             users.photo,
             users.business_name,
+            users.id AS user_id,
             CASE
                 WHEN orders.type = 'package' THEN package.id
                 WHEN orders.type = 'product' THEN products.id
@@ -1084,7 +1085,7 @@ if (isset($_POST['action']) && $_POST['action'] === 'delete') {
                                 <tr>
                                     <td><?php echo htmlspecialchars($row['plan_name']); ?></td>
                                     <td><?php echo htmlspecialchars($row['invoice_id']); ?></td>
-                                    <td><?php echo htmlspecialchars($row['business_name']); ?></td> 
+                                    <td><span class="view-user-btn cursor-pointer" data-id=<?php echo htmlspecialchars($row['user_id']); ?> data-bs-toggle="modal" data-bs-target="#viewUserModal"><?php echo htmlspecialchars($row['business_name']); ?></span></td> 
                                     <td class="text-center">
                                     <form action="cart-payment.php?id=<?php echo $row['invoice_id']; ?>" method="POST" style="display:block;" id="checkoutForm">
                                         <input type="hidden" name="type" value="<?php echo $row['type']; ?>">    
@@ -1184,7 +1185,7 @@ if (isset($_POST['action']) && $_POST['action'] === 'delete') {
                                 <tr>
                                     <td><?php echo htmlspecialchars($row['plan_name']); ?></td>
                                     <td><?php echo htmlspecialchars($row['invoice_id']); ?></td>
-                                    <td><?php echo htmlspecialchars($row['business_name']); ?></td>
+                                    <td><span class="view-user-btn cursor-pointer" data-id=<?php echo htmlspecialchars($row['user_id']); ?> data-bs-toggle="modal" data-bs-target="#viewUserModal"><?php echo htmlspecialchars($row['business_name']); ?></span></td>
                                     <td class="text-center"><?php echo $expiryFormatted; ?></td>
                                     <td class="text-center">Off</td>
                                     <td class="text-center">
@@ -1600,7 +1601,7 @@ if (isset($_POST['action']) && $_POST['action'] === 'delete') {
                                 <tr>
                                     <td><?php echo htmlspecialchars($row['plan_name']); ?></td>
                                     <td><?php echo htmlspecialchars($row['invoice_id']); ?></td>
-                                    <td><?php echo htmlspecialchars($row['business_name']); ?></td>
+                                    <td><span class="view-user-btn cursor-pointer" data-id=<?php echo htmlspecialchars($row['user_id']); ?> data-bs-toggle="modal" data-bs-target="#viewUserModal"><?php echo htmlspecialchars($row['business_name']); ?></span></td>
                                     <td class="text-center"><?php echo $expiryFormatted; ?></td>
                                     <td class="text-center">Off</td>
                                     <td class="text-center">
@@ -1909,6 +1910,41 @@ if (isset($_POST['action']) && $_POST['action'] === 'delete') {
     </form>
   </div>
 </div>
+
+<div class="modal fade" id="viewUserModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content radius-12 p-4">
+        <div class="modal-header">
+            <h5 class="modal-title">View User</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body" id="userDetailContent">
+            <!-- User info will be loaded here -->
+            <p>Loading...</p>
+        </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    $(document).ready(function () {
+        $('.view-user-btn').click(function () {
+            var userId = $(this).data('id');
+
+            $.ajax({
+                url: 'fetch-user.php',
+                type: 'POST',
+                data: { id: userId },
+                success: function (response) {
+                    $('#userDetailContent').html(response);
+                },
+                error: function () {
+                    $('#userDetailContent').html('Error loading user details.');
+                }
+            });
+        });
+    });
+</script>
 <script>
 document.addEventListener("DOMContentLoaded", function () {
     const buttons = document.querySelectorAll(".contact-support-btn");
