@@ -7,6 +7,27 @@
 
     $dotenv = Dotenv\Dotenv::createImmutable(__DIR__);
     $dotenv->load();
+    $cart_id= $_GET['id'] ?? null;
+
+    if (isset($_POST['save_cart'])) {
+        $client_id = $_SESSION['user_id'];
+        $type = $_POST['type'];
+        $plan_id = $_POST['id'];
+        $plan_name = $_POST['plan_name'];
+        $price = $_POST['price'];
+        $duration = $_POST['duration'];
+        $total_price = $_POST['total_price'];
+        $receipt_id = $_POST['receipt_id'];
+        $created_on = $_POST['created_on'];
+        $subtotal = $_POST['subtotal-display'];
+        $gst = $_POST['gst'];
+        
+        $amount = $price + $gst;
+    
+        $sql = "INSERT INTO orders (user_id, invoice_id, plan, duration, amount, gst, price, addon_price, addon_gst, status, payment_method, discount, payment_made, created_on, subtotal, balance_due, addon_service, type, is_Active, coupon_code, discount_amount) VALUES 
+                ('$client_id', '$receipt_id', '$plan_id', '$duration' ,'$amount', '$gst', '$price', '0', '0', 'Pending', '0', '0', '0', '$created_on', '$price', '$amount', '0', '$type', '2','0', '0')";
+        mysqli_query($conn, $sql);
+        }
 ?>
 
 <?php
@@ -498,7 +519,7 @@
                                             <tr><td><b>Plan</b></td><td>' . htmlspecialchars($plan_name) . '</td></tr>
                                             <tr><td><b>Receipt ID</b></td><td>' . htmlspecialchars($receipt_id) . '</td></tr>
                                             <tr><td><b>Renewal Duration</b></td><td>' . htmlspecialchars($renewal_duration) . '</td></tr>
-                                            <tr><td><b>Total Paid</b></td><td id="currency-symbol-display">' . htmlspecialchars($symbol) . htmlspecialchars($total_price) . '</td></tr>
+                                            <tr><td><b>Total Price</b></td><td id="currency-symbol-display">' . htmlspecialchars($symbol) . htmlspecialchars($total_price) . '</td></tr>
                                         </table>
                                         <p>Your renewal has been processed successfully. You can check your renewal details anytime in your dashboard.</p>
                                         <div style="margin:30px 0;text-align:center;">
@@ -646,9 +667,32 @@
                     "Cart Payment",                   // module
                     "Plan purchased successfully - $plan_name"  // action
                 );
-                $sql = "INSERT INTO orders (user_id, invoice_id, plan, duration, amount, gst, price, addon_price, addon_gst, status, payment_method, discount, payment_made, created_on, subtotal, balance_due, addon_service, type, coupon_code, discount_amount) VALUES 
-                    ('$client_id', '$receipt_id', '$plan_id', '$duration' ,'$main_amount', '$main_gst', '$price', '$insert_addon_price', '$insert_addon_gst', 'Pending', '$pay_method', '$main_discount', '$payment_made', '$created_at', '$main_subtotal', '$main_amount', '$get_addon', '$type', '$coupon_code', '$discount_amount')";
-            }
+                //$sql = "INSERT INTO orders (user_id, invoice_id, plan, duration, amount, gst, price, addon_price, addon_gst, status, payment_method, discount, payment_made, created_on, subtotal, balance_due, addon_service, type, coupon_code, discount_amount) VALUES ('$client_id', '$receipt_id', '$plan_id', '$duration' ,'$main_amount', '$main_gst', '$price', '$insert_addon_price', '$insert_addon_gst', 'initial', '$pay_method', '$main_discount', '$payment_made', '$created_at', '$main_subtotal', '$main_amount', '$get_addon', '$type', '$coupon_code', '$discount_amount')";
+
+                $sql = "UPDATE orders SET 
+                    user_id = '$client_id',
+                    invoice_id = '$receipt_id',
+                    plan = '$plan_id',
+                    duration = '$duration',
+                    amount = '$main_amount',
+                    gst = '$main_gst',
+                    price = '$price',
+                    addon_price = '$insert_addon_price',
+                    addon_gst = '$insert_addon_gst',
+                    status = 'Pending',
+                    payment_method = '$pay_method',
+                    discount = '$main_discount',
+                    payment_made = '$payment_made',
+                    created_on = '$created_at',
+                    is_Active = 1,
+                    subtotal = '$main_subtotal',
+                    balance_due = '$main_amount',
+                    addon_service = '$get_addon',
+                    type = '$type',
+                    coupon_code = '$coupon_code',
+                    discount_amount = '$discount_amount'
+                WHERE invoice_id = '$cart_id'";
+                }
             if (mysqli_query($conn, $sql)) {
                 // === DEACTIVATE OLD ORDERS IF HOSTINGER BALANCE EXISTS ===
                 if (!empty($hostinger_balance)) {
@@ -962,7 +1006,7 @@
                                             <tr><td><b>Plan</b></td><td>' . htmlspecialchars($plan_name) . '</td></tr>
                                             <tr><td><b>Receipt ID</b></td><td>' . htmlspecialchars($receipt_id) . '</td></tr>
                                             <tr><td><b>Duration</b></td><td>' . htmlspecialchars($duration) . '</td></tr>
-                                            <tr><td><b>Total Paid</b></td><td id="currency-symbol-display">' . htmlspecialchars($symbol) . htmlspecialchars($total_price) . '</td></tr>
+                                            <tr><td><b>Total Price</b></td><td id="currency-symbol-display">' . htmlspecialchars($symbol) . htmlspecialchars($total_price) . '</td></tr>
                                         </table>
                                         <p>Your service will be activated shortly. You can check your order status anytime in your dashboard.</p>
                                         <div style="margin:30px 0;text-align:center;">

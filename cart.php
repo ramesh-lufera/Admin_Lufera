@@ -529,7 +529,7 @@
     ?>
 
     <?php if ($profileComplete) { ?>
-        <form action="cart-payment.php" method="POST" style="display:block;" id="checkoutForm">
+        <form action="cart-payment.php?id=<?php echo $auto_id; ?>" method="POST" style="display:block;" id="checkoutForm">
             <input type="hidden" name="type" value="<?php echo $type; ?>">    
             <input type="hidden" name="id" value="<?php echo $id; ?>">
             <input type="hidden" name="plan_name" value="<?php echo $plan_name; ?>">
@@ -545,8 +545,9 @@
             <input type="hidden" class="gst-hidden" name="gst" value="<?php echo $gst; ?>">
             <input type="hidden" class="subtotal-display-hidden" name="subtotal-display" value="<?php echo $price; ?>">
             <input type="hidden" name="gst_id" value="<?php echo $gst_id; ?>">
-
-            <button type="submit" class="lufera-bg text-center btn-sm px-12 py-10 float-end" style="width:150px; border: 1px solid #000">Continue</button>   
+            
+            <input type="submit" name="save_cart" class="lufera-bg text-center btn-sm px-12 py-10 float-end" style="width:150px; border: 1px solid #000" value="Continue"> 
+            
         </form>
     <?php } else { ?>
         <form action="cart-payment.php" method="POST" style="display:none;" id="checkoutForm">
