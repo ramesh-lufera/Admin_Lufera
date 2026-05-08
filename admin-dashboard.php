@@ -3,64 +3,7 @@
     $userKey = preg_replace('/[^a-zA-Z0-9_-]/', '_', $_SESSION['username'] ?? 'guest');
 ?>
 
-<?php $script = '<script src="assets/js/homeTwoChart.js"></script>';
-
-    $script .= '<script>
-            // ===================== Section Visibility Control =============================== 
-
-            const SECTION_KEY = "dashboard_sections_<?php echo $userKey; ?>";
-
-            // Ensure checkboxes + all sections are visible on load
-            $(document).ready(function () {
-
-                // Read saved layout for this user
-                let savedSections = JSON.parse(localStorage.getItem(SECTION_KEY)) || [];
-
-                $(".sec-check").each(function () {
-
-                    let value = $(this).val();            // banner, stats, products
-                    let sectionId = "#section-" + value;  // #section-banner etc
-
-                    if (savedSections.includes(value)) {
-                        $(this).prop("checked", true);
-                        $(sectionId).show();
-                    } else {
-                        $(this).prop("checked", false);
-                        $(sectionId).hide();
-                    }
-
-                });
-
-            });
-
-            $("#openSectionModal").on("click", function () {
-                $("#sectionModal").modal("show");
-            });
-
-            $("#applySections").on("click", function () {
-
-            let selectedSections = [];
-
-            $(".sec-check").each(function () {
-
-                let value = $(this).val();
-                let sectionId = "#section-" + value;
-
-                if ($(this).is(":checked")) {
-                    $(sectionId).show();
-                    selectedSections.push(value); // save
-                } else {
-                    $(sectionId).hide();
-                }
-
-            });
-
-            // Save per user
-            localStorage.setItem(SECTION_KEY, JSON.stringify(selectedSections));
-
-            $("#sectionModal").modal("hide");
-        });
-</script>';?>
+<?php $script = '<script src="assets/js/homeTwoChart.js"></script>'; ?>
 
 <?php include './partials/layouts/layoutTop.php';
     require_once __DIR__ . '/vendor/autoload.php';
@@ -563,7 +506,6 @@
             u.photo,
             u.business_name,
 
-
             w.created_at,
             w.expired_at,
             w.duration,
@@ -991,6 +933,289 @@
                 </script>";
             }
     }
+
+    // For Renewal...
+
+    $renewalRow = null;
+
+    $renewalQuery = "
+        SELECT
+            orders.*,   -- 🔥 IMPORTANT FIX (makes it orders-based)
+
+            CASE 
+                WHEN orders.type = 'package' THEN package.package_name
+                WHEN orders.type = 'product' THEN products.name
+                ELSE orders.plan
+            END AS plan_name,
+
+            websites.plan        AS website_plan,
+            websites.type        AS website_type,
+            websites.duration    AS website_duration,
+            websites.renewal_duration,
+            websites.status      AS website_status,
+            websites.invoice_id  AS website_invoice_id,
+            websites.created_at  AS website_created_at,
+            websites.expired_at  AS website_expired_at
+
+        FROM orders
+        LEFT JOIN package 
+            ON (orders.type = 'package' AND orders.plan = package.id)
+        LEFT JOIN products 
+            ON (orders.type = 'product' AND orders.plan = products.id)
+        LEFT JOIN websites 
+            ON orders.invoice_id = websites.invoice_id
+
+        WHERE orders.is_Active = 1
+        AND orders.user_id = '$Id'
+    ";
+
+    $renewalResult = mysqli_query($conn, $renewalQuery);
+
+    // ✅ SAFE DEBUG (DO NOT BREAK POINTER)
+    $tempRow = mysqli_fetch_assoc($renewalResult);
+
+    // 🔥 VERY IMPORTANT (RESET POINTER)
+    mysqli_data_seek($renewalResult, 0);
+
+    /* ===============================
+    GLOBAL PLAN DETAILS FROM QUERY
+    (WEBSITES TABLE ONLY - RENEWAL)
+    =============================== */
+
+    $Plan = $Duration = $InvoiceId = $Status = $CreatedAt = $expiredAt = $planId = $type = $RenewalDuration = null;
+
+    if ($renewalResult && mysqli_num_rows($renewalResult) > 0) {
+
+        $firstRow = mysqli_fetch_assoc($renewalResult);
+
+        // ✅ PLAN NAME
+        $Plan = $firstRow['plan_name'] ?? null;
+
+        // ✅ WEBSITE VALUES
+        $Duration         = $firstRow['website_duration'] ?? null;
+        $RenewalDuration  = $firstRow['renewal_duration'] ?? null;
+
+        $InvoiceId = $firstRow['website_invoice_id'] ?? null;
+
+        $Status = isset($firstRow['website_status'])
+            ? strtolower($firstRow['website_status'])
+            : null;
+
+        $CreatedAt = $firstRow['website_created_at'] ?? null;
+        $expiredAt = $firstRow['website_expired_at'] ?? null;
+
+        // ✅ LOGIC VALUES
+        $planId = $firstRow['website_plan'] ?? null;
+        $type   = $firstRow['website_type'] ?? null;
+
+        mysqli_data_seek($renewalResult, 0);
+    }
+
+    /* ===============================
+    RENEWAL ENGINE (WEBSITES ONLY)
+    =============================== */
+
+    if (!empty($InvoiceId) && !empty($Duration) && !empty($CreatedAt)) {
+
+        /* ---------- VALIDITY CALCULATION ---------- */
+
+        $startDate = new DateTime($CreatedAt);
+        $endDate   = (clone $startDate)->modify("+{$Duration}");
+        $calculatedEnd = $endDate->format("d-m-Y");
+
+        if (!empty($expiredAt) && $expiredAt !== '0000-00-00 00:00:00') {
+            $Validity = (new DateTime($expiredAt))->format("d-m-Y");
+        } else {
+            $Validity = $calculatedEnd;
+        }
+
+
+        /* ---------- CURRENT PLAN PRICE ---------- */
+
+        $currentPrice = "N/A";
+
+        if (!empty($planId) && !empty($type)) {
+
+            if ($type === 'package') {
+
+                $priceStmt = $conn->prepare("
+                    SELECT d.price
+                    FROM durations d
+                    INNER JOIN package p ON d.package_id = p.id
+                    WHERE p.id = ?
+                    ORDER BY d.id ASC
+                    LIMIT 1
+                ");
+
+            } elseif ($type === 'product') {
+
+                $priceStmt = $conn->prepare("
+                    SELECT price 
+                    FROM products 
+                    WHERE id = ?
+                ");
+            }
+
+            if (isset($priceStmt)) {
+
+                $priceStmt->bind_param("i", $planId);
+                $priceStmt->execute();
+                $priceResult = $priceStmt->get_result();
+
+                if ($priceResult && $priceResult->num_rows > 0) {
+                    $priceRow = $priceResult->fetch_assoc();
+                    $currentPrice = floatval($priceRow['price']);
+                }
+
+                $priceStmt->close();
+            }
+        }
+
+
+        /* ---------- NORMALIZE DURATION ---------- */
+
+        $durationStr = strtolower(trim($Duration));
+
+        preg_match('/\d+/', $durationStr, $matches);
+        $number = isset($matches[0]) ? (int)$matches[0] : 1;
+
+        $durationType = 'month';
+
+        if (preg_match('/year/', $durationStr)) {
+            $durationType = 'year';
+        } elseif (preg_match('/month/', $durationStr)) {
+            $durationType = 'month';
+        } elseif (preg_match('/day/', $durationStr)) {
+            $durationType = 'day';
+        }
+
+
+        /* ---------- MONTHLY PRICE CALCULATION ---------- */
+
+        if ($durationType === 'year' || ($durationType === 'month' && $number >= 1)) {
+
+            $months = ($durationType === 'year') ? $number * 12 : $number;
+
+            $monthlyPrice = $currentPrice / $months;
+            $monthlyPriceFormatted = number_format($monthlyPrice, 2);
+
+            $showMo = true;
+
+        } else {
+
+            $monthlyPrice = $currentPrice;
+            $monthlyPriceFormatted = number_format($monthlyPrice, 2);
+
+            $showMo = false;
+        }
+
+
+        /* ---------- GET WEBSITE CATEGORY USING INVOICE ID ---------- */
+
+        $websiteQuery = $conn->prepare("
+            SELECT cat_id
+            FROM websites
+            WHERE invoice_id = ?
+            LIMIT 1
+        ");
+
+        $websiteQuery->bind_param("s", $InvoiceId);
+        $websiteQuery->execute();
+
+        $websiteResult = $websiteQuery->get_result();
+        $website = $websiteResult->fetch_assoc();
+
+        $websiteQuery->close();
+
+        $catId = $website['cat_id'] ?? null;
+
+
+        /* ---------- GET CURRENT PLAN TITLE ---------- */
+
+        if ($type === 'package') {
+            $stmt = $conn->prepare("SELECT title FROM package WHERE id = ?");
+        } else {
+            $stmt = $conn->prepare("SELECT title FROM products WHERE id = ?");
+        }
+
+        $stmt->bind_param("i", $planId);
+        $stmt->execute();
+
+        $res = $stmt->get_result();
+        $currentPlanTitle = $res->fetch_assoc()['title'] ?? '';
+
+        $stmt->close();
+
+
+        /* ---------- GET ALL DURATIONS & PRICES ---------- */
+
+        $durationPrices = [];
+        $durations = [];
+
+        if ($type === 'package') {
+
+            $recordsQuery = $conn->prepare("
+                SELECT d.duration, d.price, d.preview_price
+                FROM durations d
+                INNER JOIN package p ON d.package_id = p.id
+                WHERE p.cat_id = ? AND p.title = ?
+                ORDER BY LENGTH(d.duration), d.duration
+            ");
+
+        } else {
+
+            $recordsQuery = $conn->prepare("
+                SELECT duration, price
+                FROM products
+                WHERE cat_id = ? AND title = ?
+                ORDER BY LENGTH(duration), duration
+            ");
+        }
+
+        $recordsQuery->bind_param("is", $catId, $currentPlanTitle);
+        $recordsQuery->execute();
+
+        $recordsResult = $recordsQuery->get_result();
+
+        while ($row = $recordsResult->fetch_assoc()) {
+
+            $durations[] = trim($row['duration']);
+
+            $durationKey = trim(strtolower($row['duration']));
+
+            if ($type === 'package') {
+
+                $durationPrices[$durationKey] = [
+                    'price' => (float)$row['price'],
+                    'preview_price' => (float)$row['preview_price']
+                ];
+
+            } else {
+
+                $durationPrices[$durationKey] = [
+                    'price' => (float)$row['price'],
+                    'preview_price' => (float)$row['price']
+                ];
+            }
+        }
+
+        $recordsQuery->close();
+
+
+        /* ---------- FALLBACK ---------- */
+
+        if (empty($durations)) {
+
+            $durations[] = '1 Year';
+
+            $durationPrices['1 year'] = [
+                'price' => $currentPrice,
+                'preview_price' => $currentPrice * 1.1
+            ];
+        }
+
+        $showMo = false;
+    }
 ?>
 
 <?php
@@ -1390,9 +1615,9 @@
             <h6 class="fw-semibold mb-0">Hello none!</h6>
         <?php endif; ?>
 
-        <button class="btn  rounded-pill px-20 py-8 lufera-bg" id="openSectionModal">
+        <!-- <button class="btn  rounded-pill px-20 py-8 lufera-bg" id="openSectionModal">
             + Create Section
-        </button>
+        </button> -->
 
         <!-- <h6 class="fw-semibold mb-0">Dashboard</h6>
         <ul class="d-flex align-items-center gap-2">
@@ -1860,7 +2085,8 @@
                                             $statusText = "Rejected";
                                         }
                                     ?>
-                                        <!-- unique offcanvas for this row -->
+
+                                    <!-- unique offcanvas for this row -->
                                     <div class="offcanvas offcanvas-end" id="offcanvas-<?php echo $orderId; ?>">
                                         <div class="offcanvas-header pb-0">
                                             <h6>Subscription details</h6>
@@ -2105,7 +2331,7 @@
                                                     </button>
                                                 <?php } ?>
 
-                                                <button class="btn text-white lufera-bg text-sm mb-10">Renew</button>
+                                                <button type="button" class="btn text-white lufera-bg text-sm mb-10" data-bs-toggle="modal" data-bs-target="#renewal-modal">Renew</button>
 
                                                 <!-- *** UPGRADE BUTTON *** -->
                                                 <a href="upgrade_plan.php?web_id=<?= $webId ?>&prod_id=<?= $prodId ?>&duration=<?= $duration ?>">
@@ -2749,121 +2975,170 @@
   </div>
 </div>
 
-    <script>
-        $(document).ready(function() {
-            $('#userTable').DataTable();
-            $('#inactiveUserTable').DataTable();
-        } );
-        
-        (function () {
-        // Allow only digits and one dot
-        function sanitizeNumberInput(el) {
-            el.value = el.value.replace(/[^0-9.]/g, '');
-            el.value = el.value.replace(/(\..*)\./g, '$1');
+<script>
+    $(document).ready(function() {
+        $('#userTable').DataTable();
+        $('#inactiveUserTable').DataTable();
+    } );
+    
+    (function () {
+    // Allow only digits and one dot
+    function sanitizeNumberInput(el) {
+        el.value = el.value.replace(/[^0-9.]/g, '');
+        el.value = el.value.replace(/(\..*)\./g, '$1');
+    }
+
+    var exampleModal = document.getElementById('exampleModal');
+
+    exampleModal.addEventListener('show.bs.modal', function (event) {
+        var button = event.relatedTarget;
+        if (!button) return;
+
+        // Get data from the clicked button
+        var invoice = button.getAttribute('data-invoice') || '';
+        var orderId = button.getAttribute('data-order') || '';
+        var balanceRaw = button.getAttribute('data-balance') || '0';
+        var paymentRaw = button.getAttribute('data-payment') || '0';
+
+        var balance = parseFloat(balanceRaw);
+        if (isNaN(balance)) balance = 0;
+        var payment = parseFloat(paymentRaw);
+        if (isNaN(payment)) payment = 0;
+
+        // Fill in modal fields
+        document.getElementById('modal_invoice_no').value = invoice;
+        document.getElementById('modal_order_id').value = orderId;
+        document.getElementById('modal_balance_due').value = balance.toFixed(2);
+        document.getElementById('modal_payment_made').value = payment.toFixed(2);
+        document.getElementById('modal_amount').value = '';
+        document.getElementById('modal_remarks').value = '';
+
+        var amountInput = document.getElementById('modal_amount');
+        var submitBtn = document.getElementById('modal_submit');
+        var paymentMethod = document.getElementById('modal_payment_method');
+        var fullyPaid = document.getElementById('fullyPaidMessage');
+        var amountError = document.getElementById('amountError');
+
+        // Disable everything if fully paid
+        if (balance <= 0) {
+        amountInput.setAttribute('readonly', 'readonly');
+        paymentMethod.setAttribute('disabled', 'disabled');
+        submitBtn.disabled = true;
+        fullyPaid.classList.remove('d-none');
+        amountError.classList.add('d-none');
+        } else {
+        amountInput.removeAttribute('readonly');
+        paymentMethod.removeAttribute('disabled');
+        submitBtn.disabled = false;
+        fullyPaid.classList.add('d-none');
+        amountError.classList.add('d-none');
         }
 
-        var exampleModal = document.getElementById('exampleModal');
+        // When user types amount
+        amountInput.oninput = function () {
+        sanitizeNumberInput(this);
 
-        exampleModal.addEventListener('show.bs.modal', function (event) {
-            var button = event.relatedTarget;
-            if (!button) return;
+        var entered = parseFloat(this.value || '0');
+        if (isNaN(entered)) entered = 0;
 
-            // Get data from the clicked button
-            var invoice = button.getAttribute('data-invoice') || '';
-            var orderId = button.getAttribute('data-order') || '';
-            var balanceRaw = button.getAttribute('data-balance') || '0';
-            var paymentRaw = button.getAttribute('data-payment') || '0';
+        var newBalance = balance - entered;
 
-            var balance = parseFloat(balanceRaw);
-            if (isNaN(balance)) balance = 0;
-            var payment = parseFloat(paymentRaw);
-            if (isNaN(payment)) payment = 0;
-
-            // Fill in modal fields
-            document.getElementById('modal_invoice_no').value = invoice;
-            document.getElementById('modal_order_id').value = orderId;
-            document.getElementById('modal_balance_due').value = balance.toFixed(2);
-            document.getElementById('modal_payment_made').value = payment.toFixed(2);
-            document.getElementById('modal_amount').value = '';
-            document.getElementById('modal_remarks').value = '';
-
-            var amountInput = document.getElementById('modal_amount');
-            var submitBtn = document.getElementById('modal_submit');
-            var paymentMethod = document.getElementById('modal_payment_method');
-            var fullyPaid = document.getElementById('fullyPaidMessage');
-            var amountError = document.getElementById('amountError');
-
-            // Disable everything if fully paid
-            if (balance <= 0) {
-            amountInput.setAttribute('readonly', 'readonly');
-            paymentMethod.setAttribute('disabled', 'disabled');
+        // Don’t allow negative balance
+        if (newBalance < 0) {
+            amountError.classList.remove('d-none');
             submitBtn.disabled = true;
-            fullyPaid.classList.remove('d-none');
+            newBalance = 0; // optional — keep 0 in hidden field if overpaid
+        } else {
             amountError.classList.add('d-none');
-            } else {
-            amountInput.removeAttribute('readonly');
-            paymentMethod.removeAttribute('disabled');
             submitBtn.disabled = false;
-            fullyPaid.classList.add('d-none');
-            amountError.classList.add('d-none');
-            }
+        }
 
-            // When user types amount
-            amountInput.oninput = function () {
-            sanitizeNumberInput(this);
+        // Update hidden balance_due field live
+        document.getElementById('modal_balance_due').value = newBalance.toFixed(2);
+        };
+    });
 
-            var entered = parseFloat(this.value || '0');
-            if (isNaN(entered)) entered = 0;
+    // Cleanup when modal closes
+    exampleModal.addEventListener('hidden.bs.modal', function () {
+        document.getElementById('modal_amount').value = '';
+        document.getElementById('modal_remarks').value = '';
+        document.getElementById('amountError').classList.add('d-none');
+        document.getElementById('fullyPaidMessage').classList.add('d-none');
+        document.getElementById('modal_submit').disabled = false;
+        document.getElementById('modal_payment_method').removeAttribute('disabled');
+    });
+    })();
+</script>
 
-            var newBalance = balance - entered;
+<?php
 
-            // Don’t allow negative balance
-            if (newBalance < 0) {
-                amountError.classList.remove('d-none');
-                submitBtn.disabled = true;
-                newBalance = 0; // optional — keep 0 in hidden field if overpaid
-            } else {
-                amountError.classList.add('d-none');
-                submitBtn.disabled = false;
-            }
+    /* ===============================
+    PREPARE VARIABLES FOR RENEWAL.PHP
+    (DO NOT MODIFY renewal.php)
+    =============================== */
 
-            // Update hidden balance_due field live
-            document.getElementById('modal_balance_due').value = newBalance.toFixed(2);
-            };
+    // websiteId from invoice_id
+    $websiteId = null;
+
+    if (!empty($InvoiceId)) {
+        $webQ = $conn->prepare("SELECT id FROM websites WHERE invoice_id = ? LIMIT 1");
+        $webQ->bind_param("s", $InvoiceId);
+        $webQ->execute();
+        $webRes = $webQ->get_result();
+        $websiteId = $webRes->fetch_assoc()['id'] ?? null;
+        $webQ->close();
+    }
+
+    // Build endDate for modal expiration display
+    if (!empty($CreatedAt) && !empty($Duration)) {
+        $startDate = new DateTime($CreatedAt);
+        $endDate = (clone $startDate)->modify("+{$Duration}");
+    }
+
+    // monthlyPrice safety
+    if (!isset($monthlyPrice) || !is_numeric($monthlyPrice)) {
+        $monthlyPrice = is_numeric($currentPrice ?? null) ? $currentPrice : 0;
+    }
+
+    // durations fallback
+    if (empty($durations)) {
+        $durations = [$Duration ?: '1 Year'];
+    }
+
+    // durationPrices fallback
+    if (empty($durationPrices)) {
+        $durationPrices = [
+            strtolower($Duration ?: '1 year') => [
+                'price' => $currentPrice ?? 0,
+                'preview_price' => ($currentPrice ?? 0) * 1.1
+            ]
+        ];
+    }
+
+?>
+
+<?php if (isset($_SESSION['order_approved']) && $_SESSION['order_approved'] === true): ?>
+    <script>
+        Swal.fire({
+            title: "Order Approved",
+            icon: "success",
+            confirmButtonText: "OK"
         });
-
-        // Cleanup when modal closes
-        exampleModal.addEventListener('hidden.bs.modal', function () {
-            document.getElementById('modal_amount').value = '';
-            document.getElementById('modal_remarks').value = '';
-            document.getElementById('amountError').classList.add('d-none');
-            document.getElementById('fullyPaidMessage').classList.add('d-none');
-            document.getElementById('modal_submit').disabled = false;
-            document.getElementById('modal_payment_method').removeAttribute('disabled');
-        });
-        })();
     </script>
+    <?php unset($_SESSION['order_approved']); ?>
+<?php endif; ?>
 
-    <?php if (isset($_SESSION['order_approved']) && $_SESSION['order_approved'] === true): ?>
-        <script>
-            Swal.fire({
-                title: "Order Approved",
-                icon: "success",
-                confirmButtonText: "OK"
-            });
-        </script>
-        <?php unset($_SESSION['order_approved']); ?>
-    <?php endif; ?>
-
-    <?php if (isset($_SESSION['order_cancelled']) && $_SESSION['order_cancelled'] === true): ?>
-        <script>
-            Swal.fire({
-                title: "Order Cancelled",
-                icon: "warning",
-                confirmButtonText: "OK"
-            });
-        </script>
-        <?php unset($_SESSION['order_cancelled']); ?>
-    <?php endif; ?>
+<?php if (isset($_SESSION['order_cancelled']) && $_SESSION['order_cancelled'] === true): ?>
+    <script>
+        Swal.fire({
+            title: "Order Cancelled",
+            icon: "warning",
+            confirmButtonText: "OK"
+        });
+    </script>
+    <?php unset($_SESSION['order_cancelled']); ?>
+<?php endif; ?>
 
 <?php include './partials/layouts/layoutBottom.php' ?>
+
+<?php include 'renewal.php' ?>

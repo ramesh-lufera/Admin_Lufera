@@ -2,8 +2,8 @@
     session_start();
 
     require_once 'vendor/autoload.php';
-     include './partials/connection.php';
-     include 'fb-config.php';
+    include './partials/connection.php';
+    include 'fb-config.php';
 
     $dotenv = Dotenv\Dotenv::createImmutable(__DIR__);
     $dotenv->load();
@@ -154,8 +154,12 @@
             document.getElementById(field).classList.remove("border-danger");
         });
 
+        const urlParams = new URLSearchParams(window.location.search);
+        const redirectUrl = urlParams.get('redirect') || '';
+
         const form = e.target;
         const formData = new FormData(form);
+        formData.append('redirect', redirectUrl);
 
         fetch("login-process.php", {
             method: "POST",
@@ -164,7 +168,54 @@
         .then(res => res.json())
         .then(data => {
             if (data.success) {
-                window.location.href = "admin-dashboard.php";
+
+                const redirectUrl = data.redirect || '';
+
+                    if (window.parent && window.parent !== window) {
+
+                        let parentOrigin = "*";
+
+                        try {
+                            if (redirectUrl) {
+                                parentOrigin = new URL(redirectUrl).origin;
+                            }
+                        } catch (e) {
+                            parentOrigin = "*";
+                        }
+
+                        // ✅ STEP 1: Send login data to parent
+                        window.parent.postMessage({
+                            type: "LOGIN_SUCCESS",
+                            redirect: redirectUrl
+                        }, parentOrigin);
+
+                        // ✅ STEP 2: WAIT (VERY IMPORTANT)
+                        setTimeout(() => {
+
+                            try {
+                                // 🔥 REQUIRED LINE
+                                window.parent.location.reload();
+                            } catch (e) {
+
+                                // 🔁 FALLBACK (SAFE)
+                                window.parent.postMessage({
+                                    type: "FORCE_RELOAD"
+                                }, "*"); // ✅ always works
+
+                            }
+
+                        }, 200); // 🔥 MUST
+
+                    } else {
+
+                        // normal login (no iframe)
+                        if (redirectUrl) {
+                            window.location.href = redirectUrl;
+                        } else {
+                            window.location.href = "admin-dashboard.php";
+                        }
+
+                    }
             } else {
                 const errors = data.errors || {};
 
@@ -186,4 +237,3 @@
 </body>
 
 </html>
-
