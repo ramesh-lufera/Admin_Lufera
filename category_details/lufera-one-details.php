@@ -72,6 +72,7 @@
         $planId = $row['plan'] ?? null;
         $type = $row['type'] ?? null;
         $stmt->close();
+        
         if (!empty($InvoiceId)) {
             $orderStmt = $conn->prepare("SELECT * FROM orders WHERE invoice_id = ?");
             $orderStmt->bind_param("i", $InvoiceId);
@@ -84,13 +85,38 @@
 
             $orderStmt->close();
 
-            if ($orderRow && $orderRow['status'] === 'Approved') {
-                if ($Status !== 'Approved') {
-                    $updateStmt = $conn->prepare("UPDATE websites SET status = 'Approved' WHERE id = ?");
+            if ($orderRow) {
+
+                // APPROVED STATUS
+                if ($orderRow['status'] === 'Approved' && $Status !== 'Approved') {
+
+                    $updateStmt = $conn->prepare("
+                        UPDATE websites 
+                        SET status = 'Approved' 
+                        WHERE id = ?
+                    ");
+
                     $updateStmt->bind_param("i", $websiteId);
                     $updateStmt->execute();
                     $updateStmt->close();
+
                     $Status = 'Approved';
+                }
+
+                // CANCELLED STATUS
+                if ($orderRow['status'] === 'Cancelled' && $Status !== 'Cancelled') {
+
+                    $updateStmt = $conn->prepare("
+                        UPDATE websites 
+                        SET status = 'Cancelled' 
+                        WHERE id = ?
+                    ");
+
+                    $updateStmt->bind_param("i", $websiteId);
+                    $updateStmt->execute();
+                    $updateStmt->close();
+
+                    $Status = 'Cancelled';
                 }
             }
         }
@@ -114,7 +140,7 @@
             case 'Active':
                 $statusClass = 'text-success';
                 break;
-            case 'Expired':
+            case 'Cancelled':
                 $statusClass = 'text-danger';
                 break;
             case 'Approved':

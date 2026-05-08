@@ -68,7 +68,7 @@
         $InvoiceId = $row['invoice_id'];
         $Status = strtolower($row['status'] ?? 'Pending');
         $CreatedAt = $row['created_at'];
-            $expiredAt = $row['expired_at'];
+        $expiredAt = $row['expired_at'];
 
         $planId = $row['plan'] ?? null;
         $type = $row['type'] ?? null;
@@ -85,13 +85,38 @@
             $balance_due = $orderRow['balance_due'];
             $orderStmt->close();
 
-            if ($orderRow && $orderRow['status'] === 'Approved') {
-                if ($Status !== 'Approved') {
-                    $updateStmt = $conn->prepare("UPDATE websites SET status = 'Approved' WHERE id = ?");
+            if ($orderRow) {
+
+                // APPROVED STATUS
+                if ($orderRow['status'] === 'Approved' && $Status !== 'Approved') {
+
+                    $updateStmt = $conn->prepare("
+                        UPDATE websites 
+                        SET status = 'Approved' 
+                        WHERE id = ?
+                    ");
+
                     $updateStmt->bind_param("i", $websiteId);
                     $updateStmt->execute();
                     $updateStmt->close();
+
                     $Status = 'Approved';
+                }
+
+                // CANCELLED STATUS
+                if ($orderRow['status'] === 'Cancelled' && $Status !== 'Cancelled') {
+
+                    $updateStmt = $conn->prepare("
+                        UPDATE websites 
+                        SET status = 'Cancelled' 
+                        WHERE id = ?
+                    ");
+
+                    $updateStmt->bind_param("i", $websiteId);
+                    $updateStmt->execute();
+                    $updateStmt->close();
+
+                    $Status = 'Cancelled';
                 }
             }
         }
@@ -101,21 +126,21 @@
         // $Validity = $startDate->format("d-m-Y") . " to " . $endDate->format("d-m-Y");
 
         $startDate = new DateTime($CreatedAt);
-            $endDate = (clone $startDate)->modify("+{$Duration}");
-            $calculatedEnd = $endDate->format("d-m-Y");
+        $endDate = (clone $startDate)->modify("+{$Duration}");
+        $calculatedEnd = $endDate->format("d-m-Y");
 
-            // If renewed, use expired_at from database
-            if (!empty($expiredAt) && $expiredAt !== '0000-00-00 00:00:00') {
-                $Validity = (new DateTime($expiredAt))->format("d-m-Y");
-            } else {
-                $Validity = $calculatedEnd;
-            }
+        // If renewed, use expired_at from database
+        if (!empty($expiredAt) && $expiredAt !== '0000-00-00 00:00:00') {
+            $Validity = (new DateTime($expiredAt))->format("d-m-Y");
+        } else {
+            $Validity = $calculatedEnd;
+        }
 
         switch (ucfirst(strtolower($Status))) {
             case 'Active':
                 $statusClass = 'text-success';
                 break;
-            case 'Expired':
+            case 'Cancelled':
                 $statusClass = 'text-danger';
                 break;
             case 'Approved':
