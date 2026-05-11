@@ -29,6 +29,24 @@ if (!empty($_POST['email']) && !empty($_POST['password'])) {
             $_SESSION['email'] = $email;
             $_SESSION["photo"] = $photo;
 
+            // 🔥 SET COOKIE FOR WORDPRESS
+            $redirectUrl = $_POST['redirect'] ?? '';
+            $host = parse_url($redirectUrl, PHP_URL_HOST);
+
+            $cookieDomain = $host 
+                ? '.' . preg_replace('/^www\./', '', $host) 
+                : '.' . preg_replace('/^www\./', '', $_SERVER['HTTP_HOST']);
+
+            setcookie(
+                "lufera_user_logged_in",
+                "1",
+                time() + (86400 * 7),
+                "/",
+                $cookieDomain,
+                true,
+                true
+            );
+
             // 🔥 LOG ACTIVITY HERE
             logActivity(
                 $conn,
@@ -38,6 +56,8 @@ if (!empty($_POST['email']) && !empty($_POST['password'])) {
             );
 
             $response['success'] = true;
+
+            $response['redirect'] = $_POST['redirect'] ?? '';
         } else {
             $response['errors']['password'] = 'Incorrect password!';
         }
