@@ -154,10 +154,10 @@ function numberToWords($num) {
     .total-table td {
         border-bottom: 1px solid #dde2e6;
     }
-    .invoice-logo {
+    /* .invoice-logo {
         width: 300px;
         height: auto;
-    }
+    } */
     .divider {
         display: flex;
         align-items: center;
@@ -286,7 +286,11 @@ function numberToWords($num) {
         width:100% !important;
         flex: 0 0 auto;
     }
-    
+    .btn-purple, .btn-purple:hover, .btn-purple:focus, .btn-purple:active {
+        background-color: #6f42c1;
+        color: #fff;
+        border: none;
+    }
 </style>
 
 <?php
@@ -950,33 +954,23 @@ if (isset($_POST['send_invoice'])) {
                                             </tr>
                                         <?php } ?>
                                         <tr>
-                                            <td class="pe-64 p-8 fw-semibold">
-                                                <span class="text-primary-light">Total</span>
-                                            </td>
-                                            <td class="p-8">
-                                            <span class="text-primary-light" id="currency-symbol-display">
-                                                <?= htmlspecialchars($symbol) ?>
+                                            <td class="pe-64 p-8 fw-semibold">Total</td>
+                                            <td class="p-8 editable" data-field="amount">
                                                 <?= number_format(floatval($row['amount']), 2); ?>
-                                            </span>
-    
                                             </td>
                                         </tr>
                                         <?php if ($row['payment_made'] != null) { ?>
-                                            <tr>
-                                                <td class="pe-64 p-8 fw-semibold">
-                                                    <span class="text-primary-light">Payment Made</span>
-                                                </td>
-                                                <td class="p-8">
-                                                    <span class="text-primary-light" id="currency-symbol-display"><?= htmlspecialchars($symbol) ?> <?= number_format($row['payment_made'], 2); ?></span>
-                                                </td>
-                                            </tr>
+                                        <tr>
+                                            <td class="pe-64 p-8 fw-semibold">Payment Made</td>
+                                            <td class="p-8 editable" data-field="payment_made">
+                                                <?= number_format($row['payment_made'], 2); ?>
+                                            </td>
+                                        </tr>
                                         <?php } ?>
                                         <tr>
-                                            <td class="pe-64 p-8 fw-semibold">
-                                                <span class="text-primary-light">Balance Due</span>
-                                            </td>
-                                            <td class="p-8">
-                                                <span class="text-primary-light" id="currency-symbol-display"><?= htmlspecialchars($symbol) ?> <?= number_format($row['balance_due'], 2); ?></span>
+                                            <td class="pe-64 p-8 fw-semibold">Balance Due</td>
+                                            <td class="p-8 editable" data-field="balance_due">
+                                                <?= number_format($row['balance_due'], 2); ?>
                                             </td>
                                         </tr>
                                     </tbody>
@@ -985,7 +979,7 @@ if (isset($_POST['send_invoice'])) {
                                 <p class="p-8 text-end">Total In Words <b><i style="font-style: italic;"><?= htmlspecialchars(numberToWords($row['amount'])) ?></i></b></p>
                         <div class="text-center border-footer mt-40 pt-20 pdf-footer">
                             <p class="d-inline">Crafted with ease using</p> 
-                            <img src="https://admin2.luferatech.com/uploads/company_logo/<?php echo $company_row['logo']; ?>" class="footer-logo" alt="Lufera Logo" class="mb-4" style="margin-bottom: 6px; width: 120px;">
+                            <img src="https://admin2.luferatech.com/uploads/company_logo/<?php echo $company_row['logo']; ?>" class="footer-logo" alt="Lufera Logo" class="mb-4" style="margin-bottom: 6px; max-width: 120px;">
                         </div>
                     
                         <?php 
@@ -1164,17 +1158,32 @@ if (isset($_POST['send_invoice'])) {
     <div class="card">
         <div class="card-header">
             <div class="d-flex flex-wrap align-items-center justify-content-end gap-2">
-            <?php 
-            if($row2['role'] == "1" || $row2['role'] == "2") {?>  
-                <button type="button" class="btn btn-sm btn-primary radius-8 d-inline-flex align-items-center gap-1" data-bs-toggle="modal" data-bs-target="#exampleModal">
-                    <iconify-icon icon="lucide:edit" class="text-xl"></iconify-icon>
-                    Record Payment
-                </button>
-                <button type="button" class="btn btn-sm btn-warning radius-8 d-inline-flex align-items-center gap-1" data-bs-toggle="modal" data-bs-target="#emailModal">
-                    <iconify-icon icon="lucide:send" class="text-xl"></iconify-icon>
-                    Send Invoice
-                </button>
-            <?php } ?>
+                <?php if($row2['role'] == "1" || $row2['role'] == "2") { ?>
+                    <button type="button" id="btnEdit" class="btn btn-sm btn-purple radius-8 align-items-center gap-1" style="display:inline-flex;">
+                        <iconify-icon icon="lucide:edit" class="text-xl"></iconify-icon>
+                        Edit Invoice
+                    </button>
+
+                    <button type="button" id="btnSave" class="btn btn-sm btn-success radius-8 align-items-center gap-1" style="display:none;">
+                        <iconify-icon icon="lucide:save" class="text-xl"></iconify-icon>
+                        Save Changes
+                    </button>
+
+                    <button type="button" id="btnCancel" class="btn btn-sm btn-secondary radius-8 align-items-center gap-1" style="display:none;">
+                        Cancel
+                    </button>
+
+                    <!-- Existing buttons -->
+                    <button type="button" class="btn btn-sm btn-primary radius-8 d-inline-flex align-items-center gap-1" data-bs-toggle="modal" data-bs-target="#exampleModal">
+                        <iconify-icon icon="solar:clipboard-text-outline" class="text-xl"></iconify-icon>
+                        Record Payment
+                    </button>
+                    <button type="button" class="btn btn-sm btn-warning radius-8 d-inline-flex align-items-center gap-1" data-bs-toggle="modal" data-bs-target="#emailModal">
+                        <iconify-icon icon="lucide:send" class="text-xl"></iconify-icon>
+                        Send Invoice
+                    </button>
+                <?php } ?>
+                
                 <button type="button" class="btn btn-sm btn-danger radius-8 d-inline-flex align-items-center gap-1" onclick="printInvoice()">
                     <iconify-icon icon="basil:printer-outline" class="text-xl"></iconify-icon>
                     Print
@@ -1185,7 +1194,6 @@ if (isset($_POST['send_invoice'])) {
                     <iconify-icon icon="ph:file-pdf" class="text-xl"></iconify-icon>
                     Download PDF
                 </button>
-
             </div>
         </div>
 
@@ -1378,19 +1386,19 @@ if (isset($_POST['send_invoice'])) {
                                 <table class="invoice_table text-start mt-10">
                                     <tr>
                                         <td class="pe-64 p-4 fw-semibold">Invoice#</td>
-                                        <td class="text-md p-4"><?php echo $row['invoice_id']; ?></td>
+                                        <td class="text-md p-4 editable" data-field="invoice_id"><?php echo $row['invoice_id']; ?></td>
                                     </tr>
                                     <tr>
                                         <td class="pe-64 p-4 fw-semibold">Invoice Date</td>
-                                        <td class="text-md p-4"><?php echo date('d/m/Y', strtotime($row['created_on'])); ?></td>
+                                        <td class="text-md p-4 editable" data-field="created_on"><?php echo date('d/m/Y', strtotime($row['created_on'])); ?></td>
                                     </tr>
                                     <tr>
                                         <td class="pe-64 p-4 fw-semibold">Terms</td>
-                                        <td class="text-md p-4"><?php echo $row['payment_method']; ?></b></td>
+                                        <td class="text-md p-4 editable" data-field="payment_method"><?php echo $row['payment_method']; ?></td>
                                     </tr>
                                     <tr>
                                         <td class="pe-64 p-4 fw-semibold">Status</td>
-                                        <td class="text-md p-4"><?php echo $row['status']; ?></td>
+                                        <td class="text-md p-4 editable" data-field="status"><?php echo $row['status']; ?></td>
                                     </tr>
                                 </table>
                             </div>
@@ -1413,19 +1421,15 @@ if (isset($_POST['send_invoice'])) {
                                         
                                         <!-- Main plan / package / product row -->
                                         <tr>
-                                            <td class="inv-table text-center"><?= $serial_no++ ?></td>
-                                            <td class="inv-table">
-                                                <?php 
-                                                    echo htmlspecialchars($row['plan_name']);
-                                                    if ($type === 'renewal') {
-                                                        echo ' <small>(Renewal)</small>';
-                                                    }
-                                                ?>
-                                            </td>
-                                            <td class="inv-table"><?= htmlspecialchars($symbol) ?> <?= number_format($row['price'], 2) ?></td>
-                                            <td class="inv-table"><?= htmlspecialchars($symbol) ?> <?= number_format($row['gst'], 2) ?></td>
-                                            <td class="inv-table text-end"><?= htmlspecialchars($symbol) ?> <?= number_format(floatval($row['price']) + floatval($row['gst']), 2) ?></td>
-                                        </tr>
+    <td class="inv-table text-center"><?= $serial_no++ ?></td>
+    <td class="inv-table" data-field="plan_display_name">
+        <?php echo htmlspecialchars($row['plan_name']); ?>
+        <?php if ($type === 'renewal') echo ' <small>(Renewal)</small>'; ?>
+    </td>
+    <td class="inv-table text-end editable" data-field="price"><?= number_format($row['price'], 2) ?></td>
+    <td class="inv-table text-end editable" data-field="gst"><?= number_format($row['gst'], 2) ?></td>
+    <td class="inv-table text-end" data-field="line_total"><?= number_format(floatval($row['price']) + floatval($row['gst']), 2) ?></td>
+</tr>
 
                                         <!-- Add-on services (if any) -->
                                         <?php
@@ -1446,8 +1450,8 @@ if (isset($_POST['send_invoice'])) {
                                                         <tr>
                                                             <td class="inv-table text-center"><?= $serial_no++ ?></td>
                                                             <td class="inv-table"><?= htmlspecialchars($addon_row['name']) ?></td>
-                                                            <td class="inv-table text-end"><?= htmlspecialchars($symbol) ?> <?= number_format($row['addon_price'], 2) ?></td>
-                                                            <td class="inv-table text-end"><?= htmlspecialchars($symbol) ?> <?= number_format($row['addon_gst'], 2) ?></td>
+                                                            <td class="inv-table text-end editable"><?= htmlspecialchars($symbol) ?> <?= number_format($row['addon_price'], 2) ?></td>
+                                                            <td class="inv-table text-end editable"><?= htmlspecialchars($symbol) ?> <?= number_format($row['addon_gst'], 2) ?></td>
                                                             <td class="inv-table text-end">
                                                                 <?= htmlspecialchars($symbol) ?> <?= number_format(floatval($row['addon_price']) + floatval($row['addon_gst']), 2) ?>
                                                             </td>
@@ -1481,8 +1485,8 @@ if (isset($_POST['send_invoice'])) {
                                             while ($addon_row = $addon_result->fetch_assoc()) {
                                                 echo "<tr>
                                                         <td class='w-25'>" . htmlspecialchars($addon_row['name']) . "</td>
-                                                        <td class='w-25'>" . htmlspecialchars($symbol) . " " . number_format($row['addon_price'], 2) . "</td>
-                                                        <td class='w-25'>" . htmlspecialchars($symbol) . " " . htmlspecialchars($row['addon_gst']) . "</td>
+                                                        <td class='w-25 editable'>" . htmlspecialchars($symbol) . " " . number_format($row['addon_price'], 2) . "</td>
+                                                        <td class='w-25 editable'>" . htmlspecialchars($symbol) . " " . htmlspecialchars($row['addon_gst']) . "</td>
                                                         <td class='w-25 text-end'>
                                                             <span class='text-primary-light'>"
                                                             . htmlspecialchars($symbol) . " " . number_format(floatval($row['addon_price']) + floatval($row['addon_gst']), 2) .
@@ -1631,7 +1635,7 @@ if (isset($_POST['send_invoice'])) {
                                                 <td class="pe-64 p-8 fw-semibold">
                                                     <span class="text-primary-light">Total</span>
                                                 </td>
-                                                <td class="p-8">
+                                                <td class="p-8 editable" data-field="amount">
                                                 <span class="text-primary-light" id="currency-symbol-display">
                                                     <?= htmlspecialchars($symbol) ?>
                                                     <?= number_format(floatval($row['amount']), 2); ?>
@@ -1644,8 +1648,8 @@ if (isset($_POST['send_invoice'])) {
                                                     <td class="pe-64 p-8 fw-semibold">
                                                         <span class="text-primary-light">Payment Made</span>
                                                     </td>
-                                                    <td class="p-8">
-                                                        <span class="text-primary-light" id="currency-symbol-display"><?= htmlspecialchars($symbol) ?> <?= number_format($row['payment_made'], 2); ?></span>
+                                                    <td class="p-8 editable" data-field="payment_made">
+                                                        <?= htmlspecialchars($symbol) ?> <?= number_format($row['payment_made'], 2); ?>
                                                     </td>
                                                 </tr>
                                             <?php } ?>
@@ -1653,7 +1657,7 @@ if (isset($_POST['send_invoice'])) {
                                                 <td class="pe-64 p-8 fw-semibold">
                                                     <span class="text-primary-light">Balance Due</span>
                                                 </td>
-                                                <td class="p-8">
+                                                <td class="p-8 editable" data-field="balance_due">
                                                     <span class="text-primary-light" id="currency-symbol-display"><?= htmlspecialchars($symbol) ?> <?= number_format($row['balance_due'], 2); ?></span>
                                                 </td>
                                             </tr>
@@ -1663,7 +1667,7 @@ if (isset($_POST['send_invoice'])) {
                                     <p class="p-8 text-end">Total In Words <b><i style="font-style: italic;"><?= htmlspecialchars(numberToWords($row['amount'])) ?></i></b></p>
                             <div class="text-center border-footer mt-40 pt-20 pdf-footer">
                                 <p class="d-inline">Crafted with ease using</p> 
-                                <img src="uploads/company_logo/<?php echo $logo; ?>" class="footer-logo" alt="Lufera Logo" class="mb-4" style="margin-bottom: 6px; width: 120px;">
+                                <img src="uploads/company_logo/<?php echo $logo; ?>" class="footer-logo" alt="Lufera Logo" class="mb-4" style="margin-bottom: 6px; max-width: 120px;">
                             </div>
                         
                             <?php 
@@ -1842,5 +1846,81 @@ function downloadPDF() {
 </script>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+<script>
+// Edit Mode Toggle
+let isEditMode = false;
+
+document.getElementById('btnEdit').addEventListener('click', () => {
+    isEditMode = true;
+    toggleEditMode(true);
+});
+
+document.getElementById('btnSave').addEventListener('click', saveInvoiceChanges);
+document.getElementById('btnCancel').addEventListener('click', () => location.reload());
+
+function toggleEditMode(enable) {
+    document.querySelectorAll('.editable').forEach(el => {
+        if (enable) {
+            const text = el.innerText.trim();
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.value = text;
+            input.className = 'form-control form-control-sm radius-8 py-1 px-2';
+            input.style.fontSize = 'inherit';
+            input.dataset.field = el.dataset.field;
+            el.innerHTML = '';
+            el.appendChild(input);
+        }
+    });
+
+    document.getElementById('btnEdit').style.display = enable ? 'none' : 'inline-flex';
+    document.getElementById('btnSave').style.display = enable ? 'inline-flex' : 'none';
+    document.getElementById('btnCancel').style.display = enable ? 'inline-flex' : 'none';
+}
+
+function saveInvoiceChanges() {
+    const data = {
+        invoice_id: '<?php echo $invoice_id; ?>',
+        type: '<?php echo $type; ?>',
+        fields: {}
+    };
+
+    document.querySelectorAll('.editable input').forEach(input => {
+        const field = input.dataset.field;
+        let value = input.value.trim();
+
+        // Clean numeric fields (remove commas and currency symbols)
+        if (['price', 'gst', 'line_total', 'amount', 'payment_made', 'balance_due', 'discount_amount', 'subtotal', 'addon_price', 'addon_gst'].includes(field)) {
+            value = value.replace(/[^0-9.-]+/g, ''); // Remove everything except numbers, dot and minus
+        }
+
+        if (field) {
+            data.fields[field] = value;
+        }
+    });
+
+    if (Object.keys(data.fields).length === 0) {
+        Swal.fire('Warning', 'No changes detected', 'warning');
+        return;
+    }
+
+    fetch('invoice_update.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+    })
+    .then(r => r.json())
+    .then(res => {
+        if (res.success) {
+            Swal.fire('Success!', 'Invoice updated successfully', 'success')
+                .then(() => location.reload());
+        } else {
+            Swal.fire('Error', res.message || 'Failed to update', 'error');
+        }
+    })
+    .catch(() => Swal.fire('Error', 'Something went wrong', 'error'));
+}
+</script>
 
 <?php include './partials/layouts/layoutBottom.php' ?>

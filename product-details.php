@@ -119,9 +119,11 @@ img {
   ?>
   <body>
   <div class="dashboard-main-body">
-    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-24">
-        <h6 class="fw-semibold mb-0">Product</h6>
-    </div>
+    <div class="d-flex flex-wrap align-items-center text-center justify-content-between gap-3 mb-24">
+            <a class="cursor-pointer fw-bold back_btn" onclick="history.back()"><span class="fa fa-arrow-left"></span>&nbsp; Back</a>    
+            <h6 class="fw-semibold mb-0 m-auto">Products</h6>
+            <a class="cursor-pointer fw-bold back_btn visibility-hidden" onclick="history.back()"><span class="fa fa-arrow-left"></span>&nbsp; Back</a> 
+        </div>
 	<div class="container">
 		<div class="card">
 			<div class="card-body p-40">

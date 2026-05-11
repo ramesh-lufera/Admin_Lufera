@@ -126,8 +126,9 @@
                                                 <?php if (!$isActive): ?>
                                                     <p class="mb-0 text-sm text-danger fw-semibold mt-2 float-end">Inactive</p>
                                                 <?php endif; ?> 
-
-                                                <h5 class="mb-0 lufera-color"><?= htmlspecialchars($package['title']) ?></h5>
+                                                <a href="<?= htmlspecialchars(str_replace(' ', '-', strtolower($package['package_name']))) ?>.php" class="text-decoration-none">
+                                                    <h5 class="mb-0 lufera-color"><?= htmlspecialchars($package['title']) ?></h5>
+                                                </a>
                                                 <p class="mb-0 text-secondary-light mb-28"><?= htmlspecialchars($package['subtitle']) ?></p>
 
                                                 <h4 class="mb-24">
