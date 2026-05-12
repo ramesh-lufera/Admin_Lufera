@@ -34,6 +34,42 @@ $script = '<script>
     input[type=number] {
         -moz-appearance: textfield;
     }
+    .image-upload {
+        position: relative;
+        max-width:100%;
+        width: 100%;
+        height: 200px;
+        border: 2px dashed #ccc;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 15px;
+        overflow: hidden;
+        cursor: pointer;
+        transition: 0.3s;
+    }
+
+    .image-upload:hover {
+        border-color: #777;
+    }
+
+    .image-upload img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: none;
+    }
+
+    .image-upload span {
+        font-size: 1rem;
+        color: #888;
+        display: none;
+    }
+
+    input[type="file"] {
+        display: none;
+    }
 </style>
 
 <?php include './partials/layouts/layoutTop.php' ?>
@@ -74,16 +110,24 @@ if ($result->num_rows === 0) {
 $package = $result->fetch_assoc();
 
 // Fetch features
-$featuresQuery = $conn->prepare("SELECT feature FROM features WHERE package_id = ?");
-if ($featuresQuery === false) {
-    die("Prepare failed for features query: " . $conn->error);
+// Fetch inclusive features
+$inclusiveQuery = $conn->prepare("SELECT feature FROM features WHERE package_id = ? AND feature_type='inclusive'");
+$inclusiveQuery->bind_param("i", $get_package_id);
+$inclusiveQuery->execute();
+$inclusiveResult = $inclusiveQuery->get_result();
+$inclusive_features = [];
+while ($row = $inclusiveResult->fetch_assoc()) {
+    $inclusive_features[] = $row['feature'];
 }
-$featuresQuery->bind_param("i", $get_package_id);
-$featuresQuery->execute();
-$featuresResult = $featuresQuery->get_result();
-$features = [];
-while ($row = $featuresResult->fetch_assoc()) {
-    $features[] = $row['feature'];
+
+// Fetch exclusive features
+$exclusiveQuery = $conn->prepare("SELECT feature FROM features WHERE package_id = ? AND feature_type='exclusive'");
+$exclusiveQuery->bind_param("i", $get_package_id);
+$exclusiveQuery->execute();
+$exclusiveResult = $exclusiveQuery->get_result();
+$exclusive_features = [];
+while ($row = $exclusiveResult->fetch_assoc()) {
+    $exclusive_features[] = $row['feature'];
 }
 
 // Fetch durations
@@ -129,12 +173,31 @@ $selectedPackages = !empty($package['addon_package']) ? explode(',', $package['a
 $selectedProducts = !empty($package['addon_product']) ? explode(',', $package['addon_product']) : [];
 $selectedAddons   = !empty($package['addon_service']) ? explode(',', $package['addon_service']) : [];
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save'])) {
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save'])) {    
+    $is_login = isset($_POST['is_login']) ? 1 : 0;
+    // Image upload
+    $package_image = $package['package_img'];
+    if (isset($_FILES['package_image']) && $_FILES['package_image']['error'] == 0) {
+        $target_dir = "uploads/products/";
+        if (!is_dir($target_dir)) {
+            mkdir($target_dir, 0777, true);
+        }
+        $file_name = time() . '_' . basename($_FILES["package_image"]["name"]);
+        $target_file = $target_dir . $file_name;
+        $imageFileType = strtolower(pathinfo($target_file, PATHINFO_EXTENSION));
+        $allowed_types = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+        if (in_array($imageFileType, $allowed_types)) {
+            if (move_uploaded_file($_FILES["package_image"]["tmp_name"], $target_file)) {
+                $package_image = $file_name;
+            }
+        }
+    }
     $package_id = $_POST['id'];
     $package_name = $_POST['package_name'];
     $title = $_POST['title'];
     $subtitle = $_POST['subtitle'];
     $description = $_POST['description'];
+    $short_description = $_POST['short_description'];
     $features = $_POST['features'] ?? [];
     $updated_at = date("Y-m-d H:i:s");
     $cat_id = $_POST['cat_id'];
@@ -145,11 +208,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save'])) {
     $addon_service = isset($_POST['addons']) && is_array($_POST['addons']) ? implode(',', $_POST['addons']) : '';
 
     // Update package
-    $stmt = $conn->prepare("UPDATE package SET package_name=?, title=?, subtitle=?, description=?, cat_id=?, template=?, created_at=?, addon_package=?, addon_product=?, addon_service=?, gst_id=? WHERE id=?");
+    $stmt = $conn->prepare("UPDATE package SET package_img=?, package_name=?, title=?, subtitle=?, short_description=?, description=?, cat_id=?, template=?, created_at=?, addon_package=?, addon_product=?, addon_service=?, gst_id=?, is_login=? WHERE id=?");
     if ($stmt === false) {
         die("Prepare failed for update package: " . $conn->error);
     }
-    $stmt->bind_param("ssssisssssii", $package_name, $title, $subtitle, $description, $cat_id, $module, $updated_at, $addon_package, $addon_product, $addon_service, $gst_id, $package_id);
+    $stmt->bind_param("ssssssisssssiii", $package_image, $package_name, $title, $subtitle, $short_description, $description, $cat_id, $module, $updated_at, $addon_package, $addon_product, $addon_service, $gst_id, $is_login, $package_id);
 
     if ($stmt->execute()) {
         logActivity(
@@ -160,24 +223,50 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save'])) {
         );
         $stmt->close();
 
-        // Delete and insert features
+        // Delete old features
         $deleteFeatureStmt = $conn->prepare("DELETE FROM features WHERE package_id = ?");
-        if ($deleteFeatureStmt === false) {
-            die("Prepare failed for delete features: " . $conn->error);
-        }
         $deleteFeatureStmt->bind_param("i", $package_id);
         $deleteFeatureStmt->execute();
         $deleteFeatureStmt->close();
 
-        if (!empty($features) && is_array($features)) {
-            $featureStmt = $conn->prepare("INSERT INTO features (package_id, feature, created_at) VALUES (?, ?, ?)");
-            if ($featureStmt === false) {
-                die("Prepare failed for features insert: " . $conn->error);
+        // Insert inclusive features
+        if (!empty($_POST['inclusive_features'])) {
+            $featureStmt = $conn->prepare(
+                "INSERT INTO features (package_id, feature, feature_type, created_at)
+                VALUES (?, ?, 'inclusive', ?)"
+            );
+
+            foreach ($_POST['inclusive_features'] as $feature) {
+                $feature = trim($feature);
+                if ($feature != '') {
+                    $featureStmt->bind_param(
+                        "iss",
+                        $package_id,
+                        $feature,
+                        $updated_at
+                    );
+                    $featureStmt->execute();
+                }
             }
-            foreach ($features as $feature) {
-                $cleaned_feature = trim($feature);
-                if ($cleaned_feature !== "") {
-                    $featureStmt->bind_param("iss", $package_id, $cleaned_feature, $updated_at);
+
+            $featureStmt->close();
+        }
+
+        // Insert exclusive features
+        if (!empty($_POST['exclusive_features'])) {
+            $featureStmt = $conn->prepare(
+                "INSERT INTO features (package_id, feature, feature_type, created_at)
+                VALUES (?, ?, 'exclusive', ?)"
+            );
+            foreach ($_POST['exclusive_features'] as $feature) {
+                $feature = trim($feature);
+                if ($feature != '') {
+                    $featureStmt->bind_param(
+                        "iss",
+                        $package_id,
+                        $feature,
+                        $updated_at
+                    );
                     $featureStmt->execute();
                 }
             }
@@ -244,6 +333,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save'])) {
                         <input type="hidden" name="cat_id" value="<?php echo htmlspecialchars($get_cat_id); ?>">
                         <input type="hidden" name="module" value="<?php echo htmlspecialchars($get_module); ?>">
                         <div class="mb-2">
+                            <label class="form-label">
+                                Package image <span class="text-danger-600">*</span>
+                            </label>
+
+                            <div class="has-validation">
+                                <input type="file" id="file-input" accept="image/*" name="package_image">
+                                <label class="image-upload d-flex mw-100" for="file-input">
+                                    <span>Click or Drag Image Here</span>
+                                    <img id="preview" src="uploads/products/<?php echo htmlspecialchars($package['package_img']); ?>" alt="Preview Image" style="display:block;">
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-2">
                             <label class="form-label fw-semibold text-primary-light text-sm mb-8">
                                 Package name <span class="text-danger-600">*</span>
                             </label>
@@ -290,6 +393,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save'])) {
                                 <textarea class="form-control radius-8" name="description" required><?php echo htmlspecialchars($package['description']); ?></textarea>
                                 <div class="invalid-feedback">
                                     Description is required
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-2">
+                            <label class="form-label fw-semibold text-primary-light text-sm mb-8">
+                                Short Description <span class="text-danger-600">*</span>
+                            </label>
+
+                            <div class="has-validation">
+                                <textarea class="form-control radius-8"
+                                        name="short_description"
+                                        required><?php echo htmlspecialchars($package['short_description']); ?></textarea>
+
+                                <div class="invalid-feedback">
+                                    Short Description is required
                                 </div>
                             </div>
                         </div>
@@ -344,26 +463,58 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save'])) {
                         </div>
 
                         <div class="mb-2">
-                            <label class="form-label fw-semibold text-primary-light text-sm mb-8">
-                                Features <span class="text-danger-600">*</span>
-                            </label>
-                            <div id="feature-wrapper">
-                                <?php if (!empty($features)): ?>
-                                    <?php foreach ($features as $feature): ?>
-                                        <div class="feature-group mb-10 d-flex gap-2">
-                                            <input type="text" name="features[]" class="form-control radius-8" required placeholder="Enter a feature" value="<?php echo htmlspecialchars($feature); ?>" />
-                                            <button type="button" class="btn btn-sm btn-success add-feature">+</button>
+                            <div class="row">
+                                <label class="form-label fw-semibold text-primary-light text-sm mb-8">
+                                    Features <span class="text-danger-600">*</span>
+                                </label>
+                                <!-- Inclusive -->
+                                <div class="col-6">
+                                    <label>Inclusive</label>
+                                    <div id="inclusive-wrapper">
+                                    <?php if (!empty($inclusive_features)): ?>
+                                    <?php foreach ($inclusive_features as $loop_index => $feature): ?>
+                                        <div class="feature-group d-flex gap-2 mb-10">
+                                            <input type="text" name="inclusive_features[]" class="form-control" required value="<?php echo htmlspecialchars($feature); ?>">
+                                            <?php if ($loop_index == 0): ?>
+                                                <button type="button" class="btn btn-success add-inclusive">+</button>
+                                            <?php else: ?>
+                                                <button type="button" class="btn btn-danger remove-feature">−</button>
+                                            <?php endif; ?>
                                         </div>
                                     <?php endforeach; ?>
-                                <?php else: ?>
-                                    <div class="feature-group mb-10 d-flex gap-2">
-                                        <input type="text" name="features[]" class="form-control radius-8" required placeholder="Enter a feature" />
-                                        <button type="button" class="btn btn-sm btn-success add-feature">+</button>
+                                    <?php else: ?>
+
+                                    <div class="feature-group d-flex gap-2 mb-10">
+                                        <input type="text" name="inclusive_features[]" class="form-control" required>
+                                        <button type="button" class="btn btn-success add-inclusive">+</button>
                                     </div>
-                                <?php endif; ?>
-                            </div>
-                            <div class="invalid-feedback">
-                                At least one feature is required.
+
+                                    <?php endif; ?>
+                                    </div>
+                                </div>
+                                <!-- Exclusive -->
+                                <div class="col-6">
+                                    <label>Exclusive</label>
+                                    <div id="exclusive-wrapper">
+                                    <?php if (!empty($exclusive_features)): ?>
+                                    <?php foreach ($exclusive_features as $loop_index => $feature): ?>
+                                        <div class="feature-group d-flex gap-2 mb-10">
+                                            <input type="text" name="exclusive_features[]" class="form-control" required value="<?php echo htmlspecialchars($feature); ?>">
+                                            <?php if ($loop_index == 0): ?>
+                                                <button type="button" class="btn btn-success add-exclusive">+</button>
+                                            <?php else: ?>
+                                                <button type="button" class="btn btn-danger remove-feature">−</button>
+                                            <?php endif; ?>
+                                        </div>
+                                    <?php endforeach; ?>
+                                    <?php else: ?>
+                                    <div class="feature-group d-flex gap-2 mb-10">
+                                        <input type="text" name="exclusive_features[]" class="form-control" required>
+                                        <button type="button" class="btn btn-success add-exclusive">+</button>
+                                    </div>
+                                    <?php endif; ?>
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
@@ -461,6 +612,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save'])) {
                             </div>
                         </div>
 
+                        <div class="mb-2">
+                            <label class="form-label fw-semibold text-primary-light text-sm mb-8">
+                                Is Login?
+                            </label>
+
+                            <div class="form-check d-flex align-items-center">
+
+                                <input class="form-check-input" type="checkbox" name="is_login" id="isLogin" <?php echo ($package['is_login'] == 1) ? 'checked' : ''; ?>>
+
+                                <label class="form-check-label ms-2 mb-0" for="isLogin">
+                                    Require login to purchase
+                                </label>
+
+                            </div>
+                        </div>
                         <div class="d-flex align-items-center justify-content-center gap-3">
                             <button type="button" class="border border-danger-600 bg-hover-danger-200 text-danger-600 text-md px-56 py-11 radius-8">
                                 Cancel
@@ -475,72 +641,99 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save'])) {
         </div>
     </div>
 
-    <script>
-        document.addEventListener("DOMContentLoaded", function () {
-            const featureWrapper = document.getElementById("feature-wrapper");
-            featureWrapper.addEventListener("click", function (e) {
-                if (e.target && e.target.classList.contains("add-feature")) {
-                    e.preventDefault();
-                    const newGroup = document.createElement("div");
-                    newGroup.className = "feature-group mb-10 d-flex gap-2";
-                    newGroup.innerHTML = `
-                        <input type="text" name="features[]" class="form-control radius-8" required placeholder="Enter a feature" />
-                        <button type="button" class="btn btn-sm btn-danger remove-feature">−</button>
-                    `;
-                    featureWrapper.appendChild(newGroup);
-                }
-                if (e.target && e.target.classList.contains("remove-feature")) {
-                    e.preventDefault();
-                    e.target.parentElement.remove();
-                }
-            });
-
-            const durationWrapper = document.getElementById("duration-wrapper");
-            durationWrapper.addEventListener("click", function (e) {
-                if (e.target && e.target.classList.contains("add-duration")) {
-                    e.preventDefault();
-                    const newGroup = document.createElement("div");
-                    newGroup.className = "duration-group mb-10 d-flex gap-2 align-items-center";
-                    newGroup.innerHTML = `
-                        <input type="number" name="duration_values[]" class="form-control radius-8" placeholder="Value" required min="1" style="width: 25%;" onkeydown="return event.key !== 'e'">
-                        <select name="duration_units[]" class="form-control radius-8" required style="width: 25%;">
-                            <option value="">Select Unit</option>
-                            <option value="days">Days</option>
-                            <option value="months">Months</option>
-                            <option value="years">Years</option>
-                        </select>
-                        <input type="number" name="prices[]" class="form-control radius-8" placeholder="Enter price" required min="0" style="width: 25%;" onkeydown="return event.key !== 'e'">
-                        <input type="number" name="pre_prices[]" class="form-control radius-8" placeholder="Enter preview price" required min="0" style="width: 25%;" onkeydown="return event.key !== 'e'">
-                        <button type="button" class="btn btn-sm btn-danger remove-duration">−</button>
-                    `;
-                    durationWrapper.appendChild(newGroup);
-                }
-                if (e.target && e.target.classList.contains("remove-duration")) {
-                    e.preventDefault();
-                    e.target.parentElement.remove();
-                }
-            });
-
-            document.querySelectorAll(".toggle-section").forEach(checkbox => {
-                checkbox.addEventListener("change", function () {
-                    const target = document.querySelector(this.dataset.target);
-                    if (!target) return;
-                    if (this.checked) {
-                        target.classList.remove("d-none");
-                    } else {
-                        target.classList.add("d-none");
-                        target.querySelectorAll("input[type=checkbox]").forEach(ch => ch.checked = false);
-                    }
-                });
-            });
-            // ✅ Auto-show sections that are already checked on page load
-            document.querySelectorAll(".toggle-section").forEach(checkbox => {
-                const target = document.querySelector(checkbox.dataset.target);
-                if (checkbox.checked && target) {
-                    target.classList.remove("d-none");
-                }
-            });
+<script>
+    const durationWrapper = document.getElementById("duration-wrapper");
+        durationWrapper.addEventListener("click", function (e) {
+            if (e.target && e.target.classList.contains("add-duration")) {
+                e.preventDefault();
+                const newGroup = document.createElement("div");
+                newGroup.className = "duration-group mb-10 d-flex gap-2 align-items-center";
+                newGroup.innerHTML = `
+                    <input type="number" name="duration_values[]" class="form-control radius-8" placeholder="Value" required min="1" style="width: 25%;" onkeydown="return event.key !== 'e'">
+                    <select name="duration_units[]" class="form-control radius-8" required style="width: 25%;">
+                        <option value="">Select Unit</option>
+                        <option value="days">Days</option>
+                        <option value="months">Months</option>
+                        <option value="years">Years</option>
+                    </select>
+                    <input type="number" name="prices[]" class="form-control radius-8" placeholder="Enter price" required min="0" style="width: 25%;" onkeydown="return event.key !== 'e'">
+                    <input type="number" name="pre_prices[]" class="form-control radius-8" placeholder="Enter preview price" required min="0" style="width: 25%;" onkeydown="return event.key !== 'e'">
+                    <button type="button" class="btn btn-sm btn-danger remove-duration">−</button>
+                `;
+                durationWrapper.appendChild(newGroup);
+            }
+            if (e.target && e.target.classList.contains("remove-duration")) {
+                e.preventDefault();
+                e.target.parentElement.remove();
+            }
+        });  
+    document.querySelectorAll(".toggle-section").forEach(checkbox => {
+        checkbox.addEventListener("change", function () {
+            const target = document.querySelector(this.dataset.target);
+            if (!target) return;
+            if (this.checked) {
+                target.classList.remove("d-none");
+            } else {
+                target.classList.add("d-none");
+                target.querySelectorAll("input[type=checkbox]").forEach(ch => ch.checked = false);
+            }
         });
-    </script>
+    });
+    // ✅ Auto-show sections that are already checked on page load
+    document.querySelectorAll(".toggle-section").forEach(checkbox => {
+        const target = document.querySelector(checkbox.dataset.target);
+        if (checkbox.checked && target) {
+            target.classList.remove("d-none");
+        }
+    });
+
+    const fileInput = document.getElementById('file-input');
+    const preview = document.getElementById('preview');
+    if(fileInput){
+        fileInput.addEventListener('change', function() {
+            const file = this.files[0];
+            if(file){
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    preview.setAttribute('src', e.target.result);
+                }
+                reader.readAsDataURL(file);
+            }
+        });
+    }
+
+    // Inclusive
+    document.getElementById("inclusive-wrapper").addEventListener("click", function(e) {
+    if (e.target.classList.contains("add-inclusive")) {
+        const div = document.createElement("div");
+        div.className = "feature-group d-flex gap-2 mb-10";
+        div.innerHTML = `
+            <input type="text" name="inclusive_features[]" class="form-control" required>
+            <button type="button" class="btn btn-danger remove-feature">−</button>
+        `;
+        this.appendChild(div);
+    }
+    });
+
+    // Exclusive
+    document.getElementById("exclusive-wrapper").addEventListener("click", function(e) {
+    if (e.target.classList.contains("add-exclusive")) {
+        const div = document.createElement("div");
+        div.className = "feature-group d-flex gap-2 mb-10";
+        div.innerHTML = `
+            <input type="text" name="exclusive_features[]" class="form-control" required>
+            <button type="button" class="btn btn-danger remove-feature">−</button>
+        `;
+        this.appendChild(div);
+    }
+    });
+
+    // Remove
+    document.addEventListener("click", function(e) {
+    if (e.target.classList.contains("remove-feature")) {
+        e.target.parentElement.remove();
+    }
+    });
+</script>
 
 <?php include './partials/layouts/layoutBottom.php' ?>
