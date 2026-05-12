@@ -216,9 +216,7 @@
                             \$stmt->close();
                         // ===== CREATE LANDING PAGE FILE =====
                         \$landingSlug = strtolower(preg_replace('/\s+/', '-', \$package_name));
-                        \$landingFileName = \$landingSlug . ".php";
-
-                        
+                        \$landingFileName = \$landingSlug . ".php";                    
 
                         // LANDING content
                         \$landingContent = <<<'LANDING'
@@ -470,15 +468,7 @@
                             font-size: 24px !important;
                             font-weight: 700;  
                             text-shadow: 0 2px 8px rgba(0, 0, 0, 0.7);
-                        }
-                    
-                        .package-wrapper {
-                            position: relative;
-                            width: 100%;
-                            height: 280px;
-                            margin-top: 20px;
-                            margin-bottom: 20px;
-                            overflow: hidden;
+                            text-align: center;
                         }
                     
                         /* ===== LOGIN POPUP ===== */
@@ -580,7 +570,7 @@
                                             <?php echo \$package_name; ?>
                                         </h2>
                                         <p class="breadcrumb-path">
-                                            <a href="">Packages</a> /
+                                            <span class="lufera-color">Packages</span> /
                                             <?php echo \$package_name; ?>
                                         </p>
                                     </div>
@@ -590,9 +580,12 @@
                                 // BASE URL (dynamic)
                                 \$protocol = (!empty(\$_SERVER['HTTPS']) && \$_SERVER['HTTPS'] !== 'off') ? "https://" : "http://";
                                 \$host = \$_SERVER['HTTP_HOST'];
-                                \$basePath = dirname(\$_SERVER['SCRIPT_NAME']);
+
+                                //\$basePath = dirname(\$_SERVER['SCRIPT_NAME']);
+                                \$basePath = rtrim(dirname(\$_SERVER['SCRIPT_NAME']), '/\\');
                     
-                                \$currentBaseUrl = \$protocol . \$host . \$basePath;
+                                //\$currentBaseUrl = \$protocol . \$host . \$basePath;
+                                \$currentBaseUrl = rtrim(\$protocol . \$host . \$basePath, '/');
                     
                                 \$slug = strtolower(trim(\$package_name));        // lowercase + trim
                                 \$slug = preg_replace('/\s+/', '-', \$slug);      // replace spaces with hyphens
@@ -680,7 +673,7 @@
                                 <div class="card image-banner">
                                     <img src="./uploads/products/<?php echo \$package_img; ?>" alt="Package Image" class="feature-img" style="border-radius:8px">
                                 </div>
-                                <div class="package-wrapper">
+                                <div class="package-wrapper position-relative">
                                     <img src="../uploads/products/<?php echo \$package_img; ?>" alt="Package Image" class="feature-img">
                                     <h2 class="package-title">
                                         <?php echo \$package_name; ?>
@@ -691,13 +684,28 @@
                                 <div class="card mt-20">
                                     <h6 class="sec-heading">Description</h6>
                                     <div class="row">
-                                        <div class="col-md-8">
+                                        <div class="col-md-12">
                                             <p><?php echo \$row['description']; ?></p>
                                         </div>
                                     </div>
                                 </div> 
                                 
                                 <!--Features Section -->
+                                <?php
+                                \$features_sql = "SELECT feature_type, feature FROM features WHERE cat_type = 1 AND package_id = \$Id";
+                                \$features_result = \$conn->query(\$features_sql);
+                                
+                                \$included = [];
+                                \$excluded = [];
+                                
+                                while (\$frow = \$features_result->fetch_assoc()) {
+                                    if (\$frow['feature_type'] == 'inclusive') {
+                                        \$included[] = \$frow['feature'];
+                                    } else {
+                                        \$excluded[] = \$frow['feature'];
+                                    }
+                                }
+                                ?>
                                 <div class="card mt-20">
                                     <h6 class="sec-heading">Features</h6>
                                     <div class="features-row">
@@ -763,218 +771,122 @@
                                 \$symbol = "\$";
                                 ?>
                                 
-                                <div class="card">
-                                
-                                    <h4 class="sec-heading">Packages Pricing Table</h4>
-                                
-                                    <div class="card-body">
-                                
-                                        <?php if (!empty(\$packagesByDuration)): ?>
-                                
-                                            <?php if (\$isLoginRequired && !\$loggedInUserId): ?>
-                                
+                                <div class="card">                                
+                                    <h4 class="sec-heading">Packages Pricing Table</h4>                                
+                                    <div class="card-body">                               
+                                        <?php if (!empty(\$packagesByDuration)): ?>                               
+                                            <?php if (\$isLoginRequired && !\$loggedInUserId): ?>                               
                                                 <div class="col-12 text-center">
                                                     <p class="text-center" style="font-size:16px; font-weight:600; margin-top:10px;">
                                                         <a href="#" onclick="openLoginPopup()" class="btn mt-2">
                                                             🔒 Sign-In to See the Packages
                                                         </a>
                                                     </p>
-                                                </div>
-                                
-                                            <?php elseif (!\$isLoginRequired && !\$loggedInUserId): ?>
-                                
+                                                </div>                               
+                                            <?php elseif (!\$isLoginRequired && !\$loggedInUserId): ?>                               
                                                 <div class="col-12 text-center">
                                                     <p class="text-center" style="font-size:16px; font-weight:600; margin-top:10px;">
                                                         <a href="#" onclick="openLoginPopup()" class="btn mt-2">
                                                             🔒 Sign-In to See the Packages
                                                         </a>
                                                     </p>
-                                                </div>
-                                
-                                            <?php else: ?>
-                                
-                                                <div class="row justify-content-center">
-                                
-                                                    <div class="col-xxl-10">
-                                
+                                                </div>                               
+                                            <?php else: ?>                               
+                                                <div class="row justify-content-center">                               
+                                                    <div class="col-xxl-10">                               
                                                         <!-- TABS -->
-                                                        <ul class="nav nav-pills button-tab mt-32 mb-32 justify-content-center"
-                                                            id="durationTabs"
-                                                            role="tablist">
-                                
-                                                            <?php \$firstTab = true; ?>
-                                
-                                                            <?php foreach (\$packagesByDuration as \$duration => \$packages): ?>
-                                
-                                                                <li class="nav-item" role="presentation">
-                                
-                                                                    <button
-                                                                        class="rounded-pill nav-link <?= \$firstTab ? 'active' : '' ?>"
-                                                                        id="tab-<?= md5(\$duration) ?>"
-                                                                        data-bs-toggle="tab"
-                                                                        data-bs-target="#content-<?= md5(\$duration) ?>"
-                                                                        type="button"
-                                                                        role="tab">
-                                
-                                                                        <?= htmlspecialchars(\$duration) ?>
-                                
-                                                                    </button>
-                                
-                                                                </li>
-                                
-                                                                <?php \$firstTab = false; ?>
-                                
-                                                            <?php endforeach; ?>
-                                
-                                                        </ul>
-                                
+                                                        <ul class="nav nav-pills button-tab mt-32 mb-32 justify-content-center" id="durationTabs" role="tablist">
+                                                            <?php \$firstTab = true; ?>                                
+                                                            <?php foreach (\$packagesByDuration as \$duration => \$packages): ?>                                
+                                                                <li class="nav-item" role="presentation">                                
+                                                                    <button class="rounded-pill nav-link <?= \$firstTab ? 'active' : '' ?>" id="tab-<?= md5(\$duration) ?>" data-bs-toggle="tab" data-bs-target="#content-<?= md5(\$duration) ?>" type="button" role="tab">                    
+                                                                        <?= htmlspecialchars(\$duration) ?>                                
+                                                                    </button>                                
+                                                                </li>                                
+                                                                <?php \$firstTab = false; ?>                                
+                                                            <?php endforeach; ?>                                
+                                                        </ul>                                
                                                         <!-- TAB CONTENT -->
-                                                        <div class="tab-content" id="durationTabsContent">
-                                
-                                                            <?php \$firstContent = true; ?>
-                                
-                                                            <?php foreach (\$packagesByDuration as \$duration => \$packages): ?>
-                                
-                                                                <div
-                                                                    class="tab-pane fade <?= \$firstContent ? 'show active' : '' ?>"
-                                                                    id="content-<?= md5(\$duration) ?>"
-                                                                    role="tabpanel">
-                                
-                                                                    <div class="row gy-4 mt-2">
-                                
-                                                                        <?php foreach (\$packages as \$package): ?>
-                                
-                                                                            <?php \$isActive = (\$package['pkg_active'] == 1); ?>
-                                
-                                                                            <div class="col-xxl-4 col-sm-6">
-                                
-                                                                                <div class="pricing-plan position-relative radius-24 overflow-hidden border">
-                                
+                                                        <div class="tab-content" id="durationTabsContent">                                
+                                                            <?php \$firstContent = true; ?>                                
+                                                            <?php foreach (\$packagesByDuration as \$duration => \$packages): ?>                                
+                                                                <div class="tab-pane fade <?= \$firstContent ? 'show active' : '' ?>" id="content-<?= md5(\$duration) ?>" role="tabpanel">                                
+                                                                    <div class="row gy-4 mt-2">                            
+                                                                        <?php foreach (\$packages as \$package): ?>                                
+                                                                            <?php \$isActive = (\$package['pkg_active'] == 1); ?>                                
+                                                                            <div class="col-xxl-4 col-sm-6">                                
+                                                                                <div class="pricing-plan position-relative radius-24 overflow-hidden border">                                
                                                                                     <?php if (!\$isActive): ?>
                                                                                         <p class="text-danger float-end">Inactive</p>
                                                                                     <?php endif; ?>
-                                
-                                                                                    <h5 class="mb-0 lufera-color" style="font-size:18px !important">
-                                                                                        <?= htmlspecialchars(\$package['title']) ?>
-                                                                                    </h5>
-                                
+                                                                                    <a href="">
+                                                                                        <h5 class="mb-0 lufera-color" style="font-size:18px !important">
+                                                                                            <?= htmlspecialchars(\$package['title']) ?>
+                                                                                        </h5>
+                                                                                    </a>
                                                                                     <p class="text-secondary-light mb-28">
                                                                                         <?= htmlspecialchars(\$package['subtitle']) ?>
-                                                                                    </p>
-                                
-                                                                                    <h4 class="mb-24 sec-heading">
-                                
-                                                                                        <?php if (!empty(\$package['preview_price'])): ?>
-                                
-                                                                                            <p class="text-sm text-muted mt-0 mb-10 text-decoration-line-through">
-                                
+                                                                                    </p>                                
+                                                                                    <h4 class="mb-24 sec-heading">                                
+                                                                                        <?php if (!empty(\$package['preview_price'])): ?>                                
+                                                                                            <p class="text-sm text-muted mt-0 mb-10 text-decoration-line-through">                                
                                                                                                 <?= \$symbol ?>
-                                                                                                <?= number_format(\$package['preview_price']) ?>
-                                
-                                                                                            </p>
-                                
-                                                                                        <?php endif; ?>
-                                
+                                                                                                <?= number_format(\$package['preview_price']) ?>                                
+                                                                                            </p>                                
+                                                                                        <?php endif; ?>                                
                                                                                         <?= \$symbol ?>
-                                                                                        <?= number_format(\$package['price']) ?>
-                                
+                                                                                        <?= number_format(\$package['price']) ?>                                
                                                                                         <span class="fw-medium text-md text-secondary-light">
                                                                                             / <?= htmlspecialchars(\$package['duration']) ?>
-                                                                                        </span>
-                                
-                                                                                    </h4>
-                                
-                                                                                    <p>
-                                                                                        <?= htmlspecialchars(\$package['description']) ?>
-                                                                                    </p>
-                                
+                                                                                        </span>                                
+                                                                                    </h4>                                
+                                                                                    <p><?= htmlspecialchars(\$package['description']) ?></p>                                
                                                                                     <ul>
-                                
-                                                                                        <?php
-                                
+                                                                                        <?php                                
                                                                                         \$feature_sql = "
                                                                                             SELECT feature, feature_type
                                                                                             FROM features
                                                                                             WHERE cat_type = 1
-                                                                                            AND package_id = ".\$package['package_id'];
-                                
-                                                                                        \$feature_result = \$conn->query(\$feature_sql);
-                                
-                                                                                        while (\$feat = \$feature_result->fetch_assoc()):
-                                
-                                                                                            \$isInclude =
-                                                                                                (\$feat['feature_type'] == 'inclusive');
-                                
-                                                                                        ?>
-                                
-                                                                                            <li class="d-flex align-items-center gap-16 mb-16">
-                                
-                                                                                                <span class="w-24-px h-24-px p-2 d-flex justify-content-center align-items-center lufera-bg rounded-circle">
-                                
-                                                                                                    <i class="text-sm fa <?= \$isInclude ? 'fa-check' : 'fa-check' ?> text-white"></i>
-                                
-                                                                                                </span>
-                                
-                                                                                                <?= htmlspecialchars(\$feat['feature']) ?>
-                                
-                                                                                            </li>
-                                
-                                                                                        <?php endwhile; ?>
-                                
-                                                                                    </ul>
-                                
-                                                                                    <form action="../cart.php" method="POST">
-                                
+                                                                                            AND package_id = ".\$package['package_id'];                                
+                                                                                        \$feature_result = \$conn->query(\$feature_sql);                                
+                                                                                        while (\$feat = \$feature_result->fetch_assoc()):                                
+                                                                                            \$isInclude = (\$feat['feature_type'] == 'inclusive');                                
+                                                                                        ?>                                
+                                                                                            <li class="d-flex align-items-center gap-16 mb-16">                                
+                                                                                                <span class="w-24-px h-24-px p-2 d-flex justify-content-center align-items-center lufera-bg rounded-circle">                                
+                                                                                                    <i class="text-sm fa <?= \$isInclude ? 'fa-check' : 'fa-check' ?> text-white"></i>                                
+                                                                                                </span>                                
+                                                                                                <?= htmlspecialchars(\$feat['feature']) ?>                                
+                                                                                            </li>                                
+                                                                                        <?php endwhile; ?>                                
+                                                                                    </ul>                                
+                                                                                    <form action="../cart.php" method="POST">                                
                                                                                         <input type="hidden" name="type" value="package">
                                                                                         <input type="hidden" name="id" value="<?= \$package['package_id'] ?>">
                                                                                         <input type="hidden" name="price" value="<?= \$package['price'] ?>">
                                                                                         <input type="hidden" name="duration" value="<?= \$package['duration'] ?>">
-                                                                                        <input type="hidden" name="title"
-                                                                                               value="<?= htmlspecialchars(\$package['title']) ?>">
-                                
-                                                                                        <button
-                                                                                            type="submit"
-                                                                                            class="lufera-bg text-white btn btn-sm w-100 mt-28"
-                                                                                            <?= !\$isActive ? 'disabled' : '' ?>>
-                                
+                                                                                        <input type="hidden" name="title" value="<?= htmlspecialchars(\$package['title']) ?>">                                
+                                                                                        <button type="submit" class="lufera-bg text-white btn btn-sm w-100 mt-28" <?= !\$isActive ? 'disabled' : '' ?>>
                                                                                             Get Started
-                                
-                                                                                        </button>
-                                
-                                                                                    </form>
-                                
-                                                                                </div>
-                                
-                                                                            </div>
-                                
-                                                                        <?php endforeach; ?>
-                                
-                                                                    </div>
-                                
-                                                                </div>
-                                
-                                                                <?php \$firstContent = false; ?>
-                                
-                                                            <?php endforeach; ?>
-                                
-                                                        </div>
-                                
-                                                    </div>
-                                
-                                                </div>
-                                
-                                            <?php endif; ?>
-                                
-                                        <?php else: ?>
-                                
+                                                                                        </button>        
+                                                                                    </form>                                
+                                                                                </div>                                
+                                                                            </div>                                
+                                                                        <?php endforeach; ?>                                
+                                                                    </div>                                
+                                                                </div>                                
+                                                                <?php \$firstContent = false; ?>                                
+                                                            <?php endforeach; ?>                                
+                                                        </div>                                
+                                                    </div>                                
+                                                </div>                                
+                                            <?php endif; ?>                                
+                                        <?php else: ?>                                
                                             <div class="col-12 text-center">
                                                 <p>No pricing available</p>
-                                            </div>
-                                
-                                        <?php endif; ?>
-                                
-                                    </div>
-                                
+                                            </div>                                
+                                        <?php endif; ?>                                
+                                    </div>                                
                                 </div>
                     
                                     <!-- LOGIN MODAL (MOVED OUTSIDE ROW) -->
@@ -1006,20 +918,15 @@
                     
                                 <section class="card mt-20 contact">
                                     <h6 class="sec-heading">Need Help?</h6>
-                                    <button type="button" class="btn btn-default lufera-bg mt-10" onclick="openContactPopup()" style="width:10%">Contact Us</button>   
+                                    <button type="button" class="btn btn-default lufera-bg mt-10" onclick="openContactPopup()" style="width:120px">Contact Us</button>   
                                     
                                     <!-- ================= LANDING CONTACT POPUP ================= -->
-                                    <div id="landingContactModal" class="landing-contact-modal">
-            
-                                        <div class="landing-contact-modal-content">
-            
-                                            <span class="landing-contact-close" onclick="closeContactPopup()">&times;</span>
-            
-                                            <div class="landing-contact-container">
-            
+                                    <div id="landingContactModal" class="landing-contact-modal">            
+                                        <div class="landing-contact-modal-content">            
+                                            <span class="landing-contact-close" onclick="closeContactPopup()">&times;</span>            
+                                            <div class="landing-contact-container">        
                                                 <!-- LEFT SIDE -->
-                                                <div class="landing-contact-left">
-            
+                                                <div class="landing-contact-left">            
                                                     <h4 class="sec-heading">CALL US</h4>
                                                     <p><?php echo htmlspecialchars(\$phone ?? 'N/A'); ?></p>
             
@@ -1027,30 +934,21 @@
                                                     <p><?php echo htmlspecialchars(\$address ?? 'N/A'); ?></p>
             
                                                     <h4 class="sec-heading">BUSINESS HOURS</h4>
-                                                    <p>Mon - Fri: 10am - 6pm</p>
-            
+                                                    <p>Mon - Fri: 10am - 6pm</p>            
                                                 </div>
             
                                                 <!-- RIGHT SIDE -->
-                                                <div class="landing-contact-right">
-            
-                                                    <h3 style="font-size: 22px !important">CONTACT US</h3>
-            
+                                                <div class="landing-contact-right">            
+                                                    <h3 style="font-size: 22px !important">CONTACT US</h3>            
                                                     <input type="text" id="contactName" placeholder="Enter your name" required>
                                                     <input type="text" id="contactPhone" placeholder="Enter your phone number" required>
                                                     <input type="email" id="contactEmail" placeholder="Enter your email address" required>
-                                                    <textarea id="contactMessage" placeholder="Enter your message" rows="4" required></textarea>
-            
-                                                    <button onclick="submitContact()">SUBMIT</button>
-            
-                                                </div>
-            
-                                            </div>
-            
-                                        </div>
-            
-                                    </div>
-            
+                                                    <textarea id="contactMessage" placeholder="Enter your message" rows="4" required></textarea>            
+                                                    <button onclick="submitContact()">SUBMIT</button>            
+                                                </div>            
+                                            </div>            
+                                        </div>            
+                                    </div>            
                                     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
             
                                     <script>
@@ -1210,7 +1108,7 @@
                         );  
                         
                         \$rootContent = preg_replace(
-                            '/<div class="package-wrapper">.*?<\/div>/s',
+                            '/<div class="package-wrapper position-relative">.*?<\/div>/s',
                             '',
                             \$rootContent
                         );  
@@ -1236,8 +1134,8 @@
                         \$pagesContent = \$landingContent;
                         // Create file only if not exists
                         \$paths = [
-                            ['dir' => \$_SERVER['DOCUMENT_ROOT'] . '/pages', 'content' => \$pagesContent],
-                            ['dir' => \$_SERVER['DOCUMENT_ROOT'] . '/', 'content' => \$rootContent]
+                            ['dir' => realpath(__DIR__) . '/pages', 'content' => \$pagesContent],
+                            ['dir' => realpath(__DIR__) . '/', 'content' => \$rootContent]
                         ];
 
                         foreach (\$paths as \$item) {
@@ -1522,9 +1420,7 @@
                                                     <?php if (!empty(\$products_list)): ?>
                                                         <?php foreach (\$products_list as \$product): ?>
                                                             <div class="form-check d-flex align-items-center me-3">
-                                                                <input class="form-check-input" type="checkbox" name="products[]" 
-                                                                    value="<?php echo \$product['id']; ?>" 
-                                                                    id="product_<?php echo \$product['id']; ?>">
+                                                                <input class="form-check-input" type="checkbox" name="products[]" value="<?php echo \$product['id']; ?>" id="product_<?php echo \$product['id']; ?>">
                                                                 <label class="form-check-label ms-2 mb-0" for="product_<?php echo \$product['id']; ?>">
                                                                     <?php echo htmlspecialchars(\$product['title']); ?>
                                                                 </label>
@@ -1614,9 +1510,10 @@
                                 e.preventDefault();
                                 e.target.parentElement.remove();
                             }
-                        });
+                        });                                
+                    });
             
-                        // Toggle sections
+                    // Toggle sections
                         document.querySelectorAll(".toggle-section").forEach(checkbox => {
                             checkbox.addEventListener("change", function () {
                                 const target = document.querySelector(this.dataset.target);
@@ -1630,8 +1527,7 @@
                                 }
                             });
                         });
-                    });
-            
+
                     // Add/remove duration+price rows with value/unit combination
                     const durationWrapper = document.getElementById("duration-wrapper");
                     durationWrapper.addEventListener("click", function (e) {
@@ -1831,9 +1727,6 @@
     </button>
     <div>
         <a href="admin-dashboard.php" class="sidebar-logo">
-            <!-- <img src="assets/images/logo_lufera.png" alt="site logo" class="light-logo">
-            <img src="assets/images/Logo_dark.png" alt="site logo" class="dark-logo">
-            <img src="assets/images/Image.jfif" alt="site logo" class="logo-icon"> -->
             <img src="uploads/company_logo/<?php echo $logo; ?>" alt="site logo" class="light-logo">
             <img src="uploads/company_logo/<?php echo $logo; ?>" alt="site logo" class="dark-logo">
         </a>
@@ -1893,29 +1786,9 @@
                                 <iconify-icon icon="mdi:tag-outline" class="menu-icon"></iconify-icon>
                                 <span><?= htmlspecialchars($cat['cat_name']) ?></span>
                             </a>
-                            <!-- <div class="category-actions">
-                                <button type="button" onclick="openEditModal('<?= $cat['cat_id'] ?>', '<?= htmlspecialchars($cat['cat_name']) ?>', '<?= htmlspecialchars($cat['cat_url']) ?>', '<?= htmlspecialchars($cat['cat_module']) ?>')" class="icon-btn">    
-                                    <iconify-icon icon="mdi:pencil-outline"></iconify-icon>
-                                </button>
-                                <form method="post" class="delete-form">
-                                    <input type="hidden" name="delete_cat_id" value="<?= $cat['cat_id'] ?>">
-                                    <button type="button" class="icon-btn delete-btn" onclick="confirmDelete(this)">
-                                        <iconify-icon icon="mdi:delete-outline"></iconify-icon>
-                                    </button>
-                                </form>
-                            </div> -->
                         </div>
                     </li>
                 <?php } ?>
-
-                    <!-- <li class="add-category-menu">
-                        <a href="javascript:void(0);" onclick="openCategoryModal();">
-                            <span>+ Add New Category</span>
-                        </a>
-                        <a href="javascript:void(0);" onclick="openProductModal()">
-                            <span>+ Add New Product</span>
-                        </a>
-                    </li> -->
             <?php } ?>
             <?php if ($row['role'] == "1" || $row['role'] == "2") { ?>
             <li>
@@ -1932,12 +1805,6 @@
             <?php } ?>
             </ul>
             <ul class="sidebar-menu bottom-menu" id="sidebar-menu" style="border-top: 1px solid #eee; ">
-            <!-- <li>
-                <a href="orders.php">
-                    <iconify-icon icon="hugeicons:invoice-03" class="menu-icon"></iconify-icon>
-                    <span>Orders</span>
-                </a>
-            </li> -->
             <li class="dropdown">
                 <a href="javascript:void(0)">
                     <iconify-icon icon="hugeicons:invoice-03" class="menu-icon"></iconify-icon>
@@ -1962,12 +1829,6 @@
                     <span>Users</span>
                 </a>
             </li>
-            <!-- <li>
-                <a href="assign-role.php">
-                <iconify-icon icon="mdi:account-cog-outline" class="menu-icon"></iconify-icon>
-                <span>Role & Access</span>
-                </a>
-            </li> -->
             <?php } if ($row['role'] == "1") { ?>
                 <li class="dropdown">
                     <a href="javascript:void(0)">
@@ -1981,8 +1842,6 @@
                         <li><a href="company.php"><i class="ri-circle-fill circle-icon text-warning-600 w-auto"></i> Company</a></li>
                         <li><a href="credentials.php"><i class="ri-circle-fill circle-icon text-warning-600 w-auto"></i> Credentials</a></li>
                         <li><a href="currencies.php"><i class="ri-circle-fill circle-icon text-warning-600 w-auto"></i> Currencies</a></li>
-                        <!-- <li><a href="form_dashboard.php"><i class="ri-circle-fill circle-icon text-warning-600 w-auto"></i> Form Builder</a></li> -->
-                        <!-- <li><a href="payment-gateway.php"><i class="ri-circle-fill circle-icon text-warning-600 w-auto"></i> Payment Gateway</a></li> -->
                         <li><a href="promotion.php"><i class="ri-circle-fill circle-icon text-warning-600 w-auto"></i> Promotion</a></li>
                         <li><a href="add_policy.php"><i class="ri-circle-fill circle-icon text-warning-600 w-auto"></i> Privacy policy</a></li>
                         <li><a href="view_packages.php"><i class="ri-circle-fill circle-icon text-warning-600 w-auto"></i> Packages</a></li>
@@ -2000,12 +1859,6 @@
                 </a>
             </li>
             <?php } ?>
-            <!-- <li>
-                <a href="dashboard-sheets.php">
-                    <iconify-icon icon="tabler:file-spreadsheet" class="menu-icon"></iconify-icon>
-                    <span>Sheets</span>
-                </a>
-            </li> -->
             <li>
                 <a href="activity_log.php">
                     <iconify-icon icon="tabler:activity" class="menu-icon"></iconify-icon>
@@ -2037,7 +1890,3 @@
     </script>
     <?php unset($_SESSION['swal_success']); ?>
 <?php endif; ?>
-
-
-
-<!-- JS to Toggle Modal -->

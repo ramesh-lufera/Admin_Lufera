@@ -144,12 +144,32 @@ if (!$product) {
     die('Product not found');
 }
 
+$inclusive_features = [];
+$exclusive_features = [];
+
+$featureQuery = $conn->prepare("SELECT * FROM features WHERE package_id = ?");
+$featureQuery->bind_param("i", $get_product_id);
+$featureQuery->execute();
+
+$featureResult = $featureQuery->get_result();
+
+while ($row = $featureResult->fetch_assoc()) {
+    if ($row['feature_type'] == 'inclusive') {
+        $inclusive_features[] = $row['feature'];
+    } else {
+        $exclusive_features[] = $row['feature'];
+    }
+}
+
 if (isset($_POST['save'])) {
   $name = $_POST['name'];
   $title = $_POST['title'];
   $subtitle = $_POST['subtitle'];
   $price = $_POST['price'];
   $description = $_POST['description'];
+  $short_description = $_POST['short_description'];
+  $preview_price = $_POST['preview_price'];
+  $is_login = isset($_POST['is_login']) ? 1 : 0;
   $category = $_POST['category'];
   $tags = $_POST['tags'];
   $feature_item = isset($_POST['feature_item']) ? 'Yes' : 'No';
@@ -157,7 +177,12 @@ if (isset($_POST['save'])) {
   $duration_value = isset($_POST['duration_value']) ? intval($_POST['duration_value']) : 0;
   $duration_unit = isset($_POST['duration_unit']) ? $_POST['duration_unit'] : '';
 
-  $duration = $duration_value . ' ' . $duration_unit;
+  if ($duration_value > 0 && in_array($duration_unit, ['days', 'months', 'years', 'day', 'month', 'year'])) {
+    $duration = $duration_value . ' ' . $duration_unit;
+  } else {
+      echo "<script>alert('Invalid duration input.'); window.history.back();</script>";
+      exit;
+  }
   $cat_id = $_POST['cat_id'];
   $module = $_POST['module'];
   $product_image = $product['product_image']; // Keep old image if new one not uploaded
@@ -187,11 +212,45 @@ if (isset($_POST['save'])) {
       }
   }
 
-  $stmt = $conn->prepare("UPDATE products SET name=?, title=?, subtitle=?, price=?, description=?, category=?, tags=?, feature_item=?, product_image=?, duration=?, cat_id=?, created_at=?, template=? WHERE id=?");
-  $stmt->bind_param("sssdssssssissi", $name, $title, $subtitle, $price, $description, $category, $tags, $feature_item, $product_image, $duration, $cat_id, $updated_at, $module, $get_product_id);
-
+  $stmt = $conn->prepare("UPDATE products SET name=?, title=?, subtitle=?, price=?, description=?, category=?, tags=?, feature_item=?, product_image=?, duration=?, cat_id=?, created_at=?, template=?, short_description=?, preview_price=?, is_login=?  WHERE id=?");
+  $stmt->bind_param("sssdssssssisssdii", $name, $title, $subtitle, $price, $description, $category, $tags, $feature_item, $product_image, $duration, $cat_id, $updated_at, $module, $short_description, $preview_price, $is_login, $get_product_id);
 
   if ($stmt->execute()) {
+    // Delete old features
+$deleteFeature = $conn->prepare("DELETE FROM features WHERE package_id = ?");
+$deleteFeature->bind_param("i", $get_product_id);
+$deleteFeature->execute();
+
+// Insert updated inclusive features
+$featureStmt = $conn->prepare("INSERT INTO features (package_id, feature, feature_type, cat_type) VALUES (?, ?, ?, ?)");
+
+// Inclusive
+if (!empty($_POST['inclusive_features'])) {
+    foreach ($_POST['inclusive_features'] as $feature) {
+        $feature = trim($feature);
+        if ($feature !== "") {
+            $type = 'inclusive';
+            $cat_type = 2;
+            $featureStmt->bind_param("issi", $get_product_id, $feature, $type, $cat_type);
+            $featureStmt->execute();
+        }
+    }
+}
+
+// Exclusive
+if (!empty($_POST['exclusive_features'])) {
+    foreach ($_POST['exclusive_features'] as $feature) {
+        $feature = trim($feature);
+        if ($feature !== "") {
+            $type = 'exclusive';
+            $cat_type = 2;
+            $featureStmt->bind_param("issi", $get_product_id, $feature, $type, $cat_type);
+            $featureStmt->execute();
+        }
+    }
+}
+$featureStmt->close();
+
     logActivity(
       $conn,
       $loggedInUserId,
@@ -282,13 +341,35 @@ if (isset($_POST['save'])) {
                                 </div>
                             </div>
                         </div>
-                       
+                        <div class="form-group mb-2">
+                          <label class="form-label">Short Description <span class="text-danger-600">*</span></label>
+                          <div class="has-validation">
+                            <input type="text" 
+                                  class="form-control radius-8" 
+                                  id="short_description" 
+                                  name="short_description"
+                                  value="<?php echo htmlspecialchars($product['short_description']); ?>" 
+                                  required>
+                            <div class="invalid-feedback">
+                                Short Description is required
+                            </div>
+                          </div>
+                        </div>
                         <div class="form-group mb-2">
                             <label class="form-label">Price <span class="text-danger-600">*</span></label>
                             <div class="has-validation">
                               <input type="number" class="form-control radius-8" id="price" name="price" value="<?php echo htmlspecialchars($product['price']); ?>" onkeydown="return event.key !== 'e'" required maxlength="30">
                                 <div class="invalid-feedback">
                                 Price is required
+                                </div>
+                            </div>
+                        </div>
+                        <div class="form-group mb-2">
+                            <label class="form-label">Preview Price <span class="text-danger-600">*</span></label>
+                            <div class="has-validation">
+                                <input type="number" class="form-control radius-8" id="preview_price" name="preview_price" value="<?php echo htmlspecialchars($product['preview_price']); ?>" required onkeydown="return event.key !== 'e'">
+                                <div class="invalid-feedback">
+                                    Preview Price is required
                                 </div>
                             </div>
                         </div>
@@ -300,16 +381,7 @@ if (isset($_POST['save'])) {
                         <div class="form-group mb-2">
                           <label class="form-label">Duration <span class="text-danger-600">*</span></label>
                           <div class="d-flex gap-2">
-                            <input 
-                              type="number" 
-                              name="duration_value" 
-                              id="duration_value"
-                              class="form-control radius-8" 
-                              required 
-                              min="1" 
-                              style="width: 60%;" 
-                              value="<?php echo htmlspecialchars($duration_value); ?>"
-                            >
+                            <input type="number" name="duration_value" id="duration_value" class="form-control radius-8" required min="1" style="width: 60%;" value="<?php echo htmlspecialchars($duration_value); ?>">
                             <select name="duration_unit" id="duration_unit" class="form-control radius-8" required style="width: 40%;">
                               <!-- Options will be populated by JS -->
                             </select>
@@ -338,20 +410,74 @@ if (isset($_POST['save'])) {
                             </div>
                         </div>
                         <div class="form-group mb-2">
+                          <label class="form-label">Features <span class="text-danger-600">*</span></label>   
+                          <div class="row">
+                              <!-- Inclusive -->
+                              <div class="col-6">
+                                  <p class="mb-0">Inclusive</p>
+                                  <div id="inclusive-wrapper">
+                                      <?php if (!empty($inclusive_features)) : ?>
+                                          <?php foreach ($inclusive_features as $index => $feature) : ?>
+                                              <div class="feature-group d-flex gap-2 mb-10">
+                                                  <input type="text" name="inclusive_features[]" class="form-control" value="<?php echo htmlspecialchars($feature); ?>" required>
+                                                  <?php if ($index == 0) : ?>
+                                                      <button type="button" class="btn btn-success add-inclusive">+</button>
+                                                  <?php else : ?>
+                                                      <button type="button" class="btn btn-danger remove-feature">−</button>
+                                                  <?php endif; ?>
+                                              </div>
+                                          <?php endforeach; ?>
+                                      <?php else : ?>
+
+                                          <div class="feature-group d-flex gap-2 mb-10">
+                                              <input type="text" name="inclusive_features[]" class="form-control" required>
+                                              <button type="button" class="btn btn-success add-inclusive">+</button>
+                                          </div>
+                                      <?php endif; ?>
+                                  </div>
+                              </div>
+
+                              <!-- Exclusive -->
+                              <div class="col-6">
+                                  <p class="mb-0">Exclusive</p>
+                                  <div id="exclusive-wrapper">
+                                      <?php if (!empty($exclusive_features)) : ?>
+                                          <?php foreach ($exclusive_features as $index => $feature) : ?>
+                                              <div class="feature-group d-flex gap-2 mb-10">
+                                                  <input type="text" name="exclusive_features[]" class="form-control" value="<?php echo htmlspecialchars($feature); ?>" required>
+                                                  <?php if ($index == 0) : ?>
+                                                      <button type="button" class="btn btn-success add-exclusive">+</button>
+                                                  <?php else : ?>
+                                                      <button type="button" class="btn btn-danger remove-feature">−</button>
+                                                  <?php endif; ?>
+                                              </div>
+                                          <?php endforeach; ?>
+                                      <?php else : ?>
+                                          <div class="feature-group d-flex gap-2 mb-10">
+                                              <input type="text" name="exclusive_features[]" class="form-control" required>
+                                              <button type="button" class="btn btn-success add-exclusive">+</button>
+                                          </div>
+                                      <?php endif; ?>
+                                  </div>
+                              </div>
+                          </div>
+                        </div>
+                        <div class="form-group mb-2">
                             <label class="form-label">Feature item</label>
 
                             <div class="form-check d-flex align-items-center gap-2">
-                                <input 
-                                    type="checkbox"
-                                    id="feature_item"
-                                    name="feature_item"
-                                    value="Yes"
-                                    class="form-check-input"
-                                    <?php echo ($product['feature_item'] === 'Yes') ? 'checked' : ''; ?>
-                                >
-
+                                <input type="checkbox" id="feature_item" name="feature_item" value="Yes" class="form-check-input" <?php echo ($product['feature_item'] === 'Yes') ? 'checked' : ''; ?>>
                                 <label for="feature_item" class="form-check-label mb-0">
                                     Mark as featured product
+                                </label>
+                            </div>
+                        </div>
+                        <div class="form-group mb-2">
+                            <label class="form-label">Is Login?</label>
+                            <div class="form-check d-flex align-items-center">
+                                <input class="form-check-input" type="checkbox" name="is_login" id="isLogin" <?php echo ($product['is_login'] == 1) ? 'checked' : ''; ?>>                              
+                                <label class="form-check-label ms-2 mb-0" for="isLogin">
+                                    Require login to purchase
                                 </label>
                             </div>
                         </div>
@@ -429,6 +555,39 @@ updateDurationOptions();
 
 // Update whenever the value changes
 durationValueInput.addEventListener('input', updateDurationOptions);
+
+// Inclusive
+document.getElementById("inclusive-wrapper").addEventListener("click", function(e) {
+    if (e.target.classList.contains("add-inclusive")) {
+        const div = document.createElement("div");
+        div.className = "feature-group d-flex gap-2 mb-10";
+        div.innerHTML = `
+            <input type="text" name="inclusive_features[]" class="form-control" required>
+            <button type="button" class="btn btn-danger remove-feature">−</button>
+        `;
+        this.appendChild(div);
+    }
+});
+
+// Exclusive
+document.getElementById("exclusive-wrapper").addEventListener("click", function(e) {
+    if (e.target.classList.contains("add-exclusive")) {
+        const div = document.createElement("div");
+        div.className = "feature-group d-flex gap-2 mb-10";
+        div.innerHTML = `
+            <input type="text" name="exclusive_features[]" class="form-control" required>
+            <button type="button" class="btn btn-danger remove-feature">−</button>
+        `;
+        this.appendChild(div);
+    }
+});
+
+// Remove
+document.addEventListener("click", function(e) {
+    if (e.target.classList.contains("remove-feature")) {
+        e.target.parentElement.remove();
+    }
+});
 </script>
 
 <?php include './partials/layouts/layoutBottom.php' ?>

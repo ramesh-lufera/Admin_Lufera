@@ -480,15 +480,8 @@ if ($stmt->execute()) {
         color: #fff;
         font-size: 24px !important;
         font-weight: 700;  
-    }
-
-    .package-wrapper {
-        position: relative;
-        width: 100%;
-        height: 280px;
-        margin-top: 20px;
-        margin-bottom: 20px;
-        overflow: hidden;
+        text-align: center;
+        text-shadow: 0 2px 8px rgba(0, 0, 0, 0.7);
     }
 
     /* ===== LOGIN POPUP ===== */
@@ -598,7 +591,7 @@ if ($stmt->execute()) {
                         <?php echo $package_name; ?>
                     </h2>
                     <p class="breadcrumb-path">
-                        <a href="">Products</a> /
+                        <span class="lufera-color">Products</span> /
                         <?php echo $package_name; ?>
                     </p>
                 </div>
@@ -608,16 +601,18 @@ if ($stmt->execute()) {
             // BASE URL (dynamic)
             $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? "https://" : "http://";
             $host = $_SERVER['HTTP_HOST'];
-            $basePath = dirname($_SERVER['SCRIPT_NAME']);
+            //$basePath = dirname($_SERVER['SCRIPT_NAME']);
+            $basePath = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\');
 
-            $currentBaseUrl = $protocol . $host . $basePath;
+            //$currentBaseUrl = $protocol . $host . $basePath;
+            $currentBaseUrl = rtrim($protocol . $host . $basePath, '/');
 
             $slug = strtolower(trim($package_name));        // lowercase + trim
             $slug = preg_replace('/\s+/', '-', $slug);      // replace spaces with hyphens
             $slug = preg_replace('/[^a-z0-9\-]/', '', $slug); // remove special chars
 
             // FINAL LANDING URL
-            $landingUrl = $currentBaseUrl . "pages/" . $slug . ".php";
+            $landingUrl = $currentBaseUrl . "/pages/" . $slug . ".php";
 
             // FULL PLAN SHORTCODE
             $fullPlanShortcode = "Product-Shortcode-" . $cat_id_sc;
@@ -699,7 +694,7 @@ if ($stmt->execute()) {
             <div class="card image-banner">
                 <img src="./uploads/products/<?php echo $package_img; ?>" alt="Package Image" class="feature-img" style="border-radius:8px">
             </div>
-            <div class="package-wrapper">
+            <div class="package-wrapper position-relative">
                 <img src="../uploads/products/<?php echo $package_img; ?>" alt="Package Image" class="feature-img">
                 <h2 class="package-title">
                     <?php echo $package_name; ?>
@@ -710,13 +705,28 @@ if ($stmt->execute()) {
             <div class="card mt-20">
                 <h6 class="sec-heading">Description</h6>
                 <div class="row">
-                    <div class="col-md-8">
+                    <div class="col-md-12">
                         <p><?php echo $row['description']; ?></p>
                     </div>
                 </div>
             </div> 
             
             <!--Features Section -->
+            <?php
+            $features_sql = "SELECT feature_type, feature FROM features WHERE cat_type = 2 AND package_id = $Id";
+            $features_result = $conn->query($features_sql);
+            
+            $included = [];
+            $excluded = [];
+            
+            while ($frow = $features_result->fetch_assoc()) {
+                if ($frow['feature_type'] == 'inclusive') {
+                    $included[] = $frow['feature'];
+                } else {
+                    $excluded[] = $frow['feature'];
+                }
+            }
+            ?>
             <div class="card mt-20">
                 <h6 class="sec-heading">Features</h6>
                 <div class="features-row">
@@ -775,7 +785,7 @@ if ($stmt->execute()) {
                                 <div class="col-12 text-center">
                                     <p class="text-center" style="font-size:16px; font-weight:600; margin-top:10px;">
                                         <a href="#" onclick="openLoginPopup()" class="btn mt-2">
-                                            🔒 Sign-In to See the Packages
+                                            🔒 Sign-In to See the Products
                                         </a>
                                     </p>
                                 </div>
@@ -799,7 +809,7 @@ if ($stmt->execute()) {
                                                 <img src="../uploads/products/<?php echo $package_img; ?>" class="hover-scale-img__img w-100 object-fit-cover ">
                                             </div>
                                             <div class="py-16 px-24">
-                                                <h6 class="mb-4" style="font-size:16px !important"><?php echo $title; ?></h6>
+                                                <h6 class="mb-4" style="font-size:16px !important"><?php echo $package_name; ?></h6>
                                                 <p class="mb-0 text-sm text-secondary-light">
                                                     <b>Price</b> : <?= $symbol ?> <?= number_format($price); ?> 
                                                 </p>
@@ -844,7 +854,7 @@ if ($stmt->execute()) {
 
             <section class="card mt-20 contact">
                 <h6 class="sec-heading">Need Help?</h6>
-                <button type="button" class="btn btn-default lufera-bg mt-10" onclick="openContactPopup()" style="width:10%">Contact Us</button>   
+                <button type="button" class="btn btn-default lufera-bg mt-10" onclick="openContactPopup()" style="width:120px">Contact Us</button>   
                 
                 <!-- ================= LANDING CONTACT POPUP ================= -->
                         <div id="landingContactModal" class="landing-contact-modal">
@@ -994,8 +1004,6 @@ if ($stmt->execute()) {
     // =====================================================
 
     $rootContent = $productLandingContent;
-
-
                         $rootContent = preg_replace(
                             "/session_start\(\);.*?include 'head\.php';/s",
                             "include './partials/layouts/layoutTop.php';",
@@ -1057,7 +1065,7 @@ if ($stmt->execute()) {
                         );  
                         
                         $rootContent = preg_replace(
-                            '/<div class="package-wrapper">.*?<\/div>/s',
+                            '/<div class="package-wrapper position-relative">.*?<\/div>/s',
                             '',
                             $rootContent
                         );  
@@ -1085,14 +1093,8 @@ if ($stmt->execute()) {
     // =====================================================
 
     $paths = [
-        [
-            'dir' => $_SERVER['DOCUMENT_ROOT'] . '/pages',
-            'content' => $productLandingContent
-        ],
-        [
-            'dir' => $_SERVER['DOCUMENT_ROOT'] . '/',
-            'content' => $rootContent
-        ]
+        ['dir' => realpath(__DIR__) . '/pages', 'content' => $productLandingContent],
+        ['dir' => realpath(__DIR__) . '/', 'content' => $rootContent]
     ];
 
     foreach ($paths as $item) {
@@ -1149,9 +1151,7 @@ if ($stmt->execute()) {
             </script>";
         } else {
             echo "<script>alert('Error: " . $stmt->error . "'); window.history.back();</script>";
-        }
-
-  
+        }  
 }
 ?>
 
