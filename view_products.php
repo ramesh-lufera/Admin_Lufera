@@ -86,9 +86,7 @@
                                     
                                     <a href="javascript:void(0)" 
                                     class="fa fa-edit w-40-px h-40-px bg-warning-focus text-warning-main rounded-circle d-inline-flex align-items-center justify-content-center edit-package-btn"
-                                    data-id="<?= $row['id'] ?>"
-                                    data-cat-id="<?= $row['cat_id'] ?>"
-                                    data-module="<?= $row['template'] ?>">
+                                    data-id="<?= $row['id'] ?>" data-cat-id="<?= $row['cat_id'] ?>" data-module="<?= $row['template'] ?>">
                                     </a>
                                     <a data-id="<?= $row['id'] ?>" class="fa fa-trash-alt delete-product w-40-px h-40-px bg-danger-focus text-danger-main rounded-circle d-inline-flex align-items-center justify-content-center cursor-pointer">
                                     </a>

@@ -250,7 +250,6 @@ $(document).ready(function() {
         });
     });
 
-    // Delete Product with SweetAlert
     $(document).on('click', '.delete-package', function() {
         let button = $(this);
         let id = button.data('id');
@@ -269,15 +268,25 @@ $(document).ready(function() {
                 $.ajax({
                     url: 'package-handler.php',
                     type: 'POST',
+                    dataType: 'json',
                     data: { action: 'delete_package', id: id },
+
                     success: function(response) {
                         if (response.success) {
-                            button.closest('tr').fadeOut();
-                            Swal.fire('Deleted!', 'The package has been deleted.', 'success');
+
+                            Swal.fire({
+                                title: 'Deleted!',
+                                text: 'The package has been deleted.',
+                                icon: 'success'
+                            }).then(() => {
+                                window.location.reload();
+                            });
+
                         } else {
                             Swal.fire('Error!', 'Failed to delete package.', 'error');
                         }
                     },
+
                     error: function() {
                         Swal.fire('Error!', 'Something went wrong.', 'error');
                     }

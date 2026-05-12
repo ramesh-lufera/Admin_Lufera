@@ -119,7 +119,7 @@
                     <?php
                     // Fetch packages
                     \$packages_list = [];
-                    \$result = \$conn->query("SELECT * FROM package");
+                    \$result = \$conn->query("SELECT * FROM package where is_deleted = 0");
                     if (\$result && \$result->num_rows > 0) {
                         while (\$row = \$result->fetch_assoc()) {
                             \$packages_list[] = \$row;
@@ -128,7 +128,7 @@
 
                     // Fetch products
                     \$products_list = [];
-                    \$result = \$conn->query("SELECT id, title FROM products");
+                    \$result = \$conn->query("SELECT id, title FROM products where is_deleted = 0");
                     if (\$result && \$result->num_rows > 0) {
                         while (\$row = \$result->fetch_assoc()) {
                             \$products_list[] = \$row;
@@ -582,7 +582,7 @@
                                 \$host = \$_SERVER['HTTP_HOST'];
 
                                 //\$basePath = dirname(\$_SERVER['SCRIPT_NAME']);
-                                \$basePath = rtrim(dirname(\$_SERVER['SCRIPT_NAME']), '/\\');
+                                \$basePath = rtrim(dirname(\$_SERVER['SCRIPT_NAME']), '');
                     
                                 //\$currentBaseUrl = \$protocol . \$host . \$basePath;
                                 \$currentBaseUrl = rtrim(\$protocol . \$host . \$basePath, '/');
@@ -592,7 +592,7 @@
                                 \$slug = preg_replace('/[^a-z0-9\-]/', '', \$slug); // remove special chars
                     
                                 // FINAL LANDING URL
-                                \$landingUrl = \$currentBaseUrl . "pages/" . \$slug . ".php";
+                                \$landingUrl = \$currentBaseUrl . "/pages/" . \$slug . ".php";
                     
                                 // FULL PLAN SHORTCODE
                                 \$fullPlanShortcode = "Package-Shortcode-" . \$cat_id_sc;
