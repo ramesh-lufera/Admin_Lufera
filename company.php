@@ -29,6 +29,7 @@ error_reporting(E_ALL);
         $logo = $row['logo']; // 👈 Added
         $sign_in_img = $row['sign_in_img'];
         $sign_up_img = $row['sign_up_img'];
+        $maintenance_mode = $row['maintenance_mode'];
     }
 
     // Handle form submission
@@ -43,6 +44,7 @@ error_reporting(E_ALL);
         $zip_code = $_POST['zip_code'];
         $gst_in = $_POST['gst_in'];
         $address = $_POST['address'];
+        $maintenance_mode = isset($_POST['maintenance_mode']) ? '1' : '0';
 
         // 👇 Handle file upload
         $upload_dir = "uploads/company_logo/";
@@ -94,6 +96,7 @@ error_reporting(E_ALL);
                 $sign_up_name = $name;
             }
         }
+
         if ($id > 0) {
 
             // Detect changed fields
@@ -134,7 +137,8 @@ error_reporting(E_ALL);
                 address='$address',
                 logo='$logo_name',
                 sign_in_img='$sign_in_name',
-                sign_up_img='$sign_up_name'
+                sign_up_img='$sign_up_name',
+                maintenance_mode='$maintenance_mode'
                 WHERE id=$id";
         
             if ($conn->query($update_sql) === TRUE) {
@@ -162,10 +166,10 @@ error_reporting(E_ALL);
                 echo "<p style='color:red;'>Error updating record: " . $conn->error . "</p>";
             }
         }
-         else {
+        else {
             // Insert new record
-            $insert_sql = "INSERT INTO company (full_name, email, phone_no, website, country, city, state, zip_code, address, gst_in, logo, sign_in_img, sign_up_img) 
-                VALUES ('$full_name', '$email', '$phone_no', '$website', '$country', '$city', '$state' ,'$zip_code', '$address', '$gst_in', '$logo_name', '$sign_in_name', '$sign_up_name')";
+            $insert_sql = "INSERT INTO company (full_name, email, phone_no, website, country, city, state, zip_code, address, gst_in, logo, sign_in_img, sign_up_img, maintenance_mode) 
+                VALUES ('$full_name', '$email', '$phone_no', '$website', '$country', '$city', '$state' ,'$zip_code', '$address', '$gst_in', '$logo_name', '$sign_in_name', '$sign_up_name', '$maintenance_mode')";
 
             if ($conn->query($insert_sql) === TRUE) {
                 echo "<script>
@@ -302,6 +306,89 @@ error_reporting(E_ALL);
                                     <?php endif; ?>
                                 </div>
                             </div>
+
+                            <div class="col-sm-12">
+
+                                <div class="mb-20">
+
+                                    <label class="form-label fw-semibold text-primary-light text-sm mb-12">
+                                        Maintenance Mode
+                                    </label>
+
+                                    <div class="d-flex align-items-center gap-3">
+
+                                        <label class="custom-switch">
+
+                                            <input 
+                                                type="checkbox"
+                                                name="maintenance_mode"
+                                                id="maintenance_mode"
+                                                value="1"
+                                                <?php echo ($maintenance_mode == '1') ? 'checked' : ''; ?>
+                                            >
+
+                                            <span class="slider"></span>
+
+                                        </label>
+
+                                        <span class="fw-medium">
+                                            Enable/Disable Maintenance Mode
+                                        </span>
+
+                                    </div>
+
+                                </div>
+
+                            </div>
+
+                            <style>
+
+                            .custom-switch {
+                                position: relative;
+                                display: inline-block;
+                                width: 58px;
+                                height: 30px;
+                            }
+
+                            .custom-switch input {
+                                opacity: 0;
+                                width: 0;
+                                height: 0;
+                            }
+
+                            .custom-switch .slider {
+                                position: absolute;
+                                cursor: pointer;
+                                top: 0;
+                                left: 0;
+                                right: 0;
+                                bottom: 0;
+                                background: #d9d9d9;
+                                transition: 0.3s;
+                                border-radius: 50px;
+                            }
+
+                            .custom-switch .slider:before {
+                                position: absolute;
+                                content: "";
+                                height: 24px;
+                                width: 24px;
+                                left: 3px;
+                                top: 3px;
+                                background: white;
+                                transition: 0.3s;
+                                border-radius: 50%;
+                            }
+
+                            .custom-switch input:checked + .slider {
+                                background: #f4b400;
+                            }
+
+                            .custom-switch input:checked + .slider:before {
+                                transform: translateX(28px);
+                            }
+
+                            </style>
 
                             <div class="d-flex align-items-center justify-content-center gap-3 mt-24">
                                 <button type="submit" class="lufera-bg bg-hover-warning-400 text-white text-md px-56 py-11 radius-8 m-auto d-block">
