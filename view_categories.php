@@ -198,6 +198,12 @@
                                 \$cat_id = \$cat_row['cat_id'];
                                 \$cat_url = \$cat_row['cat_url'];
 
+                                // Remove ending slash from current base URL
+                                \$currentBaseUrl = rtrim(\$currentBaseUrl, '/');
+
+                                // Remove starting slash from category URL if exists
+                                \$cat_url = ltrim(\$cat_url, '/');
+
                                 // FINAL LANDING URL
                                 \$landingUrl = \$currentBaseUrl . "/pages/" . \$cat_url;
 
@@ -624,7 +630,7 @@
                                                 <?php echo htmlspecialchars(\$cat_row['cat_name']); ?>
                                             </h2>
                                             <p class="breadcrumb-path">
-                                                <a href="view_categories.php">Categories</a> /
+                                                <a>Categories</a> /
                                                 <?php echo htmlspecialchars(\$cat_row['cat_name']); ?>
                                             </p>
                                         </div>
@@ -778,7 +784,32 @@
                                                                                                 <p class="mb-0 text-sm text-danger fw-semibold mt-2 float-end">Inactive</p>
                                                                                             <?php endif; ?> 
 
-                                                                                            <h5 class="mb-0 lufera-color"><?= htmlspecialchars(\$package['title']) ?></h5>
+                                                                                            <?php
+                                                                                                // Get package_name from database
+                                                                                                \$packageName = \$package['package_name'] ?? '';
+
+                                                                                                // Convert package_name to lowercase
+                                                                                                \$packageSlug = strtolower(trim(\$packageName));
+
+                                                                                                // Replace spaces and special characters with "-"
+                                                                                                \$packageSlug = preg_replace('/[^a-z0-9]+/i', '-', \$packageSlug);
+
+                                                                                                // Remove extra "-" from beginning/end
+                                                                                                \$packageSlug = trim(\$packageSlug, '-');
+
+                                                                                                // Final dynamic URL
+                                                                                                \$packageUrl = \$packageSlug . ".php";
+                                                                                            ?>
+
+                                                                                            <h5 class="mb-0 lufera-color">
+                                                                                                <a href="<?= htmlspecialchars(\$packageUrl) ?>"
+                                                                                                style="text-decoration:none; color:inherit;">
+
+                                                                                                    <?= htmlspecialchars(\$package['title']) ?>
+
+                                                                                                </a>
+                                                                                            </h5>
+
                                                                                             <p class="mb-0 text-secondary-light mb-28"><?= htmlspecialchars(\$package['subtitle']) ?></p>
 
                                                                                             <h4 class="mb-24">
@@ -856,7 +887,6 @@
                                                         height:200px;
                                                     }
                                                 </style>
-
                                                 <?php
                                                     \$products = [];
                                                     \$product_category = \$cat_row['cat_id'] ?? 0;
@@ -879,11 +909,9 @@
                                                     \$r = \$conn->query("SELECT symbol FROM currencies WHERE is_active = 1 LIMIT 1");
                                                     if (\$row = \$r->fetch_assoc()) \$symbol = \$row['symbol'];
                                                 ?>
-
                                                 <div class="card">
+                                                    <h4>Products Pricing Table</h4>
                                                     <div class="card-body">
-                                                        <h4 class="mb-20">Products Pricing Table</h4>
-                        
                                                         <div class="row gy-4">
                                                             <?php if (!empty(\$products)): ?>
                                                                 <?php foreach (\$products as \$row): ?>
@@ -903,7 +931,32 @@
                                                                         </div>
 
                                                                         <div class="py-16 px-24">
-                                                                            <h6 class="mb-4"><?php echo htmlspecialchars(\$row['name']); ?></h6>
+
+                                                                            <?php
+                                                                                // Get product name from database
+                                                                                \$productName = \$row['name'] ?? '';
+
+                                                                                // Convert product name to lowercase
+                                                                                \$productSlug = strtolower(trim(\$productName));
+
+                                                                                // Replace spaces and special characters with "-"
+                                                                                \$productSlug = preg_replace('/[^a-z0-9]+/i', '-', \$productSlug);
+
+                                                                                // Remove extra "-" from beginning/end
+                                                                                \$productSlug = trim(\$productSlug, '-');
+
+                                                                                // Final dynamic URL
+                                                                                \$productUrl = \$productSlug . ".php";
+                                                                            ?>
+
+                                                                            <h6 class="mb-4">
+                                                                                <a href="<?= htmlspecialchars(\$productUrl) ?>"
+                                                                                style="text-decoration:none; color:inherit;">
+
+                                                                                    <?php echo htmlspecialchars(\$row['name']); ?>
+
+                                                                                </a>
+                                                                            </h6>
 
                                                                             <p class="mb-0 text-sm text-secondary-light">
                                                                                 <b>Price</b> : <?= \$symbol ?><?php echo \$row['price']; ?>
@@ -941,7 +994,6 @@
                                                         </div>
                                                     </div>    
                                                 </div>
-
                                             <?php endif; ?>
                                         </div>
                                     </div>
