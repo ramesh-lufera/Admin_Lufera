@@ -193,7 +193,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save'])) {
         }
     }
     $package_id = $_POST['id'];
-    $package_name = $_POST['package_name'];
+    $package_name = trim($_POST['package_name']);
     $title = $_POST['title'];
     $subtitle = $_POST['subtitle'];
     $description = $_POST['description'];
@@ -215,6 +215,48 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save'])) {
     $stmt->bind_param("ssssssisssssiii", $package_image, $package_name, $title, $subtitle, $short_description, $description, $cat_id, $module, $updated_at, $addon_package, $addon_product, $addon_service, $gst_id, $is_login, $package_id);
 
     if ($stmt->execute()) {
+
+// =====================================================
+// RENAME PRODUCT FILES IF PRODUCT NAME CHANGED
+// =====================================================
+
+// OLD PRODUCT NAME
+$oldName = $package['package_name'];
+
+// CREATE OLD SLUG
+$oldSlug = strtolower(trim($oldName));
+$oldSlug = preg_replace('/[^a-z0-9\s-]/', '', $oldSlug);
+$oldSlug = preg_replace('/\s+/', '-', $oldSlug);
+
+// CREATE NEW SLUG
+$newSlug = strtolower(trim($package_name));
+$newSlug = preg_replace('/[^a-z0-9\s-]/', '', $newSlug);
+$newSlug = preg_replace('/\s+/', '-', $newSlug);
+
+// ONLY RENAME IF NAME CHANGED
+if ($oldSlug !== $newSlug) {
+
+    // FILES TO RENAME
+    $renameFiles = [
+        // ROOT FILE
+        [
+            'old' => __DIR__ . '/' . $oldSlug . '.php',
+            'new' => __DIR__ . '/' . $newSlug . '.php'
+        ],
+        // PRODUCT PAGE FILE
+        [
+            'old' => __DIR__ . '/pages/packages/' . $oldSlug . '.php',
+            'new' => __DIR__ . '/pages/packages/' . $newSlug . '.php'
+        ],
+    ];
+
+    // LOOP RENAME
+    foreach ($renameFiles as $file) {
+        if (file_exists($file['old'])) {
+            rename($file['old'], $file['new']);
+        }
+    }
+}
         logActivity(
             $conn, 
             $loggedInUserId, 

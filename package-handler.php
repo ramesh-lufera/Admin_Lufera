@@ -51,7 +51,7 @@ if (isset($_POST['action'])) {
             // Files to delete
             $filesToDelete = [
                 "$baseDir/{$package_name}.php",
-                "$baseDir/pages/{$package_name}.php",
+                "$baseDir/pages/packages/{$package_name}.php",
             ];
     
             // Delete files if exists

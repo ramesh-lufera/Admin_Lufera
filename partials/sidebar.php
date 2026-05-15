@@ -152,8 +152,8 @@
                             \$gst_list[] = \$row;
                         }
                     }
-                    if (isset(\$_POST['save_package'])) {
-                        \$package_name = \$_POST['package_name'];                           
+                    if (isset(\$_POST['save_package'])) {   
+                        \$package_name = trim(\$_POST['package_name']);                       
                         \$title = \$_POST['title'];
                         \$subtitle = \$_POST['subtitle'];
                         \$description = \$_POST['description'];
@@ -223,9 +223,9 @@
                         
                         <?php 
                         session_start();
-                        \$loggedInUserId = isset(\$_SESSION['user_id']); // adjust based on your login system
-                        include '../partials/connection.php'; ?>
-                        <?php include 'head.php'; 
+                        \$loggedInUserId = isset(\$_SESSION['user_id']);
+                        include '../../partials/connection.php'; ?>
+                        <?php include '../head.php'; 
                         ?>
                         <!DOCTYPE html>
                         <html>
@@ -592,7 +592,7 @@
                                 \$slug = preg_replace('/[^a-z0-9\-]/', '', \$slug); // remove special chars
                     
                                 // FINAL LANDING URL
-                                \$landingUrl = \$currentBaseUrl . "/pages/" . \$slug . ".php";
+                                \$landingUrl = \$currentBaseUrl . "/pages/packages/" . \$slug . ".php";
                     
                                 // FULL PLAN SHORTCODE
                                 \$fullPlanShortcode = "Package-Shortcode-" . \$cat_id_sc;
@@ -674,7 +674,7 @@
                                     <img src="./uploads/products/<?php echo \$package_img; ?>" alt="Package Image" class="feature-img" style="border-radius:8px">
                                 </div>
                                 <div class="package-wrapper position-relative">
-                                    <img src="../uploads/products/<?php echo \$package_img; ?>" alt="Package Image" class="feature-img">
+                                    <img src="../../uploads/products/<?php echo \$package_img; ?>" alt="Package Image" class="feature-img">
                                     <h2 class="package-title">
                                         <?php echo \$package_name; ?>
                                     </h2>
@@ -853,14 +853,14 @@
                                                                                             \$isInclude = (\$feat['feature_type'] == 'inclusive');                                
                                                                                         ?>                                
                                                                                             <li class="d-flex align-items-center gap-16 mb-16">                                
-                                                                                                <span class="w-24-px h-24-px p-2 d-flex justify-content-center align-items-center lufera-bg rounded-circle">                                
-                                                                                                    <i class="text-sm fa <?= \$isInclude ? 'fa-check' : 'fa-check' ?> text-white"></i>                                
+                                                                                                <span class="w-24-px h-24-px p-3 d-flex justify-content-center align-items-center lufera-bg rounded-circle">                                
+                                                                                                    <i class="text-sm fa <?= \$isInclude ? 'fa-check' : 'fa-close' ?> text-white"></i>                                
                                                                                                 </span>                                
                                                                                                 <?= htmlspecialchars(\$feat['feature']) ?>                                
                                                                                             </li>                                
                                                                                         <?php endwhile; ?>                                
                                                                                     </ul>                                
-                                                                                    <form action="../cart.php" method="POST">                                
+                                                                                    <form action="../../cart.php" method="POST">                                
                                                                                         <input type="hidden" name="type" value="package">
                                                                                         <input type="hidden" name="id" value="<?= \$package['package_id'] ?>">
                                                                                         <input type="hidden" name="price" value="<?= \$package['price'] ?>">
@@ -1039,28 +1039,27 @@
                                         </div>
                                     </footer>
                             </div>
-                            <?php include 'scripts.php'; ?>
+                            <?php include '../scripts.php'; ?>
                         LANDING;
                         \$landingContent = str_replace('__PACKAGE_ID__', \$package_id, \$landingContent);
                         // Pages version (no change needed)
                         
                         \$rootContent = \$landingContent;
 
-
                         \$rootContent = preg_replace(
-                            "/session_start\(\);.*?include 'head\.php';/s",
-                            "include './partials/layouts/layoutTop.php';",
+                            "/<\?php.*?session_start\(\);.*?include\s+['\"].*?head\.php['\"];.*?\?>/s",
+                            "<?php include './partials/layouts/layoutTop.php'; ?>",
                             \$rootContent
                         );
 
                         \$rootContent = preg_replace(
-                            "/<\?php\s+include\s+'scripts\.php';\s*\?>/",
+                            "/<\?php\s+include\s+'../scripts\.php';\s*\?>/",
                             "<?php include './partials/layouts/layoutBottom.php'; ?>",
                             \$rootContent
                         );
 
                         \$rootContent = str_replace(
-                            "../uploads/products/",
+                            "../../uploads/products/",
                             "./uploads/products/",
                             \$rootContent
                         );
@@ -1072,7 +1071,7 @@
                         );
                         
                         \$rootContent = str_replace(
-                            "../cart.php",
+                            "../../cart.php",
                             "./cart.php",
                             \$rootContent
                         );
@@ -1081,13 +1080,7 @@
                             '<a href="../product-details.php?id=<?php echo \$Id; ?>" class="d-block">',
                             '<a href="product-details.php?id=<?php echo \$Id; ?>" class="d-block">',
                             \$rootContent
-                        );
-                        
-                        \$rootContent = str_replace(
-                            "../uploads/products/<?php echo \$package_img; ?>",
-                            "./uploads/products/<?php echo \$package_img; ?>",
-                            \$rootContent
-                        );
+                        );                       
 
                         \$rootContent = preg_replace(
                             '/<section class="top-header">.*?<\/section>/s',
@@ -1126,6 +1119,12 @@
                         );                          
                         
                         \$landingContent = str_replace(
+                            '<img src="../uploads/company_logo/<?php echo \$logo; ?>" alt="Company Logo">',
+                            '<img src="../../uploads/company_logo/<?php echo \$logo; ?>" alt="Company Logo">',
+                            \$landingContent
+                        );
+                        
+                        \$landingContent = str_replace(
                             '<div class="card-body product pricing">',
                             '<div class="product pricing">',
                             \$landingContent
@@ -1134,7 +1133,7 @@
                         \$pagesContent = \$landingContent;
                         // Create file only if not exists
                         \$paths = [
-                            ['dir' => realpath(__DIR__) . '/pages', 'content' => \$pagesContent],
+                            ['dir' => realpath(__DIR__) . '/pages/packages', 'content' => \$pagesContent],
                             ['dir' => realpath(__DIR__) . '/', 'content' => \$rootContent]
                         ];
 
