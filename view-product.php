@@ -37,6 +37,7 @@
                             ?>
                             
                             <div class="col-lg-4 col-md-4 col-sm-6">
+                            <a href="product-details.php?id=<?php echo $row['id']; ?>" class="d-block lufera-color">
                                 <div class="pb-16 hover-scale-img border radius-16 overflow-hidden <?php echo !$isActive ? 'inactive-product' : ''; ?>">
                                     <div class="max-h-266-px overflow-hidden">
                                         <img src="uploads/products/<?php echo $row['product_image']; ?>" alt="<?php echo htmlspecialchars($row['name']); ?>" class="hover-scale-img__img w-100 object-fit-cover <?php echo !$isActive ? 'grayscale' : ''; ?>">
@@ -51,9 +52,10 @@
                                             <p class="mb-0 text-sm text-secondary-light text-danger fw-semibold mt-2 float-end">Inactive</p>
                                         <?php endif; ?>
                                         <br>
-                                        <a href="product-details.php?id=<?php echo $row['id']; ?>" class="d-block lufera-color">More Info</a>
+                                        <!-- <a href="product-details.php?id=<?php echo $row['id']; ?>" class="d-block lufera-color">More Info</a> -->
                                     </div>
                                 </div>
+                            </a>
                             </div>
                             
                             <?php

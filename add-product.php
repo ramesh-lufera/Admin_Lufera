@@ -112,13 +112,11 @@
 
 <?php
 if (isset($_POST['save_product'])) {
-    $name = $_POST['name'];
+    $name = trim($_POST['name']);
     $title = $_POST['title'];
     $subtitle = $_POST['subtitle'];
     $price = $_POST['price'];
     $description = $_POST['description'];
-    $short_description = $_POST['short_description'];
-    $preview_price = $_POST['preview_price'];
     $category = $_POST['category'];
     $tags = $_POST['tags'];
     $created_at = date("Y-m-d H:i:s");
@@ -169,10 +167,10 @@ if (isset($_POST['save_product'])) {
     }
     // Insert into database
     $stmt = $conn->prepare("INSERT INTO products 
-    (name, title, subtitle, price, description, category, tags, feature_item, product_image, cat_id, duration, template, created_at, is_login, short_description, preview_price) 
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+    (name, title, subtitle, price, description, category, tags, feature_item, product_image, cat_id, duration, template, created_at, is_login) 
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
 
-$stmt->bind_param("sssdsssssisssisd", $name, $title, $subtitle, $price, $description, $category, $tags, $feature_item, $product_image, $cat_id, $duration, $template,  $created_at, $is_login, $short_description, $preview_price);
+$stmt->bind_param("sssdsssssisssi", $name, $title, $subtitle, $price, $description, $category, $tags, $feature_item, $product_image, $cat_id, $duration, $template,  $created_at, $is_login);
 
 if ($stmt->execute()) {
 
@@ -236,9 +234,9 @@ if ($stmt->execute()) {
 
     <?php 
     session_start();
-    $loggedInUserId = isset($_SESSION['user_id']); // adjust based on your login system
-    include '../partials/connection.php'; ?>
-    <?php include 'head.php'; 
+    $loggedInUserId = isset($_SESSION['user_id']);
+    include '../../partials/connection.php'; ?>
+    <?php include '../head.php'; 
     ?>
     <!DOCTYPE html>
     <html>
@@ -534,6 +532,186 @@ if ($stmt->execute()) {
     .swal2-container{
         z-index:9999;
     }
+        /* ===== MODERN PRICING CARD ===== */
+
+    .pricing-wrapper {
+        margin-top: 20px;
+    }
+
+    .pricing-card {
+        background: #1d908d;
+        border-radius: 14px;
+        padding: 30px;
+        color: #fff;
+        position: relative;
+        overflow: hidden;
+    }
+
+    /* TOP */
+    .pricing-top {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 25px;
+        border-bottom: 1px solid rgba(255,255,255,0.15);
+        padding-bottom: 18px;
+    }
+
+    .pricing-top h2 {
+        font-size: 28px !important;
+        font-weight: 600;
+        margin: 0;
+        color: #fff;
+    }
+
+    .pricing-icon {
+        width: 42px;
+        height: 42px;
+        border-radius: 50%;
+        background: #fff;
+        color: #111;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 28px;
+        font-weight: bold;
+    }
+
+    /* BODY */
+    .pricing-body {
+        display: flex;
+        gap: 40px;
+    }
+
+    /* LEFT */
+    .pricing-left {
+        width: 50%;
+        padding-right: 30px;
+        border-right: 1px solid rgba(255,255,255,0.15);
+    }
+
+    .pricing-subtitle {
+        font-size: 18px !important;
+        margin-bottom: 15px;
+        color: #e9f7f7;
+    }
+
+    .pricing-price {
+        display: flex;
+        align-items: flex-start;
+        margin-bottom: 50px;
+    }
+
+    .pricing-price .currency {
+        font-size: 28px;
+        font-weight: 400;
+        margin-top: -20px;
+    }
+
+    .pricing-price .amount {
+        font-size: 50px;
+        font-weight: 700;
+        line-height: 1;
+        margin: 0 6px;
+    }
+
+    .pricing-price .duration {
+        font-size: 16px;
+        margin-top: 20px;
+    }
+
+    /* BUTTON */
+    .choose-plan-btn {
+        background: #fff;
+        color: #111;
+        border: none;
+        border-radius: 50px;
+        padding: 10px 30px;
+        font-size: 16px;
+        font-weight: 600;
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        cursor: pointer;
+        transition: 0.3s ease;
+        justify-content: center;
+        margin-top: 30px;
+        position: absolute;
+        bottom: 30px;
+    }
+
+    .choose-plan-btn span {
+        width: 34px;
+        height: 34px;
+        border-radius: 50%;
+        background: #062c3d;
+        color: #fff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 16px;
+    }
+
+    .choose-plan-btn:hover {
+        transform: translateY(-2px);
+    }
+
+    /* RIGHT */
+    .pricing-right {
+        width: 50%;
+    }
+
+    .pricing-right ul {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+
+    .pricing-right ul li {
+        position: relative;
+        margin-bottom: 20px;
+        font-size: 17px;
+        line-height: 1.5;
+    }
+
+    .pricing-right ul li::before {
+        /* content: "◖◖"; */
+        position: absolute;
+        left: 0;
+        top: 0;
+        color: #fff;
+        font-size: 18px;
+    }
+
+    /* MOBILE */
+    @media (max-width: 768px) {
+
+        .pricing-body {
+            flex-direction: column;
+        }
+
+        .pricing-left,
+        .pricing-right {
+            width: 100%;
+        }
+
+        .pricing-left {
+            border-right: none;
+            border-bottom: 1px solid rgba(255,255,255,0.15);
+            padding-right: 0;
+            padding-bottom: 25px;
+            margin-bottom: 25px;
+        }
+
+        .pricing-price .amount {
+            font-size: 65px;
+        }
+
+        .pricing-price .duration {
+            margin-top: 28px;
+            font-size: 18px;
+        }
+    }
     </style>
     </head>
     <body>
@@ -559,7 +737,6 @@ if ($stmt->execute()) {
             $title = $row['title'];
             $subtitle = $row['subtitle'];
             $price = $row['price'];
-            $preview_price = $row['preview_price'];
             $duration = $row['duration'];
             $cat_id_sc = $row['cat_id'];
         ?>
@@ -602,7 +779,7 @@ if ($stmt->execute()) {
             $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? "https://" : "http://";
             $host = $_SERVER['HTTP_HOST'];
             //$basePath = dirname($_SERVER['SCRIPT_NAME']);
-            $basePath = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\');
+            $basePath = rtrim(dirname($_SERVER['SCRIPT_NAME']), '');
 
             //$currentBaseUrl = $protocol . $host . $basePath;
             $currentBaseUrl = rtrim($protocol . $host . $basePath, '/');
@@ -612,7 +789,7 @@ if ($stmt->execute()) {
             $slug = preg_replace('/[^a-z0-9\-]/', '', $slug); // remove special chars
 
             // FINAL LANDING URL
-            $landingUrl = $currentBaseUrl . "/pages/" . $slug . ".php";
+            $landingUrl = $currentBaseUrl . "/pages/products/" . $slug . ".php";
 
             // FULL PLAN SHORTCODE
             $fullPlanShortcode = "Product-Shortcode-" . $cat_id_sc;
@@ -695,7 +872,7 @@ if ($stmt->execute()) {
                 <img src="./uploads/products/<?php echo $package_img; ?>" alt="Package Image" class="feature-img" style="border-radius:8px">
             </div>
             <div class="package-wrapper position-relative">
-                <img src="../uploads/products/<?php echo $package_img; ?>" alt="Package Image" class="feature-img">
+                <img src="../../uploads/products/<?php echo $package_img; ?>" alt="Package Image" class="feature-img">
                 <h2 class="package-title">
                     <?php echo $package_name; ?>
                 </h2>
@@ -759,71 +936,59 @@ if ($stmt->execute()) {
             
             <!--Price Section -->
             <?php
-                
-                // Currency
-                $result = $conn->query("SELECT symbol FROM currencies WHERE is_active = 1 LIMIT 1");
-                $symbol = "₹";
-                if ($row_symbol = $result->fetch_assoc()) {
-                    $symbol = $row_symbol['symbol'];
-                }
 
-                // Login check
-                $sql_login = "select * from products where id = $Id";
-                $result_login = $conn->query($sql_login);
-                $row_login = $result_login->fetch_assoc();
-                $isLoginRequired = ($row_login['is_login'] == 1);
-                ?>
+            // Currency
+            $result = $conn->query("SELECT symbol FROM currencies WHERE is_active = 1 LIMIT 1");
+            $symbol = "₹";
+            if ($row_symbol = $result->fetch_assoc()) {
+                $symbol = $row_symbol['symbol'];
+            }
 
-                <div class="card">
-                    <div class="card-body product pricing">
-                        <h4 class="mb-20 sec-heading">Products Pricing Table</h4>
-    
-                        <div class="row gy-4">
-                            <?php if ($isLoginRequired && !$loggedInUserId): ?>
-    
-                                <!-- LOGIN REQUIRED -->
-                                <div class="col-12 text-center">
-                                    <p class="text-center" style="font-size:16px; font-weight:600; margin-top:10px;">
-                                        <a href="#" onclick="openLoginPopup()" class="btn mt-2">
-                                            🔒 Sign-In to See the Products
-                                        </a>
-                                    </p>
-                                </div>
-    
-                            <?php elseif (!$isLoginRequired && !$loggedInUserId): ?>
-    
-                                <!-- OPTIONAL LOGIN -->
-                                <div class="col-12 text-center">
-                                    <p class="text-center" style="font-size:16px; font-weight:600; margin-top:10px;">
-                                        <a href="#" onclick="openLoginPopup()" class="btn mt-2">
-                                            🔒 Sign-In to See the Packages
-                                        </a>
-                                    </p>
-                                </div>
-    
-                            <?php else: ?>                                                                                               
-                                <div class="col-lg-4 col-md-4 col-sm-6">
-                                    <a href="../product-details.php?id=<?php echo $Id; ?>" class="d-block">
-                                        <div class="pb-16 hover-scale-img border radius-16 overflow-hidden ">
-                                            <div class="max-h-266-px overflow-hidden">
-                                                <img src="../uploads/products/<?php echo $package_img; ?>" class="hover-scale-img__img w-100 object-fit-cover ">
-                                            </div>
-                                            <div class="py-16 px-24">
-                                                <h6 class="mb-4" style="font-size:16px !important"><?php echo $package_name; ?></h6>
-                                                <p class="mb-0 text-sm text-secondary-light">
-                                                    <b>Price</b> : <?= $symbol ?> <?= number_format($price); ?> 
-                                                </p>
-                                                <p class="mb-0 text-sm text-secondary-light float-start">
-                                                    <b>Validity</b> : <?= htmlspecialchars($duration); ?>                                                           
-                                                </p>
-                                            </div>
-                                        </div>
-                                    </a>
-                                </div>
-                            <?php endif; ?>
+            $sql_login = "select * from products where id = $Id";
+            $result_login = $conn->query($sql_login);
+            $row_login = $result_login->fetch_assoc();
+            $isLoginRequired = ($row_login['is_login'] == 1);
+            ?>
+
+            <div class="pricing-wrapper col-lg-6">
+                <div class="pricing-card">
+                    <!-- TOP -->
+                    <div class="pricing-top">
+                        <h2><?php echo $package_name; ?></h2>
+                    </div>
+                    <!-- BODY -->
+                    <div class="pricing-body">
+                        <!-- LEFT -->
+                        <div class="pricing-left">
+                            <p class="pricing-subtitle">
+                                <?php echo $title; ?>
+                            </p>
+                            <div class="pricing-price">
+                                <span class="currency"><?= $symbol ?></span>
+                                <span class="amount"><?= number_format($price) ?></span>
+                                <span class="duration">/<?= htmlspecialchars($duration); ?></span>
+                            </div>
+                            <button class="choose-plan-btn">
+                                Choose Plan
+                                <span>↗</span>
+                            </button>
+                        </div>
+
+                        <!-- RIGHT -->
+                        <div class="pricing-right">
+                            <ul>
+                                <?php if (!empty($included)): ?>
+                                    <?php foreach ($included as $inc): ?>
+                                        <li>>> <?php echo htmlspecialchars($inc); ?></li>
+                                    <?php endforeach; ?>
+                                <?php else: ?>
+                                    <li>No inclusions available</li>
+                                <?php endif; ?>
+                            </ul>
                         </div>
                     </div>
                 </div>
+            </div>
 
                 <!-- LOGIN MODAL (MOVED OUTSIDE ROW) -->
                 <div id="loginModal" class="login-modal">
@@ -1005,8 +1170,8 @@ if ($stmt->execute()) {
 
     $rootContent = $productLandingContent;
                         $rootContent = preg_replace(
-                            "/session_start\(\);.*?include 'head\.php';/s",
-                            "include './partials/layouts/layoutTop.php';",
+                            "/<\?php.*?session_start\(\);.*?include\s+['\"].*?head\.php['\"];.*?\?>/s",
+                            "<?php include './partials/layouts/layoutTop.php'; ?>",
                             $rootContent
                         );
 
@@ -1016,12 +1181,6 @@ if ($stmt->execute()) {
                             $rootContent
                         );
 
-                        $rootContent = str_replace(
-                            "../uploads/products/",
-                            "./uploads/products/",
-                            $rootContent
-                        );
-                        
                         $rootContent = str_replace(
                             '<div class="content-wrapper" style="margin: 0px 15% 0px 15%;">',
                             '<div class="content-wrapper" style="padding: 10px 15px; margin: 20px 0">',
@@ -1041,8 +1200,8 @@ if ($stmt->execute()) {
                         );
                         
                         $rootContent = str_replace(
-                            "../uploads/products/<?php echo $package_img; ?>",
-                            "./uploads/products/<?php echo $package_img; ?>",
+                            '<img src="../../uploads/products/<?php echo $package_img; ?>" class="hover-scale-img__img w-100 object-fit-cover ">',
+                            '<img src="./uploads/products/<?php echo $package_img; ?>" class="hover-scale-img__img w-100 object-fit-cover ">',
                             $rootContent
                         );
 
@@ -1088,12 +1247,18 @@ if ($stmt->execute()) {
                             $productLandingContent
                         );
 
+                        $productLandingContent = str_replace(
+                            '<img src="../uploads/company_logo/<?php echo $logo; ?>" alt="Company Logo">',
+                            '<img src="../../uploads/company_logo/<?php echo $logo; ?>" alt="Company Logo">',
+                            $productLandingContent
+                        );
+                        
     // =====================================================
     // CREATE BOTH FILES
     // =====================================================
 
     $paths = [
-        ['dir' => realpath(__DIR__) . '/pages', 'content' => $productLandingContent],
+        ['dir' => realpath(__DIR__) . '/pages/products', 'content' => $productLandingContent],
         ['dir' => realpath(__DIR__) . '/', 'content' => $rootContent]
     ];
 
@@ -1215,18 +1380,7 @@ if ($stmt->execute()) {
                                   Description is required
                                 </div>
                             </div>
-                        </div>
-                       
-                        <div class="form-group mb-2">
-                            <label class="form-label">Short Description <span class="text-danger-600">*</span></label>
-                            <div class="has-validation">
-                                <input type="text" class="form-control radius-8" id="short_description" name="short_description" required>
-                                </textarea>
-                                <div class="invalid-feedback">
-                                Short Description is required
-                                </div>
-                            </div>
-                        </div>
+                        </div>                       
 
                         <div class="form-group mb-2">
                             <label class="form-label">Price <span class="text-danger-600">*</span></label>
@@ -1234,16 +1388,6 @@ if ($stmt->execute()) {
                               <input type="number" name="price" class="form-control radius-8" required onkeydown="return event.key !== 'e'" maxlength="10">
                                 <div class="invalid-feedback">
                                 Price is required
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="form-group mb-2">
-                            <label class="form-label">Preview Price <span class="text-danger-600">*</span></label>
-                            <div class="has-validation">
-                              <input type="number" name="preview_price" class="form-control radius-8" required onkeydown="return event.key !== 'e'" maxlength="10">
-                                <div class="invalid-feedback">
-                                Preview Price is required
                                 </div>
                             </div>
                         </div>

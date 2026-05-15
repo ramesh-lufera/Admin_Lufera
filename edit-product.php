@@ -162,13 +162,11 @@ while ($row = $featureResult->fetch_assoc()) {
 }
 
 if (isset($_POST['save'])) {
-  $name = $_POST['name'];
+  $name = trim($_POST['name']);
   $title = $_POST['title'];
   $subtitle = $_POST['subtitle'];
   $price = $_POST['price'];
   $description = $_POST['description'];
-  $short_description = $_POST['short_description'];
-  $preview_price = $_POST['preview_price'];
   $is_login = isset($_POST['is_login']) ? 1 : 0;
   $category = $_POST['category'];
   $tags = $_POST['tags'];
@@ -212,10 +210,53 @@ if (isset($_POST['save'])) {
       }
   }
 
-  $stmt = $conn->prepare("UPDATE products SET name=?, title=?, subtitle=?, price=?, description=?, category=?, tags=?, feature_item=?, product_image=?, duration=?, cat_id=?, created_at=?, template=?, short_description=?, preview_price=?, is_login=?  WHERE id=?");
-  $stmt->bind_param("sssdssssssisssdii", $name, $title, $subtitle, $price, $description, $category, $tags, $feature_item, $product_image, $duration, $cat_id, $updated_at, $module, $short_description, $preview_price, $is_login, $get_product_id);
+  $stmt = $conn->prepare("UPDATE products SET name=?, title=?, subtitle=?, price=?, description=?, category=?, tags=?, feature_item=?, product_image=?, duration=?, cat_id=?, created_at=?, template=?, is_login=?  WHERE id=?");
+  $stmt->bind_param("sssdssssssissii", $name, $title, $subtitle, $price, $description, $category, $tags, $feature_item, $product_image, $duration, $cat_id, $updated_at, $module, $is_login, $get_product_id);
 
   if ($stmt->execute()) {
+
+// =====================================================
+// RENAME PRODUCT FILES IF PRODUCT NAME CHANGED
+// =====================================================
+
+// OLD PRODUCT NAME
+$oldName = $product['name'];
+
+// CREATE OLD SLUG
+$oldSlug = strtolower(trim($oldName));
+$oldSlug = preg_replace('/[^a-z0-9\s-]/', '', $oldSlug);
+$oldSlug = preg_replace('/\s+/', '-', $oldSlug);
+
+// CREATE NEW SLUG
+$newSlug = strtolower(trim($name));
+$newSlug = preg_replace('/[^a-z0-9\s-]/', '', $newSlug);
+$newSlug = preg_replace('/\s+/', '-', $newSlug);
+
+// ONLY RENAME IF NAME CHANGED
+if ($oldSlug !== $newSlug) {
+
+    // FILES TO RENAME
+    $renameFiles = [
+        // ROOT FILE
+        [
+            'old' => __DIR__ . '/' . $oldSlug . '.php',
+            'new' => __DIR__ . '/' . $newSlug . '.php'
+        ],
+        // PRODUCT PAGE FILE
+        [
+            'old' => __DIR__ . '/pages/products/' . $oldSlug . '.php',
+            'new' => __DIR__ . '/pages/products/' . $newSlug . '.php'
+        ],
+    ];
+
+    // LOOP RENAME
+    foreach ($renameFiles as $file) {
+        if (file_exists($file['old'])) {
+            rename($file['old'], $file['new']);
+        }
+    }
+}
+
     // Delete old features
 $deleteFeature = $conn->prepare("DELETE FROM features WHERE package_id = ?");
 $deleteFeature->bind_param("i", $get_product_id);
@@ -342,34 +383,11 @@ $featureStmt->close();
                             </div>
                         </div>
                         <div class="form-group mb-2">
-                          <label class="form-label">Short Description <span class="text-danger-600">*</span></label>
-                          <div class="has-validation">
-                            <input type="text" 
-                                  class="form-control radius-8" 
-                                  id="short_description" 
-                                  name="short_description"
-                                  value="<?php echo htmlspecialchars($product['short_description']); ?>" 
-                                  required>
-                            <div class="invalid-feedback">
-                                Short Description is required
-                            </div>
-                          </div>
-                        </div>
-                        <div class="form-group mb-2">
                             <label class="form-label">Price <span class="text-danger-600">*</span></label>
                             <div class="has-validation">
                               <input type="number" class="form-control radius-8" id="price" name="price" value="<?php echo htmlspecialchars($product['price']); ?>" onkeydown="return event.key !== 'e'" required maxlength="30">
                                 <div class="invalid-feedback">
                                 Price is required
-                                </div>
-                            </div>
-                        </div>
-                        <div class="form-group mb-2">
-                            <label class="form-label">Preview Price <span class="text-danger-600">*</span></label>
-                            <div class="has-validation">
-                                <input type="number" class="form-control radius-8" id="preview_price" name="preview_price" value="<?php echo htmlspecialchars($product['preview_price']); ?>" required onkeydown="return event.key !== 'e'">
-                                <div class="invalid-feedback">
-                                    Preview Price is required
                                 </div>
                             </div>
                         </div>
