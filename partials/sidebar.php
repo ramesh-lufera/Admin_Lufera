@@ -223,9 +223,8 @@
                         
                         <?php 
                         session_start();
-                        \$loggedInUserId = isset(\$_SESSION['user_id']);
-                        include '../../partials/connection.php'; ?>
-                        <?php include '../head.php'; 
+                        include '../../partials/connection.php';
+                        include '../head.php'; 
                         ?>
                         <!DOCTYPE html>
                         <html>
@@ -1046,14 +1045,26 @@
                         
                         \$rootContent = \$landingContent;
 
-                        \$rootContent = preg_replace(
-                            "/<\?php.*?session_start\(\);.*?include\s+['\"].*?head\.php['\"];.*?\?>/s",
-                            "<?php include './partials/layouts/layoutTop.php'; ?>",
+                        \$rootContent = str_replace(
+                            'session_start();',
+                            '',
                             \$rootContent
                         );
 
-                        \$rootContent = preg_replace(
-                            "/<\?php\s+include\s+'../scripts\.php';\s*\?>/",
+                        \$rootContent = str_replace(
+                            "include '../../partials/connection.php';",
+                            "",
+                            \$rootContent
+                        );
+
+                        \$rootContent = str_replace(
+                            "include '../head.php';",
+                            "include './partials/layouts/layoutTop.php';",
+                            \$rootContent
+                        );
+
+                        \$rootContent = str_replace(
+                            "<?php include '../scripts.php'; ?>",
                             "<?php include './partials/layouts/layoutBottom.php'; ?>",
                             \$rootContent
                         );
@@ -1071,7 +1082,7 @@
                         );
                         
                         \$rootContent = str_replace(
-                            "../../cart.php",
+                            "../cart.php",
                             "./cart.php",
                             \$rootContent
                         );
