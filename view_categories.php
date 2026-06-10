@@ -205,7 +205,7 @@
                                 \$cat_url = ltrim(\$cat_url, '/');
 
                                 // FINAL LANDING URL
-                                \$landingUrl = \$currentBaseUrl . "/pages/" . \$cat_url;
+                                \$landingUrl = \$currentBaseUrl . "/pages/categories/" . \$cat_url;
 
                                 // SHORTCODES
                                 \$categoryShortcode = "Category-Shortcode-" . \$cat_id;
@@ -1697,7 +1697,7 @@
                 file_put_contents($file_path, $default_content);
 
                 // ===== CREATE LANDING PAGE FILE =====
-                $landingDir = realpath(__DIR__) . '/pages';
+                $landingDir = realpath(__DIR__) . '/pages/categories';
 
                 // Create folder if not exists
                 if (!is_dir($landingDir)) {
@@ -1710,9 +1710,9 @@
                 // Content
                 $landingContent = <<<PHP
                     <?php
-                        include '../partials/connection.php';
-                        include 'head.php';
-                        include 'scripts.php';
+                        include '../../partials/connection.php';
+                        include '../head.php';
+                        include '../scripts.php';
 
                         session_start();
 
@@ -2319,7 +2319,7 @@
                                 <!-- LEFT: LOGO -->
                                 <div class="header-left">
                                     <?php if (!empty(\$logo)): ?>
-                                        <img src="../uploads/company_logo/<?php echo htmlspecialchars(\$logo); ?>" alt="Company Logo">
+                                        <img src="../../uploads/company_logo/<?php echo htmlspecialchars(\$logo); ?>" alt="Company Logo">
                                     <?php endif; ?>
                                 </div>
 
@@ -2342,7 +2342,7 @@
                             <div class="banner-section">
 
                                 <?php if (!empty(\$cat_row['cat_img'])): ?>
-                                    <img src="../<?php echo htmlspecialchars(\$cat_row['cat_img']); ?>" class="banner-img">
+                                    <img src="../../<?php echo htmlspecialchars(\$cat_row['cat_img']); ?>" class="banner-img">
                                 <?php endif; ?>
 
                                 <div class="banner-overlay">
@@ -2506,7 +2506,23 @@
                                                                                             <p class="mb-0 text-sm text-danger fw-semibold mt-2 float-end">Inactive</p>
                                                                                         <?php endif; ?> 
 
-                                                                                        <h5 class="mb-0 lufera-color"><?= htmlspecialchars(\$package['title']) ?></h5>
+                                                                                        <?php
+                                                                                            // Generate SEO URL from package_name
+                                                                                            \$packageSlug = strtolower(trim(\$package['package_name']));
+                                                                                            \$packageSlug = preg_replace('/[^a-z0-9]+/i', '-', \$packageSlug);
+                                                                                            \$packageSlug = trim(\$packageSlug, '-');
+
+                                                                                            // Final URL
+                                                                                            \$packageUrl = "../../pages/packages/" . \$packageSlug . ".php";
+                                                                                        ?>
+
+                                                                                        <h5 class="mb-0 lufera-color">
+                                                                                            <a href="<?= htmlspecialchars(\$packageUrl) ?>" 
+                                                                                            style="text-decoration:none; color:inherit;">
+                                                                                                <?= htmlspecialchars(\$package['title']) ?>
+                                                                                            </a>
+                                                                                        </h5>
+
                                                                                         <p class="mb-0 text-secondary-light mb-28"><?= htmlspecialchars(\$package['subtitle']) ?></p>
 
                                                                                         <h4 class="mb-24">
@@ -2538,7 +2554,7 @@
                                                                                             <?php endwhile; endif; ?>
                                                                                         </ul>
 
-                                                                                        <form action="../cart.php" method="POST">
+                                                                                        <form action="../../cart.php" method="POST">
                                                                                             <input type="hidden" name="type" value="package">
                                                                                             <input type="hidden" name="id" value="<?= htmlspecialchars(\$package['package_id']) ?>">
                                                                                             <input type="hidden" name="plan_name" value="<?= htmlspecialchars(\$package['package_name']) ?>">
@@ -2634,18 +2650,48 @@
                                                         <div class="col-lg-4 col-md-4 col-sm-6">
 
                                                             <?php if (\$isActive): ?>
-                                                                <a href="../product-details.php?id=<?php echo \$row['id']; ?>" class="d-block">
+                                                                <a href="../../product-details.php?id=<?php echo \$row['id']; ?>" class="d-block">
                                                             <?php endif; ?>
 
                                                             <div class="pb-16 hover-scale-img border radius-16 overflow-hidden <?php echo !\$isActive ? 'inactive-product' : ''; ?>">
 
                                                                 <div class="max-h-266-px overflow-hidden">
-                                                                    <img src="../uploads/products/<?php echo \$row['product_image']; ?>"
+                                                                    <img src="../../uploads/products/<?php echo \$row['product_image']; ?>"
                                                                         class="hover-scale-img__img w-100 object-fit-cover <?php echo !\$isActive ? 'grayscale' : ''; ?>">
                                                                 </div>
 
                                                                 <div class="py-16 px-24">
-                                                                    <h6 class="mb-4"><?php echo htmlspecialchars(\$row['name']); ?></h6>
+
+                                                                    <?php
+                                                                        // ==============================
+                                                                        // GENERATE PRODUCT SEO URL
+                                                                        // ==============================
+
+                                                                        // Get product name from database
+                                                                        \$productName = \$row['name'];
+
+                                                                        // Convert to lowercase
+                                                                        \$productSlug = strtolower(\$productName);
+
+                                                                        // Replace spaces and special characters with hyphen
+                                                                        \$productSlug = preg_replace('/[^a-z0-9]+/i', '-', \$productSlug);
+
+                                                                        // Remove extra hyphens from start/end
+                                                                        \$productSlug = trim(\$productSlug, '-');
+
+                                                                        // Final product URL
+                                                                        \$productUrl = "../../pages/products/" . \$productSlug . ".php";
+                                                                    ?>
+
+                                                                    <!-- PRODUCT NAME WITH DYNAMIC URL -->
+                                                                    <h6 class="mb-4">
+                                                                        <a href="<?php echo htmlspecialchars(\$productUrl); ?>"
+                                                                        style="text-decoration:none; color:inherit;">
+
+                                                                            <?php echo htmlspecialchars(\$row['name']); ?>
+
+                                                                        </a>
+                                                                    </h6>
 
                                                                     <p class="mb-0 text-sm text-secondary-light">
                                                                         <b>Price</b> : <?= \$symbol ?><?php echo \$row['price']; ?>
@@ -2737,7 +2783,7 @@
 
                                 // Load login page inside popup
                                 document.getElementById("loginFrame").src =
-                                    "../sign-in.php?redirect=<?php echo urlencode(\$_SERVER['REQUEST_URI']); ?>";
+                                    "../../sign-in.php?redirect=<?php echo urlencode(\$_SERVER['REQUEST_URI']); ?>";
                             }
 
                             function closeLoginPopup() {
@@ -3563,7 +3609,7 @@
                 "$baseDir/add-{$catUrlFinal}.php",
                 "$baseDir/view-{$catUrlFinal}.php",
                 // "$baseDir/{$catUrlFinal}-wizard.php"
-                "$baseDir/pages/{$catUrlFinal}.php",
+                "$baseDir/pages/categories/{$catUrlFinal}.php",
             ];
 
             foreach ($filesToDelete as $file) {
