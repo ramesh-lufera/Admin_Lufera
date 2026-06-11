@@ -580,14 +580,12 @@ if ($stmt->execute()) {
     /* BODY */
     .pricing-body {
         display: flex;
-        gap: 40px;
     }
 
     /* LEFT */
     .pricing-left {
+        height: 200px;
         width: 50%;
-        padding-right: 30px;
-        border-right: 1px solid rgba(255,255,255,0.15);
     }
 
     .pricing-subtitle {
@@ -609,7 +607,7 @@ if ($stmt->execute()) {
     }
 
     .pricing-price .amount {
-        font-size: 50px;
+        font-size: 40px;
         font-weight: 700;
         line-height: 1;
         margin: 0 6px;
@@ -617,7 +615,7 @@ if ($stmt->execute()) {
 
     .pricing-price .duration {
         font-size: 16px;
-        margin-top: 20px;
+        margin-top: 12px;
     }
 
     /* BUTTON */
@@ -659,6 +657,8 @@ if ($stmt->execute()) {
     /* RIGHT */
     .pricing-right {
         width: 50%;
+        border-left: 1px solid rgba(255, 255, 255, 0.15);
+        padding-left: 20px;
     }
 
     .pricing-right ul {
@@ -738,6 +738,7 @@ if ($stmt->execute()) {
             $subtitle = $row['subtitle'];
             $price = $row['price'];
             $duration = $row['duration'];
+            $gst = $gst;
             $cat_id_sc = $row['cat_id'];
         ?>
         
@@ -968,10 +969,19 @@ if ($stmt->execute()) {
                                 <span class="amount"><?= number_format($price) ?></span>
                                 <span class="duration">/<?= htmlspecialchars($duration); ?></span>
                             </div>
-                            <button class="choose-plan-btn">
-                                Choose Plan
-                                <span>↗</span>
-                            </button>
+                            <form action="cart.php" method="POST">
+                              <input type="hidden" name="type" value="product">  
+                              <input type="hidden" name="id" value="<?= htmlspecialchars($id) ?>">
+                              <input type="hidden" name="plan_name" value="<?= htmlspecialchars($package_name) ?>">
+                              <input type="hidden" name="title" value="<?= htmlspecialchars($title) ?>">
+                              <input type="hidden" name="subtitle" value="<?= htmlspecialchars($subtitle) ?>">
+                              <input type="hidden" name="price" value="<?= htmlspecialchars($price) ?>">
+                              <input type="hidden" name="duration" value="<?= htmlspecialchars($duration) ?>">
+                              <input type="hidden" name="created_on" value="<?= date("Y-m-d") ?>">
+                              <input type="hidden" name="gst" value="<?= htmlspecialchars($gst) ?>">
+            
+                              <button type="submit" class="choose-plan-btn">Choose Plan<span>↗</span></button>
+                            </form>
                         </div>
 
                         <!-- RIGHT -->
