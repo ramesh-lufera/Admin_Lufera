@@ -1,16 +1,16 @@
 <?php include './partials/layouts/layoutTop.php';
-    // require_once __DIR__ . '/vendor/autoload.php';
-    // require_once __DIR__ . '/vendor_pdf/autoload.php';
-    // use Dotenv\Dotenv;
-    // use PHPMailer\PHPMailer\PHPMailer;
-    // use PHPMailer\PHPMailer\Exception;
-    // use Dompdf\Dompdf;
-    // use Dompdf\Options;
-    // $dotenv = Dotenv::createImmutable(__DIR__);
-    // $dotenv->load();
-    ini_set('display_errors', 1);
-ini_set('display_startup_errors', 1);
-error_reporting(E_ALL);
+    require_once __DIR__ . '/vendor/autoload.php';
+    require_once __DIR__ . '/vendor_pdf/autoload.php';
+    use Dotenv\Dotenv;
+    use PHPMailer\PHPMailer\PHPMailer;
+    use PHPMailer\PHPMailer\Exception;
+    use Dompdf\Dompdf;
+    use Dompdf\Options;
+    $dotenv = Dotenv::createImmutable(__DIR__);
+    $dotenv->load();
+    // ini_set('display_errors', 1);
+    // ini_set('display_startup_errors', 1);
+    // error_reporting(E_ALL);
 ?>
 <?php
 if(isset($_POST['save_invoice']))
@@ -165,6 +165,121 @@ function numberToWords($num) {
 ?>
 
 <style>
+    /* Mobile & Tablet */
+    @media (max-width: 768px) {
+
+    /* Header section */
+    #invoice .d-flex.justify-content-between,
+    #invoice .d-flex.align-items-start.justify-content-between {
+        flex-direction: column !important;
+        gap: 15px !important;
+    }
+
+    .invoice-logo {
+        max-width: 180px;
+        width: 100%;
+        height: auto;
+    }
+
+    /* Company details */
+    .text-end {
+        text-align: left !important;
+    }
+
+    /* Bill to + invoice details */
+    .invoice_table {
+        width: 100% !important;
+        margin-top: 15px;
+        font-size: 14px !important;
+    }
+
+    .invoice_table td {
+        display: block;
+        width: 100%;
+        padding: 5px 0 !important;
+    }
+
+    .invoice_table tr {
+        display: block;
+        margin-bottom: 10px;
+        border-bottom: 1px solid #eee;
+    }
+
+    /* User selection */
+    #bill_to_user {
+        width: 100%;
+    }
+
+    /* Table */
+    .table-responsive {
+        overflow-x: auto;
+    }
+
+    .table {
+        min-width: 750px;
+    }
+
+    /* Remove fixed width */
+    th.inv-table {
+        width: auto !important;
+    }
+
+    /* Total section */
+    .total-table {
+        width: 100%;
+    }
+
+    .total-table td {
+        padding: 8px !important;
+    }
+
+    /* Buttons */
+    #addItem,
+    .btn-success {
+        width: 100%;
+        margin-bottom: 10px;
+    }
+
+    /* Modal form */
+    .modal-body .row > div {
+        width: 100%;
+    }
+
+    /* Footer */
+    .pdf-footer {
+        text-align: center;
+        font-size: 12px;
+    }
+    }
+
+    /* Small Mobile */
+    @media (max-width: 576px) {
+
+    .p-20 {
+        padding: 15px !important;
+    }
+
+    .px-20 {
+        padding-left: 10px !important;
+        padding-right: 10px !important;
+    }
+
+    .divider {
+        font-size: 18px !important;
+    }
+
+    .invoice_table {
+        font-size: 13px !important;
+    }
+
+    h6.text-xl {
+        font-size: 16px !important;
+    }
+
+    .text-sm {
+        font-size: 12px !important;
+    }
+    }
     /* Hide everything by default when printing */
 @media print {
     body * {
@@ -221,7 +336,7 @@ function numberToWords($num) {
 }
 
  .col-sec{
-        width:100   %;
+        width:100%;
         flex: 0 0 auto;
     }
     .invoice_table {
@@ -401,7 +516,7 @@ function numberToWords($num) {
                     <div class="col-sec">
                         <div class="shadow-4 border radius-8">
                             <div class="p-20">
-                                <div class="d-flex justify-content-between gap-3 mb-3">
+                                <div class="d-flex flex-column flex-md-row justify-content-between gap-3 mb-3">
                                     <div class="align-content-end">
                                         <img src="uploads/company_logo/<?php echo $logo; ?>" alt="site logo" class="invoice-logo">
                                     </div>
@@ -430,7 +545,7 @@ function numberToWords($num) {
                                         ORDER BY business_name ASC
                                     ");
                                 ?>
-                                <div class="d-flex align-items-start justify-content-between gap-3 mt-3">
+                                <div class="d-flex flex-column flex-md-row align-items-start justify-content-between gap-3 mt-3">
                                     <!-- <div>
                                             <p class="text-md mb-0 bill_to">Bill To:</p>
                                         <h6 class="text-md mb-0 bill_to"><?php echo $rows['business_name']; ?></h6>
