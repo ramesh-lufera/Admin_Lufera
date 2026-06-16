@@ -88,6 +88,165 @@ function numberToWords($num) {
 ?>
 
 <style>
+    /* =========================
+   RESPONSIVE DESIGN
+    ========================= */
+
+    @media (max-width: 991px){
+
+    .col-sec{
+        width:100% !important;
+        flex:0 0 100% !important;
+    }
+
+    .invoice-logo{
+        max-width:180px;
+        width:100%;
+        height:auto;
+    }
+
+    #invoice .d-flex.justify-content-between{
+        flex-direction:column;
+        align-items:flex-start !important;
+    }
+
+    #invoice .d-flex.align-items-start.justify-content-between{
+        flex-direction:column;
+    }
+
+    .text-end{
+        text-align:left !important;
+    }
+
+    .invoice_table{
+        width:100% !important;
+        margin-top:15px;
+    }
+
+    .invoice_table td{
+        padding:6px !important;
+    }
+
+    .table-responsive{
+        overflow-x:auto;
+        -webkit-overflow-scrolling:touch;
+    }
+
+    .table{
+        min-width:700px;
+    }
+
+    .total-table{
+        width:100% !important;
+    }
+
+    .total-table td{
+        white-space:nowrap;
+    }
+    }
+
+    /* Mobile */
+    @media (max-width:768px){
+
+    .card-body{
+        padding:15px !important;
+    }
+
+    .p-20{
+        padding:15px !important;
+    }
+
+    .px-20{
+        padding-left:10px !important;
+        padding-right:10px !important;
+    }
+
+    .py-28{
+        padding-top:15px !important;
+        padding-bottom:15px !important;
+    }
+
+    .divider{
+        font-size:18px !important;
+    }
+
+    .invoice-logo{
+        max-width:150px;
+    }
+
+    .bill_to{
+        font-size:13px !important;
+    }
+
+    .invoice_table{
+        font-size:13px !important;
+    }
+
+    .invoice_table tr{
+        border-bottom:1px solid #eee;
+    }
+
+    .invoice_table td:first-child{
+        font-weight:600;
+        width:120px;
+    }
+
+    .card-header .d-flex{
+        justify-content:center !important;
+    }
+
+    .card-header .btn{
+        width:100%;
+        justify-content:center;
+    }
+
+    .modal-dialog{
+        margin:10px;
+    }
+
+    .pdf-footer{
+        text-align:center;
+    }
+    }
+
+    /* Extra Small Devices */
+    @media (max-width:576px){
+
+    .invoice-logo{
+        max-width:130px;
+    }
+
+    h6.text-xl{
+        font-size:16px !important;
+    }
+
+    .text-sm{
+        font-size:12px !important;
+    }
+
+    .invoice_table{
+        display:block;
+        width:100%;
+    }
+
+    .invoice_table tbody,
+    .invoice_table tr,
+    .invoice_table td{
+        display:block;
+        width:100%;
+    }
+
+    .invoice_table tr{
+        margin-bottom:10px;
+        padding-bottom:10px;
+    }
+
+    .invoice_table td{
+        text-align:left !important;
+        border:none;
+        padding:3px 0 !important;
+    }
+    }
     /* Hide everything by default when printing */
 @media print {
     body * {
@@ -143,9 +302,10 @@ function numberToWords($num) {
     }
 }
 
- .col-sec{
-        width:66.66666667%;
-        flex: 0 0 auto;
+    .col-sec{
+        width:100%;
+        max-width:1000px;
+        margin:auto;
     }
     .invoice_table {
         font-size:16px !important;
@@ -1371,7 +1531,7 @@ if (isset($_POST['send_invoice'])) {
                 <div class="col-sec">
                     <div class="shadow-4 border radius-8">
                         <div class="p-20">
-                            <div class="d-flex justify-content-between gap-3 mb-3">
+                            <div class="d-flex flex-column flex-md-row justify-content-between gap-3 mb-3">
                                 <div class="align-content-end">
                                     <img src="uploads/company_logo/<?php echo $logo; ?>" alt="site logo" class="invoice-logo">
                                 </div>
@@ -1398,7 +1558,7 @@ if (isset($_POST['send_invoice'])) {
                                 <?php } ?>
                                 
                             </div>
-                            <div class="d-flex align-items-start justify-content-between gap-3 mt-3">
+                            <div class="d-flex flex-column flex-md-row align-items-start justify-content-between gap-3 mt-3">
                                 <div>
                                     <p class="text-md mb-0 bill_to">Bill To:</p>
                                     <h6 class="text-md mb-0 bill_to"><?php echo $rows['business_name']; ?></h6>
