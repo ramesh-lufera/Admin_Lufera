@@ -51,6 +51,19 @@
 
     $result = $conn->query($invoice);
     $row = $result->fetch_assoc();
+    $customItems = [];
+    $customSubtotal = 0;
+
+    if ($type === 'custom' && !empty($row['custom_invoice'])) {
+
+        $customItems = json_decode($row['custom_invoice'], true);
+
+        if (is_array($customItems)) {
+            foreach ($customItems as $item) {
+                $customSubtotal += floatval($item['rate']);
+            }
+        }
+    }
     $user_id = $row['user_id'];
     $id = $row['id'];
 
@@ -287,6 +300,7 @@
 
     <div class="mb-40">
         <div class="row gy-4">
+        <?php if($type !== 'custom'){ ?>
             <div class="col-xxl-6 col-sm-6">
                 <div class="card h-100 radius-12">
                     <div class="card-header border-none py-10" style="box-shadow: 0px 3px 3px 0px lightgray">
@@ -365,47 +379,168 @@
                     </div>
                 </div>
             </div>
-            <div class="col-xxl-6 col-sm-6">
+            <?php } ?>
+            <div class="<?= ($type === 'custom') ? 'col-xxl-12 col-sm-12' : 'col-xxl-6 col-sm-6' ?>">
                 <div class="card h-100 radius-12">
                     <div class="card-header py-10 border-none d-flex justify-content-between" style="box-shadow: 0px 3px 3px 0px lightgray">
                         <div class="">
                             <h6 class="mb-0">Sub Total</h6>
                         </div>
                         <div class="align-content-center">
-                            <h6 class="mb-0"><?= htmlspecialchars($symbol) ?><?= number_format(floatval($row['price']) + floatval($row['addon_price']), 2) ?></h6>
+                        <?php
+                        if($type === 'custom'){
+                            echo htmlspecialchars($symbol) . number_format($customSubtotal, 2);
+                        }else{
+                            echo htmlspecialchars($symbol) . number_format(
+                                floatval($row['price']) + floatval($row['addon_price']),
+                                2
+                            );
+                        }
+                        ?>
                         </div>
                         
                     </div>
                     <div class="card-body p-16">
                         <table class="w-100 plan-details-table2 mb-0">
                             <tbody>
-                            <tr>
-                                <td onclick="toggleBreakdowns()" style="cursor:pointer; user-select:none;">
-                                    <?php echo htmlspecialchars($row['plan_name']); ?>
-                                    &nbsp;
-                                    <span id="breakdown-arrow"><i class="fas fa-chevron-down"></i></span>
-                                </td>
-                                <td class="text-end">
-                                    <?= htmlspecialchars($symbol) ?><?= number_format(floatval($row['price']) + floatval($row['gst']), 2) ?>
-                                </td>
-                            </tr>
+                            <?php if($type === 'custom'){ ?>
+
+                                <?php if($type === 'custom'){ ?>
+
+                                    <?php foreach($customItems as $index => $item){ ?>
+
+                                        <tr class="<?= $index > 0 ? 'border-top' : '' ?>">
+                                            <td
+                                                onclick="toggleBreakdown('custom-<?= $index ?>')"
+                                                style="cursor:pointer; user-select:none;"
+                                            >
+                                                <?= htmlspecialchars($item['item']) ?>
+
+                                                <span id="arrow-custom-<?= $index ?>">
+                                                    <i class="fas fa-chevron-down"></i>
+                                                </span>
+                                            </td>
+
+                                            <td class="text-end">
+                                                <?= htmlspecialchars($symbol) ?>
+                                                <?= number_format($item['amount'], 2) ?>
+                                            </td>
+                                        </tr>
+
+                                        <tbody id="custom-<?= $index ?>" style="display:none;">
+                                            <tr>
+                                                <td class="add-ons">
+                                                    Base Price
+                                                </td>
+
+                                                <td class="text-end add-ons">
+                                                    <?= htmlspecialchars($symbol) ?>
+                                                    <?= number_format($item['rate'], 2) ?>
+                                                </td>
+                                            </tr>
+
+                                            <tr>
+                                                <td class="add-ons">
+                                                    Tax (<?= $item['tax'] ?>%)
+                                                </td>
+
+                                                <td class="text-end add-ons">
+                                                    <?= htmlspecialchars($symbol) ?>
+                                                    <?= number_format($item['tax_amount'], 2) ?>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+
+                                    <?php } ?>
+
+                                    <tr class="border-top">
+                                        <td class="fw-bold">
+                                            Total Amount
+                                        </td>
+
+                                        <td class="text-end fw-bold">
+                                            <?= htmlspecialchars($symbol) ?>
+                                            <?= number_format($row['amount'], 2) ?>
+                                        </td>
+                                    </tr>
+
+                                    <?php } ?>
+
+                <?php } else { ?>
+
+                <tr>
+                    <td onclick="toggleBreakdowns()"
+                        style="cursor:pointer; user-select:none;">
+
+                        <?= htmlspecialchars($row['plan_name']); ?>
+
+                        <span id="breakdown-arrow">
+                            <i class="fas fa-chevron-down"></i>
+                        </span>
+                    </td>
+
+                    <td class="text-end">
+                        <?= htmlspecialchars($symbol) ?>
+                        <?= number_format(floatval($row['price']) + floatval($row['gst']), 2) ?>
+                    </td>
+                </tr>
+
+                <?php } ?>
 
                             <!-- Hidden Breakdown (only Base Price + Tax) -->
                             <tbody id="breakdown-rows" style="display:none;">
-                                <tr>
-                                    <td class="add-ons">Base Price</td>
-                                    <td class="text-end add-ons" >
-                                        <?= htmlspecialchars($symbol) ?><?= number_format($row['price'], 2) ?>
-                                    </td>
-                                </tr>
 
-                                <tr>
-                                    <td class="add-ons">Tax</td>
-                                    <td class="text-end add-ons" >
-                                        <?= htmlspecialchars($symbol) ?><?= number_format($row['gst'], 2) ?>
-                                    </td>
-                                </tr>
-                            </tbody>
+                                <?php if($type === 'custom'){ ?>
+
+                                    <?php foreach($customItems as $item){ ?>
+
+                                        <tr>
+                                            <td class="add-ons">
+                                                <?= htmlspecialchars($item['item']) ?>
+                                                <br>
+                                                <small>Base Price</small>
+                                            </td>
+
+                                            <td class="text-end add-ons">
+                                                <?= htmlspecialchars($symbol) ?>
+                                                <?= number_format($item['rate'], 2) ?>
+                                            </td>
+                                        </tr>
+
+                                        <tr>
+                                            <td class="add-ons">
+                                                Tax (<?= $item['tax'] ?>%)
+                                            </td>
+
+                                            <td class="text-end add-ons">
+                                                <?= htmlspecialchars($symbol) ?>
+                                                <?= number_format($item['tax_amount'], 2) ?>
+                                            </td>
+                                        </tr>
+
+                                    <?php } ?>
+
+                                <?php } else { ?>
+
+                                    <tr>
+                                        <td class="add-ons">Base Price</td>
+                                        <td class="text-end add-ons">
+                                            <?= htmlspecialchars($symbol) ?>
+                                            <?= number_format($row['price'], 2) ?>
+                                        </td>
+                                    </tr>
+
+                                    <tr>
+                                        <td class="add-ons">Tax</td>
+                                        <td class="text-end add-ons">
+                                            <?= htmlspecialchars($symbol) ?>
+                                            <?= number_format($row['gst'], 2) ?>
+                                        </td>
+                                    </tr>
+
+                                <?php } ?>
+
+                                </tbody>
 
                             <?php
                             $addon_ids = !empty($row['addon_service']) ? array_map('intval', explode(',', $row['addon_service'])) : [];
