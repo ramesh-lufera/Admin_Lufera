@@ -554,10 +554,12 @@
 
 <body>
     <div class="dashboard-main-body">
-        <div class="d-flex flex-wrap align-items-center gap-3 mb-24">
+        <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-24">
             <a class="cursor-pointer fw-bold" onclick="history.back()"><span class="fa fa-arrow-left"></span>&nbsp; Back</a> 
-            <h6 class="fw-semibold mb-0 m-auto">Invoice</h6>
-            <a class="cursor-pointer fw-bold visibility-hidden" onclick="history.back()"><span class="fa fa-arrow-left"></span>&nbsp; Back</a> 
+            <h6 class="fw-semibold mb-0">Invoice</h6>
+            <a href="add-invoice.php" class="btn lufera-bg justify-content-center text-white text-sm btn-sm px-12 py-12 radius-8 d-flex align-items-center gap-2">
+                Add Invoice
+            </a>
         </div>
         <div class="card">
             <div class="card-body">
@@ -588,7 +590,15 @@
                                     <?php echo $row['first_name']; ?> <?php echo $row['last_name']; ?>
                                 </div>
                             </td>
-                            <td><?php echo htmlspecialchars($row['plan_name']); ?></td>
+                            <td>
+                                <?php if($row['plan_name'] != NULL && $row['plan_name'] != ''){
+                                    echo $row['plan_name']; 
+                                }
+                                else{
+                                    echo "Custom Invoice";
+                                }
+                                ?>
+                            </td>
                             <td class="text-center"><?php echo $row['invoice_id']; ?></td>
                             <td class="text-center"><?= date('d M Y', strtotime($row['created_on'])) ?></td>
                             <td class="text-center" id="currency-symbol-display"><?= htmlspecialchars($symbol) ?> <?= number_format($row['amount'], 2) ?></td>
@@ -602,21 +612,26 @@
                                 <?php } ?>
                             </td>
                             <td class="text-center">
-                                <?php
-                                    $invoice_id = $row['invoice_id'];
-                                    $expiredAt = isset($row['expired_at']) ? $row['expired_at'] : null;
-                                    $todayDate = date('Y-m-d');
+                            <?php
+                            $invoice_id = $row['invoice_id'];
+                            $checkOrder = mysqli_query(
+                                $conn,
+                                "SELECT id, type FROM orders WHERE invoice_id = '$invoice_id' LIMIT 1"
+                            );
 
-                                    $checkOrder = mysqli_query($conn, "SELECT id FROM orders WHERE invoice_id = '$invoice_id' LIMIT 1");
+                            if (mysqli_num_rows($checkOrder) == 0) {
+                                // No order found
+                                $type = 'renewal';
+                            } else {
+                                $orderfetch = mysqli_fetch_assoc($checkOrder);
 
-                                    if (mysqli_num_rows($checkOrder) > 0) {
-                                        // invoice_id exists in orders → normal
-                                        $type = 'normal';
-                                    } else {
-                                        // invoice_id not found → renewal
-                                        $type = 'renewal';
-                                    }
-                                ?>
+                                if (($orderfetch['type'] ?? '') === 'custom') {
+                                    $type = 'custom';
+                                } else {
+                                    $type = 'normal';
+                                }
+                            }
+                            ?>
                                 <!-- <a href="order-summary.php?id=<?php echo $row['invoice_id']; ?>" class="fa fa-eye view-user-btn bg-info-focus text-info-600 bg-hover-info-200 fw-medium w-32-px h-32-px d-inline-flex justify-content-center align-items-center rounded-circle"> -->
                                 <a href="order-summary.php?id=<?php echo $invoice_id; ?>&type=<?php echo $type; ?>" class="fa fa-eye view-user-btn bg-info-focus text-info-600 bg-hover-info-200 fw-medium w-32-px h-32-px d-inline-flex justify-content-center align-items-center rounded-circle">
                                 </a>

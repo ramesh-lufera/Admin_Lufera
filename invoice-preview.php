@@ -739,20 +739,78 @@ if (isset($_POST['send_invoice'])) {
                                     ?>
                                     
                                     <!-- Main plan / package / product row -->
-                                    <tr>
-                                        <td class="inv-table text-center"><?= $serial_no++ ?></td>
-                                        <td class="inv-table">
-                                            <?php 
-                                                echo htmlspecialchars($row['plan_name']);
-                                                if ($type === 'renewal') {
-                                                    echo ' <small>(Renewal)</small>';
+                                    <?php
+                                        if ($type == 'custom') {
+
+                                            $invoiceItems = json_decode($row['custom_invoice'], true);
+
+                                            if (!empty($invoiceItems) && is_array($invoiceItems)) {
+
+                                                foreach ($invoiceItems as $item) {
+                                        ?>
+                                                    <tr>
+                                                        <td class="inv-table text-center">
+                                                            <?= $serial_no++ ?>
+                                                        </td>
+
+                                                        <td class="inv-table">
+                                                            <?= htmlspecialchars($item['item']) ?>
+                                                        </td>
+
+                                                        <td class="inv-table text-end">
+                                                            <?= htmlspecialchars($symbol) ?>
+                                                            <?= number_format($item['rate'], 2) ?>
+                                                        </td>
+
+                                                        <td class="inv-table text-end">
+                                                            <?= htmlspecialchars($symbol) ?>
+                                                            <?= number_format($item['tax_amount'], 2) ?>
+                                                        </td>
+
+                                                        <td class="inv-table text-end">
+                                                            <?= htmlspecialchars($symbol) ?>
+                                                            <?= number_format($item['amount'], 2) ?>
+                                                        </td>
+                                                    </tr>
+                                        <?php
                                                 }
-                                            ?>
-                                        </td>
-                                        <td class="inv-table"><?= htmlspecialchars($symbol) ?> <?= number_format($row['price'], 2) ?></td>
-                                        <td class="inv-table"><?= htmlspecialchars($symbol) ?> <?= number_format($row['gst'], 2) ?></td>
-                                        <td class="inv-table text-end"><?= htmlspecialchars($symbol) ?> <?= number_format(floatval($row['price']) + floatval($row['gst']), 2) ?></td>
-                                    </tr>
+                                            }
+
+                                        } else {
+                                        ?>
+                                            <tr>
+                                                <td class="inv-table text-center"><?= $serial_no++ ?></td>
+
+                                                <td class="inv-table">
+                                                    <?php
+                                                    echo htmlspecialchars($row['plan_name']);
+                                                    if ($type === 'renewal') {
+                                                        echo ' <small>(Renewal)</small>';
+                                                    }
+                                                    ?>
+                                                </td>
+
+                                                <td class="inv-table text-end">
+                                                    <?= htmlspecialchars($symbol) ?>
+                                                    <?= number_format($row['price'], 2) ?>
+                                                </td>
+
+                                                <td class="inv-table text-end">
+                                                    <?= htmlspecialchars($symbol) ?>
+                                                    <?= number_format($row['gst'], 2) ?>
+                                                </td>
+
+                                                <td class="inv-table text-end">
+                                                    <?= htmlspecialchars($symbol) ?>
+                                                    <?= number_format(
+                                                        floatval($row['price']) + floatval($row['gst']),
+                                                        2
+                                                    ) ?>
+                                                </td>
+                                            </tr>
+                                        <?php
+                                        }
+                                        ?>
 
                                     <!-- Add-on services (if any) -->
                                     <?php
@@ -789,40 +847,7 @@ if (isset($_POST['send_invoice'])) {
                             </table>
                         </div>
 
-                            <?php
-                            // Add-on services table
-                            if (!empty($row['addon_service'])) {
-                                $addon_ids = explode(',', $row['addon_service']);
-                                $addon_ids = array_map('intval', $addon_ids); // sanitize IDs
-
-                                if (!empty($addon_ids)) {
-                                    $addon_id_list = implode(',', $addon_ids);
-                                    $addon_query = "SELECT name, cost FROM `add-on-service` WHERE id IN ($addon_id_list)";
-                                    $addon_result = $conn->query($addon_query);
-
-                                    if ($addon_result->num_rows > 0) {
-                                        echo '
-                                        <table class="table table-bordered w-100">
-                                            <tbody>';
-
-                                        while ($addon_row = $addon_result->fetch_assoc()) {
-                                            echo "<tr>
-                                                    <td class='w-25'>" . htmlspecialchars($addon_row['name']) . "</td>
-                                                    <td class='w-25'>" . htmlspecialchars($symbol) . " " . number_format($row['addon_price'], 2) . "</td>
-                                                    <td class='w-25'>" . htmlspecialchars($symbol) . " " . htmlspecialchars($row['addon_gst']) . "</td>
-                                                    <td class='w-25 text-end'>
-                                                        <span class='text-primary-light'>"
-                                                        . htmlspecialchars($symbol) . " " . number_format(floatval($row['addon_price']) + floatval($row['addon_gst']), 2) .
-                                                        "</span>
-                                                    </td>
-                                                </tr>";
-                                            }
-                                        echo '</tbody>
-                                        </table>';
-                                    }
-                                }
-                            }
-                            ?>
+                            
                             <div class="total-table">
                                 <table class="invoice_table text-end mt-10">
                                     <tbody>
@@ -1420,16 +1445,78 @@ if (isset($_POST['send_invoice'])) {
                                         ?>
                                         
                                         <!-- Main plan / package / product row -->
-                                        <tr>
-    <td class="inv-table text-center"><?= $serial_no++ ?></td>
-    <td class="inv-table" data-field="plan_display_name">
-        <?php echo htmlspecialchars($row['plan_name']); ?>
-        <?php if ($type === 'renewal') echo ' <small>(Renewal)</small>'; ?>
-    </td>
-    <td class="inv-table text-end editable" data-field="price"><?= number_format($row['price'], 2) ?></td>
-    <td class="inv-table text-end editable" data-field="gst"><?= number_format($row['gst'], 2) ?></td>
-    <td class="inv-table text-end" data-field="line_total"><?= number_format(floatval($row['price']) + floatval($row['gst']), 2) ?></td>
-</tr>
+                                        <?php
+                                        if ($type == 'custom') {
+
+                                            $invoiceItems = json_decode($row['custom_invoice'], true);
+
+                                            if (!empty($invoiceItems) && is_array($invoiceItems)) {
+
+                                                foreach ($invoiceItems as $item) {
+                                        ?>
+                                                    <tr>
+                                                        <td class="inv-table text-center">
+                                                            <?= $serial_no++ ?>
+                                                        </td>
+
+                                                        <td class="inv-table">
+                                                            <?= htmlspecialchars($item['item']) ?>
+                                                        </td>
+
+                                                        <td class="inv-table text-end">
+                                                            <?= htmlspecialchars($symbol) ?>
+                                                            <?= number_format($item['rate'], 2) ?>
+                                                        </td>
+
+                                                        <td class="inv-table text-end">
+                                                            <?= htmlspecialchars($symbol) ?>
+                                                            <?= number_format($item['tax_amount'], 2) ?>
+                                                        </td>
+
+                                                        <td class="inv-table text-end">
+                                                            <?= htmlspecialchars($symbol) ?>
+                                                            <?= number_format($item['amount'], 2) ?>
+                                                        </td>
+                                                    </tr>
+                                        <?php
+                                                }
+                                            }
+
+                                        } else {
+                                        ?>
+                                            <tr>
+                                                <td class="inv-table text-center"><?= $serial_no++ ?></td>
+
+                                                <td class="inv-table">
+                                                    <?php
+                                                    echo htmlspecialchars($row['plan_name']);
+                                                    if ($type === 'renewal') {
+                                                        echo ' <small>(Renewal)</small>';
+                                                    }
+                                                    ?>
+                                                </td>
+
+                                                <td class="inv-table text-end">
+                                                    <?= htmlspecialchars($symbol) ?>
+                                                    <?= number_format($row['price'], 2) ?>
+                                                </td>
+
+                                                <td class="inv-table text-end">
+                                                    <?= htmlspecialchars($symbol) ?>
+                                                    <?= number_format($row['gst'], 2) ?>
+                                                </td>
+
+                                                <td class="inv-table text-end">
+                                                    <?= htmlspecialchars($symbol) ?>
+                                                    <?= number_format(
+                                                        floatval($row['price']) + floatval($row['gst']),
+                                                        2
+                                                    ) ?>
+                                                </td>
+                                            </tr>
+                                        <?php
+                                        }
+                                        ?>
 
                                         <!-- Add-on services (if any) -->
                                         <?php
@@ -1466,40 +1553,7 @@ if (isset($_POST['send_invoice'])) {
                                 </table>
                             </div>
 
-                                <?php
-                                // Add-on services table
-                                if (!empty($row['addon_service'])) {
-                                    $addon_ids = explode(',', $row['addon_service']);
-                                    $addon_ids = array_map('intval', $addon_ids); // sanitize IDs
-
-                                    if (!empty($addon_ids)) {
-                                        $addon_id_list = implode(',', $addon_ids);
-                                        $addon_query = "SELECT name, cost FROM `add-on-service` WHERE id IN ($addon_id_list)";
-                                        $addon_result = $conn->query($addon_query);
-
-                                        if ($addon_result->num_rows > 0) {
-                                            echo '
-                                            <table class="table table-bordered w-100">
-                                                <tbody>';
-
-                                            while ($addon_row = $addon_result->fetch_assoc()) {
-                                                echo "<tr>
-                                                        <td class='w-25'>" . htmlspecialchars($addon_row['name']) . "</td>
-                                                        <td class='w-25 editable'>" . htmlspecialchars($symbol) . " " . number_format($row['addon_price'], 2) . "</td>
-                                                        <td class='w-25 editable'>" . htmlspecialchars($symbol) . " " . htmlspecialchars($row['addon_gst']) . "</td>
-                                                        <td class='w-25 text-end'>
-                                                            <span class='text-primary-light'>"
-                                                            . htmlspecialchars($symbol) . " " . number_format(floatval($row['addon_price']) + floatval($row['addon_gst']), 2) .
-                                                            "</span>
-                                                        </td>
-                                                    </tr>";
-                                                }
-                                            echo '</tbody>
-                                            </table>';
-                                        }
-                                    }
-                                }
-                                ?>
+                                
                                 
                                 <div class="d-flex flex-wrap justify-content-end gap-3">
                                     <table class="invoice_table text-end mt-10 total-table">
