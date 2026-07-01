@@ -46,7 +46,7 @@ if (isset($_GET['id'])) {
   <title>Excel-like HTML Spreadsheet</title>
 
   <style>
-    :root{--cell-width:150px;--cell-height:35px;--header-bg:#f3f4f6}
+    :root{--cell-width:150px;--cell-height:auto;--header-bg:#f3f4f6}
     .sheet{border:1px solid #ddd;overflow:auto;max-width:100%;box-shadow:0 2px 6px rgba(0,0,0,0.04)}
     table{border-collapse:collapse;min-width:900px}
     th,td{border-right:1px solid #e6e6e6;border-bottom:1px solid #e6e6e6;padding:0;margin:0;}

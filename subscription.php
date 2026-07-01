@@ -619,7 +619,7 @@ if (isset($_POST['action']) && $_POST['action'] === 'delete') {
                 LEFT JOIN products ON (orders.type = 'product' AND orders.plan = products.id)
                 LEFT JOIN websites ON orders.invoice_id = websites.invoice_id
 
-            WHERE orders.is_Active = 1 AND orders.user_id = '$sessionId';
+            WHERE orders.plan IS NOT NULL, orders.is_Active = 1 AND orders.user_id = '$sessionId';
         ";
     } else {
         $query = "
@@ -656,7 +656,8 @@ if (isset($_POST['action']) && $_POST['action'] === 'delete') {
                 LEFT JOIN products ON (orders.type = 'product' AND orders.plan = products.id)
                 LEFT JOIN websites ON orders.invoice_id = websites.invoice_id
 
-            WHERE orders.is_Active = 1
+            WHERE orders.plan IS NOT NULL
+            AND orders.plan != '' AND orders.is_Active = 1
             AND orders.is_deleted = 0;
         ";
     }
@@ -726,7 +727,8 @@ if (isset($_POST['action']) && $_POST['action'] === 'delete') {
         LEFT JOIN package ON (orders.type = 'package' AND orders.plan = package.id)
         LEFT JOIN products ON (orders.type = 'product' AND orders.plan = products.id)
         
-        WHERE orders.is_active = 2
+        WHERE orders.plan IS NOT NULL
+            AND orders.plan != '' AND orders.is_Active = 2
           AND orders.is_deleted = 0
     ";
     
@@ -755,7 +757,8 @@ if (isset($_POST['action']) && $_POST['action'] === 'delete') {
             INNER JOIN users ON orders.user_id = users.id
             LEFT JOIN package ON (orders.type = 'package' AND orders.plan = package.id)
             LEFT JOIN products ON (orders.type = 'product' AND orders.plan = products.id)
-            WHERE orders.is_active = 0
+            WHERE orders.plan IS NOT NULL
+            AND orders.plan != '' AND orders.is_Active = 0
             AND orders.is_deleted != 1
     ";
 
@@ -1183,7 +1186,7 @@ if (isset($_POST['action']) && $_POST['action'] === 'delete') {
                                     }
                                 ?>
                                 <tr>
-                                    <td><?php echo htmlspecialchars($row['plan_name']); ?></td>
+                                    <td><?php echo htmlspecialchars($row['plan_name'] ?? ''); ?></td>
                                     <td><?php echo htmlspecialchars($row['invoice_id']); ?></td>
                                     <td><span class="view-user-btn cursor-pointer" data-id=<?php echo htmlspecialchars($row['user_id']); ?> data-bs-toggle="modal" data-bs-target="#viewUserModal"><?php echo htmlspecialchars($row['business_name']); ?></span></td>
                                     <td class="text-center"><?php echo $expiryFormatted; ?></td>

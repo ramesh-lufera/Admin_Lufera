@@ -70,7 +70,7 @@
                     position: relative;
                     max-width:100%;
                     width: 100%;
-                    height: 200px;
+                    height: 75px !important;
                     border: 2px dashed #ccc;
                     border-radius: 12px;
                     display: flex;
@@ -199,9 +199,71 @@
                             echo "<script>alert('Please upload a package image.'); window.history.back();</script>";
                             exit;
                         }
+                        \$image_data = [
+                            'breadcrumb_image' => '',
+                            'preview_images' => []
+                        ];
 
-                        \$stmt = \$conn->prepare("INSERT INTO package (package_img, package_name, title, subtitle, short_description, description, cat_id, created_at, template, addon_service, addon_package, addon_product, gst_id, is_login) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-                        \$stmt->bind_param("ssssssissssssi", \$package_image, \$package_name, \$title, \$subtitle, \$short_description, \$description, \$cat_id, \$created_at, \$template, \$addons, \$addon_packages, \$addon_products, \$gst_id, \$is_login);
+                        \$target_dir = "uploads/products/";
+
+                        if (!is_dir(\$target_dir)) {
+                            mkdir(\$target_dir, 0777, true);
+                        }
+
+                        /* ==========================
+                        Breadcrumb Image Upload
+                        ========================== */
+                        if (
+                            isset(\$_FILES['breadcrumb_image']) &&
+                            \$_FILES['breadcrumb_image']['error'] == 0
+                        ) {
+                            \$breadcrumb_name = time() . '_breadcrumb_' . basename(\$_FILES['breadcrumb_image']['name']);
+                            \$breadcrumb_path = \$target_dir . \$breadcrumb_name;
+
+                            if (move_uploaded_file(\$_FILES['breadcrumb_image']['tmp_name'], \$breadcrumb_path)) {
+                                \$image_data['breadcrumb_image'] = \$breadcrumb_name;
+                            }
+                        }
+
+                        /* ==========================
+                        Preview Images Upload
+                        ========================== */
+
+                        \$preview_fields = [
+                            'preview_images1',
+                            'preview_images2',
+                            'preview_images3',
+                            'preview_images4'
+                        ];
+
+                        foreach (\$preview_fields as \$field) {
+
+                            if (
+                                isset(\$_FILES[\$field]) &&
+                                \$_FILES[\$field]['error'] == 0
+                            ) {
+
+                                \$preview_name = time() . '_' . \$field . '_' . basename(\$_FILES[\$field]['name']);
+                                \$preview_path = \$target_dir . \$preview_name;
+
+                                if (move_uploaded_file(\$_FILES[\$field]['tmp_name'], \$preview_path)) {
+                                    \$image_data['preview_images'][] = \$preview_name;
+                                }
+                            }
+                        }
+
+                        /* First Preview Image Required */
+                        if (empty(\$image_data['preview_images'])) {
+                            echo "<script>
+                                alert('Please upload at least one preview image.');
+                                window.history.back();
+                            </script>";
+                            exit;
+                        }
+
+                        \$image_json = json_encode(\$image_data);
+                        \$stmt = \$conn->prepare("INSERT INTO package (package_img, image_data, package_name, title, subtitle, short_description, description, cat_id, created_at, template, addon_service, addon_package, addon_product, gst_id, is_login) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                        \$stmt->bind_param("sssssssisssssii", \$package_image, \$image_json, \$package_name, \$title, \$subtitle, \$short_description, \$description, \$cat_id, \$created_at, \$template, \$addons, \$addon_packages, \$addon_products, \$gst_id, \$is_login);
 
                         if (\$stmt->execute()) {
                         \$package_id = \$conn->insert_id;
@@ -231,81 +293,54 @@
                         <head>
                         <meta charset="UTF-8">
                         <title>Product View</title>
+                        <?php
+                        \$sql = "SELECT * FROM company LIMIT 1";
+                        \$result = \$conn->query(\$sql);
+                        if (\$result && \$result->num_rows > 0) {
+                            \$row_com = \$result->fetch_assoc();
+                            \$company_name = \$row_com['full_name'];
+                            \$logo = \$row_com['logo'];
+                            \$email = \$row_com['email'];
+                            \$phone = \$row_com['phone_no'];
+                            \$address = \$row_com['address'];
+
+                        }    
+                        \$Id = __PACKAGE_ID__;
+                        \$sql = "select * from package where id = \$Id";
+                        \$result = \$conn ->query(\$sql);
+                        \$row = \$result ->fetch_assoc();
+
+                        // Decode image_data JSON
+                        \$imageData = json_decode(\$row['image_data'], true);
+
+                        \$breadcrumbImage = \$imageData['breadcrumb_image'] ?? '';
+                        \$previewImages   = \$imageData['preview_images'] ?? [];
+
+                        \$duration_sql = "SELECT * FROM durations WHERE package_id = \$Id ORDER BY id ASC LIMIT 1";
+                        \$duration_result = \$conn->query(\$duration_sql);
+                        \$duration = \$duration_result->fetch_assoc();
+
+                        \$package_img = \$row['package_img'];
+                        \$package_name = \$row['package_name'];
+                        \$cat_id_sc = \$row['cat_id'];
+                        \$title_sc = \$row['title'];
+                        \$gst_id = \$row['gst_id'];
+                        
+                        // Get active symbol
+                        \$result2 = \$conn->query("SELECT symbol FROM currencies WHERE is_active = 1 LIMIT 1");
+                        \$symbol = "$"; // default
+                        if (\$row1 = \$result2->fetch_assoc()) {
+                            \$symbol = \$row1['symbol'];
+                        }
+                        ?>
                         <style>
-                        .manage-top-btn {
-                            position: static !important;
-                            transform: none !important;
-                            background: #fec700 !important;
-                            padding: 8px 16px !important;
-                            border-radius: 6px !important;
-                            border: none !important;
-                            font-weight: 600 !important;
-                            cursor: pointer !important;
-                            color:#4b5563 !important;
-                        }
-                        .header-left img {
-                            height: 50px;
-                            object-fit: contain;
-                        }
-                        .header-right {
-                            display: flex;
-                            align-items: center;
-                            gap: 15px;
-                            font-size: 14px;
-                            font-weight: 500;
-                        }
-                        .image-banner{
-                            background: #fff !important;
-                            border-radius: 10px !important;
-                            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08) !important;
-                            padding: 18px !important;
-                            margin-bottom: 20px !important;
-                            line-height: 1.6 !important;
-                        }
-                        
-                        /* HERO */
-                        .breadcrumb-hero {
-                            width: 100% !important;
-                            height: 150px !important;
-                            background: linear-gradient(135deg, #101010, #2b2b2b) !important;
-                            border-radius: 10px !important;
-                            margin-bottom: 20px !important;
-                            display: flex !important;
-                            align-items: center !important;
-                            justify-content: center !important;
-                        }
-                        
-                        .breadcrumb-overlay {
-                            text-align: center !important;
-                            color: #fff !important;
-                        }
-                        
-                        /* TITLE COLOR */
-                        .breadcrumb-title {
-                            font-weight: 700 !important;
-                            color: #fec700 !important;
-                            font-size:24px !important;
-                        }
-                        
-                        .breadcrumb-path {
-                            font-size: 14px !important;
-                            color: #ccc !important;
-                        }
-                        
-                        .breadcrumb-path a {
-                            color: #fec700 !important;
-                            text-decoration: none !important;
-                        }
-                        .sec-heading{
-                            font-size:20px !important;
-                        }
-                        .card{
-                            background: #fff !important;
-                            border-radius: 10px !important;
-                            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08) !important;
-                            padding: 18px !important;
-                            margin-bottom: 20px !important;
-                            line-height: 1.6 !important;
+                        .feature-img {
+                            width: 100%;
+                            height: auto;
+                            object-fit: cover;
+                            border-radius:8px;
+                            width: 512px;
+                            height: 593px;
                         }
                         /* ===== FEATURES SECTION ===== */
                         .features-row {
@@ -313,267 +348,50 @@
                             gap: 25px !important;
                             margin-top: 10px !important;
                         }
-                    
+
                         .features-col {
                             flex: 1 !important;
-                            padding: 15px !important;
                             border-radius: 10px !important;
                         }
-                    
-                        /* LIST */
-                        .custom-list {
-                            list-style: none !important;
-                            padding: 0 !important;
-                        }
-                    
-                        .custom-list li {
-                            padding: 6px 0 !important;
-                            font-size: 15px !important;
-                        }
-                    
-                        /* ICONS */
-                        .features-col.inclusions li::before {
-                            content: "✔ " !important;
-                            font-weight: bold;
-                        }
-                    
-                        .features-col.exclusions li::before {
-                            content: "✖ " !important;
-                            font-weight: bold;
-                        }
-                    
-                        /* MOBILE */
-                        @media (max-width: 768px) {
-                            .features-row {
-                                flex-direction: column !important;
-                            }
-                        }
-                        .hover-scale-img__img{
-                            height: 200px;
-                        }
-                        /* ===== LANDING CONTACT MODAL ===== */
-                        .landing-contact-modal {
-                            display: none;
-                            position: fixed;
-                            z-index: 9999;
-                            left: 0;
-                            top: 0;
-                            width: 100%;
-                            height: 100%;
-                            background: rgba(0,0,0,0.6);
-                
-                            align-items: center;
-                            justify-content: center;
-                        }
-                
-                        .landing-contact-modal-content {
-                            width: 80%;
-                            max-width: 900px;
-                            background: #fff;
-                            border-radius: 10px;
-                            overflow: hidden;
-                            position: relative;
-                        }
-                
-                        .landing-contact-container {
-                            display: flex;
-                        }
-                
-                        /* LEFT */
-                        .landing-contact-left {
-                            width: 40%;
-                            background: #f5f5f5;
-                            padding: 20px;
-                        }
-                
-                        /* RIGHT */
-                        .landing-contact-right {
-                            width: 60%;
-                            padding: 20px;
-                        }
-                
-                        .landing-contact-right input,
-                        .landing-contact-right textarea {
-                            width: 100%;
-                            padding: 10px;
+                        .preview-img{
+                            width: 100px;
+                            height: 100px;
+                            object-fit: cover;
+                            border-radius: 8px;
                             margin-bottom: 10px;
-                            border: 1px solid #ccc;
                         }
-                
-                        .landing-contact-right button {
-                            background: #fec700;
-                            border: none;
-                            padding: 10px;
-                            width: 100%;
-                            border-radius: 20px;
-                            cursor: pointer;
-                            font-weight: 600;
-                        }
-                
-                        .landing-contact-close {
-                            position: absolute;
-                            top: 10px;
-                            right: 15px;
-                            font-size: 26px;
-                            font-weight: bold;
-                            cursor: pointer;
-                        }
-                        </style>
-                        <style>
-                        .top-header {
-                            display: flex;
-                            align-items: center;
-                            justify-content: space-between;
-                            padding: 10px 30px;
-                            margin-bottom: 20px;
-                        }
-                    
-                        .header-left img {  
-                            height: 50px;
-                        }
-                    
-                        .header-center {
-                            text-align: center;
-                            flex: 1;
-                        }
-                    
-                        .header-center h3 {
-                            margin: 0;
-                            font-weight: bold;
-                        }
-                    
-                        .header-right {
-                            text-align: right;
-                            font-size: 14px;
-                        }
-                    
-                        .header-right p {
-                            margin: 0;
-                        }
-                    
-                        .feature-img {
-                            width: 100% !important;
-                            max-height: 300px !important;
-                            object-fit: cover !important;
-                        }
-                    
-                        /* Center text on image */
-                        .package-title {
-                            position: absolute;
-                            top: 50%;
-                            left: 50%;
-                            transform: translate(-50%, -50%);
-                            color: #fff;
-                            font-size: 24px !important;
-                            font-weight: 700;  
-                            text-shadow: 0 2px 8px rgba(0, 0, 0, 0.7);
-                            text-align: center;
-                        }
-                    
-                        /* ===== LOGIN POPUP ===== */
-                        .login-modal {
-                            display: none;
-                            position: fixed;
-                            z-index: 9999;
-                            left: 0;
-                            top: 0;
-                            width: 100%;
-                            height: 100%;
-                            background: rgba(0,0,0,0.7);
-                        }
-                    
-                        .login-modal-content {
-                            position: relative;
-                            width: 95%;           /* more width */
-                            max-width: 900px;     /* increased from 500px */
-                            height: 80vh;         /* responsive height */
-                            margin: 3% auto;      /* less top gap */
-                            background: #fff;
-                            border-radius: 10px;
-                            overflow: hidden;
-                        }
-                    
-                        /* iframe */
-                        #loginFrame {
-                            width: 100%;
-                            height: 100%;
-                            border: none;
-                        }
-                    
-                        /* close button */
-                        .close-btn {
-                            position: absolute;
-                            top: 10px;
-                            right: 15px;
-                            font-size: 22px;
-                            font-weight: bold;
-                            cursor: pointer;
-                            z-index: 10;
-                        }
-                        .fs-16 {
-                            font-size: 16px !important;
-                        }
-                        .swal2-container{
-                            z-index:9999;
+                        .breadcrumb-hero{
+                            border-radius:12px; 
+                            background-image: url('./uploads/products/<?php echo \$breadcrumbImage; ?>'); 
+                            background-size: cover; 
+                            background-position: center; 
+                            height: 300px;
                         }
                         </style>
                         </head>
                         <body>
-                    
-                            <?php
-                                \$sql = "SELECT * FROM company LIMIT 1";
-                                \$result = \$conn->query(\$sql);
-                                if (\$result && \$result->num_rows > 0) {
-                                    \$row = \$result->fetch_assoc();
-                                    \$company_name = \$row['full_name'];
-                                    \$logo = \$row['logo'];
-                                    \$email = \$row['email'];
-                                    \$phone = \$row['phone_no'];
-                                    \$address = \$row['address'];
-                    
-                                }    
-                                \$Id = __PACKAGE_ID__;
-                                \$sql = "select * from package where id = \$Id";
-                                \$result = \$conn ->query(\$sql);
-                                \$row = \$result ->fetch_assoc();
-                                \$package_img = \$row['package_img'];
-                                \$package_name = \$row['package_name'];
-                                \$cat_id_sc = \$row['cat_id'];
-                                \$title_sc = \$row['title'];
-                            ?>
-                            
-                            <div class="content-wrapper" style="margin: 0px 15% 0px 15%;">
-                                <!-- Header Navbar -->
-                                <section class="top-header">
-                                    <!-- LEFT: LOGO -->
-                                    <div class="header-left">
-                                        <img src="../uploads/company_logo/<?php echo \$logo; ?>" alt="Company Logo">
-                                    </div>
-                    
-                                    <!-- RIGHT: CONTACT -->
-                                    <div class="header-right">
-                                        <span class="contact-item">📞 <?php echo \$phone; ?></span>
-                                        <span class="contact-item">✉ <?php echo \$email; ?></span>
+                            <div class="container-fluid">
+                                <section class="breadcrumb-hero position-relative w-100 mt-20 mx-auto d-flex align-items-center m-20">
+                                    <div class="container">
+                                        <div class="row">
+                                            <div class="col-xl-12 col-lg-12">
+                                                <div class="breadcrumb-content text-center">
+                                                    <h2 class="text-capitalize"><?php echo \$package_name; ?></h2>
+                                                    <nav aria-label="breadcrumb">
+                                                        <ol class="breadcrumb justify-content-center">
+                                                            <li class="breadcrumb-item"><a href="admin-dashboard.php">Home</a></li>
+                                                            <li class="breadcrumb-item active" aria-current="page"><?php echo \$package_name; ?></li>
+                                                        </ol>                   
+                                                    </nav>
+                                                </div>
+                                                <div style="position:absolute; background:#fec700; top:50%; right:20px; transform:translateY(-50%); display:flex; gap:10px;">
+                                                    <button class="btn manage-top-btn" data-bs-toggle="modal" data-bs-target="#apiModal">API</button>
+                                                </div>  
+                                            </div>
+                                        </div>
                                     </div>
                                 </section>
-                                
-                                <!-- HERO -->
-                                <section class="breadcrumb-hero position-relative">
-                                    <!-- Manage Button -->
-                                    <div style="position:absolute; top:50%; right:20px; transform:translateY(-50%); display:flex; gap:10px;">
-                                        <button class="btn manage-top-btn" data-bs-toggle="modal" data-bs-target="#apiModal">API</button>
-                                    </div>
-                    
-                                    <div class="breadcrumb-overlay">
-                                        <h2 class="breadcrumb-title">
-                                            <?php echo \$package_name; ?>
-                                        </h2>
-                                        <p class="breadcrumb-path">
-                                            <span class="lufera-color">Packages</span> /
-                                            <?php echo \$package_name; ?>
-                                        </p>
-                                    </div>
-                                </section>
+                            </div>
                                 <!-- ===== API DATA PREPARATION ===== -->
                                 <?php
                                 // BASE URL (dynamic)
@@ -598,7 +416,6 @@
                                 \$categoryShortcode = "Category-Shortcode-" . \$cat_id_sc;
                                 \$indPlanShortcode = "Package-\$title_sc-Shortcode-" . \$Id;
                                 ?>
-                    
                                 <div class="modal fade" id="apiModal" tabindex="-1">
                                     <div class="modal-dialog modal-dialog-centered custom-modal">
                                         <div class="modal-content p-4">
@@ -666,377 +483,135 @@
                                             });
                                         });
                                     }
-                                </script>
-                    
-                                <!-- Package Image -->       
-                                <div class="card image-banner">
-                                    <img src="./uploads/products/<?php echo \$package_img; ?>" alt="Package Image" class="feature-img" style="border-radius:8px">
-                                </div>
-                                <div class="package-wrapper position-relative">
-                                    <img src="../../uploads/products/<?php echo \$package_img; ?>" alt="Package Image" class="feature-img">
-                                    <h2 class="package-title">
-                                        <?php echo \$package_name; ?>
-                                    </h2>
-                                </div>
-                                
-                                <!-- Description Section -->
-                                <div class="card mt-20">
-                                    <h6 class="sec-heading">Description</h6>
+                                </script>   
+                            <div class="m-40">
+                                <div class="container">
                                     <div class="row">
-                                        <div class="col-md-12">
-                                            <p><?php echo \$row['description']; ?></p>
-                                        </div>
-                                    </div>
-                                </div> 
-                                
-                                <!--Features Section -->
-                                <?php
-                                \$features_sql = "SELECT feature_type, feature FROM features WHERE cat_type = 1 AND package_id = \$Id";
-                                \$features_result = \$conn->query(\$features_sql);
-                                
-                                \$included = [];
-                                \$excluded = [];
-                                
-                                while (\$frow = \$features_result->fetch_assoc()) {
-                                    if (\$frow['feature_type'] == 'inclusive') {
-                                        \$included[] = \$frow['feature'];
-                                    } else {
-                                        \$excluded[] = \$frow['feature'];
-                                    }
-                                }
-                                ?>
-                                <div class="card mt-20">
-                                    <h6 class="sec-heading">Features</h6>
-                                    <div class="features-row">
-                                        <!-- INCLUSIONS -->
-                                        <div class="features-col inclusions">
-                                            <ul class="custom-list">
-                                                <?php if (!empty(\$included)): ?>
-                                                    <?php foreach (\$included as \$inc): ?>
-                                                        <li><?php echo htmlspecialchars(\$inc); ?></li>
-                                                    <?php endforeach; ?>
-                                                <?php else: ?>
-                                                    <li>No inclusions available</li>
-                                                <?php endif; ?>
-                                            </ul>
-                                        </div>
-                                        <!-- EXCLUSIONS -->
-                                        <div class="features-col exclusions">
-                                            <ul class="custom-list">
-                                                <?php if (!empty(\$excluded)): ?>
-                                                    <?php foreach (\$excluded as \$exc): ?>
-                                                        <li><?php echo htmlspecialchars(\$exc); ?></li>
-                                                    <?php endforeach; ?>
-                                                <?php else: ?>
-                                                    <li>No exclusions available</li>
-                                                <?php endif; ?>
-                                            </ul>
-                                        </div>
-                                    </div> 
-                                </div>
-                                
-                                <!--Price Section -->
-                                <?php
-
-                                \$duration_sql = "
-                                    SELECT d.*, 
-                                        p.title, 
-                                        p.subtitle, 
-                                        p.description, 
-                                        p.package_name,
-                                        p.is_login,
-                                        p.is_active AS pkg_active
-                                    FROM durations d
-                                    INNER JOIN package p ON d.package_id = p.id
-                                    WHERE d.package_id = \$Id
-                                    ORDER BY d.id ASC
-                                ";
-                                
-                                \$dur_result = \$conn->query(\$duration_sql);
-                                
-                                // Group packages by duration
-                                \$packagesByDuration = [];
-                                
-                                if (\$dur_result && \$dur_result->num_rows > 0) {
-                                
-                                    while (\$package = \$dur_result->fetch_assoc()) {
-                                        \$packagesByDuration[\$package['duration']][] = \$package;
-                                    }
-                                }
-                                \$sql_login = "select * from package where id = \$Id";
-                                            \$result_login = \$conn->query(\$sql_login);
-                                            \$row_login = \$result_login->fetch_assoc();
-                                            \$isLoginRequired = (\$row_login['is_login'] == 1);
-                                \$symbol = "\$";
-                                ?>
-                                
-                                <div class="card">                                
-                                    <h4 class="sec-heading">Packages Pricing Table</h4>                                
-                                    <div class="card-body">                               
-                                        <?php if (!empty(\$packagesByDuration)): ?>                               
-                                            <?php if (\$isLoginRequired && !\$loggedInUserId): ?>                               
-                                                <div class="col-12 text-center">
-                                                    <p class="text-center" style="font-size:16px; font-weight:600; margin-top:10px;">
-                                                        <a href="#" onclick="openLoginPopup()" class="btn mt-2">
-                                                            🔒 Sign-In to See the Packages
-                                                        </a>
-                                                    </p>
-                                                </div>                               
-                                            <?php elseif (!\$isLoginRequired && !\$loggedInUserId): ?>                               
-                                                <div class="col-12 text-center">
-                                                    <p class="text-center" style="font-size:16px; font-weight:600; margin-top:10px;">
-                                                        <a href="#" onclick="openLoginPopup()" class="btn mt-2">
-                                                            🔒 Sign-In to See the Packages
-                                                        </a>
-                                                    </p>
-                                                </div>                               
-                                            <?php else: ?>                               
-                                                <div class="row justify-content-center">                               
-                                                    <div class="col-xxl-10">                               
-                                                        <!-- TABS -->
-                                                        <ul class="nav nav-pills button-tab mt-32 mb-32 justify-content-center" id="durationTabs" role="tablist">
-                                                            <?php \$firstTab = true; ?>                                
-                                                            <?php foreach (\$packagesByDuration as \$duration => \$packages): ?>                                
-                                                                <li class="nav-item" role="presentation">                                
-                                                                    <button class="rounded-pill nav-link <?= \$firstTab ? 'active' : '' ?>" id="tab-<?= md5(\$duration) ?>" data-bs-toggle="tab" data-bs-target="#content-<?= md5(\$duration) ?>" type="button" role="tab">                    
-                                                                        <?= htmlspecialchars(\$duration) ?>                                
-                                                                    </button>                                
-                                                                </li>                                
-                                                                <?php \$firstTab = false; ?>                                
-                                                            <?php endforeach; ?>                                
-                                                        </ul>                                
-                                                        <!-- TAB CONTENT -->
-                                                        <div class="tab-content" id="durationTabsContent">                                
-                                                            <?php \$firstContent = true; ?>                                
-                                                            <?php foreach (\$packagesByDuration as \$duration => \$packages): ?>                                
-                                                                <div class="tab-pane fade <?= \$firstContent ? 'show active' : '' ?>" id="content-<?= md5(\$duration) ?>" role="tabpanel">                                
-                                                                    <div class="row gy-4 mt-2">                            
-                                                                        <?php foreach (\$packages as \$package): ?>                                
-                                                                            <?php \$isActive = (\$package['pkg_active'] == 1); ?>                                
-                                                                            <div class="col-xxl-4 col-sm-6">                                
-                                                                                <div class="pricing-plan position-relative radius-24 overflow-hidden border">                                
-                                                                                    <?php if (!\$isActive): ?>
-                                                                                        <p class="text-danger float-end">Inactive</p>
-                                                                                    <?php endif; ?>
-                                                                                    <a href="">
-                                                                                        <h5 class="mb-0 lufera-color" style="font-size:18px !important">
-                                                                                            <?= htmlspecialchars(\$package['title']) ?>
-                                                                                        </h5>
-                                                                                    </a>
-                                                                                    <p class="text-secondary-light mb-28">
-                                                                                        <?= htmlspecialchars(\$package['subtitle']) ?>
-                                                                                    </p>                                
-                                                                                    <h4 class="mb-24 sec-heading">                                
-                                                                                        <?php if (!empty(\$package['preview_price'])): ?>                                
-                                                                                            <p class="text-sm text-muted mt-0 mb-10 text-decoration-line-through">                                
-                                                                                                <?= \$symbol ?>
-                                                                                                <?= number_format(\$package['preview_price']) ?>                                
-                                                                                            </p>                                
-                                                                                        <?php endif; ?>                                
-                                                                                        <?= \$symbol ?>
-                                                                                        <?= number_format(\$package['price']) ?>                                
-                                                                                        <span class="fw-medium text-md text-secondary-light">
-                                                                                            / <?= htmlspecialchars(\$package['duration']) ?>
-                                                                                        </span>                                
-                                                                                    </h4>                                
-                                                                                    <p><?= htmlspecialchars(\$package['description']) ?></p>                                
-                                                                                    <ul>
-                                                                                        <?php                                
-                                                                                        \$feature_sql = "
-                                                                                            SELECT feature, feature_type
-                                                                                            FROM features
-                                                                                            WHERE cat_type = 1
-                                                                                            AND package_id = ".\$package['package_id'];                                
-                                                                                        \$feature_result = \$conn->query(\$feature_sql);                                
-                                                                                        while (\$feat = \$feature_result->fetch_assoc()):                                
-                                                                                            \$isInclude = (\$feat['feature_type'] == 'inclusive');                                
-                                                                                        ?>                                
-                                                                                            <li class="d-flex align-items-center gap-16 mb-16">                                
-                                                                                                <span class="w-24-px h-24-px p-3 d-flex justify-content-center align-items-center lufera-bg rounded-circle">                                
-                                                                                                    <i class="text-sm fa <?= \$isInclude ? 'fa-check' : 'fa-close' ?> text-white"></i>                                
-                                                                                                </span>                                
-                                                                                                <?= htmlspecialchars(\$feat['feature']) ?>                                
-                                                                                            </li>                                
-                                                                                        <?php endwhile; ?>                                
-                                                                                    </ul>                                
-                                                                                    <form action="../../cart.php" method="POST">                                
-                                                                                        <input type="hidden" name="type" value="package">
-                                                                                        <input type="hidden" name="id" value="<?= \$package['package_id'] ?>">
-                                                                                        <input type="hidden" name="price" value="<?= \$package['price'] ?>">
-                                                                                        <input type="hidden" name="duration" value="<?= \$package['duration'] ?>">
-                                                                                        <input type="hidden" name="title" value="<?= htmlspecialchars(\$package['title']) ?>">                                
-                                                                                        <button type="submit" class="lufera-bg text-white btn btn-sm w-100 mt-28" <?= !\$isActive ? 'disabled' : '' ?>>
-                                                                                            Get Started
-                                                                                        </button>        
-                                                                                    </form>                                
-                                                                                </div>                                
-                                                                            </div>                                
-                                                                        <?php endforeach; ?>                                
-                                                                    </div>                                
-                                                                </div>                                
-                                                                <?php \$firstContent = false; ?>                                
-                                                            <?php endforeach; ?>                                
-                                                        </div>                                
-                                                    </div>                                
-                                                </div>                                
-                                            <?php endif; ?>                                
-                                        <?php else: ?>                                
-                                            <div class="col-12 text-center">
-                                                <p>No pricing available</p>
-                                            </div>                                
-                                        <?php endif; ?>                                
-                                    </div>                                
-                                </div>
-                    
-                                    <!-- LOGIN MODAL (MOVED OUTSIDE ROW) -->
-                                    <div id="loginModal" class="login-modal">
-                                        <div class="login-modal-content">
-                                            <span class="close-btn" onclick="closeLoginPopup()">&times;</span>
-                                            <iframe id="loginFrame"></iframe>
-                                        </div>
-                                    </div>
-                    
-                                    <script>
-                                    function openLoginPopup() {
-                                        document.getElementById("loginModal").style.display = "block";
-                                        document.getElementById("loginFrame").src =
-                                            "../sign-in.php?redirect=<?php echo urlencode(\$_SERVER['REQUEST_URI']); ?>";
-                                    }
-                    
-                                    function closeLoginPopup() {
-                                        document.getElementById("loginModal").style.display = "none";
-                                    }
-                    
-                                    window.onclick = function(event) {
-                                        let modal = document.getElementById("loginModal");
-                                        if (event.target === modal) {
-                                            closeLoginPopup();
-                                        }
-                                    };
-                                    </script>
-                    
-                                <section class="card mt-20 contact">
-                                    <h6 class="sec-heading">Need Help?</h6>
-                                    <button type="button" class="btn btn-default lufera-bg mt-10" onclick="openContactPopup()" style="width:120px">Contact Us</button>   
-                                    
-                                    <!-- ================= LANDING CONTACT POPUP ================= -->
-                                    <div id="landingContactModal" class="landing-contact-modal">            
-                                        <div class="landing-contact-modal-content">            
-                                            <span class="landing-contact-close" onclick="closeContactPopup()">&times;</span>            
-                                            <div class="landing-contact-container">        
-                                                <!-- LEFT SIDE -->
-                                                <div class="landing-contact-left">            
-                                                    <h4 class="sec-heading">CALL US</h4>
-                                                    <p><?php echo htmlspecialchars(\$phone ?? 'N/A'); ?></p>
-            
-                                                    <h4 class="sec-heading">LOCATION</h4>
-                                                    <p><?php echo htmlspecialchars(\$address ?? 'N/A'); ?></p>
-            
-                                                    <h4 class="sec-heading">BUSINESS HOURS</h4>
-                                                    <p>Mon - Fri: 10am - 6pm</p>            
+                                        <div class="col-xl-6 col-lg-6">
+                                            <div class="row">
+                                                <div class="col-lg-3 text-end">
+                                                    <ul>
+                                                        <?php if (!empty(\$previewImages)): ?>
+                                                            <?php foreach(\$previewImages as \$img): ?>
+                                                                <li>
+                                                                    <img src="./uploads/products/<?php echo \$img; ?>" class="preview-img" alt="Preview Image">
+                                                                </li>
+                                                            <?php endforeach; ?>
+                                                        <?php else: ?>
+                                                            <li>
+                                                                <img src="./uploads/products/<?php echo \$package_img; ?>" class="preview-img" alt="Package Image">
+                                                            </li>
+                                                        <?php endif; ?>
+                                                    </ul>
                                                 </div>
-            
-                                                <!-- RIGHT SIDE -->
-                                                <div class="landing-contact-right">            
-                                                    <h3 style="font-size: 22px !important">CONTACT US</h3>            
-                                                    <input type="text" id="contactName" placeholder="Enter your name" required>
-                                                    <input type="text" id="contactPhone" placeholder="Enter your phone number" required>
-                                                    <input type="email" id="contactEmail" placeholder="Enter your email address" required>
-                                                    <textarea id="contactMessage" placeholder="Enter your message" rows="4" required></textarea>            
-                                                    <button onclick="submitContact()">SUBMIT</button>            
-                                                </div>            
-                                            </div>            
-                                        </div>            
-                                    </div>            
-                                    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-            
-                                    <script>
-                                        function openContactPopup() {
-                                            document.getElementById("landingContactModal").style.display = "flex";
-                                        }
-            
-                                        function closeContactPopup() {
-                                            document.getElementById("landingContactModal").style.display = "none";
-                                        }
-            
-                                        function submitContact() {
-            
-                                            const name = document.getElementById("contactName").value.trim();
-                                            const phone = document.getElementById("contactPhone").value.trim();
-                                            const email = document.getElementById("contactEmail").value.trim();
-                                            const message = document.getElementById("contactMessage").value.trim();
-            
-                                            const emailPattern = /^[a-zA-Z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$/;
-            
-                                            // ✅ 1. Email format check FIRST (only if user typed something)
-                                            if (email && !emailPattern.test(email)) {
-                                                Swal.fire({
-                                                    icon: 'error',
-                                                    title: 'Invalid Email',
-                                                    text: 'Please enter a valid email address (e.g. john@gmail.com)',
-                                                    confirmButtonColor: '#fec700'
-                                                });
-                                                return;
-                                            }
-            
-                                            // ✅ 2. Required fields check
-                                            if (!name || !phone || !email || !message) {
-                                                Swal.fire({
-                                                    icon: 'warning',
-                                                    title: 'Missing Fields',
-                                                    text: 'Please fill all fields',
-                                                    confirmButtonColor: '#fec700'
-                                                });
-                                                return;
-                                            }
-            
-                                            // ✅ 3. Proceed
-                                            Swal.fire({
-                                                title: 'Submitting...',
-                                                allowOutsideClick: false,
-                                                didOpen: () => {
-                                                    Swal.showLoading();
-                                                }
-                                            });
-            
-                                            setTimeout(() => {
-                                                Swal.fire({
-                                                    icon: 'success',
-                                                    title: 'Submitted!',
-                                                    text: 'Our team will contact you.',
-                                                    confirmButtonColor: '#fec700'
-                                                }).then(() => {
-            
-                                                    closeContactPopup();
-            
-                                                    document.getElementById("contactName").value = "";
-                                                    document.getElementById("contactPhone").value = "";
-                                                    document.getElementById("contactEmail").value = "";
-                                                    document.getElementById("contactMessage").value = "";
-                                                });
-                                            }, 1000);
-                                        }
-                                    </script>  
-                                </section>
-                                
-                                <!-- ===== FOOTER ===== -->
-                                    <footer class="d-footer mt-20" style="padding:15px 10px; border-top:1px solid #eee;">
-                                        <div class="row align-items-center justify-content-between">
-                                            <div class="col-auto">
-                                                <p class="mb-0">© <?php echo date("Y"); ?> Lufera Infotech. All Rights Reserved.</p>
-                                            </div>
-                                            <div class="col-auto" style="display:flex; gap:15px; align-items:center; flex-wrap:wrap;">
-                                                <a href="privacy_policy.php">Privacy Policy</a>
-                                                <span>|</span>
-                                                <a href="terms_conditions.php">Terms and Conditions</a>
-                                                <span>|</span>
-                                                <a href="https://luferatech.com" style="display:flex; align-items:center; gap:5px;">
-                                                    <span>Made by</span>
-                                                    <span style="color:#fec700;">Lufera Infotech</span>
-                                                </a>
+                                                <div class="col-lg-9">
+                                                    <img src="./uploads/products/<?php echo \$package_img; ?>" alt="Package Image" class="feature-img">
+                                                </div>
                                             </div>
                                         </div>
-                                    </footer>
+                                        <div class="col-xl-6 col-lg-6">
+                                            <div class="ms-20">
+                                                <h2 class="mb-2 text-capitalize">
+                                                    <?php echo \$package_name; ?>
+                                                </h2>
+                                                <p class="price">
+                                                    <span class="amount fs-2 fw-semibold me-6">
+                                                        <?= \$symbol ?><?= \$duration['price'] ?>
+                                                    </span>
+                                                    <?php if (!empty(\$duration['preview_price'])): ?>
+                                                        <span class="text-decoration-line-through fs-2 fw-semibold">
+                                                            <?= \$symbol ?><?= \$duration['preview_price'] ?>
+                                                        </span>
+                                                    <?php endif; ?>
+                                                    <!-- <span class="package-period">
+                                                        /<?= htmlspecialchars(\$duration['duration']) ?>
+                                                    </span> -->
+                                                </p>
+                                                <p>
+                                                    <?php echo \$row['short_description']; ?>
+                                                </p>
+
+                                                <form action="cart.php" method="POST">                                
+                                                    <input type="hidden" name="type" value="package">
+                                                    <input type="hidden" name="id" value="<?= \$Id ?>">
+                                                    <input type="hidden" name="price" value="<?= \$duration['price'] ?>">
+                                                    <input type="hidden" name="duration" value="<?= \$duration['duration'] ?>">
+                                                    <input type="hidden" name="title" value="<?= htmlspecialchars(\$title_sc) ?>">  
+                                                    <input type="hidden" name="gst_id" value="<?= htmlspecialchars(\$gst_id) ?>">                               
+                                                    <button type="submit" class="btn btn-dark w-50 p-12" style="border-radius: 50px;"> 
+                                                        Shop Now
+                                                    </button>        
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="mt-40">
+                                        <ul class="nav bordered-tab border border-top-0 border-start-0 border-end-0 d-inline-flex nav-pills mb-16 w-100 gap-50" id="pills-tab" role="tablist">
+                                            <li class="nav-item" role="presentation">
+                                                <button class="nav-link px-0 py-10 active" id="pills-home-tab" data-bs-toggle="pill" data-bs-target="#pills-home" type="button" role="tab" aria-controls="pills-home" aria-selected="true">Description</button>
+                                            </li>
+                                            <li class="nav-item" role="presentation">
+                                                <button class="nav-link px-0 py-10" id="pills-details-tab" data-bs-toggle="pill" data-bs-target="#pills-details" type="button" role="tab" aria-controls="pills-details" aria-selected="false">Features</button>
+                                            </li>
+                                        </ul>
+                                        <div class="tab-content" id="pills-tabContent">
+                                            <div class="tab-pane fade show active" id="pills-home" role="tabpanel" aria-labelledby="pills-home-tab" tabindex="0">
+                                                <div>
+                                                    <p class="text-secondary-light mb-0"><?php echo \$row['description']; ?></p>
+                                                </div>
+                                            </div>
+                                            <div class="tab-pane fade" id="pills-details" role="tabpanel" aria-labelledby="pills-details-tab" tabindex="0">
+                                                <div>
+                                                    <?php
+                                                        \$features_sql = "SELECT feature_type, feature FROM features WHERE cat_type = 1 AND package_id = \$Id";
+                                                        \$features_result = \$conn->query(\$features_sql);
+                                                        
+                                                        \$included = [];
+                                                        \$excluded = [];
+                                                        
+                                                        while (\$frow = \$features_result->fetch_assoc()) {
+                                                            if (\$frow['feature_type'] == 'inclusive') {
+                                                                \$included[] = \$frow['feature'];
+                                                            } else {
+                                                                \$excluded[] = \$frow['feature'];
+                                                            }
+                                                        }
+                                                    ?>
+                                                    
+                                                    <div class="features-row">
+                                                        <!-- INCLUSIONS -->
+                                                        <div class="features-col inclusions">
+                                                            <h6>Included</h6>
+                                                            <ul class="custom-list">
+                                                                <?php if (!empty(\$included)): ?>
+                                                                    <?php foreach (\$included as \$inc): ?>
+                                                                        <li><i class="fa fa-check"></i> <?php echo htmlspecialchars(\$inc); ?></li>
+                                                                    <?php endforeach; ?>
+                                                                <?php else: ?>
+                                                                    <li>No inclusions available</li>
+                                                                <?php endif; ?>
+                                                            </ul>
+                                                        </div>
+                                                        <!-- EXCLUSIONS -->
+                                                        <div class="features-col exclusions">
+                                                        <h6>Exclude</h6>
+                                                            <ul class="custom-list">
+                                                                <?php if (!empty(\$excluded)): ?>
+                                                                    <?php foreach (\$excluded as \$exc): ?>
+                                                                        <li><i class="fa fa-close"></i> <?php echo htmlspecialchars(\$exc); ?></li>
+                                                                    <?php endforeach; ?>
+                                                                <?php else: ?>
+                                                                    <li>No exclusions available</li>
+                                                                <?php endif; ?>
+                                                            </ul>
+                                                        </div>
+                                                    </div>                                                     
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                             <?php include '../scripts.php'; ?>
                         LANDING;
@@ -1082,8 +657,8 @@
                         );
                         
                         \$rootContent = str_replace(
-                            "../cart.php",
-                            "./cart.php",
+                            "../../cart.php",
+                            "cart.php",
                             \$rootContent
                         );
                         
@@ -1116,13 +691,25 @@
                             '',
                             \$rootContent
                         );  
-                    
+                        
+                        \$landingContent = str_replace(
+                            './uploads/products',
+                            '../../uploads/products/',
+                            \$landingContent
+                        );
+                                
                         \$landingContent = preg_replace(
                             '/<section class="breadcrumb-hero position-relative">.*?<\/section>/s',
                             '',
                             \$landingContent
                         );
-                        
+
+                        \$landingContent = preg_replace(
+                            '/<button class="btn manage-top-btn" data-bs-toggle="modal" data-bs-target="#apiModal">.*?<\/button>/s',
+                            '',
+                            \$landingContent
+                        );
+                         
                         \$landingContent = preg_replace(
                             '/<div class="card image-banner">.*?<\/div>/s',
                             '',
@@ -1269,19 +856,102 @@
                             <div class="row justify-content-center">
                                 <div class="col-xxl-12 col-xl-8 col-lg-10">
                                     <form method="POST" enctype="multipart/form-data" class="row gy-3 needs-validation" novalidate autocomplete="off">
-                                        <div class="mb-2">
-                                            <label class="form-label">Package image <span class="text-danger-600">*</span></label>
-                                            <div class="has-validation">
-                                                <input type="file" id="file-input" accept="image/*" name="package_image" required="">
-                                                <label class="image-upload d-flex mw-100" for="file-input">
-                                                <span>Click or Drag Image Here</span>
-                                                <img id="preview" alt="Preview Image">
+                                        <div class="row mb-2">
+                                            <!-- Package Image -->
+                                            <div class="col-lg-6">
+                                                <label class="form-label">
+                                                    Package Image <span class="text-danger-600">*</span>
                                                 </label>
-                                                <div class="invalid-feedback">
-                                                    Please upload a Package image.
+
+                                                <div class="has-validation image-upload-wrapper">
+                                                    <input type="file" class="file-input" accept="image/*" name="package_image" required>
+
+                                                    <label class="image-upload d-flex mw-100">
+                                                        <span>Click or Drag Image Here</span>
+                                                        <img class="preview-image" alt="Preview Image">
+                                                    </label>
+
+                                                    <div class="invalid-feedback">
+                                                        Please upload a Package image.
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <!-- Breadcrumb Image -->
+                                            <div class="col-lg-6">
+                                                <label class="form-label">
+                                                    Breadcrumb Image <span class="text-danger-600">*</span>
+                                                </label>
+
+                                                <div class="has-validation image-upload-wrapper">
+                                                    <input type="file" class="file-input" accept="image/*" name="breadcrumb_image" required>
+
+                                                    <label class="image-upload d-flex mw-100">
+                                                        <span>Click or Drag Image Here</span>
+                                                        <img class="preview-image" alt="Preview Image">
+                                                    </label>
+
+                                                    <div class="invalid-feedback">
+                                                        Please upload a Breadcrumb image.
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
+
+                                        <div class="row">
+                                            <label class="form-label fw-semibold text-primary-light text-sm mb-8">
+                                                Preview Images <span class="text-danger-600">*</span>
+                                            </label>
+
+                                            <div class="col-md-3">
+                                                <div class="has-validation image-upload-wrapper">
+                                                    <input type="file" class="file-input" accept="image/*" name="preview_images1" required>
+
+                                                    <label class="image-upload d-flex mw-100">
+                                                        <span>Click or Drag Image Here</span>
+                                                        <img class="preview-image" alt="Preview Image">
+                                                    </label>
+
+                                                    <div class="invalid-feedback">
+                                                        Please upload at least one preview image.
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div class="col-md-3">
+                                                <div class="has-validation image-upload-wrapper">
+                                                    <input type="file" class="file-input" accept="image/*" name="preview_images2">
+
+                                                    <label class="image-upload d-flex mw-100">
+                                                        <span>Click or Drag Image Here</span>
+                                                        <img class="preview-image" alt="Preview Image">
+                                                    </label>
+                                                </div>
+                                            </div>
+
+                                            <div class="col-md-3">
+                                                <div class="has-validation image-upload-wrapper">
+                                                    <input type="file" class="file-input" accept="image/*" name="preview_images3">
+
+                                                    <label class="image-upload d-flex mw-100">
+                                                        <span>Click or Drag Image Here</span>
+                                                        <img class="preview-image" alt="Preview Image">
+                                                    </label>
+                                                </div>
+                                            </div>
+
+                                            <div class="col-md-3">
+                                                <div class="has-validation image-upload-wrapper">
+                                                    <input type="file" class="file-input" accept="image/*" name="preview_images4">
+
+                                                    <label class="image-upload d-flex mw-100">
+                                                        <span>Click or Drag Image Here</span>
+                                                        <img class="preview-image" alt="Preview Image">
+                                                    </label>
+                                                </div>
+                                            </div>
+                                        </div>
+
                                         <div class="mb-2">
                                             <label for="name" class="form-label fw-semibold text-primary-light text-sm mb-8">Package name <span class="text-danger-600">*</span></label>
                                             <div class="has-validation">
@@ -1485,7 +1155,7 @@
                                             <label class="form-label fw-semibold text-primary-light text-sm mb-8">Is Login?</label>
                                             <div class="form-check d-flex align-items-center">
                                                 <input class="form-check-input" type="checkbox" name="is_login" id="isLogin">  
-                                                <label class="form-check-label ms-2 mb-0" for="isLogin">Require login to purchase</label>       
+                                                <label class="form-check-label ms-2 mb-0" for="isLogin">Require login to show package pricing</label>       
                                             </div>
                                         </div>
                                         
@@ -1598,36 +1268,55 @@
                         }
                     });
                 
-                const fileInput = document.getElementById('file-input');
-                const preview = document.getElementById('preview');
-                const uploadLabel = document.querySelector('.image-upload span');
+                document.querySelectorAll('.file-input').forEach(input => {
 
-                fileInput.addEventListener('change', function() {
-                const file = this.files[0];
-                if (file) {
-                    const reader = new FileReader();
-                    reader.onload = function(e) {
-                    preview.style.display = 'block';
-                    preview.setAttribute('src', e.target.result);
-                    uploadLabel.style.display = 'none';
+                const wrapper = input.closest('.image-upload-wrapper');
+                const preview = wrapper.querySelector('.preview-image');
+                const labelText = wrapper.querySelector('.image-upload span');
+
+                // Open file picker when upload area clicked
+                wrapper.querySelector('.image-upload').addEventListener('click', () => {
+                    input.click();
+                });
+
+                input.addEventListener('change', function () {
+
+                    const file = this.files[0];
+
+                    if (file) {
+                        const reader = new FileReader();
+
+                        reader.onload = function (e) {
+                            preview.src = e.target.result;
+                            preview.style.display = 'block';
+                            labelText.style.display = 'none';
+                        };
+
+                        reader.readAsDataURL(file);
+
+                        input.setCustomValidity('');
+                    } else {
+                        preview.style.display = 'none';
+                        labelText.style.display = 'block';
+                        input.setCustomValidity('Please upload an image');
                     }
-                    reader.readAsDataURL(file);
-                    fileInput.setCustomValidity(''); // Clear custom validation
-                } else {
-                    preview.style.display = 'none';
-                    uploadLabel.style.display = 'block';
-                    fileInput.setCustomValidity('Please upload a product image'); // Set validation message
-                }
+                });
+            });
+
+            // Validation
+            document.querySelector('form').addEventListener('submit', function () {
+
+                document.querySelectorAll('.file-input[required]').forEach(input => {
+
+                    if (!input.files.length) {
+                        input.setCustomValidity('Please upload an image');
+                    } else {
+                        input.setCustomValidity('');
+                    }
+
                 });
 
-                // Add custom validation on submit
-                document.querySelector('form').addEventListener('submit', function(e) {
-                if (!fileInput.value) {
-                    fileInput.setCustomValidity('Please upload a product image');
-                } else {
-                    fileInput.setCustomValidity('');
-                }
-                });
+            });
                 </script>
                 <?php include './partials/layouts/layoutBottom.php' ?>
             PHP;
@@ -1852,6 +1541,7 @@
                         <li><a href="company.php"><i class="ri-circle-fill circle-icon text-warning-600 w-auto"></i> Company</a></li>
                         <li><a href="credentials.php"><i class="ri-circle-fill circle-icon text-warning-600 w-auto"></i> Credentials</a></li>
                         <li><a href="currencies.php"><i class="ri-circle-fill circle-icon text-warning-600 w-auto"></i> Currencies</a></li>
+                        <li><a href="invoice_settings.php"><i class="ri-circle-fill circle-icon text-warning-600 w-auto"></i> Invoice Settings</a></li>
                         <li><a href="promotion.php"><i class="ri-circle-fill circle-icon text-warning-600 w-auto"></i> Promotion</a></li>
                         <li><a href="add_policy.php"><i class="ri-circle-fill circle-icon text-warning-600 w-auto"></i> Privacy policy</a></li>
                         <li><a href="view_packages.php"><i class="ri-circle-fill circle-icon text-warning-600 w-auto"></i> Packages</a></li>
