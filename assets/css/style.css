@@ -14990,10 +14990,6 @@ td.fc-header-center {
   }
 }
 
-.sidebar-menu li a:hover, .to-top-list li .hover-text-primary:hover, .nav-link, .nav-link:focus, .nav-link:hover {
-  color: #fec700 !important;
-}
-
 .sidebar-menu li a .menu-icon {
   font-size: 1.125rem;
   margin-inline-end: 0.5rem;
@@ -15171,10 +15167,6 @@ div.dt-container .dt-search input{
 }
 table.dataTable thead>tr>th.dt-orderable-asc:hover, table.dataTable thead>tr>th.dt-orderable-desc:hover, table.dataTable thead>tr>td.dt-orderable-asc:hover, table.dataTable thead>tr>td.dt-orderable-desc:hover{
   outline: none;
-}
-.form-check-input:checked{
-  background-color: #fdc701;
-  border-color: #fdc701;
 }
 .jodit-status-bar-link, .jodit-ui-group_group_info{
     display: none !important;

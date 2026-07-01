@@ -1,16 +1,7 @@
 <?php include './partials/layouts/layoutTop.php';
-    require_once __DIR__ . '/vendor/autoload.php';
-    require_once __DIR__ . '/vendor_pdf/autoload.php';
-    use Dotenv\Dotenv;
-    use PHPMailer\PHPMailer\PHPMailer;
-    use PHPMailer\PHPMailer\Exception;
-    use Dompdf\Dompdf;
-    use Dompdf\Options;
-    $dotenv = Dotenv::createImmutable(__DIR__);
-    $dotenv->load();
-    // ini_set('display_errors', 1);
-    // ini_set('display_startup_errors', 1);
-    // error_reporting(E_ALL);
+ini_set('display_errors', 1);
+    ini_set('display_startup_errors', 1);
+    error_reporting(E_ALL);
 ?>
 <?php
 if(isset($_POST['save_invoice']))
@@ -493,7 +484,6 @@ function numberToWords($num) {
     $company_fetch = $conn->query($company_sql);
     $company_row = $company_fetch->fetch_assoc();
 
-
     // Get active symbol
     $result1 = $conn->query("SELECT symbol FROM currencies WHERE is_active = 1 LIMIT 1");
     $symbol = "$"; // default
@@ -501,7 +491,20 @@ function numberToWords($num) {
         $symbol = $row1['symbol'];
     }
 ?>
+<?php
+$invoicePref = mysqli_query($conn,"
+    SELECT *
+    FROM invoice
+    ORDER BY id DESC
+    LIMIT 1
+");
+$invoiceData = mysqli_fetch_assoc($invoicePref);
 
+$invoice_logo = $invoiceData['invoice_logo'] ?? '';
+$prefix = $invoiceData['prefix'] ?? '';
+$series = $invoiceData['series'] ?? '';
+$suffix = $invoiceData['suffix'] ?? '';
+?>
 <div class="dashboard-main-body">
     <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-24">
         <a class="cursor-pointer fw-bold titlesec" onclick="history.back()"><span class="fa fa-arrow-left"></span>&nbsp; Back</a>    
@@ -542,6 +545,7 @@ function numberToWords($num) {
                                     $user_list = mysqli_query($conn, "
                                         SELECT id, business_name
                                         FROM users
+                                        WHERE business_name IS NOT NULL
                                         ORDER BY business_name ASC
                                     ");
                                 ?>
@@ -562,15 +566,12 @@ function numberToWords($num) {
                                                     <option value="">Select User</option>
                                                     <?php while($u = mysqli_fetch_assoc($user_list)) { ?>
                                                         <option value="<?= $u['id']; ?>">
-                                                            <?= htmlspecialchars($u['business_name']); ?>
+                                                           <?= htmlspecialchars($u['business_name'] ?? '') ?>
                                                         </option>
                                                     <?php } ?>
                                                 </select>
 
-                                                <button type="button"
-                                                        class="btn btn-primary btn-sm"
-                                                        data-bs-toggle="modal"
-                                                        data-bs-target="#addUserModal">
+                                                <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addUserModal">
                                                     + New User
                                                 </button>
                                             </div>
@@ -583,23 +584,44 @@ function numberToWords($num) {
                                         </div>
                                     </div>
                                     <table class="invoice_table text-start mt-10">
-                                        <tr>
-                                            <td class="pe-64 p-4 fw-semibold">Invoice#</td>
-                                            <td class="text-md p-4 editable" data-field="invoice_id">
-                                                <input type="text" class="border" name="invoice_id">
-                                            </td>
-                                        </tr>
+                                    <tr>
+                                        <td class="pe-64 p-4 fw-semibold">Custom Invoice Number</td>
+                                        <td class="text-md p-4 editable">
+
+                                            <div class="input-group">
+                                                <input type="text" class="border px-10" id="custom_invoice_no" name="invoice_id" readonly>
+                                                <button type="button" class="btn border" data-bs-toggle="modal" data-bs-target="#invoicePreferenceModal">
+                                                    <i class="fa fa-cog"></i>
+                                                </button>
+                                            </div>
+
+                                        </td>
+                                    </tr>
                                         <tr>
                                             <td class="pe-64 p-4 fw-semibold">Invoice Date</td>
-                                            <td class="text-md p-4 editable" data-field="created_on"><input type="date" class="border w-100"></td>
+                                            <td class="text-md p-4 editable" data-field="created_on"><input type="date" class="border px-10 w-100"></td>
                                         </tr>
                                         <tr>
                                             <td class="pe-64 p-4 fw-semibold">Terms</td>
-                                            <td class="text-md p-4 editable" data-field="payment_method"><input type="text" class="border" name="terms"></td>
+                                            <td class="text-md p-4 editable" data-field="payment_method">
+                                                <select class="border w-100 px-10" name="terms">
+                                                    <option value="" disabled selected></option>
+                                                    <option value="Bank Transfer">Bank Transfer</option>
+                                                    <option value="Direct Pay">Direct Pay</option>
+                                                    <option value="Cancelled">Cancelled</option>
+                                                </select>
+                                            </td>
                                         </tr>
                                         <tr>
                                             <td class="pe-64 p-4 fw-semibold">Status</td>
-                                            <td class="text-md p-4 editable" data-field="status"><input type="text" class="border" name="status"></td>
+                                            <td class="text-md p-4 editable" data-field="status">
+                                                <select class="border w-100 px-10" name="status">
+                                                    <option value="" disabled selected></option>
+                                                    <option value="Pending">Pending</option>
+                                                    <option value="Approved">Approved</option>
+                                                    <option value="Cancelled">Cancelled</option>
+                                                </select>
+                                            </td>
                                         </tr>
                                     </table>
                                 </div>
@@ -656,9 +678,7 @@ function numberToWords($num) {
                                         </tbody>
                                     </table>
                                     <div class="mt-3">
-                                        <button type="button"
-                                                class="btn btn-primary"
-                                                id="addItem">
+                                        <button type="button" class="btn btn-primary" id="addItem">
                                             + Add Item
                                         </button>
                                     </div>
@@ -723,7 +743,7 @@ function numberToWords($num) {
                                     <input type="submit" class="btn btn-success mt-3" value="Save Invoice" name="save_invoice">
                                 <div class="text-center border-footer mt-20 pt-20 pdf-footer">
                                     <p class="d-inline">Crafted with ease using</p> 
-                                    <img src="uploads/company_logo/<?php echo $logo; ?>" class="footer-logo" alt="Lufera Logo" class="mb-4" style="margin-bottom: 6px; max-width: 120px;">
+                                    <img src="uploads/invoice/<?php echo $invoice_logo; ?>" class="footer-logo" alt="Lufera Logo" class="mb-4" style="margin-bottom: 6px; max-width: 120px;">
                                 </div>
                             </div>
                         </div>
@@ -792,18 +812,113 @@ function numberToWords($num) {
         </div>
     </div>
 </div>
+<div class="modal fade" id="invoicePreferenceModal" tabindex="-1">
+
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    Configure Invoice Number
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+
+            <div class="modal-body">
+                <p>
+                    Your invoice numbers are set on auto-generate mode
+                    to save your time. Are you sure about changing
+                    this setting?
+                </p>
+
+                <div class="mb-3">
+
+                    <div class="form-check">
+                        <input class="form-check-input mt-6" type="radio" name="invoice_mode" value="manual" id="manualMode">
+                        <label class="form-check-label" for="manualMode">
+                           &nbsp; Enter invoice numbers manually
+                        </label>
+                    </div>
+
+                    <div class="form-check">
+                        <input class="form-check-input mt-6" type="radio" name="invoice_mode" value="auto" id="autoMode" checked>
+                        <label class="form-check-label" for="autoMode">
+                            &nbsp; Continue auto-generating invoice numbers
+                        </label>
+                    </div>
+                </div>
+
+                <div class="row" id="autoInvoiceFields">
+                    <div class="col-md-4">
+                        <label class="form-label">Prefix</label>
+                        <input type="text" class="form-control" id="invoicePrefix" value="<?= htmlspecialchars($prefix) ?>" readonly>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Series</label>
+                        <input type="text" class="form-control" id="invoiceSeries" value="<?= htmlspecialchars($series) ?>" readonly>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Suffix</label>
+                        <input type="text" class="form-control" id="invoiceSuffix" value="<?= htmlspecialchars($suffix) ?>" readonly>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    Close
+                </button>
+                <button type="button" class="btn btn-primary" id="saveInvoicePreference">
+                    Submit
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    $(document).on('click', '#saveInvoicePreference', function () {
+
+let mode = $('input[name="invoice_mode"]:checked').val();
+
+let prefix = $('#invoicePrefix').val();
+let series = $('#invoiceSeries').val();
+let suffix = $('#invoiceSuffix').val();
+
+if (mode === 'manual') {
+
+    $('#custom_invoice_no')
+        .val('')
+        .prop('readonly', false);
+
+} else {
+
+    let invoiceNumber = prefix + series + suffix;
+
+    $('#custom_invoice_no')
+        .val(invoiceNumber)
+        .prop('readonly', true);
+}
+
+$('#invoicePreferenceModal').modal('hide');
+});
+
+$(document).ready(function(){
+
+let prefix = $('#invoicePrefix').val();
+let series = $('#invoiceSeries').val();
+let suffix = $('#invoiceSuffix').val();
+
+$('#custom_invoice_no').val(prefix + series + suffix);
+});
+</script>
 <script>
 
 $(document).on('change keyup', '.price-input, .tax-select', function () {
 
 let row = $(this).closest('.invoice-row');
-
 let price = parseFloat(row.find('.price-input').val()) || 0;
-
 let taxRate = parseFloat(row.find('.tax-select').val()) || 0;
-
 let taxAmount = (price * taxRate) / 100;
-
 let totalAmount = price + taxAmount;
 
 row.find('.tax-amount').text(
@@ -835,24 +950,18 @@ $('#bill_to_user').on('change', function() {
         success: function(response)
         {
             $('#business_name').html(response.business_name);
-
             $('#address').html(response.address);
-
             $('#city_state_zip').html(
                 response.city + ', ' +
                 response.state + ' - ' +
                 response.pincode
             );
-
             $('#gstin').html(
                 '<strong>GSTIN:</strong> ' + response.gst_in
             );
         }
     });
-
 });
-</script>
-<script>
 
 const taxOptions = `
 <option value="0">Select Tax</option>
@@ -906,9 +1015,7 @@ $('#addItem').click(function(){
         </td>
     </tr>
     `;
-
     $('#invoiceItems').append(row);
-
 });
 
 document.addEventListener("DOMContentLoaded", function () {
@@ -922,28 +1029,15 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     });
 
-$(document).on(
-'keyup change',
-'.price-input,.tax-select',
+$(document).on('keyup change','.price-input,.tax-select',
 function(){
-
     let row = $(this).closest('.invoice-row');
 
-    let price =
-        parseFloat(
-            row.find('.price-input').val()
-        ) || 0;
+    let price = parseFloat(row.find('.price-input').val()) || 0;
 
-    let taxRate =
-        parseFloat(
-            row.find('.tax-select').val()
-        ) || 0;
-
-    let taxAmount =
-        price * taxRate / 100;
-
-    let amount =
-        price + taxAmount;
+    let taxRate = parseFloat(row.find('.tax-select').val()) || 0;
+    let taxAmount = price * taxRate / 100;
+    let amount = price + taxAmount;
 
     row.find('.tax-amount')
        .text(taxAmount.toFixed(2));
@@ -973,7 +1067,6 @@ $('.invoice-row').each(function(){
     ) || 0;
 
     let taxAmount = (rate * tax) / 100;
-
     let amount = rate + taxAmount;
 
     totalGST += taxAmount;
@@ -1024,39 +1117,50 @@ $('.invoice-row').each(function(index) {
 calculateGrandTotal();
 });
 
-
 $('#addUserForm').submit(function(e){
-
 e.preventDefault();
-
 $.ajax({
     url: 'invoice-add-user.php',
     type: 'POST',
     data: $(this).serialize(),
     dataType: 'json',
-
     success: function(res){
-
         if(res.status === 'success'){
-
             $('#bill_to_user').append(
                 `<option value="${res.user.id}" selected>
                     ${res.user.business_name}
                 </option>`
             );
-
             $('#bill_to_user').trigger('change');
-
             $('#addUserModal').modal('hide');
-
             $('#addUserForm')[0].reset();
-
             alert('User Added Successfully');
         }
         else{
             alert(res.message);
         }
     }
+});
+
+});
+
+function toggleInvoiceFields() {
+
+let mode = $('input[name="invoice_mode"]:checked').val();
+
+if (mode === 'auto') {
+    $('#autoInvoiceFields').show();
+} else {
+    $('#autoInvoiceFields').hide();
+}
+}
+
+$(document).ready(function () {
+
+toggleInvoiceFields();
+
+$('input[name="invoice_mode"]').on('change', function () {
+    toggleInvoiceFields();
 });
 
 });
