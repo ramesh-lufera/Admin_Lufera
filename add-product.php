@@ -969,7 +969,7 @@ if ($stmt->execute()) {
                                 <span class="amount"><?= number_format($price) ?></span>
                                 <span class="duration">/<?= htmlspecialchars($duration); ?></span>
                             </div>
-                            <form action="cart.php" method="POST">
+                            <form action="../../cart.php" method="POST">
                               <input type="hidden" name="type" value="product">  
                               <input type="hidden" name="id" value="<?= htmlspecialchars($id) ?>">
                               <input type="hidden" name="plan_name" value="<?= htmlspecialchars($package_name) ?>">
@@ -1198,8 +1198,8 @@ if ($stmt->execute()) {
                         );
                         
                         $rootContent = str_replace(
-                            "../cart.php",
-                            "./cart.php",
+                            "../../cart.php",
+                            "cart.php", 
                             $rootContent
                         );
                         
