@@ -36,7 +36,7 @@ $script = '<script>
     }
     .image-upload {
         position: relative;
-        max-width:100%;
+        max-width:100% !important;
         width: 100%;
         height: 200px;
         border: 2px dashed #ccc;
@@ -107,7 +107,11 @@ $result = $query->get_result();
 if ($result->num_rows === 0) {
     die('Package not found');
 }
+
 $package = $result->fetch_assoc();
+$imageData = json_decode($package['image_data'], true);
+$breadcrumbImage = $imageData['breadcrumb_image'] ?? '';
+$previewImages = $imageData['preview_images'] ?? [];
 
 // Fetch features
 // Fetch inclusive features
@@ -207,12 +211,51 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save'])) {
     $addon_product = isset($_POST['products']) && is_array($_POST['products']) ? implode(',', $_POST['products']) : '';
     $addon_service = isset($_POST['addons']) && is_array($_POST['addons']) ? implode(',', $_POST['addons']) : '';
 
+$imageData = json_decode($package['image_data'], true);
+$breadcrumbImage = $imageData['breadcrumb_image'] ?? '';
+$previewImages = $imageData['preview_images'] ?? [];
+
+if(isset($_FILES['breadcrumb_image']) &&
+   $_FILES['breadcrumb_image']['error']==0){
+
+    $name = time().'_breadcrumb_'.basename($_FILES['breadcrumb_image']['name']);
+
+    move_uploaded_file(
+        $_FILES['breadcrumb_image']['tmp_name'],
+        "uploads/products/".$name
+    );
+
+    $breadcrumbImage = $name;
+}
+
+for($i=0;$i<4;$i++){
+
+    if(isset($_FILES['preview_images']['name'][$i]) &&
+       $_FILES['preview_images']['error'][$i]==0){
+
+        $name = time().'_preview'.($i+1).'_'.
+                basename($_FILES['preview_images']['name'][$i]);
+
+        move_uploaded_file(
+            $_FILES['preview_images']['tmp_name'][$i],
+            "uploads/products/".$name
+        );
+
+        $previewImages[$i] = $name;
+    }
+
+}
+
+$imageData = json_encode([
+    'breadcrumb_image'=>$breadcrumbImage,
+    'preview_images'=>$previewImages
+]);
     // Update package
-    $stmt = $conn->prepare("UPDATE package SET package_img=?, package_name=?, title=?, subtitle=?, short_description=?, description=?, cat_id=?, template=?, created_at=?, addon_package=?, addon_product=?, addon_service=?, gst_id=?, is_login=? WHERE id=?");
+    $stmt = $conn->prepare("UPDATE package SET package_img=?, image_data=?, package_name=?, title=?, subtitle=?, short_description=?, description=?, cat_id=?, template=?, created_at=?, addon_package=?, addon_product=?, addon_service=?, gst_id=?, is_login=? WHERE id=?");
     if ($stmt === false) {
         die("Prepare failed for update package: " . $conn->error);
     }
-    $stmt->bind_param("ssssssisssssiii", $package_image, $package_name, $title, $subtitle, $short_description, $description, $cat_id, $module, $updated_at, $addon_package, $addon_product, $addon_service, $gst_id, $is_login, $package_id);
+    $stmt->bind_param("sssssssisssssiii", $package_image, $imageData, $package_name, $title, $subtitle, $short_description, $description, $cat_id, $module, $updated_at, $addon_package, $addon_product, $addon_service, $gst_id, $is_login, $package_id);
 
     if ($stmt->execute()) {
 
@@ -370,24 +413,60 @@ if ($oldSlug !== $newSlug) {
         <div class="card-body p-24">
             <div class="row justify-content-center">
                 <div class="col-xxl-12 col-xl-8 col-lg-10">
-                    <form method="POST" class="row gy-3 needs-validation" novalidate autocomplete="off">
+                    <form method="POST" enctype="multipart/form-data" class="row gy-3 needs-validation" novalidate autocomplete="off">
                         <input type="hidden" name="id" value="<?php echo htmlspecialchars($get_package_id); ?>">
                         <input type="hidden" name="cat_id" value="<?php echo htmlspecialchars($get_cat_id); ?>">
                         <input type="hidden" name="module" value="<?php echo htmlspecialchars($get_module); ?>">
                         <div class="mb-2">
-                            <label class="form-label">
-                                Package image <span class="text-danger-600">*</span>
-                            </label>
+                            <div class="row">
+                                <div class="col-lg-6">
+                                    <label class="form-label">
+                                        Breadcrumb image <span class="text-danger-600">*</span>
+                                    </label>
+                                    <div class="has-validation">
+                                    <input type="file" id="breadcrumb_image" name="breadcrumb_image" accept="image/*" hidden>
 
-                            <div class="has-validation">
-                                <input type="file" id="file-input" accept="image/*" name="package_image">
-                                <label class="image-upload d-flex mw-100" for="file-input">
-                                    <span>Click or Drag Image Here</span>
-                                    <img id="preview" src="uploads/products/<?php echo htmlspecialchars($package['package_img']); ?>" alt="Preview Image" style="display:block;">
-                                </label>
+                                    <label class="image-upload" for="breadcrumb_image">
+                                        <img id="breadcrumbPreview" src="uploads/products/<?php echo htmlspecialchars($breadcrumbImage); ?>" style="display:block;">
+                                    </label>
+                                    </div>
+                                </div>
+                                <div class="col-lg-6">
+                                    <label class="form-label">
+                                        Package image <span class="text-danger-600">*</span>
+                                    </label>
+
+                                    <div class="has-validation">
+                                        <input type="file" id="file-input" accept="image/*" name="package_image">
+                                        <label class="image-upload d-flex mw-100" for="file-input">
+                                            <span>Click or Drag Image Here</span>
+                                            <img id="preview" src="uploads/products/<?php echo htmlspecialchars($package['package_img']); ?>" alt="Preview Image" style="display:block;">
+                                        </label>
+                                    </div>  
+                                </div>
                             </div>
+                            
                         </div>
-                        
+                        <div class="mb-2">
+                            <div class="row">
+                                <label class="form-label fw-semibold text-primary-light text-sm mb-8">
+                                    Preview Images <span class="text-danger-600">*</span>
+                                </label>
+
+                                <?php
+                                for($i=0;$i<4;$i++){
+                                    $img = $previewImages[$i] ?? '';
+                                ?>
+                                <div class="col-md-3">
+                                    <input type="file" name="preview_images[]" id="preview_file_<?php echo $i; ?>" accept="image/*" hidden>
+                                    <label class="image-upload" for="preview_file_<?php echo $i; ?>">
+                                        <span>Click or Drag Image Here</span>
+                                        <img id="preview_<?php echo $i; ?>" src="uploads/products/<?php echo htmlspecialchars($img); ?>" style="display:block;">
+                                    </label>
+                                </div>
+                                <?php } ?>
+                            </div>
+                        </div>  
                         <div class="mb-2">
                             <label class="form-label fw-semibold text-primary-light text-sm mb-8">
                                 Package name <span class="text-danger-600">*</span>
@@ -419,8 +498,7 @@ if ($oldSlug !== $newSlug) {
                                 Subtitle <span class="text-danger-600">*</span>
                             </label>
                             <div class="has-validation">
-                                <input type="text" class="form-control radius-8" name="subtitle" required maxlength="100"
-                                       value="<?php echo htmlspecialchars($package['subtitle']); ?>">
+                                <input type="text" class="form-control radius-8" name="subtitle" required maxlength="100" value="<?php echo htmlspecialchars($package['subtitle']); ?>">
                                 <div class="invalid-feedback">
                                     Subtitle is required
                                 </div>
@@ -445,9 +523,7 @@ if ($oldSlug !== $newSlug) {
                             </label>
 
                             <div class="has-validation">
-                                <textarea class="form-control radius-8"
-                                        name="short_description"
-                                        required><?php echo htmlspecialchars($package['short_description']); ?></textarea>
+                                <textarea class="form-control radius-8" name="short_description" required><?php echo htmlspecialchars($package['short_description']); ?></textarea>
 
                                 <div class="invalid-feedback">
                                     Short Description is required
@@ -729,20 +805,37 @@ if ($oldSlug !== $newSlug) {
         }
     });
 
-    const fileInput = document.getElementById('file-input');
-    const preview = document.getElementById('preview');
-    if(fileInput){
-        fileInput.addEventListener('change', function() {
-            const file = this.files[0];
-            if(file){
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    preview.setAttribute('src', e.target.result);
-                }
-                reader.readAsDataURL(file);
+    for(let i=0;i<4;i++){
+
+    let input = document.getElementById('preview_file_'+i);
+    let img   = document.getElementById('preview_'+i);
+
+    if(input){
+
+        input.addEventListener('change',function(){
+
+            if(this.files.length){
+
+                img.src = URL.createObjectURL(this.files[0]);
+
             }
+
         });
+
     }
+
+    }
+
+    document.getElementById('file-input').addEventListener('change', function(){
+
+    if(this.files.length){
+
+        document.getElementById('preview').src =
+            URL.createObjectURL(this.files[0]);
+
+    }
+
+    });
 
     // Inclusive
     document.getElementById("inclusive-wrapper").addEventListener("click", function(e) {
@@ -775,6 +868,17 @@ if ($oldSlug !== $newSlug) {
     if (e.target.classList.contains("remove-feature")) {
         e.target.parentElement.remove();
     }
+    });
+
+    document.getElementById('breadcrumb_image').addEventListener('change', function () {
+
+    if (this.files.length) {
+
+        document.getElementById('breadcrumbPreview').src =
+            URL.createObjectURL(this.files[0]);
+
+    }
+
     });
 </script>
 
