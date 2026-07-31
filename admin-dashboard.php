@@ -585,7 +585,8 @@
                     Swal.showLoading();
                     const spinner = document.querySelector('.swal2-loader');
                     if (spinner) {
-                        spinner.style.borderColor = '#fec700 transparent #fec700 transparent';
+                        // spinner.style.borderColor = '#fec700 transparent #fec700 transparent';
+                        spinner.style.borderColor = 'var(--lufera-main-color) transparent var(--lufera-main-color) transparent';
                     }
                 }
             });
@@ -743,7 +744,8 @@
                         Swal.showLoading();
                         const spinner = document.querySelector('.swal2-loader');
                         if (spinner) {
-                            spinner.style.borderColor = '#fec700 transparent #fec700 transparent';
+                            // spinner.style.borderColor = '#fec700 transparent #fec700 transparent';
+                            spinner.style.borderColor = 'var(--lufera-main-color) transparent var(--lufera-main-color) transparent';
                         }
                     }
                 });
@@ -1446,12 +1448,14 @@
 
     /* Hover background */
     .group-item:hover {
-        border-color: #fec700 !important;
+        /* border-color: #fec700 !important; */
+        border-color: var(--lufera-main-color) !important;
     }
 
     /* Icon hover background */
     .group-item:hover .test{
-        background-color: #fec700 !important;
+        /* background-color: #fec700 !important; */
+        background-color: var(--lufera-main-color) !important;
         color: #111 !important;
     }
 
@@ -1545,16 +1549,22 @@
 
     /* ===== Buy button ===== */
     #section-products .btn-primary-600 {
-        background-color: #fec700 !important;
+        /* background-color: #fec700 !important;
         border-color: #fec700 !important;
-        color: #111 !important;
+        color: #111 !important; */
+        background-color: var(--lufera-main-color) !important;
+        border-color: var(--lufera-main-color) !important;
+        color: var(--lufera-text-color) !important;
         width: 100% !important;
     }
 
     #section-products .btn-primary-600:hover {
-        background-color: #e6b800 !important;
+        /* background-color: #e6b800 !important;
         border-color: #e6b800 !important;
-        color: #111 !important;
+        color: #111 !important; */
+        background-color: var(--lufera-focus-color) !important;
+        border-color: var(--lufera-focus-color) !important;
+        color: var(--lufera-text-color) !important;
     }
 
     /* ===== Empty message ===== */
@@ -2967,8 +2977,8 @@
         </div>
 
         <div class="modal-footer d-flex align-items-center justify-content-center gap-3">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-          <button type="submit" id="modal_submit" class="btn lufera-bg text-white" name="save">Save</button>
+          <button type="button" class="btn btn-secondary lufera-text" data-bs-dismiss="modal">Close</button>
+          <button type="submit" id="modal_submit" class="btn lufera-bg lufera-text" name="save">Save</button>
         </div>
       </div>
     </form>

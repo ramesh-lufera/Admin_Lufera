@@ -144,7 +144,7 @@ input::-webkit-outer-spin-button, input::-webkit-inner-spin-button {
       <span class="fa fa-arrow-left"></span>&nbsp; Back
     </a>
     <h6 class="fw-semibold mb-0">Taxes</h6>
-    <button type="button" id="addNewBtn" class="add-role-btn btn lufera-bg text-white text-sm btn-sm px-12 py-12 radius-8 d-flex align-items-center gap-2" data-bs-toggle="modal" data-bs-target="#exampleModal">
+    <button type="button" id="addNewBtn" class="add-role-btn btn lufera-bg lufera-text text-sm btn-sm px-12 py-12 radius-8 d-flex align-items-center gap-2" data-bs-toggle="modal" data-bs-target="#exampleModal">
       <iconify-icon icon="ic:baseline-plus" class="icon text-xl line-height-1"></iconify-icon>
       Add New Tax
     </button>
@@ -301,8 +301,8 @@ input::-webkit-outer-spin-button, input::-webkit-inner-spin-button {
       </div>
 
       <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-        <button type="button" id="submitService" class="btn lufera-bg">Save Tax</button>
+        <button type="button" class="btn btn-secondary lufera-text" data-bs-dismiss="modal">Close</button>
+        <button type="button" id="submitService" class="btn lufera-bg lufera-text">Save Tax</button>
       </div>
     </div>
   </div>

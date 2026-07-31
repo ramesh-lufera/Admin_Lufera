@@ -1,16 +1,19 @@
 <?php include './partials/layouts/layoutTop.php';
+
 date_default_timezone_set('Asia/Kolkata');
 ?>
 <style>
     .fa-file{
         padding: 10px 20px;
-        background: #fcf1c9;
+        /* background: #fcf1c9; */
+        background: var(--lufera-focus-color);
         margin: -40px 0px 10px;
         align-items: center;
         justify-content: center;
         display: flex;
         border-radius: 8px;
-        color: #fec700;
+        /* color: #fec700; */
+        color: var(--lufera-main-color);
     }
 </style>
 <?php
@@ -104,7 +107,8 @@ $remindersResult->data_seek(0); // reset again for display
                 <span class="fa fa-arrow-left"></span> Back
             </a> 
             <!-- Notifications Button with Badge -->
-            <button class="btn btn-outline-warning position-relative px-3" type="button" data-bs-toggle="offcanvas" data-bs-target="#notificationsOffcanvas" aria-controls="notificationsOffcanvas">
+            <!-- <button class="btn btn-outline-warning position-relative px-3" type="button" data-bs-toggle="offcanvas" data-bs-target="#notificationsOffcanvas" aria-controls="notificationsOffcanvas"> -->
+            <button class="btn lufera-bg lufera-text position-relative px-3" type="button" data-bs-toggle="offcanvas" data-bs-target="#notificationsOffcanvas" aria-controls="notificationsOffcanvas">                
                 <i class="fa fa-bell me-1"></i> Reminder
                 <?php if ($reminderCount > 0): ?>
                     <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
@@ -114,7 +118,8 @@ $remindersResult->data_seek(0); // reset again for display
                 <?php endif; ?>
             </button>
 
-            <button type="button" class="add-role-btn btn lufera-bg text-white text-sm btn-sm px-12 py-12 radius-8 d-flex align-items-center gap-2" data-bs-toggle="modal" data-bs-target="#createSheetModal">
+            <!-- <button type="button" class="add-role-btn btn lufera-bg text-white text-sm btn-sm px-12 py-12 radius-8 d-flex align-items-center gap-2" data-bs-toggle="modal" data-bs-target="#createSheetModal"> -->
+            <button type="button" class="add-role-btn btn lufera-bg lufera-text text-sm btn-sm px-12 py-12 radius-8 d-flex align-items-center gap-2" data-bs-toggle="modal" data-bs-target="#createSheetModal">
                 <iconify-icon icon="ic:baseline-plus" class="icon text-xl line-height-1"></iconify-icon>
                 Create New Sheet
             </button>
@@ -143,7 +148,8 @@ $remindersResult->data_seek(0); // reset again for display
                     <?php while ($rem = $remindersResult->fetch_assoc()): ?>
                         <?php 
                             $isToday = ($rem['remind_at'] === $today);
-                            $dueClass = $isToday ? 'text-danger fw-bold' : 'text-warning';
+                            // $dueClass = $isToday ? 'text-danger fw-bold' : 'text-warning';
+                            $dueClass = $isToday ? 'text-danger fw-bold' : 'lufera-color';
                         ?>
                     <a href="sheets.php?id=<?= $rem['sheet_id'] ?>&row=<?= $rem['sheet_row'] ?>&mark_read=1" class="text-decoration-none text-dark">
                         <div class="list-group-item list-group-item-action border-bottom px-4 py-3">
@@ -208,8 +214,8 @@ $remindersResult->data_seek(0); // reset again for display
                     </div>
                     
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                        <button type="submit" class="btn lufera-bg text-white">Create Sheet</button>
+                        <button type="button" class="btn btn-secondary lufera-text" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn lufera-bg lufera-text">Create Sheet</button>
                     </div>
                 </form>
             </div>

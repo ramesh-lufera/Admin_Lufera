@@ -7,6 +7,7 @@
 
     $dotenv = Dotenv\Dotenv::createImmutable(__DIR__);
     $dotenv->load();
+
     $cart_id= $_GET['id'] ?? null;
 
     if (isset($_POST['save_cart'])) {
@@ -470,7 +471,8 @@
                             Swal.showLoading();
                             const spinner = document.querySelector('.swal2-loader');
                             if (spinner) {
-                                spinner.style.borderColor = '#fec700 transparent #fec700 transparent';
+                                // spinner.style.borderColor = '#fec700 transparent #fec700 transparent';
+                                spinner.style.borderColor = 'var(--lufera-main-color) transparent var(--lufera-main-color) transparent';
                             }
                         }
                     });
@@ -957,7 +959,8 @@
                             Swal.showLoading();
                             const spinner = document.querySelector('.swal2-loader');
                             if (spinner) {
-                                spinner.style.borderColor = '#fec700 transparent #fec700 transparent';
+                                // spinner.style.borderColor = '#fec700 transparent #fec700 transparent';
+                                spinner.style.borderColor = 'var(--lufera-main-color) transparent var(--lufera-main-color) transparent';
                             }
                         }
                     });
@@ -1167,7 +1170,8 @@
         transition: background-color 0.2s ease;
     }
     .payment-option-box:hover {
-        background-color: #fff8dc;
+        /* background-color: #fff8dc; */
+        background-color: var(--lufera-focus-color);
     }
     .payment-option-box input[type="radio"] {
         margin: 0;
@@ -1182,7 +1186,8 @@
         font-weight: 600;
     }
     .icon-circle {
-        background-color: #fec700;
+        /* background-color: #fec700; */
+        background-color: var(--lufera-main-color);
         color: white;
         border-radius: 50%;
         padding: 6px;
@@ -1301,7 +1306,7 @@
         
                 <a class="cursor-pointer fw-bold" onclick="history.back()"><span class="fa fa-arrow-left"></span>&nbsp; Back</a>    
                 <h6 class="fw-semibold mb-0">Your Cart</h6>
-                <button type="submit" name="save" id="continuePayBtn" class="lufera-bg text-center btn-sm px-12 py-10 float-end" style="width:150px; border: 1px solid #000" value="Submit">Continue to Pay</button>
+                <button type="submit" name="save" id="continuePayBtn" class="lufera-bg lufera-text text-center btn-sm px-12 py-10 float-end" style="width:150px; border: 1px solid #000" value="Submit">Continue to Pay</button>
             
         </div>
         

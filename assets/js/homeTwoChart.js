@@ -195,12 +195,14 @@
 
             fill: {
                 type: 'gradient',
-                colors: ['#fec700'],
+                // colors: ['#fec700'],
+                colors: ['var(--lufera-main-color)'],
                 gradient: {
                     shade: 'light',
                     type: 'vertical',
                     shadeIntensity: 0.6,
-                    gradientToColors: ['#fec700'],
+                    // gradientToColors: ['#fec700'],
+                    gradientToColors: ['var(--lufera-main-color)'],
                     opacityFrom: 1,
                     opacityTo: 0.85,
                     stops: [0, 100]
@@ -794,12 +796,14 @@
             stroke: {
                 curve: "smooth",
                 width: 2,
-                colors: ["#fec700"]
+                // colors: ["#fec700"]
+                colors: ["var(--lufera-main-color)"]
             },
 
             fill: {
                 type: "gradient",
-                colors: ["#fec700"],
+                // colors: ["#fec700"],
+                colors: ["var(--lufera-main-color)"],
                 gradient: {
                 shade: "light",
                 type: "vertical",
@@ -810,7 +814,8 @@
             },
 
             markers: {
-                colors: ["#fec700"],
+                // colors: ["#fec700"],
+                colors: ["var(--lufera-main-color)"],
                 size: 0,
                 hover: { size: 8 }
             },

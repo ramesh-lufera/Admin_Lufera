@@ -3,6 +3,7 @@
 
     require_once 'vendor/autoload.php';
     include './partials/connection.php';
+    include './partials/theme_colors_loader.php';
     include 'fb-config.php';
 
     $dotenv = Dotenv\Dotenv::createImmutable(__DIR__);
@@ -94,7 +95,7 @@
                         </div>
                     </div>
 
-                    <button type="submit" class="btn lufera-bg text-white text-sm btn-sm px-12 py-16 w-100 radius-12 mt-32" name="login"> Sign In</button>
+                    <button type="submit" class="btn lufera-bg lufera-text text-sm btn-sm px-12 py-16 w-100 radius-12 mt-32" name="login"> Sign In</button>
                     
                     <div class="mt-32 center-border-horizontal text-center">
                         <span class="bg-base z-1 px-4">Or sign in with</span>

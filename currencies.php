@@ -142,7 +142,7 @@
         <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-24">
             <a class="cursor-pointer fw-bold" onclick="history.back()"><span class="fa fa-arrow-left"></span>&nbsp; Back</a> 
             <h6 class="fw-semibold mb-0">Currencies</h6>
-            <button type="button" class="btn lufera-bg text-white text-sm btn-sm px-12 py-12 radius-8 d-flex align-items-center gap-2" data-bs-toggle="modal" data-bs-target="#exampleModal">
+            <button type="button" class="btn lufera-bg lufera-text text-sm btn-sm px-12 py-12 radius-8 d-flex align-items-center gap-2" data-bs-toggle="modal" data-bs-target="#exampleModal">
                 <iconify-icon icon="ic:baseline-plus" class="icon text-xl line-height-1"></iconify-icon>
                 Add Currency
             </button>
@@ -266,7 +266,7 @@
                     </div>
                     <div class="modal-footer">
                         <button type="reset" class="btn btn-outline-secondary">Cancel</button>
-                        <button type="submit" class="btn btn-primary lufera-bg">Save Currency</button>
+                        <button type="submit" class="btn btn-primary lufera-bg lufera-text">Save Currency</button>
                     </div>
                 </form>
             </div>
@@ -308,7 +308,7 @@
                         <button type="reset" class="border border-danger-600 bg-hover-danger-200 text-danger-600 text-md px-50 py-11 radius-8" data-bs-dismiss="modal">
                             Cancel
                         </button>
-                        <button type="submit" class="btn btn-primary border border-primary-600 text-md px-50 py-12 radius-8 lufera-bg">
+                        <button type="submit" class="btn btn-primary border border-primary-600 text-md px-50 py-12 radius-8 lufera-bg lufera-text">
                             Update
                         </button>
                     </div>
