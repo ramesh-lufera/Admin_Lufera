@@ -1,4 +1,8 @@
-<?php include './partials/head.php';
+<?php 
+
+      ob_start();
+
+      include './partials/head.php';
       include './partials/connection.php';
       include './partials/check_login.php';
       include './log.php';
@@ -37,6 +41,9 @@
 <!DOCTYPE html>
 <html lang="en" data-theme="light">
 <head>
+
+  <?php include './partials/theme_colors_loader.php'; ?>
+
   <style>
     @media (max-width: 576px) {
         #notificationBadge {

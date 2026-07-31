@@ -1,4 +1,5 @@
 <?php include './partials/layouts/layoutTop.php';
+
 ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
@@ -130,7 +131,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     <input type="hidden" value="<?php echo htmlspecialchars($created_at); ?>" name="created_at">
 
                     <div class="d-flex align-items-center justify-content-center gap-3 mt-24">
-                        <button type="submit" class="lufera-bg bg-hover-warning-400 text-white text-md px-56 py-11 radius-8 m-auto d-block">
+                        <button type="submit" class="lufera-bg lufera-text text-md px-56 py-11 radius-8 m-auto d-block">
                             Save Change
                         </button>
                     </div>

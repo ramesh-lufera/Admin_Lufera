@@ -104,7 +104,7 @@
                 <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap">
                     <div class="d-flex align-items-center gap-2 flex-wrap">
                         <span class="fw-semibold">Subtotal</span>
-                        <a href="#" class="text-warning fw-semibold text-decoration-none">Add coupon code</a>
+                        <a href="#" class="lufera-color fw-semibold text-decoration-none">Add coupon code</a>
                     </div>
                     <span id="subtotal" class="fw-semibold mt-2 mt-md-0">
                         ₹<?= htmlspecialchars(number_format($monthlyPrice * 12, 2)) ?>
@@ -143,7 +143,7 @@
                     <input type="hidden" name="subtotal" id="subtotalInput">    
                     <input type="hidden" name="receipt_id" value="<?= $InvoiceId ?>">
 
-                    <button type="submit" class="btn lufera-bg">Complete Payment</button>
+                    <button type="submit" class="btn lufera-bg lufera-text">Complete Payment</button>
                 </form>
             </div>
         </div>

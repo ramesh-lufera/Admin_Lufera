@@ -2,7 +2,9 @@
         ini_set('display_errors', 1);
         ini_set('display_startup_errors', 1);
         error_reporting(E_ALL);
+
     include './partials/layouts/layoutTop.php';
+
     $Id = $_SESSION['user_id'];
     $package_id = $_GET['prod_id'];
     $web_id = $_GET['web_id'];
@@ -68,8 +70,10 @@
     border-radius: 16px 0 0 0;
 }
 .upgrade__header--selected {
-    color: #fec700;
-    background-color: #fec70024;
+    /* color: #fec700; */
+    color: var(--lufera-main-color);
+    /* background-color: #fec70024; */
+    background-color: var(--lufera-focus-color);
     border-radius: 0 16px 0 0;
 }
 
@@ -530,7 +534,7 @@
                                     <!-- <input type="hidden" name="duration" id="duration" value="<?php echo $duration; ?>"> -->
                                     <!-- <input type="hidden" name="total_amount" id="total_amount" value=""> -->
                                     <!-- <input type="hidden" name="invoice_id" id="invoice_id" value="<?php echo $invoice_id ?>"> -->
-                                    <button type="submit" class="lufera-bg btn w-100 text-white">Complete upgrade payment</button>
+                                    <button type="submit" class="lufera-bg btn w-100 lufera-text">Complete upgrade payment</button>
                                 </form>
                             </div>  
                         </div>

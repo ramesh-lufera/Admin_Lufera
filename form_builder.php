@@ -15,6 +15,7 @@
 
     if ($isViewMode) {
         include './partials/connection.php';
+        include './partials/theme_colors_loader.php';
     } else {
         include './partials/layouts/layoutTop.php';
     }
@@ -538,7 +539,8 @@
             /* Page wrapper */
             .success-wrap{
                 min-height:100vh;
-                background:#f4e9a8;
+                /* background:#f4e9a8; */
+                background: var(--lufera-focus-color);
                 display:flex;
                 justify-content:center;
                 align-items:flex-start;
@@ -587,7 +589,8 @@
                 position:relative;
                 width:110px;
                 height:135px;
-                background:#faefc2;
+                /* background:#faefc2; */
+                background: var(--lufera-focus-color);
                 border-radius:16px;
                 margin:0 auto;
                 padding:18px;
@@ -598,7 +601,8 @@
 
             .doc-line{
                 height:5px;
-                background:#fec700;
+                /* background:#fec700; */
+                background: var(--lufera-main-color);
                 border-radius:5px;
             }
 
@@ -609,7 +613,8 @@
                 right:-18px;
                 width:54px;
                 height:54px;
-                background:#fec700;
+                /* background:#fec700; */
+                background: var(--lufera-main-color);
                 border-radius:50%;
                 display:flex;
                 align-items:center;
@@ -617,7 +622,8 @@
                 font-size:26px;
                 font-weight:900;
                 color:#1f2933;
-                box-shadow:0 10px 24px rgba(254,199,0,.45);
+                /* box-shadow:0 10px 24px rgba(254,199,0,.45); */
+                box-shadow: 0 10px 24px var(--lufera-focus-color);
             }
 
             /* Text */
@@ -755,11 +761,15 @@
 
     <style>
         :root{
-            --primary:#fec700;
-            --bg:#fffbea;
+            /* --primary:#fec700; */
+            --primary: var(--lufera-main-color);
+            /* --bg:#fffbea; */
+            --bg: var(--lufera-focus-color);
             --card:#ffffff;
             --muted:#6b7280;
-            --border:#f5e8b8;
+            /* --border:#f5e8b8; */
+            --border: var(--lufera-focus-color);
+            --text: var(--lufera-text-color);
         }
         *{box-sizing:border-box;font-family:Inter,Segoe UI,Roboto,Helvetica,Arial,sans-serif}
         body{margin:0;background:var(--bg);color:#111827}
@@ -957,7 +967,8 @@
         .canvas textarea:focus,
         .canvas select:focus{
             border-color:var(--primary);
-            box-shadow:0 0 0 2px rgba(254,199,0,.2);
+            /* box-shadow:0 0 0 2px rgba(254,199,0,.2); */
+            box-shadow:0 0 0 2px var(--lufera-focus-color);
         }
 
         /* REMOVE FIELD ICON */
@@ -1141,7 +1152,8 @@
 
     <style>
        .form-topbar{
-            background:linear-gradient(180deg,#fff9e6 0%, #fff3c4 100%);
+            /* background:linear-gradient(180deg,#fff9e6 0%, #fff3c4 100%); */
+            background:linear-gradient(180deg, var(--lufera-focus-color) 0%, var(--lufera-main-color) 100%);
             border-bottom:1px solid #e5e7eb;
             box-shadow:0 2px 6px rgba(0,0,0,.04);
 
@@ -1225,6 +1237,7 @@
 
         .topbar-save-btn{
             background:var(--primary);
+            color: var(--text);
             padding:8px 28px;
             font-weight:700;
             border:none;
@@ -1280,7 +1293,8 @@
         }
 
         .back-btn:hover{
-            color:#fec700;
+            /* color:#fec700; */
+            color: var(--lufera-main-color);
             transform:translateX(-2px);     /* subtle professional motion */
         }
 
@@ -1304,7 +1318,8 @@
 
         .switch:hover + .status-text,
         .status-text:hover{
-            color:#fec700;
+            /* color:#fec700; */
+            color: var(--lufera-main-color);
         }
 
 
@@ -1323,7 +1338,8 @@
         }
 
         .topbar-link:hover{
-            color:#fec700;               /* 🔥 theme hover */
+            /* color:#fec700;               🔥 theme hover */
+            color: var(--lufera-main-color);               /* 🔥 theme hover */
         }
 
 
@@ -1360,7 +1376,8 @@
 
         /* ✅ ACTIVE (ON) */
         .switch input:checked + .slider{
-            background:#fec700;
+            /* background:#fec700; */
+            background: var(--lufera-main-color);
         }
 
         /* KNOB MOVE */
@@ -1370,7 +1387,8 @@
 
         /* OPTIONAL HOVER POLISH */
         .switch:hover .slider{
-            box-shadow:0 0 0 3px rgba(254,199,0,.25);
+            /* box-shadow:0 0 0 3px rgba(254,199,0,.25); */
+            box-shadow: 0 0 0 3px var(--lufera-focus-color);
         }
 
 
@@ -1438,12 +1456,15 @@
         }
 
         .share-tab:hover{
-        color:#fec700;
+        /* color:#fec700; */
+        color: var(--primary);
         }
 
         .share-tab.active{
-        color:#fec700;
-        border-bottom:3px solid #fec700;
+        /* color:#fec700;
+        border-bottom:3px solid #fec700; */
+        color: var(--primary);
+        border-bottom: 3px solid var(--primary);
         }
 
         /* Content */
@@ -1505,7 +1526,8 @@
         border:none !important;
 
         cursor:pointer;
-        accent-color:#fec700;
+        /* accent-color:#fec700; */
+        accent-color: var(--primary);
         }
 
 
@@ -1528,16 +1550,20 @@
         border:none;
         font-weight:600;
         cursor:pointer;
-        color:#111827;
+        /* color:#111827; */
+        color: var(--text);
         }
 
         .share-footer button:hover{
-        color:#fec700;
+        /* color:#fec700; */
+        color: var(--primary);
         }
 
         .share-footer .primary{
-        background:#fec700;
-        color:#111827;
+        /* background:#fec700; */
+        background: var(--primary);
+        /* color:#111827; */
+        color: var(--text);
         border:none;
         padding:10px 20px;
         border-radius:6px;
@@ -1545,7 +1571,8 @@
         }
 
         .share-footer .primary:hover{
-        background:#e6b800;
+        /* background:#e6b800; */
+        background: var(--lufera-focus-color);
         }
 
         .embed-size{
@@ -2922,6 +2949,7 @@
                 btn.style.marginTop = "20px";
                 btn.style.padding = "10px 24px";
                 btn.style.background = "var(--primary)";
+                btn.style.color = "var(--text)";
                 btn.style.border = "none";
                 btn.style.borderRadius = "6px";
                 btn.style.fontWeight = "700";

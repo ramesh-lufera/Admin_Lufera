@@ -25,7 +25,7 @@ WHERE
     <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-24">
         <a class="cursor-pointer fw-bold" onclick="history.back()"><span class="fa fa-arrow-left"></span>&nbsp; Back</a> 
         <h6 class="fw-semibold mb-0">Users List</h6>
-        <a href="add-user.php" class="btn lufera-bg text-white text-sm btn-sm px-12 py-12 radius-8 d-flex align-items-center gap-2">
+        <a href="add-user.php" class="btn lufera-bg lufera-text text-sm btn-sm px-12 py-12 radius-8 d-flex align-items-center gap-2">
             <iconify-icon icon="ic:baseline-plus" class="icon text-xl line-height-1"></iconify-icon>
             Add New User
         </a>
@@ -144,7 +144,7 @@ WHERE
             </div>
         </div>
         <div class="modal-footer">
-            <button type="button" id="submitRoleChange" class="btn lufera-bg">Update Role</button>
+            <button type="button" id="submitRoleChange" class="btn lufera-bg lufera-text">Update Role</button>
         </div>
     </div>
   </div>
@@ -164,7 +164,7 @@ WHERE
                     <p>Loading...</p>
                 </div>
                 <div class="modal-footer">
-                    <button type="submit" class="btn lufera-bg text-white">Update User</button>
+                    <button type="submit" class="btn lufera-bg lufera-text">Update User</button>
                 </div>
             </form>
         </div>

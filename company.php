@@ -381,7 +381,8 @@ error_reporting(E_ALL);
                             }
 
                             .custom-switch input:checked + .slider {
-                                background: #f4b400;
+                                /* background: #f4b400; */
+                                background: var(--lufera-main-color);
                             }
 
                             .custom-switch input:checked + .slider:before {
@@ -391,7 +392,7 @@ error_reporting(E_ALL);
                             </style>
 
                             <div class="d-flex align-items-center justify-content-center gap-3 mt-24">
-                                <button type="submit" class="lufera-bg bg-hover-warning-400 text-white text-md px-56 py-11 radius-8 m-auto d-block">
+                                <button type="submit" class="lufera-bg lufera-text text-md px-56 py-11 radius-8 m-auto d-block">
                                     Save Change
                                 </button>
                             </div>

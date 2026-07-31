@@ -1,8 +1,10 @@
 <?php
 include 'partials/layouts/layoutTop.php';
+
 // ini_set('display_errors', 1);
 // ini_set('display_startup_errors', 1);
 // error_reporting(E_ALL);
+
 $sheetId   = isset($_GET['id']) ? intval($_GET['id']) : 0;
 date_default_timezone_set('Asia/Kolkata');
 if ($sheetId <= 0) {
@@ -1658,9 +1660,9 @@ function showReplyBox(commentId, parentElement) {
                   placeholder="Write your reply..." 
                   id="replyText_${commentId}"></textarea>
         <div class="mt-1 text-end">
-            <button class="btn btn-sm btn-secondary me-2" 
+            <button class="btn btn-sm btn-secondary lufera-text me-2" 
                     onclick="cancelReply('${commentId}')">Cancel</button>
-            <button class="btn btn-sm lufera-bg text-white" 
+            <button class="btn btn-sm lufera-bg lufera-text" 
                     onclick="saveReply(${commentId})">Send Reply</button>
         </div>
     `;
@@ -1795,7 +1797,7 @@ async function loadAttachments() {
         </div>
         <div class="d-inline-block ms-3">
             <span class="file-name">${displayName}</span>
-            ${meta?.rowLabel    ? `<small class="attachment-row d-block bg-success text-white px-3 py-1 mt-1">${meta.rowLabel}</small>` : ""}
+            ${meta?.rowLabel    ? `<small class="attachment-row d-block bg-success lufera-text px-3 py-1 mt-1">${meta.rowLabel}</small>` : ""}
             ${meta?.createdLabel ? `<small class="d-block text-muted">${meta.createdLabel}</small>` : ""}
         </div>`;
 
@@ -2207,7 +2209,7 @@ async function saveReminder() {
 
     <div class="comment-input">
         <textarea id="commentText" placeholder="Write a comment..."></textarea>
-        <button class="btn btn-secondary float-end mt-10" onclick="saveComment()">Send</button>
+        <button class="btn btn-secondary lufera-text float-end mt-10" onclick="saveComment()">Send</button>
     </div>
 </div>
 
@@ -2221,7 +2223,7 @@ async function saveReminder() {
 
     <div class="comment-input">
         <input type="file" id="attachFile" />
-        <button class="btn btn-secondary mt-10" onclick="uploadAttachment()">Upload</button>
+        <button class="btn btn-secondary lufera-text mt-10" onclick="uploadAttachment()">Upload</button>
     </div>
 </div>
 <!-- Add these just before closing </body> (after the two existing panels) -->
@@ -2285,8 +2287,8 @@ async function saveReminder() {
     </div>
     
     <div class="text-end">
-        <button class="btn btn-sm btn-secondary me-1" onclick="closeReminderModal()">Cancel</button>
-        <button class="btn btn-sm lufera-bg text-white" onclick="saveReminder()">Save Reminder</button>
+        <button class="btn btn-sm btn-secondary lufera-text me-1" onclick="closeReminderModal()">Cancel</button>
+        <button class="btn btn-sm lufera-bg lufera-text" onclick="saveReminder()">Save Reminder</button>
     </div>
 </div>
 
@@ -2323,7 +2325,7 @@ async function saveReminder() {
             <!-- Optional: extra info like row, column, mime type, etc. -->
             <div class="mb-3" id="previewExtraInfo" style="display:none;"></div>
 
-            <a id="downloadLink" class="btn btn-sm lufera-bg text-white me-10" href="#" download>Download</a>
+            <a id="downloadLink" class="btn btn-sm lufera-bg lufera-text me-10" href="#" download>Download</a>
             <!-- <button class="btn btn-lg btn-secondary" onclick="closePreviewModal()">Close</button> -->
         </div>
     </div>

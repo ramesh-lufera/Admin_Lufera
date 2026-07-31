@@ -23,6 +23,7 @@
     session_start();
     include './partials/head.php';
     include './partials/connection.php';
+    include './partials/theme_colors_loader.php';
     include 'fb-config.php';
 
     use PHPMailer\PHPMailer\PHPMailer;
@@ -342,7 +343,7 @@
                         <div class="error"><?= $errors['checkbox'] ?></div>
                     <?php endif; ?>
 
-                    <button type="submit" class="btn lufera-bg text-white text-sm btn-sm px-12 py-16 w-100 radius-12 mt-32" id="add-category-modal"> Sign Up</button>
+                    <button type="submit" class="btn lufera-bg lufera-text text-sm btn-sm px-12 py-16 w-100 radius-12 mt-32" id="add-category-modal"> Sign Up</button>
 
                     <div class="mt-32 center-border-horizontal text-center">
                         <span class="bg-base z-1 px-4">Or sign up with</span>

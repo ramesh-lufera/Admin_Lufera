@@ -546,7 +546,7 @@
             <input type="hidden" class="subtotal-display-hidden" name="subtotal-display" value="<?php echo $price; ?>">
             <input type="hidden" name="gst_id" value="<?php echo $gst_id; ?>">
             
-            <input type="submit" name="save_cart" class="lufera-bg text-center btn-sm px-12 py-10 float-end" style="width:150px; border: 1px solid #000" value="Continue"> 
+            <input type="submit" name="save_cart" class="lufera-bg lufera-text text-center btn-sm px-12 py-10 float-end" style="width:150px; border: 1px solid #000" value="Continue"> 
             
         </form>
     <?php } else { ?>
@@ -567,9 +567,9 @@
             <input type="hidden" class="subtotal-display-hidden" name="subtotal-display" value="<?php echo $price; ?>">
             <input type="hidden" name="gst_id" value="<?php echo $gst_id; ?>">
 
-            <button type="submit" class="lufera-bg text-center btn-sm px-12 py-10 float-end" style="width:150px; border: 1px solid #000">Continue</button>
+            <button type="submit" class="lufera-bg lufera-text text-center btn-sm px-12 py-10 float-end" style="width:150px; border: 1px solid #000">Continue</button>
         </form>
-        <button class="lufera-bg text-center btn-sm px-12 py-10 float-end" data-bs-toggle="modal" data-bs-target="#exampleModal" style="width:250px; border: 1px solid #000">Update Profile & Continue</button>
+        <button class="lufera-bg lufera-text text-center btn-sm px-12 py-10 float-end" data-bs-toggle="modal" data-bs-target="#exampleModal" style="width:250px; border: 1px solid #000">Update Profile & Continue</button>
     <?php } ?>
 
     <!-- Profile Modal -->
@@ -672,8 +672,8 @@
                         </div>
                         </div>
                         <div class="modal-footer d-flex align-items-center justify-content-center gap-3">
-                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                            <button type="submit" class="btn lufera-bg text-white">Save</button>
+                            <button type="button" class="btn btn-secondary lufera-text" data-bs-dismiss="modal">Close</button>
+                            <button type="submit" class="btn lufera-bg lufera-text">Save</button>
                         </div>
                     </form>
                 </div>

@@ -117,8 +117,8 @@ $currentURL .= "://".$_SERVER['HTTP_HOST'].$_SERVER['REQUEST_URI'];
                         </div>
                     </div>
                     <div class="modal-footer d-flex align-items-center justify-content-center gap-3">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                        <button type="submit" id="submit" class="btn lufera-bg text-white" name="save" <?php echo $balance_due == "0" ? 'disabled' : ''; ?>>Save</button>
+                        <button type="button" class="btn btn-secondary lufera-text" data-bs-dismiss="modal">Close</button>
+                        <button type="submit" id="submit" class="btn lufera-bg lufera-text" name="save" <?php echo $balance_due == "0" ? 'disabled' : ''; ?>>Save</button>
                     </div>
                 </div>
             </form>

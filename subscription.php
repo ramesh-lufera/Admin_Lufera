@@ -44,7 +44,9 @@
 
 <?php 
     include './partials/layouts/layoutTop.php';
+
     require_once __DIR__ . '/vendor/autoload.php';
+
     use Dotenv\Dotenv;
     use PHPMailer\PHPMailer\PHPMailer;
     use PHPMailer\PHPMailer\Exception;
@@ -52,32 +54,31 @@
     $dotenv = Dotenv::createImmutable(__DIR__);
     $dotenv->load();
 
-// ====================== CANCEL / DELETE ORDER HANDLER ======================
-// Put this at the VERY TOP, after DB connection and session_start
-if (isset($_POST['action']) && $_POST['action'] === 'delete') {
-    header('Content-Type: application/json');  // Important!
-    ob_clean(); // Clear any previous output
+    // ====================== CANCEL / DELETE ORDER HANDLER ======================
+    // Put this at the VERY TOP, after DB connection and session_start
+    if (isset($_POST['action']) && $_POST['action'] === 'delete') {
+        header('Content-Type: application/json');  // Important!
+        ob_clean(); // Clear any previous output
 
-    $id = intval($_POST['id'] ?? 0);
+        $id = intval($_POST['id'] ?? 0);
 
-    if ($id <= 0) {
-        echo json_encode(['status' => 'error', 'message' => 'Invalid order ID']);
-        exit;
+        if ($id <= 0) {
+            echo json_encode(['status' => 'error', 'message' => 'Invalid order ID']);
+            exit;
+        }
+
+        $stmt = $conn->prepare("UPDATE orders SET is_deleted = 1, is_Active = 0, status = 'Cancelled' WHERE id = ?");
+        $stmt->bind_param("i", $id);
+
+        if ($stmt->execute()) {
+            echo json_encode(['status' => 'success', 'message' => 'Order cancelled successfully']);
+        } else {
+            echo json_encode(['status' => 'error', 'message' => 'Database error: ' . $conn->error]);
+        }
+
+        $stmt->close();
+        exit;   // STOP everything — no more HTML, no includes
     }
-
-    $stmt = $conn->prepare("UPDATE orders SET is_deleted = 1, is_Active = 0, status = 'Cancelled' WHERE id = ?");
-    $stmt->bind_param("i", $id);
-
-    if ($stmt->execute()) {
-        echo json_encode(['status' => 'success', 'message' => 'Order cancelled successfully']);
-    } else {
-        echo json_encode(['status' => 'error', 'message' => 'Database error: ' . $conn->error]);
-    }
-
-    $stmt->close();
-    exit;   // STOP everything — no more HTML, no includes
-}
-
 
     $sessionId = $_SESSION['user_id'];
 
@@ -146,7 +147,8 @@ if (isset($_POST['action']) && $_POST['action'] === 'delete') {
                     Swal.showLoading();
                     const spinner = document.querySelector('.swal2-loader');
                     if (spinner) {
-                        spinner.style.borderColor = '#fec700 transparent #fec700 transparent';
+                        // spinner.style.borderColor = '#fec700 transparent #fec700 transparent';
+                        spinner.style.borderColor = 'var(--lufera-main-color) transparent var(--lufera-main-color) transparent';
                     }
                 }
             });
@@ -306,7 +308,8 @@ if (isset($_POST['action']) && $_POST['action'] === 'delete') {
                         Swal.showLoading();
                         const spinner = document.querySelector('.swal2-loader');
                         if (spinner) {
-                            spinner.style.borderColor = '#fec700 transparent #fec700 transparent';
+                            // spinner.style.borderColor = '#fec700 transparent #fec700 transparent';
+                            spinner.style.borderColor = 'var(--lufera-main-color) transparent var(--lufera-main-color) transparent';
                         }
                     }
                 });
@@ -583,6 +586,7 @@ if (isset($_POST['action']) && $_POST['action'] === 'delete') {
             </script>";
         }
     }
+
     // JOIN orders with users for Active Plans
     if ($role != 1 && $role != 2) {
         $query = "
@@ -1067,6 +1071,7 @@ if (isset($_POST['action']) && $_POST['action'] === 'delete') {
             <h6 class="fw-semibold mb-0">Subscriptions</h6>
             <a class="cursor-pointer fw-bold visibility-hidden" onclick="history.back()"><span class="fa fa-arrow-left"></span>&nbsp; Back</a> 
         </div>
+
  <!-- Pending Plans Section -->
  <div class="card mt-20">
             <div class="card-body">
@@ -1106,7 +1111,7 @@ if (isset($_POST['action']) && $_POST['action'] === 'delete') {
                                         <input type="hidden" class="gst-hidden" name="gst" value="<?php echo $row['gst']; ?>">
                                         <input type="hidden" class="subtotal-display-hidden" name="subtotal-display" value="<?php echo $row['price']; ?>">
                                         <input type="hidden" name="gst_id" value="<?php echo $row['gst_id']; ?>">
-                                        <button type="submit" class="lufera-bg text-center text-white btn btn-sm">Continue to Cart</button>
+                                        <button type="submit" class="lufera-bg text-center lufera-text btn btn-sm">Continue to Cart</button>
                                     </form>
                                     </td>
                                     <td class="text-center">
@@ -1136,6 +1141,7 @@ if (isset($_POST['action']) && $_POST['action'] === 'delete') {
                 </div>
             </div>
         </div><br>
+
         <!-- Active Plans Section -->
         <div class="card">
             <div class="card-body">
@@ -1849,8 +1855,8 @@ if (isset($_POST['action']) && $_POST['action'] === 'delete') {
       </div>
 
       <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-        <input type="submit" class="btn lufera-bg text-white" name="send_support" value="Send">
+        <button type="button" class="btn btn-secondary lufera-text" data-bs-dismiss="modal">Cancel</button>
+        <input type="submit" class="btn lufera-bg lufera-text" name="send_support" value="Send">
       </div>
       </form>
     </div>
@@ -1906,8 +1912,8 @@ if (isset($_POST['action']) && $_POST['action'] === 'delete') {
         </div>
 
         <div class="modal-footer d-flex align-items-center justify-content-center gap-3">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-          <button type="submit" id="modal_submit" class="btn lufera-bg text-white" name="save">Save</button>
+          <button type="button" class="btn btn-secondary lufera-text" data-bs-dismiss="modal">Close</button>
+          <button type="submit" id="modal_submit" class="btn lufera-bg lufera-text" name="save">Save</button>
         </div>
       </div>
     </form>

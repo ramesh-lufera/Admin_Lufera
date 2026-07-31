@@ -345,7 +345,7 @@
                             <title>Category</title>
                             <style>
                                 :root {
-                                    --yellow: #fec700;
+                                    /* --yellow: #fec700; */
                                     --black: #101010;
                                 }
 
@@ -388,7 +388,8 @@
                                 /* TITLE COLOR */
                                 .breadcrumb-title {
                                     font-weight: 700 !important;
-                                    color: var(--yellow) !important;
+                                    /* color: var(--yellow) !important; */
+                                    color: var(--lufera-main-color) !important;
                                 }
 
                                 .breadcrumb-path {
@@ -397,7 +398,8 @@
                                 }
 
                                 .breadcrumb-path a {
-                                    color: var(--yellow) !important;
+                                    /* color: var(--yellow) !important; */
+                                    color: var(--lufera-main-color) !important;
                                     text-decoration: none !important;
                                 }
 
@@ -484,7 +486,9 @@
                                 .manage-top-btn {
                                     position: static !important;   /* ✅ FIX */
                                     transform: none !important;    /* ✅ FIX */
-                                    background: #fec700 !important;
+                                    /* background: #fec700 !important; */
+                                    background: var(--lufera-main-color) !important;
+                                    color: var(--lufera-text-color);
                                     padding: 8px 16px !important;
                                     border-radius: 6px !important;
                                     border: none !important;
@@ -567,15 +571,19 @@
                                 }
 
                                 .copy-btn {
-                                    background: #fec700 !important;
-                                    color: #000 !important;
+                                    /* background: #fec700 !important; */
+                                    background: var(--lufera-main-color) !important;
+                                    /* color: #000 !important; */
+                                    color: var(--lufera-text-color) !important;
                                     border: none !important;
                                     font-weight: 600;
                                 }
 
                                 .copy-btn:hover {
-                                    background: #e5b800 !important;
-                                    color: #000 !important;
+                                    /* background: #e5b800 !important; */
+                                    background: var(--lufera-focus-color) !important;
+                                    /* color: #000 !important; */
+                                    color: var(--lufera-text-color) !important;
                                 }
 
                                 /* Input + button alignment */
@@ -855,7 +863,7 @@
                                                                                                 <input type="hidden" name="addon_product" value="<?= htmlspecialchars(\$package['addon_product']) ?>">
                                                                                                 <input type="hidden" name="gst_id" value="<?= htmlspecialchars(\$package['gst_id']) ?>"> -->
 
-                                                                                                <button type="submit" class="lufera-bg text-center text-white text-sm btn-sm px-12 py-10 w-100 radius-8 mt-28" <?= !\$isActive ? 'disabled' : '' ?>>Get started</button>
+                                                                                                <button type="submit" class="lufera-bg lufera-text text-center text-sm btn-sm px-12 py-10 w-100 radius-8 mt-28" <?= !\$isActive ? 'disabled' : '' ?>>Get started</button>
                                                                                             </form>
                                                                                         </div>
                                                                                     </div>
@@ -870,7 +878,7 @@
                                                                         <h6 class="mb-0" style="color: #000; font-size: 1.125rem; font-weight: 600;">
                                                                             No packages available.
                                                                         </h6>
-                                                                        <div style="height: 3px; width: 60px; background-color: #fdc701; margin: 12px auto 0; border-radius: 2px;"></div>
+                                                                        <div style="height: 3px; width: 60px; background-color: var(--lufera-main-color); margin: 12px auto 0; border-radius: 2px;"></div>
                                                                     </div>
                                                                 </div>
                                                             <?php endif; ?>
@@ -986,7 +994,7 @@
                                                                         <h6 class="mb-0" style="color: #000; font-size: 1.125rem; font-weight: 600;">
                                                                             No products available.
                                                                         </h6>
-                                                                        <div style="height: 3px; width: 60px; background-color: #fdc701; margin: 12px auto 0; border-radius: 2px;"></div>
+                                                                        <div style="height: 3px; width: 60px; background-color: var(--lufera-main-color); margin: 12px auto 0; border-radius: 2px;"></div>
                                                                     </div>
                                                                 </div>
                                                             <?php endif; ?>
@@ -1281,15 +1289,18 @@
                                 width: 100%;
                                 padding: 10px 10px 10px 35px;
                                 font-size: 16px;
-                                border: 2px solid var(--yellow);
+                                /* border: 2px solid var(--yellow); */
+                                border: 2px solid var(--lufera-main-color);
                                 border-radius: 5px;
                                 box-sizing: border-box;
                                 }
 
                                 .add-btn {
                                 padding: 10px 16px;
-                                background-color: var(--yellow);
-                                color: var(--black);
+                                /* background-color: var(--yellow); */
+                                background-color: var(--lufera-main-color);
+                                /* color: var(--black); */
+                                color: var(--lufera-text-color);
                                 border: none;
                                 border-radius: 5px;
                                 font-weight: bold;
@@ -1389,8 +1400,10 @@
                                 }
 
                                 .dashboard-btn {
-                                background-color: var(--yellow);
-                                color: var(--black);
+                                /* background-color: var(--yellow); */
+                                background-color: var(--lufera-main-color);
+                                /* color: var(--black); */
+                                color: var(--lufera-text-color);
                                 padding: 8px 16px;
                                 border-radius: 5px;
                                 font-weight: bold;
@@ -1400,7 +1413,8 @@
                                 }
 
                                 .dashboard-btn:hover {
-                                background-color: #e5b800;
+                                /* background-color: #e5b800; */
+                                background-color: var(--lufera-focus-color);
                                 }
 
                                 .pagination {
@@ -1412,7 +1426,8 @@
 
                                 .pagination a {
                                 padding: 8px 15px;
-                                background-color: var(--yellow);
+                                /* background-color: var(--yellow); */
+                                background-color: var(--lufera-main-color);
                                 color: var(--black);
                                 border-radius: 5px;
                                 text-decoration: none;
@@ -1716,6 +1731,8 @@
 
                         session_start();
 
+                        include '../../partials/theme_colors_loader.php';
+
                         \$isLoggedIn = isset(\$_SESSION['user_id']) && \$_SESSION['user_id'] > 0;
 
                         // AUTO GENERATED CATEGORY ID
@@ -1988,8 +2005,10 @@
                         }
 
                         .btn-yellow {
-                            background: var(--yellow) !important;
-                            color: #000 !important;
+                            /* background: var(--yellow) !important; */
+                            background: var(--lufera-main-color) !important;
+                            /* color: #000 !important; */
+                            color: var(--lufera-text-color) !important;
                             width: 10%;
                         }
 
@@ -2285,7 +2304,9 @@
                         }
 
                         .landing-contact-right button {
-                            background: #fec700;
+                            /* background: #fec700; */
+                            background: var(--lufera-main-color);
+                            color: var(--lufera-text-color);
                             border: none;
                             padding: 10px;
                             width: 100%;
@@ -2568,7 +2589,7 @@
                                                                                             <input type="hidden" name="addon_product" value="<?= htmlspecialchars(\$package['addon_product']) ?>">
                                                                                             <input type="hidden" name="gst_id" value="<?= htmlspecialchars(\$package['gst_id']) ?>"> -->
 
-                                                                                            <button type="submit" class="lufera-bg text-center text-white text-sm btn-sm px-12 py-10 w-100 radius-8 mt-28" <?= !\$isActive ? 'disabled' : '' ?>>Get started</button>
+                                                                                            <button type="submit" class="lufera-bg lufera-text text-center text-sm btn-sm px-12 py-10 w-100 radius-8 mt-28" <?= !\$isActive ? 'disabled' : '' ?>>Get started</button>
                                                                                         </form>
                                                                                     </div>
                                                                                 </div>
@@ -2583,7 +2604,7 @@
                                                                     <h6 class="mb-0" style="color: #000; font-size: 1.125rem; font-weight: 600;">
                                                                         No packages available.
                                                                     </h6>
-                                                                    <div style="height: 3px; width: 60px; background-color: #fdc701; margin: 12px auto 0; border-radius: 2px;"></div>
+                                                                    <div style="height: 3px; width: 60px; background-color: var(--lufera-main-color); margin: 12px auto 0; border-radius: 2px;"></div>
                                                                 </div>
                                                             </div>
                                                         <?php endif; ?>
@@ -2721,7 +2742,7 @@
                                                                 <h6 class="mb-0" style="color: #000; font-size: 1.125rem; font-weight: 600;">
                                                                     No products available.
                                                                 </h6>
-                                                                <div style="height: 3px; width: 60px; background-color: #fdc701; margin: 12px auto 0; border-radius: 2px;"></div>
+                                                                <div style="height: 3px; width: 60px; background-color: var(--lufera-main-color); margin: 12px auto 0; border-radius: 2px;"></div>
                                                             </div>
                                                         </div>
                                                     <?php endif; ?>
@@ -3650,7 +3671,7 @@
         <a class="cursor-pointer fw-bold" onclick="history.back()"><span class="fa fa-arrow-left"></span>&nbsp; Back</a> 
             <h6 class="fw-semibold mb-0">Categories</h6>
             <a data-bs-toggle="modal" 
-            data-bs-target="#add-category-modal" class="btn lufera-bg text-white text-sm btn-sm px-12 py-12 radius-8 d-flex align-items-center gap-2" >
+            data-bs-target="#add-category-modal" class="btn lufera-bg lufera-text text-sm btn-sm px-12 py-12 radius-8 d-flex align-items-center gap-2" >
                 <iconify-icon icon="ic:baseline-plus" class="icon text-xl line-height-1"></iconify-icon>
                 Add New Category
             </a>
@@ -3798,7 +3819,7 @@
                         </div>
                     </div>
                     <div class="modal-footer">
-                        <input type="submit" class="btn lufera-bg" name="save" value="Save">
+                        <input type="submit" class="btn lufera-bg lufera-text" name="save" value="Save">
                     </div>
                 </form>
             </div>
@@ -3911,7 +3932,7 @@
                         </div>
                     </div>
                     <div class="modal-footer">
-                        <input type="submit" class="btn lufera-bg" value="Update">
+                        <input type="submit" class="btn lufera-bg lufera-text" value="Update">
                     </div>
                 </form>
             </div>

@@ -293,10 +293,10 @@
                     </div>
 
                     <div class="d-flex align-items-center justify-content-center gap-3 mt-24">
-                        <button type="reset" class="btn btn-secondary text-md px-40 py-11 radius-8">
+                        <button type="reset" class="btn btn-secondary lufera-text text-md px-40 py-11 radius-8">
                             Reset
                         </button>
-                        <button type="submit" class="btn text-md px-24 py-12 radius-8 lufera-bg">
+                        <button type="submit" class="btn text-md px-24 py-12 radius-8 lufera-bg lufera-text">
                             Save
                         </button>
                     </div>

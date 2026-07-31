@@ -38,7 +38,7 @@
             <a class="cursor-pointer fw-bold" onclick="history.back()"><span class="fa fa-arrow-left"></span>&nbsp; Back</a> 
             <h6 class="fw-semibold mb-0">Packages</h6>
             <a data-bs-toggle="modal" 
-            data-bs-target="#add-package-modal" class="btn lufera-bg text-white text-sm btn-sm px-12 py-12 radius-8 d-flex align-items-center gap-2" >
+            data-bs-target="#add-package-modal" class="btn lufera-bg lufera-text text-sm btn-sm px-12 py-12 radius-8 d-flex align-items-center gap-2" >
                 <iconify-icon icon="ic:baseline-plus" class="icon text-xl line-height-1"></iconify-icon>
                 Add New Package
             </a>
@@ -151,7 +151,7 @@
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="submit" class="btn lufera-bg">Continue</button>
+                <button type="submit" class="btn lufera-bg lufera-text">Continue</button>
             </div>
         </form>
     </div>
@@ -197,7 +197,7 @@
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="submit" class="btn lufera-bg">Continue</button>
+                <button type="submit" class="btn lufera-bg lufera-text">Continue</button>
             </div>
         </form>
     </div>
