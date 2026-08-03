@@ -19,6 +19,9 @@
         })()
         </script>';?>
 <?php include './partials/layouts/layoutTop.php';
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
 ?>
 
 <style>
@@ -27,8 +30,8 @@
       width: 100%;
       padding: 20px;
       /* border-radius: 16px;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); */
-      text-align: center;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); 
+      text-align: center; */
       margin:auto;
 
     }
@@ -40,40 +43,42 @@
     }
 
     .image-upload {
-      position: relative;
-      max-width:100%;
-      width: 100%;
-      height: 200px;
-      border: 2px dashed #ccc;
-      border-radius: 12px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin-bottom: 15px;
-      overflow: hidden;
-      cursor: pointer;
-      transition: 0.3s;
-    }
+        position: relative;
+        max-width:100%;
+        width: 100%;
+        height: 75px !important;
+        border: 2px dashed #ccc;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 15px;
+        overflow: hidden;
+        cursor: pointer;
+        transition: 0.3s;
+        }
 
-    .image-upload:hover {
-      border-color: #777;
-    }
+        .image-upload:hover {
+        border-color: #777;
+        }
 
-    .image-upload img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      display: none;
-    }
+        .image-upload img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: none;
+        }
 
-    .image-upload span {
-      font-size: 1rem;
-      color: #888;
-    }
+        .image-upload span {
+        font-size: 1rem;
+        color: #888;
+        }
 
-    input[type="file"] {
-      display: none;
-    }
+        .file-input {
+            position: absolute;
+            left: -9999px;
+            opacity: 0;
+        }
 
     .form-group {
       text-align: left;
@@ -116,7 +121,9 @@ if (isset($_POST['save_product'])) {
     $title = $_POST['title'];
     $subtitle = $_POST['subtitle'];
     $price = $_POST['price'];
+    $preview_price = $_POST['preview_price'];
     $description = $_POST['description'];
+    $short_description = $_POST['short_description'];
     $category = $_POST['category'];
     $tags = $_POST['tags'];
     $created_at = date("Y-m-d H:i:s");
@@ -134,43 +141,55 @@ if (isset($_POST['save_product'])) {
         echo "<script>alert('Invalid duration input.'); window.history.back();</script>";
         exit;
     }
+    function uploadImage($fieldName, $folder = "uploads/products/")
+{
+    if (
+        isset($_FILES[$fieldName]) &&
+        $_FILES[$fieldName]['error'] == 0
+    ) {
 
-
-    // Image upload
-    $product_image = '';
-    if (isset($_FILES['product_image']) && $_FILES['product_image']['error'] == 0) {
-        $target_dir = "uploads/products/";
-        if (!is_dir($target_dir)) {
-            mkdir($target_dir, 0777, true);  // create directory if it doesn't exist
+        if (!is_dir($folder)) {
+            mkdir($folder, 0777, true);
         }
 
-        $file_name = time() . '_' . basename($_FILES["product_image"]["name"]);
-        $target_file = $target_dir . $file_name;
-        $imageFileType = strtolower(pathinfo($target_file, PATHINFO_EXTENSION));
+        $fileName = time() . "_" . $fieldName . "_" . basename($_FILES[$fieldName]["name"]);
 
-        // Validate file type (only images)
-        $allowed_types = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
-        if (in_array($imageFileType, $allowed_types)) {
-            if (move_uploaded_file($_FILES["product_image"]["tmp_name"], $target_file)) {
-                $product_image = $file_name;  // Save file name in DB
-            } else {
-                echo "<script>alert('Failed to upload image.'); window.history.back();</script>";
-                exit;
-            }
-        } else {
-            echo "<script>alert('Invalid file type. Allowed: JPG, PNG, GIF, WEBP.'); window.history.back();</script>";
-            exit;
-        }
-    } else {
-        echo "<script>alert('Please upload a product image.'); window.history.back();</script>";
-        exit;
+        move_uploaded_file(
+            $_FILES[$fieldName]["tmp_name"],
+            $folder . $fileName
+        );
+
+        return $fileName;
     }
+
+    return "";
+}
+$package_image = uploadImage("package_image");
+
+$breadcrumb_image = uploadImage("breadcrumb_image");
+
+$preview_images = [];
+
+for ($i = 1; $i <= 4; $i++) {
+
+    $img = uploadImage("preview_images".$i);
+
+    if ($img != "") {
+        $preview_images[] = $img;
+    }
+
+}
+
+    $imageData = json_encode([
+        "breadcrumb_image" => $breadcrumb_image,
+        "preview_images"   => $preview_images
+    ]);
     // Insert into database
     $stmt = $conn->prepare("INSERT INTO products 
-    (name, title, subtitle, price, description, category, tags, feature_item, product_image, cat_id, duration, template, created_at, is_login) 
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+    (name, title, subtitle, price, description, category, tags, feature_item, product_image, image_data, cat_id, duration, template, short_description, preview_price, created_at, is_login) 
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
 
-$stmt->bind_param("sssdsssssisssi", $name, $title, $subtitle, $price, $description, $category, $tags, $feature_item, $product_image, $cat_id, $duration, $template,  $created_at, $is_login);
+$stmt->bind_param("sssdssssssisssdsi", $name, $title, $subtitle, $price, $description, $category, $tags, $feature_item, $package_image, $imageData, $cat_id, $duration, $template, $short_description, $preview_price, $created_at, $is_login);
 
 if ($stmt->execute()) {
 
@@ -231,30 +250,1065 @@ if ($stmt->execute()) {
     // =====================================================
 
     $productLandingContent = <<<'PRODUCT'
+        <?php
+        include '../../partials/connection.php';
+        include '../head.php';
+        include '../scripts.php';
 
-    <?php 
-    session_start();
-    $loggedInUserId = isset($_SESSION['user_id']);
-    include '../../partials/connection.php'; ?>
-    <?php include '../head.php'; 
-    ?>
+        session_start();
+
+        $isLoggedIn = isset($_SESSION['user_id']) && $_SESSION['user_id'] > 0;
+
+        $product_id = __PRODUCT_ID__; // or your generated product id
+
+        $stmt = $conn->prepare("
+            SELECT *
+            FROM products
+            WHERE id = ? AND is_deleted = 0
+        ");
+        $stmt->bind_param("i", $product_id);
+        $stmt->execute();
+
+        $product = $stmt->get_result()->fetch_assoc();
+
+        $inclusive = [];
+        $exclusive = [];
+
+        $stmt = $conn->prepare("
+            SELECT feature_type, feature
+            FROM features
+            WHERE package_id = ?
+            AND cat_type = 2
+            ORDER BY id ASC
+        ");
+
+        $stmt->bind_param("i", $product['id']);
+        $stmt->execute();
+
+        $result = $stmt->get_result();
+
+        while ($row = $result->fetch_assoc()) {
+
+            if (strtolower(trim($row['feature_type'])) == 'inclusive') {
+                $inclusive[] = $row['feature'];
+            } elseif (strtolower(trim($row['feature_type'])) == 'exclusive') {
+                $exclusive[] = $row['feature'];
+            }
+
+        }
+
+        $stmt->close();
+
+                // ================= COMPANY LOGO =================
+                
+                $company = $conn->query("SELECT logo, phone_no, email FROM company LIMIT 1");
+                $companyRow = $company->fetch_assoc();
+
+                $logo = $companyRow['logo'] ?? '';
+                $phone_no = $companyRow['phone_no'] ?? '';
+                $email = $companyRow['email'] ?? '';
+
+                // ✅ COMPANY DATA
+                $company = [];
+                $res = $conn->query("SELECT phone_no, address FROM company LIMIT 1");
+                if ($res && $res->num_rows > 0) {
+                    $company = $res->fetch_assoc();
+                }
+                
+                $sql = "
+                    SELECT 
+                        websites.id AS web_id,
+                        users.user_id,
+                        users.id,
+                        users.business_name,
+                        CASE 
+                            WHEN websites.type = 'package' THEN package.package_name
+                            WHEN websites.type = 'product' THEN products.name
+                            ELSE websites.plan
+                        END AS plan_name,
+                        websites.domain,
+                        websites.access_www,
+                        websites.status,
+                        websites.created_at,
+                        websites.expired_at,
+                        websites.duration,
+                        websites.product_id,
+                        websites.type,
+                        JSON_UNQUOTE(JSON_EXTRACT(`json`.name, '$.name.value')) AS json_name
+                    FROM 
+                        users 
+                    JOIN 
+                        websites ON users.id = websites.user_id
+                    LEFT JOIN
+                        `json` ON `json`.website_id = websites.id
+                    LEFT JOIN 
+                        package ON (websites.type = 'package' AND websites.plan = package.id)
+                    LEFT JOIN 
+                        products ON (websites.type = 'product' AND websites.plan = products.id)
+                    WHERE 
+                        websites.cat_id = ? AND websites.is_active = 1
+                ";
+
+                $stmt = $conn->prepare($sql);
+                $stmt->bind_param("i", $cat_id);
+
+                $stmt->execute();
+                $result = $stmt->get_result();
+
+                $websites = [];
+                while ($row = mysqli_fetch_assoc($result)) {
+                    $websites[] = $row;
+                }
+
+                // Number of websites per page
+                $websitesPerPage = 5;
+
+                // Get the current page from URL, default is 1
+                $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
+
+                // Calculate the starting index for the websites to display on this page
+                $startIndex = ($page - 1) * $websitesPerPage;
+
+                // Slice the websites array to get only the websites for the current page
+                $websitesOnPage = array_slice($websites, $startIndex, $websitesPerPage);
+
+                // Calculate the total number of pages
+                $totalPages = ceil(count($websites) / $websitesPerPage);
+            ?>
+            <!DOCTYPE html>
+            <html lang="en">
+            <head>
+            <meta charset="UTF-8">
+            <title>Category</title>
+            <style>
+                :root {
+                    --yellow: #fec700;
+                    --black: #101010;
+                }
+
+                /* GLOBAL TEXT SIZE */
+                body {
+                    font-size: 15px !important;
+                }
+
+                .content-wrapper {
+                    margin: 0px 15% 0px 15%;
+                }
+
+                /* HEADINGS */
+                h1 { font-size: 26px !important; }
+                h2 { font-size: 24px !important; }
+                h3 { font-size: 22px !important; }
+                h4 { font-size: 20px !important; }
+                h5 { font-size: 18px !important; }
+                h6 { font-size: 16px !important; }
+
+                /* TEXT */
+                p {
+                    font-size: 15px !important;
+                    line-height: 1.6 !important;
+                }
+
+                /* HERO */
+                
+                /* ===== HEADER ===== */
+                
+                /* ===== HEADER FULL WIDTH ===== */
+                .top-header {
+                    width: 100%;
+                    display: flex;
+                    justify-content: space-between; /* left + right */
+                    align-items: center;
+                    padding: 12px 30px;
+                    box-sizing: border-box;
+                }
+
+                /* LEFT LOGO */
+                .header-left img {
+                    height: 50px;
+                    object-fit: contain;
+                }
+
+                /* RIGHT PHONE */
+                
+                .header-right {
+                    display: flex;
+                    align-items: center;
+                    gap: 15px; /* space between phone & email */
+                    font-size: 14px;
+                    font-weight: 500;
+                }
+
+                /* EACH ITEM */
+                .contact-item {
+                    white-space: nowrap;
+                }
+
+                /* ===== BANNER ===== */
+                
+                .banner-section {
+                    position: relative;
+                    width: 100%;
+                    height: 280px;
+
+                    margin-top: 20px;   /* 🔥 spacing from header */
+                    margin-bottom: 20px;
+
+                    overflow: hidden;
+                }
+
+                /* FULL WIDTH IMAGE */
+                .banner-img {
+                    width: 100%;
+                    height: 100%;
+                    object-fit: cover;
+                }
+
+                /* OVERLAY */
+                .banner-overlay {
+                    position: absolute;
+                    top: 0;
+                    left: 0;
+                    right: 0;
+                    bottom: 0;
+
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+
+                    background: rgba(0,0,0,0.4);
+                }
+
+                /* TITLE CENTER */
+                .banner-title {
+                    color: #fff;
+                    font-size: 28px;
+                    font-weight: 700;
+                    text-align: center;
+                    text-shadow: 0 2px 8px rgba(0,0,0,0.7);
+                }
+
+                .breadcrumb-path {
+                    font-size: 14px !important;
+                    color: #ccc !important;
+                }
+
+                .breadcrumb-path a {
+                    color: var(--yellow) !important;
+                    text-decoration: none !important;
+                }
+
+                .row {
+                    display: flex !important;
+                }
+
+                .col-left {
+                    flex: 2 !important;
+                }
+
+                .col-right {
+                    flex: 1 !important;
+                }
+
+                /* CARD */
+                .card {
+                    background: #fff !important;
+                    border-radius: 10px !important;
+                    box-shadow: 0 2px 8px rgba(0,0,0,0.08) !important;
+                    padding: 18px !important;
+                    margin-bottom: 20px !important;
+                    line-height: 1.6 !important;
+                }
+
+                /* IMAGE */
+                .feature-img {
+                    width: 100% !important;
+                    border-radius: 8px !important;
+                    max-height: 300px !important;
+                    object-fit: cover !important;
+                }
+
+                /* LIST */
+                .custom-list {
+                    list-style: none !important;
+                    padding: 0 !important;
+                }
+
+                .custom-list li {
+                    padding: 6px 0 !important;
+                    font-size: 15px !important;
+                }
+
+                /* RIGHT PANEL */
+                .stat-box {
+                    background: #f9f9f9 !important;
+                    padding: 10px !important;
+                    border-radius: 6px !important;
+                    margin-bottom: 8px !important;
+                    font-size: 14px !important;
+                }
+
+                .quick-btn {
+                    display: block !important;
+                    width: 100% !important;
+                    padding: 10px !important;
+                    text-align: center !important;
+                    border-radius: 5px !important;
+                    margin-top: 10px !important;
+                    text-decoration: none !important;
+                    font-size: 14px !important;
+                    font-weight: 600 !important;
+                }
+
+                .btn-yellow {
+                    background: var(--yellow) !important;
+                    color: #000 !important;
+                    width: 10%;
+                }
+
+                .btn-outline {
+                    border: 1px solid #ccc !important;
+                    color: #333 !important;
+                }
+
+                /* RESPONSIVE */
+                @media (max-width: 768px) {
+                    .row {
+                        flex-direction: column !important;
+                    }
+                }
+
+                .manage-top-btn {
+                    position: absolute !important;
+                    top: 50% !important;
+                    right: 20px !important;
+                    transform: translateY(-50%) !important;
+                    background: #fec700 !important;
+                    padding: 8px 16px !important;
+                    border-radius: 6px !important;
+                    border: none !important;
+                    font-weight: 600 !important;
+                    cursor: pointer !important;
+                }
+
+                .list-item {
+                    display: flex;
+                    justify-content: space-between;
+                    padding: 12px;
+                    border: 1px solid #eee;
+                    margin-bottom: 10px;
+                    border-radius: 6px;
+                }
+
+                /* ===== FEATURES SECTION ===== */
+
+                .features-row {
+                    display: flex !important;
+                    gap: 25px !important;
+                    margin-top: 10px !important;
+                }
+
+                .features-col {
+                    flex: 1 !important;
+                    padding: 15px !important;
+                    border-radius: 10px !important;
+                }
+
+                /* 🟢 INCLUSIONS */
+                // .features-col.inclusions {
+                //     background: #f6fff7 !important;
+                //     border: 1px solid #d4edda !important;
+                // }
+
+                // .features-col.inclusions h5 {
+                //     color: #28a745 !important;
+                // }
+
+                /* 🔴 EXCLUSIONS */
+                // .features-col.exclusions {
+                //     background: #fff6f6 !important;
+                //     border: 1px solid #f5c6cb !important;
+                // }
+
+                // .features-col.exclusions h5 {
+                //     color: #dc3545 !important;
+                // }
+
+                /* LIST */
+                .custom-list {
+                    list-style: none !important;
+                    padding: 0 !important;
+                }
+
+                .custom-list li {
+                    padding: 6px 0 !important;
+                    font-size: 15px !important;
+                }
+
+                /* ICONS */
+                .features-col.inclusions li::before {
+                    content: "✔ " !important;
+                    // color: #28a745 !important;
+                    font-weight: bold;
+                }
+
+                .features-col.exclusions li::before {
+                    content: "✖ " !important;
+                    // color: #dc3545 !important;
+                    font-weight: bold;
+                }
+
+                /* MOBILE */
+                @media (max-width: 768px) {
+                    .features-row {
+                        flex-direction: column !important;
+                    }
+                }
+
+                /* ===== COMPANY LOGO ===== */
+                
+                /* ===== LOGIN POPUP ===== */
+
+                .login-modal {
+                    display: none;
+                    position: fixed;
+                    z-index: 9999;
+                    left: 0;
+                    top: 0;
+                    width: 100%;
+                    height: 100%;
+                    background: rgba(0,0,0,0.7);
+                }
+
+                .login-modal-content {
+                    position: relative;
+                    width: 95%;           /* more width */
+                    max-width: 900px;     /* increased from 500px */
+                    height: 80vh;         /* responsive height */
+                    margin: 3% auto;      /* less top gap */
+                    background: #fff;
+                    border-radius: 10px;
+                    overflow: hidden;
+                }
+
+                /* iframe */
+                #loginFrame {
+                    width: 100%;
+                    height: 100%;
+                    border: none;
+                }
+
+                /* close button */
+                .close-btn {
+                    position: absolute;
+                    top: 10px;
+                    right: 15px;
+                    font-size: 22px;
+                    font-weight: bold;
+                    cursor: pointer;
+                    z-index: 10;
+                }
+
+                /* ===== CONTACT SECTION ===== */
+                .contact-section {
+                    margin-top: 30px;
+                    text-align: left;
+                }
+
+                .contact-btn {
+                    display: block;
+                    width: 100%;
+                    background-color: #fec700;
+                    color: #000;
+                    padding: 12px;
+                    text-align: center;
+                    border: none;
+                    border-radius: 6px;
+                    font-weight: 600;
+                    cursor: pointer;
+                }
+
+                /* ===== MODAL ===== */
+                .contact-modal {
+                    display: none;
+                    position: fixed;
+                    z-index: 9999;
+                    left: 0;
+                    top: 0;
+                    width: 100%;
+                    height: 100%;
+                    background: rgba(0,0,0,0.6);
+
+                    align-items: center;
+                    justify-content: center;
+                }
+
+                /* ===== MODAL BOX ===== */
+                .contact-modal-content {
+                    background: #fff;
+                    width: 600px;
+                    max-width: 90%;
+                    border-radius: 10px;
+                    display: flex;
+                    overflow: hidden;
+                    position: relative;
+                }
+
+                /* CLOSE BUTTON */
+                .close-btn {
+                    position: absolute;
+                    right: 15px;
+                    top: 10px;
+                    font-size: 22px;
+                    cursor: pointer;
+                }
+
+                /* LEFT INFO */
+                .contact-left {
+                    width: 40%;
+                    background: #fec700;
+                    padding: 20px;
+                    color: #000;
+                }
+
+                /* RIGHT FORM */
+                .contact-right {
+                    width: 60%;
+                    padding: 20px;
+                }
+
+                .contact-right input,
+                .contact-right textarea {
+                    width: 100%;
+                    margin-bottom: 10px;
+                    padding: 10px;
+                    border: 1px solid #ccc;
+                    border-radius: 6px;
+                }
+
+                /* SUBMIT BUTTON */
+                .submit-btn {
+                    width: 100%;
+                    background: #fec700;
+                    border: none;
+                    padding: 10px;
+                    font-weight: 600;
+                    cursor: pointer;
+                }
+
+                /* SWEET ALERT FIX */
+                .swal2-container {
+                    z-index: 1000000 !important;
+                }
+
+                /* ===== STATIC SECTION ===== */
+                .static-section {
+                    margin-top: 30px;
+                    text-align: left;
+                }
+            </style>
+            <style>
+                /* ===== LANDING CONTACT MODAL ===== */
+                .landing-contact-modal {
+                    display: none;
+                    position: fixed;
+                    z-index: 9999;
+                    left: 0;
+                    top: 0;
+                    width: 100%;
+                    height: 100%;
+                    background: rgba(0,0,0,0.6);
+
+                    align-items: center;
+                    justify-content: center;
+                }
+
+                .landing-contact-modal-content {
+                    width: 80%;
+                    max-width: 900px;
+                    background: #fff;
+                    border-radius: 10px;
+                    overflow: hidden;
+                    position: relative;
+                }
+
+                .landing-contact-container {
+                    display: flex;
+                }
+
+                /* LEFT */
+                .landing-contact-left {
+                    width: 40%;
+                    background: #f5f5f5;
+                    padding: 20px;
+                }
+
+                /* RIGHT */
+                .landing-contact-right {
+                    width: 60%;
+                    padding: 20px;
+                }
+
+                .landing-contact-right input,
+                .landing-contact-right textarea {
+                    width: 100%;
+                    padding: 10px;
+                    margin-bottom: 10px;
+                    border: 1px solid #ccc;
+                }
+
+                .landing-contact-right button {
+                    background: #fec700;
+                    border: none;
+                    padding: 10px;
+                    width: 100%;
+                    border-radius: 20px;
+                    cursor: pointer;
+                    font-weight: 600;
+                }
+
+                .landing-contact-close {
+                    position: absolute;
+                    top: 10px;
+                    right: 15px;
+                    font-size: 26px;
+                    font-weight: bold;
+                    cursor: pointer;
+                }
+
+                /* SWEET ALERT FIX */
+                .swal2-container {
+                    z-index: 1000000 !important;
+                }
+            </style>
+            </head>
+            <body>
+                <div class="content-wrapper">
+
+                    <!-- HERO -->
+
+                    <div class="top-header">
+
+                        <!-- LEFT: LOGO -->
+                        <div class="header-left">
+                            <?php if (!empty($logo)): ?>
+                                <img src="../../uploads/company_logo/<?php echo htmlspecialchars($logo); ?>" alt="Company Logo">
+                            <?php endif; ?>
+                        </div>
+
+                        <!-- RIGHT: CONTACT -->
+
+                        <div class="header-right">
+
+                            <?php if (!empty($phone_no)): ?>
+                                <span class="contact-item">📞 <?php echo htmlspecialchars($phone_no); ?></span>
+                            <?php endif; ?>
+
+                            <?php if (!empty($email)): ?>
+                                <span class="contact-item">✉ <?php echo htmlspecialchars($email); ?></span>
+                            <?php endif; ?>
+
+                        </div>
+
+                    </div>
+                    
+                    <div class="banner-section">
+
+                        <?php if (!empty($product['product_image'])): ?>
+                            <img src="../../uploads/products/<?php echo htmlspecialchars($product['product_image']); ?>" class="banner-img">
+                        <?php endif; ?>
+
+                        <div class="banner-overlay">
+                            <h2 class="banner-title">
+                                <?php echo htmlspecialchars($product['name']); ?>
+                            </h2>
+                        </div>
+
+                    </div>
+
+                    <div class="row">
+                        <!-- LEFT -->
+                        <div class="col-left" style="flex: 100% !important;">
+
+                            <div class="card">
+                                <h4>Description</h4>
+                                <p><?php echo nl2br(htmlspecialchars($product['description'])); ?></p>
+                            </div>
+
+                            <div class="card">
+            <h4>Features</h4>
+
+            <div class="features-row">
+
+                <!-- INCLUSIONS -->
+                <div class="features-col inclusions">
+                    
+                    <ul class="custom-list">
+                        <?php if (!empty($inclusive)): ?>
+                            <?php foreach ($inclusive as $item): ?>
+                                <li><?php echo htmlspecialchars($item); ?></li>
+                            <?php endforeach; ?>
+                        <?php else: ?>
+                            <li>No inclusions available</li>
+                        <?php endif; ?>
+                    </ul>
+                </div>
+
+                <!-- EXCLUSIONS -->
+                <div class="features-col exclusions">
+                    
+                    <ul class="custom-list">
+                        <?php if (!empty($exclusive)): ?>
+                            <?php foreach ($exclusive as $item): ?>
+                                <li><?php echo htmlspecialchars($item); ?></li>
+                            <?php endforeach; ?>
+                        <?php else: ?>
+                            <li>No exclusions available</li>
+                        <?php endif; ?>
+                    </ul>
+                </div>
+
+            </div>
+        </div>
+
+        <?php
+
+        // Currency
+        $symbol = "$";
+        $r = $conn->query("SELECT symbol FROM currencies WHERE is_active=1 LIMIT 1");
+        if($row = $r->fetch_assoc()){
+            $symbol = $row['symbol'];
+        }
+
+        $loginRequired = ($product['is_login'] == 1);
+
+        ?>
+
+        <?php if($loginRequired && !$isLoggedIn): ?>
+
+        <div class="card">
+
+            <h4>Products Pricing Table</h4>
+
+            <p class="text-center"
+            style="font-size:16px;font-weight:600;margin-top:15px;">
+
+                <a href="#"
+                onclick="openLoginPopup()"
+                class="btn mt-2">
+
+                    🔒 Sign-In to See the Product
+
+                </a>
+
+            </p>
+
+        </div>
+
+        <?php else: ?>
+
+        <!-- Product Card Here -->
+        <div class="card">
+            <h4 class="mb-20">Products Pricing Table</h4>
+
+            <div class="row gy-4">
+
+                <?php $isActive = ($product['is_active'] == 1); ?>
+
+                <div class="col-lg-4 col-md-4 col-sm-6">
+
+                    <?php if ($isActive): ?>
+                        <a href="#" class="d-block">
+                    <?php endif; ?>
+
+                    <div class="pb-16 hover-scale-img border radius-16 overflow-hidden <?= !$isActive ? 'inactive-product' : ''; ?>">
+
+                        <div class="max-h-266-px overflow-hidden">
+
+                            <img
+                                src="../../uploads/products/<?= htmlspecialchars($product['product_image']); ?>"
+                                class="hover-scale-img__img w-100 object-fit-cover <?= !$isActive ? 'grayscale' : ''; ?>">
+
+                        </div>
+
+                        <div class="py-16 px-24">
+
+                            <h6 class="mb-4">
+                                <?= htmlspecialchars($product['name']); ?>
+                            </h6>
+
+                            <?php if(!empty($product['subtitle'])): ?>
+                                <p class="text-secondary-light mb-2">
+                                    <?= htmlspecialchars($product['subtitle']); ?>
+                                </p>
+                            <?php endif; ?>
+
+                            <p class="mb-0 text-sm text-secondary-light">
+                                <b>Price :</b>
+                                <?= $symbol ?>
+                                <?= number_format($product['price'],2) ?>
+                            </p>
+
+                            <?php if(!$isActive): ?>
+                                <p class="text-danger fw-semibold mt-2">
+                                    Inactive
+                                </p>
+                            <?php endif; ?>
+
+                        </div>
+
+                    </div>
+
+                    <?php if ($isActive): ?>
+                        </a>
+                    <?php endif; ?>
+
+                </div>
+
+            </div>
+
+        </div>
+
+        <?php endif; ?> 
+
+                            <!-- ================= CONTACT BUTTON SECTION ================= -->
+                            <div class="card" style="text-align:left;">
+                                <h4>Need Help?</h4>
+                                <button onclick="openContactPopup()" class="btn btn-yellow" style="margin-top:10px;">
+                                    Contact Us
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ===== FOOTER ===== -->
+                    <footer class="d-footer" style="padding:15px 10px; border-top:1px solid #eee;">
+                        <div class="row align-items-center justify-content-between">
+                            <div class="col-auto">
+                                <p class="mb-0">© <?php echo date("Y"); ?> Lufera Infotech. All Rights Reserved.</p>
+                            </div>
+                            <div class="col-auto" style="display:flex; gap:15px; align-items:center; flex-wrap:wrap;">
+                                <a href="privacy_policy.php">Privacy Policy</a>
+                                <span>|</span>
+                                <a href="terms_conditions.php">Terms and Conditions</a>
+                                <span>|</span>
+                                <a href="https://luferatech.com" style="display:flex; align-items:center; gap:5px;">
+                                    <span>Made by</span>
+                                    <span style="color:#fec700;">Lufera Infotech</span>
+                                </a>
+                            </div>
+                        </div>
+                    </footer>
+                </div>
+
+                <!-- LOGIN POPUP -->
+                <div id="loginModal" class="login-modal">
+                    <div class="login-modal-content">
+
+                        <!-- CLOSE BUTTON -->
+                        <span class="close-btn" onclick="closeLoginPopup()">&times;</span>
+
+                        <!-- LOGIN PAGE -->
+                        <iframe id="loginFrame" src=""></iframe>
+
+                    </div>
+                </div>
+
+                <script>
+
+                    function openLoginPopup() {
+                        document.getElementById("loginModal").style.display = "block";
+
+                        // Load login page inside popup
+                        document.getElementById("loginFrame").src =
+                            "../../sign-in.php?redirect=<?php echo urlencode($_SERVER['REQUEST_URI']); ?>";
+                    }
+
+                    function closeLoginPopup() {
+                        document.getElementById("loginModal").style.display = "none";
+                    }
+
+                    // Close when clicking outside
+                    window.onclick = function(event) {
+                        let modal = document.getElementById("loginModal");
+                        if (event.target === modal) {
+                            closeLoginPopup();
+                        }
+                    };
+
+                </script>
+
+                <!-- ================= LANDING CONTACT POPUP ================= -->
+                <div id="landingContactModal" class="landing-contact-modal">
+
+                    <div class="landing-contact-modal-content">
+
+                        <span class="landing-contact-close" onclick="closeContactPopup()">&times;</span>
+
+                        <div class="landing-contact-container">
+
+                            <!-- LEFT SIDE -->
+                            <div class="landing-contact-left">
+
+                                <h4>CALL US</h4>
+                                <p><?php echo htmlspecialchars($company['phone_no'] ?? 'N/A'); ?></p>
+
+                                <h4>LOCATION</h4>
+                                <p><?php echo htmlspecialchars($company['address'] ?? 'N/A'); ?></p>
+
+                                <h4>BUSINESS HOURS</h4>
+                                <p>Mon - Fri: 10am - 6pm</p>
+
+                            </div>
+
+                            <!-- RIGHT SIDE -->
+                            <div class="landing-contact-right">
+
+                                <h3>CONTACT US</h3>
+
+                                <input type="text" id="contactName" placeholder="Enter your name" required>
+                                <input type="text" id="contactPhone" placeholder="Enter your phone number" required>
+                                <input type="email" id="contactEmail" placeholder="Enter your email address" required>
+                                <textarea id="contactMessage" placeholder="Enter your message" rows="4" required></textarea>
+
+                                <button onclick="submitContact()">SUBMIT</button>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+                <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+                <script>
+                    function openContactPopup() {
+                        document.getElementById("landingContactModal").style.display = "flex";
+                    }
+
+                    function closeContactPopup() {
+                        document.getElementById("landingContactModal").style.display = "none";
+                    }
+
+                    function submitContact() {
+
+                        const name = document.getElementById("contactName").value.trim();
+                        const phone = document.getElementById("contactPhone").value.trim();
+                        const email = document.getElementById("contactEmail").value.trim();
+                        const message = document.getElementById("contactMessage").value.trim();
+
+                        const emailPattern = /^[a-zA-Z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$/;
+
+                        // ✅ 1. Email format check FIRST (only if user typed something)
+                        if (email && !emailPattern.test(email)) {
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Invalid Email',
+                                text: 'Please enter a valid email address (e.g. john@gmail.com)',
+                                confirmButtonColor: '#fec700'
+                            });
+                            return;
+                        }
+
+                        // ✅ 2. Required fields check
+                        if (!name || !phone || !email || !message) {
+                            Swal.fire({
+                                icon: 'warning',
+                                title: 'Missing Fields',
+                                text: 'Please fill all fields',
+                                confirmButtonColor: '#fec700'
+                            });
+                            return;
+                        }
+
+                        // ✅ 3. Proceed
+                        Swal.fire({
+                            title: 'Submitting...',
+                            allowOutsideClick: false,
+                            didOpen: () => {
+                                Swal.showLoading();
+                            }
+                        });
+
+                        setTimeout(() => {
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Submitted!',
+                                text: 'Our team will contact you.',
+                                confirmButtonColor: '#fec700'
+                            }).then(() => {
+
+                                closeContactPopup();
+
+                                document.getElementById("contactName").value = "";
+                                document.getElementById("contactPhone").value = "";
+                                document.getElementById("contactEmail").value = "";
+                                document.getElementById("contactMessage").value = "";
+                            });
+                        }, 1000);
+                    }
+                </script>
+                
+            </body>
+            </html>
+    PRODUCT;
+
+    // Replace product id
+    $productLandingContent = str_replace(
+        '__PRODUCT_ID__',
+        $package_id,
+        $productLandingContent
+    );
+
+    // =====================================================
+    // ROOT VERSION
+    // =====================================================
+
+    $rootContent = <<<'ROOT'
+
+    <?php include './partials/layouts/layoutTop.php'; ?>
     <!DOCTYPE html>
     <html>
     <head>
     <meta charset="UTF-8">
     <title>Product View</title>
+    <?php
+        $sql = "SELECT * FROM company LIMIT 1";
+        $result = $conn->query($sql);
+        if ($result && $result->num_rows > 0) {
+            $row = $result->fetch_assoc();
+            $company_name = $row['full_name'];
+            $logo = $row['logo'];
+            $email = $row['email'];
+            $phone = $row['phone_no'];
+            $address = $row['address'];
+
+        }    
+        $Id = __PRODUCT_ID__;
+        $sql = "select * from products where id = $Id";
+        $result = $conn ->query($sql);
+        $row = $result ->fetch_assoc();
+        $package_img = $row['product_image'];
+        $package_name = $row['name'];
+        $title = $row['title'];
+        $subtitle = $row['subtitle'];
+        $price = $row['price'];
+        $preview_price = $row['preview_price'];
+        $duration = $row['duration'];
+        $prod_category = $row['category'];
+        $prod_tags = $row['tags'];
+        $gst = $row['gst'];
+        $cat_id_sc = $row['cat_id'];
+
+        // Decode image_data JSON
+        $imageData = json_decode($row['image_data'], true);
+
+        $breadcrumbImage = $imageData['breadcrumb_image'] ?? '';
+        $previewImages   = $imageData['preview_images'] ?? [];
+    ?>
     <style>
-    .manage-top-btn {
-        position: static !important;
-        transform: none !important;
-        background: #fec700 !important;
-        padding: 8px 16px !important;
-        border-radius: 6px !important;
-        border: none !important;
-        font-weight: 600 !important;
-        cursor: pointer !important;
-        color:#4b5563 !important;
-    }
     .header-left img {
         height: 50px;
         object-fit: contain;
@@ -274,43 +1328,7 @@ if ($stmt->execute()) {
         margin-bottom: 20px !important;
         line-height: 1.6 !important;
     }
-    
-    /* HERO */
-    .breadcrumb-hero {
-        width: 100% !important;
-        height: 150px !important;
-        background: linear-gradient(135deg, #101010, #2b2b2b) !important;
-        border-radius: 10px !important;
-        margin-bottom: 20px !important;
-        display: flex !important;
-        align-items: center !important;
-        justify-content: center !important;
-    }
-    
-    .breadcrumb-overlay {
-        text-align: center !important;
-        color: #fff !important;
-    }
-    
-    /* TITLE COLOR */
-    .breadcrumb-title {
-        font-weight: 700 !important;
-        color: #fec700 !important;
-        font-size:24px !important;
-    }
-    
-    .breadcrumb-path {
-        font-size: 14px !important;
-        color: #ccc !important;
-    }
-    
-    .breadcrumb-path a {
-        color: #fec700 !important;
-        text-decoration: none !important;
-    }
-    .sec-heading{
-        font-size:20px !important;
-    }
+
     .card{
         background: #fff !important;
         border-radius: 10px !important;
@@ -341,17 +1359,6 @@ if ($stmt->execute()) {
     .custom-list li {
         padding: 6px 0 !important;
         font-size: 15px !important;
-    }
-
-    /* ICONS */
-    .features-col.inclusions li::before {
-        content: "✔ " !important;
-        font-weight: bold;
-    }
-
-    .features-col.exclusions li::before {
-        content: "✖ " !important;
-        font-weight: bold;
     }
 
     /* MOBILE */
@@ -461,12 +1468,6 @@ if ($stmt->execute()) {
 
     .header-right p {
         margin: 0;
-    }
-
-    .feature-img {
-        width: 100% !important;
-        max-height: 300px !important;
-        object-fit: cover !important;
     }
 
     /* Center text on image */
@@ -712,56 +1713,54 @@ if ($stmt->execute()) {
             font-size: 18px;
         }
     }
+    .feature-img {
+        width: 100%;
+        height: 400px;
+        object-fit: cover;
+        border-radius:8px;
+    }
+    /* ===== FEATURES SECTION ===== */
+    .features-row {
+        display: flex !important;
+        gap: 25px !important;
+        margin-top: 10px !important;
+    }
+
+    .features-col {
+        flex: 1 !important;
+        border-radius: 10px !important;
+    }
+    .preview-img{
+        width: 100px;
+        height: 100px;
+        object-fit: cover;
+        border-radius: 8px;
+        margin-bottom: 10px;
+    }
+    .breadcrumb-hero{
+        border-radius:12px; 
+        background-image: url('./uploads/products/<?php echo $breadcrumbImage; ?>'); 
+        background-size: cover; 
+        background-position: center; 
+        height: 300px;
+    }
+    .breadcrumb-overlay{
+    transform: translateY(100%);
+    text-align:center;
+    }
     </style>
     </head>
     <body>
 
-        <?php
-            $sql = "SELECT * FROM company LIMIT 1";
-            $result = $conn->query($sql);
-            if ($result && $result->num_rows > 0) {
-                $row = $result->fetch_assoc();
-                $company_name = $row['full_name'];
-                $logo = $row['logo'];
-                $email = $row['email'];
-                $phone = $row['phone_no'];
-                $address = $row['address'];
-
-            }    
-            $Id = __PRODUCT_ID__;
-            $sql = "select * from products where id = $Id";
-            $result = $conn ->query($sql);
-            $row = $result ->fetch_assoc();
-            $package_img = $row['product_image'];
-            $package_name = $row['name'];
-            $title = $row['title'];
-            $subtitle = $row['subtitle'];
-            $price = $row['price'];
-            $duration = $row['duration'];
-            $gst = $gst;
-            $cat_id_sc = $row['cat_id'];
-        ?>
-        
-        <div class="content-wrapper" style="margin: 0px 15% 0px 15%;">
+        <div class="content-wrapper" style="padding: 10px 15px; margin: 20px 0">
             <!-- Header Navbar -->
-            <section class="top-header">
-                <!-- LEFT: LOGO -->
-                <div class="header-left">
-                    <img src="../uploads/company_logo/<?php echo $logo; ?>" alt="Company Logo">
-                </div>
-
-                <!-- RIGHT: CONTACT -->
-                <div class="header-right">
-                    <span class="contact-item">📞 <?php echo $phone; ?></span>
-                    <span class="contact-item">✉ <?php echo $email; ?></span>
-                </div>
-            </section>
+            
             
             <!-- HERO -->
             <section class="breadcrumb-hero position-relative">
                 <!-- Manage Button -->
-                <div style="position:absolute; top:50%; right:20px; transform:translateY(-50%); display:flex; gap:10px;">
-                    <button class="btn manage-top-btn" data-bs-toggle="modal" data-bs-target="#apiModal">API</button>
+                <div style="position:absolute; top:50%; right:20px; transform:translateY(-50%); display:flex; gap:10px; z-index:9">
+                    <button class="btn btn-dark" data-bs-toggle="modal" data-bs-target="#apiModal">API</button>
                 </div>
 
                 <div class="breadcrumb-overlay">
@@ -868,73 +1867,6 @@ if ($stmt->execute()) {
                 }
             </script>
 
-            <!-- Package Image -->       
-            <div class="card image-banner">
-                <img src="./uploads/products/<?php echo $package_img; ?>" alt="Package Image" class="feature-img" style="border-radius:8px">
-            </div>
-            <div class="package-wrapper position-relative">
-                <img src="../../uploads/products/<?php echo $package_img; ?>" alt="Package Image" class="feature-img">
-                <h2 class="package-title">
-                    <?php echo $package_name; ?>
-                </h2>
-            </div>
-            
-            <!-- Description Section -->
-            <div class="card mt-20">
-                <h6 class="sec-heading">Description</h6>
-                <div class="row">
-                    <div class="col-md-12">
-                        <p><?php echo $row['description']; ?></p>
-                    </div>
-                </div>
-            </div> 
-            
-            <!--Features Section -->
-            <?php
-            $features_sql = "SELECT feature_type, feature FROM features WHERE cat_type = 2 AND package_id = $Id";
-            $features_result = $conn->query($features_sql);
-            
-            $included = [];
-            $excluded = [];
-            
-            while ($frow = $features_result->fetch_assoc()) {
-                if ($frow['feature_type'] == 'inclusive') {
-                    $included[] = $frow['feature'];
-                } else {
-                    $excluded[] = $frow['feature'];
-                }
-            }
-            ?>
-            <div class="card mt-20">
-                <h6 class="sec-heading">Features</h6>
-                <div class="features-row">
-                    <!-- INCLUSIONS -->
-                    <div class="features-col inclusions">
-                        <ul class="custom-list">
-                            <?php if (!empty($included)): ?>
-                                <?php foreach ($included as $inc): ?>
-                                    <li><?php echo htmlspecialchars($inc); ?></li>
-                                <?php endforeach; ?>
-                            <?php else: ?>
-                                <li>No inclusions available</li>
-                            <?php endif; ?>
-                        </ul>
-                    </div>
-                    <!-- EXCLUSIONS -->
-                    <div class="features-col exclusions">
-                        <ul class="custom-list">
-                            <?php if (!empty($excluded)): ?>
-                                <?php foreach ($excluded as $exc): ?>
-                                    <li><?php echo htmlspecialchars($exc); ?></li>
-                                <?php endforeach; ?>
-                            <?php else: ?>
-                                <li>No exclusions available</li>
-                            <?php endif; ?>
-                        </ul>
-                    </div>
-                </div> 
-            </div>
-            
             <!--Price Section -->
             <?php
 
@@ -951,317 +1883,182 @@ if ($stmt->execute()) {
             $isLoginRequired = ($row_login['is_login'] == 1);
             ?>
 
-            <div class="pricing-wrapper col-lg-6">
-                <div class="pricing-card">
-                    <!-- TOP -->
-                    <div class="pricing-top">
-                        <h2><?php echo $package_name; ?></h2>
-                    </div>
-                    <!-- BODY -->
-                    <div class="pricing-body">
-                        <!-- LEFT -->
-                        <div class="pricing-left">
-                            <p class="pricing-subtitle">
-                                <?php echo $title; ?>
-                            </p>
-                            <div class="pricing-price">
-                                <span class="currency"><?= $symbol ?></span>
-                                <span class="amount"><?= number_format($price) ?></span>
-                                <span class="duration">/<?= htmlspecialchars($duration); ?></span>
-                            </div>
-                            <form action="../../cart.php" method="POST">
-                              <input type="hidden" name="type" value="product">  
-                              <input type="hidden" name="id" value="<?= htmlspecialchars($id) ?>">
-                              <input type="hidden" name="plan_name" value="<?= htmlspecialchars($package_name) ?>">
-                              <input type="hidden" name="title" value="<?= htmlspecialchars($title) ?>">
-                              <input type="hidden" name="subtitle" value="<?= htmlspecialchars($subtitle) ?>">
-                              <input type="hidden" name="price" value="<?= htmlspecialchars($price) ?>">
-                              <input type="hidden" name="duration" value="<?= htmlspecialchars($duration) ?>">
-                              <input type="hidden" name="created_on" value="<?= date("Y-m-d") ?>">
-                              <input type="hidden" name="gst" value="<?= htmlspecialchars($gst) ?>">
             
-                              <button type="submit" class="choose-plan-btn">Choose Plan<span>↗</span></button>
-                            </form>
+            <div class="m-40">
+                <div class="container">
+                    <div class="row">
+                        <div class="col-xl-6 col-lg-6">
+                            <div class="row">
+                                <!--<div class="col-lg-3 text-end">
+                                    <ul>
+                                        <?php if (!empty($previewImages)): ?>
+                                            <?php foreach($previewImages as $img): ?>
+                                                <li>
+                                                    <img src="./uploads/products/<?php echo $img; ?>" class="preview-img" alt="Preview Image">
+                                                </li>
+                                            <?php endforeach; ?>
+                                        <?php else: ?>
+                                            <li>
+                                                <img src="./uploads/products/<?php echo $package_img; ?>" class="preview-img" alt="Product Image">
+                                            </li>
+                                        <?php endif; ?>
+                                    </ul>
+                                </div>-->
+                                <div class="col-lg-12">
+                                    <img src="./uploads/products/<?php echo $package_img; ?>" alt="Product Image" class="feature-img">
+                                </div>
+                            </div>
                         </div>
-
-                        <!-- RIGHT -->
-                        <div class="pricing-right">
-                            <ul>
-                                <?php if (!empty($included)): ?>
-                                    <?php foreach ($included as $inc): ?>
-                                        <li>>> <?php echo htmlspecialchars($inc); ?></li>
-                                    <?php endforeach; ?>
-                                <?php else: ?>
-                                    <li>No inclusions available</li>
+                        <div class="col-xl-6 col-lg-6">
+                            <div class="ms-20">
+                                <h3 class="mb-2 text-capitalize">
+                                    <?php echo $package_name; ?>
+                                </h3>
+                                <p class="price">
+                                    <span class="amount fs-3 fw-semibold me-6">
+                                        <?= $symbol ?><?= $price; ?>
+                                    </span>
+                                    <?php if (!empty('preview_price')): ?>
+                                    <span class="text-decoration-line-through fs-3 fw-semibold">
+                                        <?= $symbol ?><?= $preview_price; ?>
+                                    </span>
                                 <?php endif; ?>
-                            </ul>
+                                </p>
+                                
+                                <p>
+                                    <?php echo $row['short_description']; ?>
+                                </p>
+
+                                <form action="cart.php" method="POST">                                
+                                    <input type="hidden" name="type" value="product">  
+                                    <input type="hidden" name="id" value="<?= htmlspecialchars($id) ?>">
+                                    <input type="hidden" name="plan_name" value="<?= htmlspecialchars($package_name) ?>">
+                                    <input type="hidden" name="title" value="<?= htmlspecialchars($title) ?>">
+                                    <input type="hidden" name="subtitle" value="<?= htmlspecialchars($subtitle) ?>">
+                                    <input type="hidden" name="price" value="<?= htmlspecialchars($price) ?>">
+                                    <input type="hidden" name="duration" value="<?= htmlspecialchars($duration) ?>">
+                                    <input type="hidden" name="created_on" value="<?= date("Y-m-d") ?>">
+                                    <input type="hidden" name="gst" value="<?= htmlspecialchars($gst) ?>">                            
+                                    <button type="submit" class="btn btn-dark w-50 p-12 mb-3" style="border-radius: 50px;"> 
+                                        Shop Now
+                                    </button>        
+                                </form>
+                    <p><b>Duration</b> :
+                                    <?php echo $duration; ?>
+                                </p>
+                                <p><b>Category</b> :
+                                    <?php echo $prod_category; ?>
+                                </p>
+                                <p><b>Tags</b> :
+                                    <?php echo $prod_tags; ?>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                
+                    <div class="mt-40">
+                        <ul class="nav bordered-tab border border-top-0 border-start-0 border-end-0 d-inline-flex nav-pills mb-16 w-100 gap-50" id="pills-tab" role="tablist">
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link px-0 py-10 active" id="pills-home-tab" data-bs-toggle="pill" data-bs-target="#pills-home" type="button" role="tab" aria-controls="pills-home" aria-selected="true">Description</button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link px-0 py-10" id="pills-details-tab" data-bs-toggle="pill" data-bs-target="#pills-details" type="button" role="tab" aria-controls="pills-details" aria-selected="false">Features</button>
+                            </li>
+                        </ul>
+                        <div class="tab-content" id="pills-tabContent">
+                            <div class="tab-pane fade show active" id="pills-home" role="tabpanel" aria-labelledby="pills-home-tab" tabindex="0">
+                                <div>
+                                    <p class="text-secondary-light mb-0"><?php echo $row['description']; ?></p>
+                                </div>
+                            </div>
+                            <div class="tab-pane fade" id="pills-details" role="tabpanel" aria-labelledby="pills-details-tab" tabindex="0">
+                                <div>
+                                    <?php
+                                        $features_sql = "SELECT feature_type, feature FROM features WHERE cat_type = 2 AND package_id = $Id";
+                                        $features_result = $conn->query($features_sql);
+                                        
+                                        $included = [];
+                                        $excluded = [];
+                                        
+                                        while ($frow = $features_result->fetch_assoc()) {
+                                            if ($frow['feature_type'] == 'inclusive') {
+                                                $included[] = $frow['feature'];
+                                            } else {
+                                                $excluded[] = $frow['feature'];
+                                            }
+                                        }
+                                    ?>
+                                    
+                                    <div class="features-row">
+                                        <!-- INCLUSIONS -->
+                                        <div class="features-col inclusions">
+                                            <h6>Included</h6>
+                                            <ul class="custom-list">
+                                                <?php if (!empty($included)): ?>
+                                                    <?php foreach ($included as $inc): ?>
+                                                        <li><i class="fa fa-check"></i> <?php echo htmlspecialchars($inc); ?></li>
+                                                    <?php endforeach; ?>
+                                                <?php else: ?>
+                                                    <li>No inclusions available</li>
+                                                <?php endif; ?>
+                                            </ul>
+                                        </div>
+                                        <!-- EXCLUSIONS -->
+                                        <div class="features-col exclusions">
+                                        <h6>Exclude</h6>
+                                            <ul class="custom-list">
+                                                <?php if (!empty($excluded)): ?>
+                                                    <?php foreach ($excluded as $exc): ?>
+                                                        <li><i class="fa fa-close"></i> <?php echo htmlspecialchars($exc); ?></li>
+                                                    <?php endforeach; ?>
+                                                <?php else: ?>
+                                                    <li>No exclusions available</li>
+                                                <?php endif; ?>
+                                            </ul>
+                                        </div>
+                                    </div>                                                     
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
 
-                <!-- LOGIN MODAL (MOVED OUTSIDE ROW) -->
-                <div id="loginModal" class="login-modal">
-                    <div class="login-modal-content">
-                        <span class="close-btn" onclick="closeLoginPopup()">&times;</span>
-                        <iframe id="loginFrame"></iframe>
-                    </div>
+
+            <!-- LOGIN MODAL (MOVED OUTSIDE ROW) -->
+            <div id="loginModal" class="login-modal">
+                <div class="login-modal-content">
+                    <span class="close-btn" onclick="closeLoginPopup()">&times;</span>
+                    <iframe id="loginFrame"></iframe>
                 </div>
+            </div>
 
-                <script>
-                function openLoginPopup() {
-                    document.getElementById("loginModal").style.display = "block";
-                    document.getElementById("loginFrame").src =
-                        "../sign-in.php?redirect=<?php echo urlencode($_SERVER['REQUEST_URI']); ?>";
+            <script>
+            function openLoginPopup() {
+                document.getElementById("loginModal").style.display = "block";
+                document.getElementById("loginFrame").src =
+                    "../sign-in.php?redirect=<?php echo urlencode($_SERVER['REQUEST_URI']); ?>";
+            }
+
+            function closeLoginPopup() {
+                document.getElementById("loginModal").style.display = "none";
+            }
+
+            window.onclick = function(event) {
+                let modal = document.getElementById("loginModal");
+                if (event.target === modal) {
+                    closeLoginPopup();
                 }
-
-                function closeLoginPopup() {
-                    document.getElementById("loginModal").style.display = "none";
-                }
-
-                window.onclick = function(event) {
-                    let modal = document.getElementById("loginModal");
-                    if (event.target === modal) {
-                        closeLoginPopup();
-                    }
-                };
-                </script>
-
-            <section class="card mt-20 contact">
-                <h6 class="sec-heading">Need Help?</h6>
-                <button type="button" class="btn btn-default lufera-bg mt-10" onclick="openContactPopup()" style="width:120px">Contact Us</button>   
-                
-                <!-- ================= LANDING CONTACT POPUP ================= -->
-                        <div id="landingContactModal" class="landing-contact-modal">
-
-                            <div class="landing-contact-modal-content">
-
-                                <span class="landing-contact-close" onclick="closeContactPopup()">&times;</span>
-
-                                <div class="landing-contact-container">
-
-                                    <!-- LEFT SIDE -->
-                                    <div class="landing-contact-left">
-
-                                        <h4 class="sec-heading">CALL US</h4>
-                                        <p><?php echo htmlspecialchars($phone ?? 'N/A'); ?></p>
-
-                                        <h4 class="sec-heading">LOCATION</h4>
-                                        <p><?php echo htmlspecialchars($address ?? 'N/A'); ?></p>
-
-                                        <h4 class="sec-heading">BUSINESS HOURS</h4>
-                                        <p>Mon - Fri: 10am - 6pm</p>
-
-                                    </div>
-
-                                    <!-- RIGHT SIDE -->
-                                    <div class="landing-contact-right">
-
-                                        <h3 style="font-size: 22px !important">CONTACT US</h3>
-
-                                        <input type="text" id="contactName" placeholder="Enter your name" required>
-                                        <input type="text" id="contactPhone" placeholder="Enter your phone number" required>
-                                        <input type="email" id="contactEmail" placeholder="Enter your email address" required>
-                                        <textarea id="contactMessage" placeholder="Enter your message" rows="4" required></textarea>
-
-                                        <button onclick="submitContact()">SUBMIT</button>
-
-                                    </div>
-
-                                </div>
-
-                            </div>
-
-                        </div>
-
-                        <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-
-                        <script>
-                            function openContactPopup() {
-                                document.getElementById("landingContactModal").style.display = "flex";
-                            }
-
-                            function closeContactPopup() {
-                                document.getElementById("landingContactModal").style.display = "none";
-                            }
-
-                            function submitContact() {
-
-                                const name = document.getElementById("contactName").value.trim();
-                                const phone = document.getElementById("contactPhone").value.trim();
-                                const email = document.getElementById("contactEmail").value.trim();
-                                const message = document.getElementById("contactMessage").value.trim();
-
-                                const emailPattern = /^[a-zA-Z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$/;
-
-                                // ✅ 1. Email format check FIRST (only if user typed something)
-                                if (email && !emailPattern.test(email)) {
-                                    Swal.fire({
-                                        icon: 'error',
-                                        title: 'Invalid Email',
-                                        text: 'Please enter a valid email address (e.g. john@gmail.com)',
-                                        confirmButtonColor: '#fec700'
-                                    });
-                                    return;
-                                }
-
-                                // ✅ 2. Required fields check
-                                if (!name || !phone || !email || !message) {
-                                    Swal.fire({
-                                        icon: 'warning',
-                                        title: 'Missing Fields',
-                                        text: 'Please fill all fields',
-                                        confirmButtonColor: '#fec700'
-                                    });
-                                    return;
-                                }
-
-                                // ✅ 3. Proceed
-                                Swal.fire({
-                                    title: 'Submitting...',
-                                    allowOutsideClick: false,
-                                    didOpen: () => {
-                                        Swal.showLoading();
-                                    }
-                                });
-
-                                setTimeout(() => {
-                                    Swal.fire({
-                                        icon: 'success',
-                                        title: 'Submitted!',
-                                        text: 'Our team will contact you.',
-                                        confirmButtonColor: '#fec700'
-                                    }).then(() => {
-
-                                        closeContactPopup();
-
-                                        document.getElementById("contactName").value = "";
-                                        document.getElementById("contactPhone").value = "";
-                                        document.getElementById("contactEmail").value = "";
-                                        document.getElementById("contactMessage").value = "";
-                                    });
-                                }, 1000);
-                            }
-                        </script>  
-            </section>
+            };
+            </script>
             
-            <!-- ===== FOOTER ===== -->
-                <footer class="d-footer mt-20" style="padding:15px 10px; border-top:1px solid #eee;">
-                    <div class="row align-items-center justify-content-between">
-                        <div class="col-auto">
-                            <p class="mb-0">© <?php echo date("Y"); ?> Lufera Infotech. All Rights Reserved.</p>
-                        </div>
-                        <div class="col-auto" style="display:flex; gap:15px; align-items:center; flex-wrap:wrap;">
-                            <a href="privacy_policy.php">Privacy Policy</a>
-                            <span>|</span>
-                            <a href="terms_conditions.php">Terms and Conditions</a>
-                            <span>|</span>
-                            <a href="https://luferatech.com" style="display:flex; align-items:center; gap:5px;">
-                                <span>Made by</span>
-                                <span style="color:#fec700;">Lufera Infotech</span>
-                            </a>
-                        </div>
-                    </div>
-                </footer>
+            <!-- ===== FOOTER ===== -->          
         </div>
-        <?php include 'scripts.php'; ?>
-    PRODUCT;
+        <?php include './partials/layouts/layoutBottom.php'; ?>
 
-    // Replace product id
-    $productLandingContent = str_replace(
-        '__PRODUCT_ID__',
-        $package_id,
-        $productLandingContent
-    );
+    ROOT;
 
-    // =====================================================
-    // ROOT VERSION
-    // =====================================================
-
-    $rootContent = $productLandingContent;
-                        $rootContent = preg_replace(
-                            "/<\?php.*?session_start\(\);.*?include\s+['\"].*?head\.php['\"];.*?\?>/s",
-                            "<?php include './partials/layouts/layoutTop.php'; ?>",
-                            $rootContent
-                        );
-
-                        $rootContent = preg_replace(
-                            "/<\?php\s+include\s+'scripts\.php';\s*\?>/",
-                            "<?php include './partials/layouts/layoutBottom.php'; ?>",
-                            $rootContent
-                        );
-
-                        $rootContent = str_replace(
-                            '<div class="content-wrapper" style="margin: 0px 15% 0px 15%;">',
-                            '<div class="content-wrapper" style="padding: 10px 15px; margin: 20px 0">',
-                            $rootContent
-                        );
-                        
-                        $rootContent = str_replace(
-                            "../../cart.php",
-                            "cart.php", 
-                            $rootContent
-                        );
-                        
-                        $rootContent = str_replace(
-                            '<a href="../product-details.php?id=<?php echo $Id; ?>" class="d-block">',
-                            '<a href="product-details.php?id=<?php echo $Id; ?>" class="d-block">',
-                            $rootContent
-                        );
-                        
-                        $rootContent = str_replace(
-                            '<img src="../../uploads/products/<?php echo $package_img; ?>" class="hover-scale-img__img w-100 object-fit-cover ">',
-                            '<img src="./uploads/products/<?php echo $package_img; ?>" class="hover-scale-img__img w-100 object-fit-cover ">',
-                            $rootContent
-                        );
-
-                        $rootContent = preg_replace(
-                            '/<section class="top-header">.*?<\/section>/s',
-                            '',
-                            $rootContent
-                        );  
-                        
-                        $rootContent = preg_replace(
-                            '/<footer class="d-footer mt-20" style="padding:15px 10px; border-top:1px solid #eee;">.*?<\/footer>/s',
-                            '',
-                            $rootContent
-                        );  
-                        
-                        $rootContent = preg_replace(
-                            '/<section class="card mt-20 contact">.*?<\/section>/s',
-                            '',
-                            $rootContent
-                        );  
-                        
-                        $rootContent = preg_replace(
-                            '/<div class="package-wrapper position-relative">.*?<\/div>/s',
-                            '',
-                            $rootContent
-                        );  
-                    
-                        $productLandingContent = preg_replace(
-                            '/<section class="breadcrumb-hero position-relative">.*?<\/section>/s',
-                            '',
-                            $productLandingContent
-                        );
-                        
-                        $productLandingContent = str_replace(
-                            '<div class="card-body product pricing">',
-                            '<div class="product pricing">',
-                            $productLandingContent
-                        );
-                        
-                        $productLandingContent = preg_replace(
-                            '/<div class="card image-banner">.*?<\/div>/s',
-                            '',
-                            $productLandingContent
-                        );
-
-                        $productLandingContent = str_replace(
-                            '<img src="../uploads/company_logo/<?php echo $logo; ?>" alt="Company Logo">',
-                            '<img src="../../uploads/company_logo/<?php echo $logo; ?>" alt="Company Logo">',
-                            $productLandingContent
-                        );
+    $rootContent = str_replace("__PRODUCT_ID__", $package_id, $rootContent);
                         
     // =====================================================
     // CREATE BOTH FILES
@@ -1327,7 +2124,7 @@ if ($stmt->execute()) {
         } else {
             echo "<script>alert('Error: " . $stmt->error . "'); window.history.back();</script>";
         }  
-}
+    }
 ?>
 
 <div class="dashboard-main-body">
@@ -1340,7 +2137,7 @@ if ($stmt->execute()) {
             <div class="row justify-content-center">
                 <div class="col-xxl-12 col-xl-8 col-lg-10">
                     <form method="POST" enctype="multipart/form-data" class="row gy-3 needs-validation card-form" novalidate autocomplete="off">
-                        <div class="form-group text-start mb-2">
+                        <!-- <div class="form-group text-start mb-2">
                             <label class="form-label">Product image <span class="text-danger-600">*</span></label>
                           <div class="has-validation">
                             <input type="file" id="file-input" accept="image/*" name="product_image" required>
@@ -1352,7 +2149,106 @@ if ($stmt->execute()) {
                                 Please upload a product image.
                             </div>
                           </div>
-                        </div>
+                        </div> -->
+
+                                        <div class="row mb-2">
+                                            <!-- Product Image -->
+                                            <div class="col-lg-6">
+                                                <label class="form-label">
+                                                    Product Image <span class="text-danger-600">*</span>
+                                                </label>
+
+                                                <div class="has-validation image-upload-wrapper">
+                                                    <input type="file" class="file-input" id="package_image" accept="image/*" name="package_image" required>
+
+                                                    <label for="package_image" class="image-upload d-flex mw-100">
+                                                        <span>Click or Drag Image Here</span>
+                                                        <img class="preview-image" alt="Preview Image">
+                                                    </label>
+
+                                                    <div class="invalid-feedback">
+                                                        Please upload a Product image.
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <!-- Breadcrumb Image -->
+                                            <div class="col-lg-6">
+                                                <label class="form-label">
+                                                    Breadcrumb Image <span class="text-danger-600">*</span>
+                                                </label>
+
+                                                <div class="has-validation image-upload-wrapper">
+                                                    <input type="file" id="breadcrumb_image" class="file-input" accept="image/*" name="breadcrumb_image" required>
+
+                                                    <label for="breadcrumb_image" class="image-upload d-flex mw-100">
+                                                        <span>Click or Drag Image Here</span>
+                                                        <img class="preview-image" alt="Preview Image">
+                                                    </label>
+
+                                                    <div class="invalid-feedback">
+                                                        Please upload a Breadcrumb image.
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="row">
+                                            <label class="form-label fw-semibold text-primary-light text-sm mb-8">
+                                                Preview Images <span class="text-danger-600">*</span>
+                                            </label>
+
+                                            <div class="col-md-3">
+                                                <div class="has-validation image-upload-wrapper">
+                                                    <input type="file" id="preview_images1" class="file-input" accept="image/*" name="preview_images1" required>
+
+                                                    <label for="preview_images1" class="image-upload d-flex mw-100">
+                                                        <span>Click or Drag Image Here</span>
+                                                        <img class="preview-image" alt="Preview Image">
+                                                    </label>
+
+                                                    <div class="invalid-feedback">
+                                                        Please upload at least one preview image.
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div class="col-md-3">
+                                                <div class="has-validation image-upload-wrapper">
+                                                    <input type="file" id="preview_images2" class="file-input" accept="image/*" name="preview_images2">
+
+                                                    <label for="preview_images2" class="image-upload d-flex mw-100">
+                                                        <span>Click or Drag Image Here</span>
+                                                        <img class="preview-image" alt="Preview Image">
+                                                    </label>
+                                                </div>
+                                            </div>
+
+                                            <div class="col-md-3">
+                                                <div class="has-validation image-upload-wrapper">
+                                                    <input type="file" id="preview_images3" class="file-input" accept="image/*" name="preview_images3">
+
+                                                    <label for="preview_images3" class="image-upload d-flex mw-100">
+                                                        <span>Click or Drag Image Here</span>
+                                                        <img class="preview-image" alt="Preview Image">
+                                                    </label>
+                                                </div>
+                                            </div>
+
+                                            <div class="col-md-3">
+                                                <div class="has-validation image-upload-wrapper">
+                                                    <input type="file" id="preview_images4" class="file-input" accept="image/*" name="preview_images4">
+
+                                                    <label for="preview_images4" class="image-upload d-flex mw-100">
+                                                        <span>Click or Drag Image Here</span>
+                                                        <img class="preview-image" alt="Preview Image">
+                                                    </label>
+                                                </div>
+                                            </div>
+                                        </div>
+
+
+
                         <div class="form-group mb-2">
                           <label class="form-label">Product name <span class="text-danger-600">*</span></label>
                             <div class="has-validation">
@@ -1385,12 +2281,21 @@ if ($stmt->execute()) {
                             <label class="form-label">Description <span class="text-danger-600">*</span></label>
                             <div class="has-validation">
                                 <input type="text" class="form-control radius-8" id="description" name="description" required>
-                                </textarea>
                                 <div class="invalid-feedback">
                                   Description is required
                                 </div>
                             </div>
-                        </div>                       
+                        </div> 
+                        
+                        <div class="form-group mb-2">
+                            <label class="form-label">Short Description <span class="text-danger-600">*</span></label>
+                            <div class="has-validation">
+                                <input type="text" class="form-control radius-8" id="short_description" name="short_description" required>
+                                <div class="invalid-feedback">
+                                  Short Description is required
+                                </div>
+                            </div>
+                        </div> 
 
                         <div class="form-group mb-2">
                             <label class="form-label">Price <span class="text-danger-600">*</span></label>
@@ -1398,6 +2303,16 @@ if ($stmt->execute()) {
                               <input type="number" name="price" class="form-control radius-8" required onkeydown="return event.key !== 'e'" maxlength="10">
                                 <div class="invalid-feedback">
                                 Price is required
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-group mb-2">
+                            <label class="form-label">Preview Price <span class="text-danger-600">*</span></label>
+                            <div class="has-validation">
+                                <input type="number" class="form-control radius-8" id="preview_price" name="preview_price" value="<?php echo htmlspecialchars($product['preview_price']); ?>" required onkeydown="return event.key !== 'e'">
+                                <div class="invalid-feedback">
+                                    Preview Price is required
                                 </div>
                             </div>
                         </div>
@@ -1533,35 +2448,21 @@ durationValue.addEventListener("input", updateDurationOptions);
 </script>
 
 <script>
-const fileInput = document.getElementById('file-input');
-const preview = document.getElementById('preview');
-const uploadLabel = document.querySelector('.image-upload span');
-
-fileInput.addEventListener('change', function() {
-  const file = this.files[0];
-  if (file) {
-    const reader = new FileReader();
-    reader.onload = function(e) {
-      preview.style.display = 'block';
-      preview.setAttribute('src', e.target.result);
-      uploadLabel.style.display = 'none';
+document.querySelectorAll(".image-upload-wrapper").forEach(wrapper => {
+const input = wrapper.querySelector(".file-input");
+const img = wrapper.querySelector(".preview-image");
+const text = wrapper.querySelector("span");
+input.addEventListener("change", function () {
+    if (this.files.length) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            img.src = e.target.result;
+            img.style.display = "block";
+            text.style.display = "none";
+        };
+        reader.readAsDataURL(input.files[0]);
     }
-    reader.readAsDataURL(file);
-    fileInput.setCustomValidity(''); // Clear custom validation
-  } else {
-    preview.style.display = 'none';
-    uploadLabel.style.display = 'block';
-    fileInput.setCustomValidity('Please upload a product image'); // Set validation message
-  }
 });
-
-// Add custom validation on submit
-document.querySelector('form').addEventListener('submit', function(e) {
-  if (!fileInput.value) {
-    fileInput.setCustomValidity('Please upload a product image');
-  } else {
-    fileInput.setCustomValidity('');
-  }
 });
 
 // Inclusive

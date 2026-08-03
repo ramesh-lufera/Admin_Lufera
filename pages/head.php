@@ -33,4 +33,6 @@
     <link rel="stylesheet" href="../../assets/css/lib/audioplayer.css">
     <!-- main css -->
     <link rel="stylesheet" href="../../assets/css/style.css">
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.0/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
 </head>
