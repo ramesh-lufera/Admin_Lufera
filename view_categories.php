@@ -620,12 +620,14 @@
                                             gap:10px;
                                         ">
 
+                                        <?php if (\$role == '1') { ?>
                                             <button 
                                                 class="manage-top-btn" 
                                                 data-bs-toggle="modal" 
                                                 data-bs-target="#apiModal">
                                                 API
                                             </button>
+                                        <?php } ?>
 
                                             <button onclick="showManagePage()" class="manage-top-btn">
                                                 Manage
@@ -730,7 +732,8 @@
                                                     if(!empty(\$data)){
                                                         \$ids = implode(',', array_keys(\$data));
 
-                                                        \$sql = "SELECT d.*, p.title, p.subtitle, p.description, p.package_name, p.is_active pkg_active
+                                                        \$sql = "SELECT d.*, p.title, p.subtitle, p.description, p.package_name,
+                                                                p.addon_service, p.addon_package, p.addon_product, p.gst_id, p.is_active pkg_active
                                                                 FROM durations d
                                                                 JOIN package p ON d.package_id=p.id
                                                                 WHERE d.package_id IN (\$ids)";
@@ -858,10 +861,10 @@
                                                                                                 <input type="hidden" name="price" value="<?= htmlspecialchars(\$package['price']) ?>">
                                                                                                 <input type="hidden" name="duration" value="<?= htmlspecialchars(\$package['duration']) ?>">
                                                                                                 <input type="hidden" name="created_on" value="<?= date("Y-m-d") ?>">
-                                                                                                <!-- <input type="hidden" name="addon_service" value="<?= htmlspecialchars(\$package['addon_service']) ?>">
+                                                                                                <input type="hidden" name="addon_service" value="<?= htmlspecialchars(\$package['addon_service']) ?>">
                                                                                                 <input type="hidden" name="addon_package" value="<?= htmlspecialchars(\$package['addon_package']) ?>">
                                                                                                 <input type="hidden" name="addon_product" value="<?= htmlspecialchars(\$package['addon_product']) ?>">
-                                                                                                <input type="hidden" name="gst_id" value="<?= htmlspecialchars(\$package['gst_id']) ?>"> -->
+                                                                                                <input type="hidden" name="gst_id" value="<?= htmlspecialchars(\$package['gst_id']) ?>">
 
                                                                                                 <button type="submit" class="lufera-bg lufera-text text-center text-sm btn-sm px-12 py-10 w-100 radius-8 mt-28" <?= !\$isActive ? 'disabled' : '' ?>>Get started</button>
                                                                                             </form>
@@ -1335,7 +1338,8 @@
                                 align-items: center;
                                 padding: 15px 20px;
                                 border: 1px solid #eee;
-                                border-left: 5px solid var(--yellow);
+                                /* border-left: 5px solid var(--yellow); */
+                                border-left: 5px solid var(--lufera-main-color);
                                 border-radius: 6px;
                                 background-color: #fff;
                                 transition: box-shadow 0.2s ease;
@@ -1434,7 +1438,8 @@
                                 }
 
                                 .status-active {
-                                border-left: 5px solid var(--yellow);
+                                border-left: 5px solid var(--lufera-main-color);
+                                /* border-left: 5px solid var(--yellow); */
                                 /* border-left: 5px solid #4caf50; Green */
                                 }
 

@@ -16,6 +16,9 @@
             /* font-weight: bold; */
             margin-bottom: 10px;
         }
+        .fb-color {
+            color: #0866ff !important;
+        }
     </style> 
 </head>
 
@@ -351,7 +354,7 @@
                     <div class="mt-32 d-flex align-items-center gap-3">
                         <a href="<?php echo $loginUrl1; ?>" style="display:contents;">
                         <button type="button" class="fw-semibold text-primary-light py-16 px-24 w-50 border radius-12 text-md d-flex align-items-center justify-content-center gap-12 line-height-1 bg-hover-primary-50">
-                            <iconify-icon icon="ic:baseline-facebook" class="text-primary-600 text-xl line-height-1"></iconify-icon>
+                            <iconify-icon icon="ic:baseline-facebook" class="fb-color text-xl line-height-1"></iconify-icon>
                             Facebook
                         </button>
                         </a>
