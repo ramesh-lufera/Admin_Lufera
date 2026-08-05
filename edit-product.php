@@ -27,8 +27,8 @@
       width: 100%;
       padding: 20px;
       /* border-radius: 16px;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); */
-      text-align: center;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); 
+      text-align: center; */
       margin:auto;
 
     }
@@ -62,7 +62,7 @@
     .image-upload img {
       width: 100%;
       height: 100%;
-      object-fit: contain;
+      object-fit: cover;
       display: none;
       background: #f5f6fa;
     }
@@ -70,6 +70,7 @@
     .image-upload span {
       font-size: 1rem;
       color: #888;
+      display: none;
     }
 
     input[type="file"] {
@@ -143,7 +144,14 @@ $product = $result->fetch_assoc();
 if (!$product) {
     die('Product not found');
 }
+$imageData = [];
 
+if (!empty($product['image_data'])) {
+    $imageData = json_decode($product['image_data'], true);
+}
+
+$breadcrumbImage = $imageData['breadcrumb_image'] ?? '';
+$previewImages   = $imageData['preview_images'] ?? [];
 $inclusive_features = [];
 $exclusive_features = [];
 
@@ -162,11 +170,13 @@ while ($row = $featureResult->fetch_assoc()) {
 }
 
 if (isset($_POST['save'])) {
-  $name = trim($_POST['name']);
+  $product_name = $_POST['product_name'];
   $title = $_POST['title'];
   $subtitle = $_POST['subtitle'];
   $price = $_POST['price'];
   $description = $_POST['description'];
+  $short_description = $_POST['short_description'];
+  $preview_price = $_POST['preview_price'];
   $is_login = isset($_POST['is_login']) ? 1 : 0;
   $category = $_POST['category'];
   $tags = $_POST['tags'];
@@ -209,54 +219,56 @@ if (isset($_POST['save'])) {
           exit;
       }
   }
+  
+  $breadcrumbImage = $imageData['breadcrumb_image'] ?? '';
+  $previewImages   = $imageData['preview_images'] ?? [];
 
-  $stmt = $conn->prepare("UPDATE products SET name=?, title=?, subtitle=?, price=?, description=?, category=?, tags=?, feature_item=?, product_image=?, duration=?, cat_id=?, created_at=?, template=?, is_login=?  WHERE id=?");
-  $stmt->bind_param("sssdssssssissii", $name, $title, $subtitle, $price, $description, $category, $tags, $feature_item, $product_image, $duration, $cat_id, $updated_at, $module, $is_login, $get_product_id);
+  if (
+    isset($_FILES['breadcrumb_image']) &&
+    $_FILES['breadcrumb_image']['error'] == 0
+  ) {
+
+      $filename = time().'_breadcrumb_image_'.
+          basename($_FILES['breadcrumb_image']['name']);
+
+      move_uploaded_file(
+          $_FILES['breadcrumb_image']['tmp_name'],
+          'uploads/products/'.$filename
+      );
+
+      $breadcrumbImage = $filename;
+  }
+
+  // Keep existing preview images
+  $previewImages = $imageData['preview_images'] ?? [];
+
+  // Replace only the image that the user selected
+  foreach ($_FILES['preview_images']['name'] as $key => $name) {
+
+      if ($_FILES['preview_images']['error'][$key] == UPLOAD_ERR_OK) {
+
+          $filename = time().'_preview_images'.($key+1).'_'.basename($name);
+
+          move_uploaded_file(
+              $_FILES['preview_images']['tmp_name'][$key],
+              'uploads/products/'.$filename
+          );
+
+          // Update only this index
+          $previewImages[$key] = $filename;
+      }
+  }
+
+
+$image_data = json_encode([
+  'breadcrumb_image' => $breadcrumbImage,
+  'preview_images'   => $previewImages
+]);
+
+  $stmt = $conn->prepare("UPDATE products SET name=?, title=?, subtitle=?, price=?, description=?, category=?, tags=?, feature_item=?, product_image=?, image_data=?, duration=?, cat_id=?, created_at=?, template=?, short_description=?, preview_price=?, is_login=?  WHERE id=?");
+  $stmt->bind_param("sssdsssssssisssdii", $product_name, $title, $subtitle, $price, $description, $category, $tags, $feature_item, $product_image, $image_data, $duration, $cat_id, $updated_at, $module, $short_description, $preview_price, $is_login, $get_product_id);
 
   if ($stmt->execute()) {
-
-// =====================================================
-// RENAME PRODUCT FILES IF PRODUCT NAME CHANGED
-// =====================================================
-
-// OLD PRODUCT NAME
-$oldName = $product['name'];
-
-// CREATE OLD SLUG
-$oldSlug = strtolower(trim($oldName));
-$oldSlug = preg_replace('/[^a-z0-9\s-]/', '', $oldSlug);
-$oldSlug = preg_replace('/\s+/', '-', $oldSlug);
-
-// CREATE NEW SLUG
-$newSlug = strtolower(trim($name));
-$newSlug = preg_replace('/[^a-z0-9\s-]/', '', $newSlug);
-$newSlug = preg_replace('/\s+/', '-', $newSlug);
-
-// ONLY RENAME IF NAME CHANGED
-if ($oldSlug !== $newSlug) {
-
-    // FILES TO RENAME
-    $renameFiles = [
-        // ROOT FILE
-        [
-            'old' => __DIR__ . '/' . $oldSlug . '.php',
-            'new' => __DIR__ . '/' . $newSlug . '.php'
-        ],
-        // PRODUCT PAGE FILE
-        [
-            'old' => __DIR__ . '/pages/products/' . $oldSlug . '.php',
-            'new' => __DIR__ . '/pages/products/' . $newSlug . '.php'
-        ],
-    ];
-
-    // LOOP RENAME
-    foreach ($renameFiles as $file) {
-        if (file_exists($file['old'])) {
-            rename($file['old'], $file['new']);
-        }
-    }
-}
-
     // Delete old features
 $deleteFeature = $conn->prepare("DELETE FROM features WHERE package_id = ?");
 $deleteFeature->bind_param("i", $get_product_id);
@@ -332,7 +344,7 @@ $featureStmt->close();
                                value="<?php echo htmlspecialchars($get_cat_id); ?>">
                         <input type="hidden" class="form-control radius-8" name="module" required maxlength="30"
                                value="<?php echo htmlspecialchars($get_module); ?>">
-                        <div class="form-group text-start mb-2">
+                        <!-- <div class="form-group text-start mb-2">
                             <label class="form-label">Product image <span class="text-danger-600">*</span></label>
                           <div class="has-validation">
                           <input type="file" id="file-input" accept="image/*" name="product_image">
@@ -344,11 +356,61 @@ $featureStmt->close();
                                 Please upload a product image.
                             </div>
                           </div>
+                        </div> -->
+
+                        <div class="mb-2">
+                            <div class="row">
+                                <div class="col-lg-6">
+                                    <label class="form-label">
+                                        Breadcrumb image <span class="text-danger-600">*</span>
+                                    </label>
+                                    <div class="has-validation">
+                                    <input type="file" id="breadcrumb_image" name="breadcrumb_image" accept="image/*" hidden>
+
+                                    <label class="image-upload" for="breadcrumb_image">
+                                        <img id="breadcrumbPreview" src="uploads/products/<?php echo htmlspecialchars($breadcrumbImage); ?>" style="display:block;">
+                                    </label>
+                                    </div>
+                                </div>
+                                <div class="col-lg-6">
+                                    <label class="form-label">
+                                        Package image <span class="text-danger-600">*</span>
+                                    </label>
+
+                                    <div class="has-validation">
+                                        <input type="file" id="file-input" accept="image/*" name="product_image">
+                                        <label class="image-upload d-flex mw-100" for="file-input">
+                                            <span>Click or Drag Image Here</span>
+                                            <img id="preview" src="uploads/products/<?php echo htmlspecialchars($product['product_image']); ?>" alt="Preview Image" style="<?php echo $product['product_image'] ? 'display:block;' : 'display:none;'; ?>">
+                                        </label>
+                                    </div>  
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mb-2">
+                            <div class="row">
+                                <label class="form-label fw-semibold text-primary-light text-sm mb-8">
+                                    Preview Images <span class="text-danger-600">*</span>
+                                </label>
+
+                                <?php
+                                for($i=0;$i<4;$i++){
+                                    $img = $previewImages[$i] ?? '';
+                                ?>
+                                <div class="col-md-3">
+                                    <input type="file" name="preview_images[]" id="preview_file_<?php echo $i; ?>" accept="image/*" hidden>
+                                    <label class="image-upload" for="preview_file_<?php echo $i; ?>">
+                                        <span>Click or Drag Image Here</span>
+                                        <img id="preview_<?php echo $i; ?>" src="uploads/products/<?php echo htmlspecialchars($img); ?>" style="display:block;">
+                                    </label>
+                                </div>
+                                <?php } ?>
+                            </div>
                         </div>
                         <div class="form-group mb-2">
                           <label class="form-label">Product name <span class="text-danger-600">*</span></label>
                             <div class="has-validation">
-                            <input type="text" class="form-control radius-8" id="name" name="name" value="<?php echo htmlspecialchars($product['name']); ?>" required maxlength="30">
+                            <input type="text" class="form-control radius-8" id="name" name="product_name" value="<?php echo htmlspecialchars($product['name']); ?>" required maxlength="30">
                               <div class="invalid-feedback">
                                 Product name is required
                               </div>
@@ -376,11 +438,24 @@ $featureStmt->close();
                             <label class="form-label">Description <span class="text-danger-600">*</span></label>
                             <div class="has-validation">
                                 <input type="text" class="form-control radius-8" id="description" name="description" value="<?php echo htmlspecialchars($product['description']); ?>" required maxlength="30">
-                                </textarea>
                                 <div class="invalid-feedback">
                                   Description is required
                                 </div>
                             </div>
+                        </div>
+                        <div class="form-group mb-2">
+                          <label class="form-label">Short Description <span class="text-danger-600">*</span></label>
+                          <div class="has-validation">
+                            <input type="text" 
+                                  class="form-control radius-8" 
+                                  id="short_description" 
+                                  name="short_description"
+                                  value="<?php echo htmlspecialchars($product['short_description']); ?>" 
+                                  required>
+                            <div class="invalid-feedback">
+                                Short Description is required
+                            </div>
+                          </div>
                         </div>
                         <div class="form-group mb-2">
                             <label class="form-label">Price <span class="text-danger-600">*</span></label>
@@ -388,6 +463,15 @@ $featureStmt->close();
                               <input type="number" class="form-control radius-8" id="price" name="price" value="<?php echo htmlspecialchars($product['price']); ?>" onkeydown="return event.key !== 'e'" required maxlength="30">
                                 <div class="invalid-feedback">
                                 Price is required
+                                </div>
+                            </div>
+                        </div>
+                        <div class="form-group mb-2">
+                            <label class="form-label">Preview Price <span class="text-danger-600">*</span></label>
+                            <div class="has-validation">
+                                <input type="number" class="form-control radius-8" id="preview_price" name="preview_price" value="<?php echo htmlspecialchars($product['preview_price']); ?>" required onkeydown="return event.key !== 'e'">
+                                <div class="invalid-feedback">
+                                    Preview Price is required
                                 </div>
                             </div>
                         </div>
@@ -511,7 +595,42 @@ $featureStmt->close();
 const fileInput = document.getElementById('file-input');
 const preview = document.getElementById('preview');
 const uploadLabel = document.querySelector('.image-upload span');
+// Breadcrumb Image Preview
+const breadcrumbInput = document.getElementById("breadcrumb_image");
+const breadcrumbPreview = document.getElementById("breadcrumbPreview");
 
+breadcrumbInput.addEventListener("change", function () {
+    const file = this.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+
+    reader.onload = function (e) {
+        breadcrumbPreview.src = e.target.result;
+        breadcrumbPreview.style.display = "block";
+    };
+
+    reader.readAsDataURL(file);
+});
+document.querySelectorAll('input[name="preview_images[]"]').forEach((input, index) => {
+
+input.addEventListener("change", function () {
+
+    const file = this.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+
+    reader.onload = function (e) {
+        const img = document.getElementById("preview_" + index);
+        img.src = e.target.result;
+        img.style.display = "block";
+    };
+
+    reader.readAsDataURL(file);
+});
+
+});
 fileInput.addEventListener('change', function() {
   const file = this.files[0];
   if (file) {
@@ -609,4 +728,3 @@ document.addEventListener("click", function(e) {
 </script>
 
 <?php include './partials/layouts/layoutBottom.php' ?>
-

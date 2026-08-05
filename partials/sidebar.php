@@ -339,8 +339,6 @@
                             height: auto;
                             object-fit: cover;
                             border-radius:8px;
-                            width: 512px;
-                            height: 593px;
                         }
                         /* ===== FEATURES SECTION ===== */
                         .features-row {
@@ -384,8 +382,8 @@
                                                         </ol>                   
                                                     </nav>
                                                 </div>
-                                                <div style="position:absolute; background:#fec700; top:50%; right:20px; transform:translateY(-50%); display:flex; gap:10px;">
-                                                    <button class="btn manage-top-btn" data-bs-toggle="modal" data-bs-target="#apiModal">API</button>
+                                                <div style="position:absolute; top:50%; right:20px; transform:translateY(-50%); display:flex; gap:10px;">
+                                                    <button class="btn btn-dark" data-bs-toggle="modal" data-bs-target="#apiModal">API</button>
                                                 </div>  
                                             </div>
                                         </div>
@@ -705,7 +703,7 @@
                         );
 
                         \$landingContent = preg_replace(
-                            '/<button class="btn manage-top-btn" data-bs-toggle="modal" data-bs-target="#apiModal">.*?<\/button>/s',
+                            '/<button class="btn btn-dark" data-bs-toggle="modal" data-bs-target="#apiModal">.*?<\/button>/s',
                             '',
                             \$landingContent
                         );
@@ -1531,40 +1529,46 @@
             <?php } if ($row['role'] == "1") { ?>
                 <li class="dropdown">
                     <a href="javascript:void(0)">
+                        <iconify-icon icon="hugeicons:invoice-03" class="menu-icon"></iconify-icon>
+                        <span>Inventory</span>
+                    </a>
+                    <ul class="sidebar-submenu">
+                        <li>
+                            <a href="add-on-service.php"><i class="ri-circle-fill circle-icon text-warning-600 w-auto"></i> Add on Services</a>
+                        </li>
+                        <li>
+                            <a href="view_categories.php"><i class="ri-circle-fill circle-icon text-warning-600 w-auto"></i> Category</a>
+                        </li>
+                        <li>
+                            <a href="view_packages.php"><i class="ri-circle-fill circle-icon text-warning-600 w-auto"></i> Package</a>
+                        </li>
+                        <li>
+                            <a href="view_products.php"><i class="ri-circle-fill circle-icon text-warning-600 w-auto"></i> Product</a>
+                        </li>
+                    </ul>
+                </li>
+                <li class="dropdown">
+                    <a href="javascript:void(0)">
                         <iconify-icon icon="icon-park-outline:setting-two" class="menu-icon"></iconify-icon>
                         <span>Settings</span>
                     </a>
                     <ul class="sidebar-submenu">
-                        <li><a href="add-on-service.php"><i class="ri-circle-fill circle-icon text-warning-600 w-auto"></i> Add on Services</a></li>
                         <li><a href="bank_details.php"><i class="ri-circle-fill circle-icon text-warning-600 w-auto"></i> Bank Details</a></li>
-                        <li><a href="view_categories.php"><i class="ri-circle-fill circle-icon text-warning-600 w-auto"></i> Categories</a></li>
                         <li><a href="company.php"><i class="ri-circle-fill circle-icon text-warning-600 w-auto"></i> Company</a></li>
                         <li><a href="credentials.php"><i class="ri-circle-fill circle-icon text-warning-600 w-auto"></i> Credentials</a></li>
                         <li><a href="currencies.php"><i class="ri-circle-fill circle-icon text-warning-600 w-auto"></i> Currencies</a></li>
                         <li><a href="invoice_settings.php"><i class="ri-circle-fill circle-icon text-warning-600 w-auto"></i> Invoice Settings</a></li>
+                        <li><a href="marketplace-settings.php"><i class="ri-circle-fill circle-icon text-warning-600 w-auto"></i> Marketplace</a></li>
                         <li><a href="promotion.php"><i class="ri-circle-fill circle-icon text-warning-600 w-auto"></i> Promotion</a></li>
                         <li><a href="add_policy.php"><i class="ri-circle-fill circle-icon text-warning-600 w-auto"></i> Privacy policy</a></li>
-                        <li><a href="view_packages.php"><i class="ri-circle-fill circle-icon text-warning-600 w-auto"></i> Packages</a></li>
-                        <li><a href="view_products.php"><i class="ri-circle-fill circle-icon text-warning-600 w-auto"></i> Products</a></li>
                         <li><a href="role-access.php"><i class="ri-circle-fill circle-icon text-warning-600 w-auto"></i> Roles</a></li>
                         <li><a href="taxes.php"><i class="ri-circle-fill circle-icon text-warning-600 w-auto"></i> Taxes</a></li>
                         <li><a href="add_terms_conditions.php"><i class="ri-circle-fill circle-icon text-warning-600 w-auto"></i> Terms and Conditions</a></li>
                     </ul>
 
                 </li>
-                <li>
-                <a href="backup.php">
-                    <iconify-icon icon="tabler:download" class="menu-icon"></iconify-icon>
-                    <span>Backup</span>
-                </a>
-            </li>
+                
             <?php } ?>
-            <li>
-                <a href="activity_log.php">
-                    <iconify-icon icon="tabler:activity" class="menu-icon"></iconify-icon>
-                    <span>Activity Log</span>
-                </a>
-            </li>
             <li>
                 <a href="logout.php" class="hover-bg-transparent hover-text-danger">
                     <iconify-icon icon="bi:x-circle" class="menu-icon"></iconify-icon>
