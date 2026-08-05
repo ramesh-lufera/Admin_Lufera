@@ -20,8 +20,8 @@
     }
 
     .form-control:focus, textarea:focus {
-        border-color: #fec700 !important;
-        box-shadow: 0 0 0 3px rgba(254,199,0,0.2) !important;
+        /* border-color: #fec700 !important; */
+        /* box-shadow: 0 0 0 3px rgba(254,199,0,0.2) !important; */
         outline: none !important;
     }
 
@@ -42,7 +42,8 @@
     .form-check-input {
         width: 18px !important;
         height: 18px !important;
-        accent-color: #fec700 !important;
+        /* accent-color: #fec700 !important; */
+        accent-color: var(--lufera-main-color) !important;
         /* margin: 0 !important; */
         appearance: auto !important;
     }
@@ -171,7 +172,8 @@
         overflow: hidden;
     }
     .progress-bar {
-        background-color: #fec700 !important; /* Match your form's primary color */
+        /* background-color: #fec700 !important; Match your form's primary color */
+        background-color: var(--lufera-main-color) !important; /* Match your form's primary color */
         color: #000;
         font-weight: 600;
         display: flex;
@@ -456,7 +458,8 @@
         // === Admin Buttons ===
         if ($isAdmin) {
             echo '<div class="btn-group mt-2 ms-1">';
-            echo '<button type="button" class="btn btn-sm edit-icon" style="background-color: #FEC700; color: black;" data-field="' . htmlspecialchars($fieldName) . '" title="Edit">&#9998;</button>';
+            // echo '<button type="button" class="btn btn-sm edit-icon" style="background-color: #FEC700; color: black;" data-field="' . htmlspecialchars($fieldName) . '" title="Edit">&#9998;</button>';
+            echo '<button type="button" class="btn btn-sm edit-icon" style="background-color: orange; color: black;" data-field="' . htmlspecialchars($fieldName) . '" title="Edit">&#9998;</button>';
             echo '<button type="button" class="btn btn-sm update-icon d-none" style="background-color: #00B4D8; color: white;" data-field="' . htmlspecialchars($fieldName) . '" title="Update">&#128190;</button>';
             echo '<button type="button" class="btn btn-success btn-sm approve-btn" data-field="' . htmlspecialchars($fieldName) . '" title="Approve">&#10004;</button>';
             echo '<button type="button" class="btn btn-danger btn-sm reject-btn" data-field="' . htmlspecialchars($fieldName) . '" title="Reject">&#10006;</button>';
@@ -637,7 +640,7 @@
                                             renderFieldExtended('logo', $savedData, $user_role, 'Logo', '', 'file');
                                         ?>
                                         <?php if (in_array($user_role, [8])): ?>
-                                            <input type="submit" name="save" class="lufera-bg bg-hover-warning-400 text-white text-md px-56 py-11 radius-8 m-auto d-block" value="Save" >
+                                            <input type="submit" name="save" class="lufera-bg lufera-text text-md px-56 py-11 radius-8 m-auto d-block" value="Save" >
                                         <?php endif; ?>
                                 </form>
                             </div>

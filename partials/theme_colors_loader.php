@@ -122,6 +122,15 @@ if($themeData){
 
 }
 
+.lufera-orange{
+  color: orange;
+}
+
+.lufera-bg-focus{
+  background-color:
+        var(--lufera-focus-color) !important;
+}
+
 /* style.css file css */
 
 .form-select:focus, .form-select:active, .form-control:focus, .form-control:active, textarea:focus, textarea:active {

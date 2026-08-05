@@ -1184,11 +1184,15 @@
                                     $statusText = "";
 
                                     if ($row['status'] === 'Approved') {
-                                        $statusColor = "text-warning"; // yellow
+                                        // $statusColor = "text-warning"; // yellow
+                                        $statusColor = "lufera-color";
                                         $statusText = "Approved";
                                     } elseif ($row['status'] === 'Cancelled') {
                                         $statusColor = "text-danger"; // red
                                         $statusText = "Rejected";
+                                    } elseif ($row['status'] === 'Pending') {
+                                        $statusColor = "lufera-orange";
+                                        $statusText = "Pending";
                                     }
                                 ?>
                                 <tr>

@@ -1,4 +1,5 @@
 <?php include './partials/layouts/layoutTop.php'; ?>
+
 <style>
     .readonly-select {
         pointer-events: none;
@@ -23,8 +24,8 @@
         width: 100% !important;
     }
     .form-control:focus, textarea:focus {
-        border-color: #fec700 !important;
-        box-shadow: 0 0 0 3px rgba(254,199,0,0.2) !important;
+        /* border-color: #fec700 !important; */
+        /* box-shadow: 0 0 0 3px rgba(254,199,0,0.2) !important; */
         outline: none !important;
     }
     .form-check-group {
@@ -42,7 +43,8 @@
     .form-check-input {
         width: 18px !important;
         height: 18px !important;
-        accent-color: #fec700 !important;
+        /* accent-color: #fec700 !important; */
+        accent-color: var(--lufera-main-color) !important;
         /* margin: 0 !important; */
         appearance: auto !important;
     }
@@ -81,7 +83,7 @@
         transform: translate(-50%, -56%);
         font-weight: bold;
     } */
-     .edit-icon:hover {
+    .edit-icon:hover {
         filter: brightness(1.1);
     }
     .update-icon:hover {
@@ -131,7 +133,8 @@
         overflow: hidden;
     }
     .progress-bar {
-        background-color: #fec700 !important; /* Match your form's primary color */
+        /* background-color: #fec700 !important; Match your form's primary color */
+        background-color: var(--lufera-main-color) !important; /* Match your form's primary color */
         color: #000;
         font-weight: 600;
         display: flex;
@@ -543,7 +546,8 @@
         // === Admin Buttons ===
         if ($isAdmin) {
             echo '<div class="btn-group mt-2 ms-1">';
-            echo '<button type="button" class="btn btn-sm edit-icon" style="background-color: #FEC700; color: black;" data-field="' . htmlspecialchars($fieldName) . '" title="Edit">Edit</button>';
+            // echo '<button type="button" class="btn btn-sm edit-icon" style="background-color: #FEC700; color: black;" data-field="' . htmlspecialchars($fieldName) . '" title="Edit">Edit</button>';
+            echo '<button type="button" class="btn btn-sm edit-icon" style="background-color: orange; color: black;" data-field="' . htmlspecialchars($fieldName) . '" title="Edit">Edit</button>';
             echo '<button type="button" class="btn btn-sm update-icon d-none" style="background-color: #00B4D8; color: white;" data-field="' . htmlspecialchars($fieldName) . '" title="Update">Update</button>';
             echo '<button type="button" class="btn btn-success btn-sm approve-btn" data-field="' . htmlspecialchars($fieldName) . '" title="Approve">Approve</button>';
             echo '<button type="button" class="btn btn-danger btn-sm reject-btn" data-field="' . htmlspecialchars($fieldName) . '" title="Reject">Reject</button>';
@@ -844,7 +848,7 @@ echo '<script>const websiteId = ' . $website_id . ';</script>';
                                             </div>
                                         </div>
                                     <?php if (in_array($user_role, [8])): ?>
-                                        <input type="submit" id="saveBtn" name="save" class="lufera-bg bg-hover-warning-400 text-white text-md px-56 py-11 radius-8 m-auto d-block mt-4" value="Save" >
+                                        <input type="submit" id="saveBtn" name="save" class="lufera-bg lufera-text text-md px-56 py-11 radius-8 m-auto d-block mt-4" value="Save" >
                                     <?php endif; ?>
                                 </form>
                             </div>

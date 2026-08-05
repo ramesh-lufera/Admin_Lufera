@@ -1412,14 +1412,17 @@
 
 <style>
     /* ===== Card Themes ===== */
-    .card-yellow { background-color: #FFFBEB !important; }
+    /* .card-yellow { background-color: #FFFBEB !important; } */
+    .card-yellow { background-color: #e9fdff !important; }
     .card-blue   { background-color: #EFF6FF !important; }
     .card-green  { background-color: #ECFDF5 !important; }
 
     /* ===== Icon Themes ===== */
     .icon-yellow {
-        background-color: #FEF3C7 !important;
-        color: #B45309 !important;
+        /* background-color: #FEF3C7 !important; */
+        background-color: #cff6fb !important;
+        /* color: #B45309 !important; */
+        color: #115859 !important;
     }
 
     .icon-blue {
@@ -1648,18 +1651,20 @@
                 <?php if ($isAdminUser): ?>
                     <div class="col-12" id="section-banner">
                         <div class="nft-promo-card card radius-12 overflow-hidden position-relative z-1">
-                            <img src="assets/images/yb-background.avif" class="position-absolute start-0 top-0 w-100 h-100 z-n1" alt="">
+                            <img src="assets/images/LuferaInfotech-background.png" class="position-absolute start-0 top-0 w-100 h-100 z-n1" alt="">
                             <div class="nft-promo-card__inner d-flex align-items-center">
                                 <div class="nft-promo-card__thumb w-100">
-                                    <img src="assets/images/laptop.webp" alt="" class="w-100 h-100 object-fit-cover">
+                                    <img src="assets/images/LuferaInfotech-Logo-Sq.png" alt="" class="w-100 h-100 object-fit-cover" style="width: 85% !important;">
                                 </div>
                                 <div class="flex-grow-1">
-                                    <h4 class="mb-16 text-white">Discover Our Lufera Marketplace</h4>
-                                    <p class="text-white text-md">Your one-stop destination for unique products and unbeatable deals. Browse a vibrant marketplace filled with trusted sellers and handpicked selections—all in one place.</p>
-                                    <!-- <div class="d-flex align-items-center flex-wrap mt-24 gap-16">
-                                        <a href="#" class="btn rounded-pill border br-white text-white radius-8 px-32 py-11 hover-bg-white text-hover-neutral-900">Explore</a>
-                                        <a href="#" class="btn rounded-pill btn-primary-600 radius-8 px-28 py-11">Create Now</a>
-                                    </div> -->
+                                    <h4 class="mb-16 text-white">Discover the Lufera Marketplace</h4>
+                                    <!-- <p class="text-white text-md">Your one-stop destination for unique products and unbeatable deals. Browse a vibrant marketplace filled with trusted sellers and handpicked selections—all in one place.</p> -->
+                                    <p class="text-white text-md">Explore powerful SaaS solutions, website development services, and digital tools designed to help businesses automate, grow, and succeed online.</p>
+                                    <div class="d-flex align-items-center flex-wrap mt-24 gap-16">
+                                        <a href="pages/marketplace/marketplace.php" target="_blank" class="btn rounded-pill border br-white text-white radius-8 px-32 py-11 hover-bg-white text-hover-neutral-900">Read More</a>
+                                        <!-- <a href="#" class="btn rounded-pill border br-white text-white radius-8 px-32 py-11 hover-bg-white text-hover-neutral-900">Explore</a>
+                                        <a href="#" class="btn rounded-pill btn-primary-600 radius-8 px-28 py-11">Create Now</a> -->
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -1669,18 +1674,20 @@
                 <?php if (!$isAdminUser): ?>
                     <div class="col-12" id="section-banner1">
                         <div class="nft-promo-card card radius-12 overflow-hidden position-relative z-1">
-                            <img src="assets/images/yb-background.avif" class="position-absolute start-0 top-0 w-100 h-100 z-n1" alt="">
+                            <img src="assets/images/LuferaInfotech-background.png" class="position-absolute start-0 top-0 w-100 h-100 z-n1" alt="">
                             <div class="nft-promo-card__inner d-flex align-items-center">
                                 <div class="nft-promo-card__thumb w-100">
-                                    <img src="assets/images/user-dashboard.png" alt="" class="w-100 h-100 object-fit-cover">
+                                    <img src="assets/images/LuferaInfotech-Logo-Sq.png" alt="" class="w-100 h-100 object-fit-cover" style="width: 85% !important;">
                                 </div>
                                 <div class="flex-grow-1">
-                                    <h4 class="mb-16 text-white">Discover Our Lufera Marketplace</h4>
-                                    <p class="text-white text-md">Your one-stop destination for unique products and unbeatable deals. Browse a vibrant marketplace filled with trusted sellers and handpicked selections—all in one place.</p>
-                                    <!-- <div class="d-flex align-items-center flex-wrap mt-24 gap-16">
-                                        <a href="#" class="btn rounded-pill border br-white text-white radius-8 px-32 py-11 hover-bg-white text-hover-neutral-900">Explore</a>
-                                        <a href="#" class="btn rounded-pill btn-primary-600 radius-8 px-28 py-11">Create Now</a>
-                                    </div> -->
+                                    <h4 class="mb-16 text-white">Discover the Lufera Marketplace</h4>
+                                    <!-- <p class="text-white text-md">Your one-stop destination for unique products and unbeatable deals. Browse a vibrant marketplace filled with trusted sellers and handpicked selections—all in one place.</p> -->
+                                    <p class="text-white text-md">Explore powerful SaaS solutions, website development services, and digital tools designed to help businesses automate, grow, and succeed online.</p>
+                                    <div class="d-flex align-items-center flex-wrap mt-24 gap-16">
+                                        <a href="pages/marketplace/marketplace.php" target="_blank" class="btn rounded-pill border br-white text-white radius-8 px-32 py-11 hover-bg-white text-hover-neutral-900">Read More</a>    
+                                        <!-- <a href="#" class="btn rounded-pill border br-white text-white radius-8 px-32 py-11 hover-bg-white text-hover-neutral-900">Explore</a>
+                                        <a href="#" class="btn rounded-pill btn-primary-600 radius-8 px-28 py-11">Create Now</a> -->
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -1729,12 +1736,12 @@
                             <!-- NEW SUBSCRIPTIONS -->
                             <div class="col-lg-4 col-sm-6">
                                 <div class="card px-24 py-16 radius-12 border h-100"
-                                    style="background:#fffbea;border:1px solid #f5e8ae;">
+                                    style="background:#edffff;border:1px solid #f5e8ae;">
                                     <div class="card-body p-0">
                                         <div class="d-flex gap-16 align-items-center">
 
                                             <span class="w-40-px h-40-px rounded-circle d-flex justify-content-center align-items-center"
-                                                style="background:#fff1b8;color:#111827;">
+                                                style="background:#c1e6e6;color:#111827;">
                                                 <iconify-icon icon="solar:shield-check-bold"></iconify-icon>
                                             </span>
 
@@ -2028,7 +2035,8 @@
                                                 <?php
                                                     switch ($order['status']) {
                                                         case 'Approved':
-                                                            echo '<span class="bg-success-focus text-success-main px-24 py-4 rounded-pill fw-medium text-sm">Approved</span>';
+                                                            // echo '<span class="bg-success-focus text-success-main px-24 py-4 rounded-pill fw-medium text-sm">Approved</span>';
+                                                            echo '<span class="lufera-bg-focus lufera-color px-24 py-4 rounded-pill fw-medium text-sm">Approved</span>';
                                                             break;
 
                                                         case 'Pending':
@@ -2088,11 +2096,15 @@
                                         $statusText = "";
 
                                         if ($order['status'] === 'Approved') {
-                                            $statusColor = "text-warning"; // yellow
+                                            // $statusColor = "text-warning"; // yellow
+                                            $statusColor = "lufera-color";
                                             $statusText = "Approved";
                                         } elseif ($order['status'] === 'Cancelled') {
                                             $statusColor = "text-danger"; // red
                                             $statusText = "Rejected";
+                                        } elseif ($order['status'] === 'Pending') {
+                                            $statusColor = "lufera-orange";
+                                            $statusText = "Pending";
                                         }
                                     ?>
 

@@ -369,15 +369,18 @@
                 border: 1px solid #ccc;
             }
             .btn-edit-website {
-                background-color: #fec700;
-                color: #000;
+                /* background-color: #fec700; */
+                background-color: var(--lufera-main-color);
+                /* color: #000; */
+                color: var(--lufera-text-color);
                 border: none;
             }
             .btn-upgrade:hover {
                 background-color: #f0e68c;
             }
             .btn-edit-website:hover {
-                background-color: #e6be00;
+                /* background-color: #e6be00; */
+                background-color: var(--lufera-focus-color);
             }
             .icon-black {
                 color: #000;
@@ -406,7 +409,8 @@
                 color: red;
             }
             .text-warning {
-                color: #fec700;
+                /* color: #fec700; */
+                color: var(--lufera-main-color) !important;
             }
             .text-pending {
                 color: #ff9800;
@@ -520,7 +524,7 @@
                     </div>
                     <hr />
                     <?php if ($role == '1' || $role == '2'): ?>
-                        <button type="submit" class="lufera-bg bg-hover-warning-400 text-white text-md px-56 py-11 radius-8 mt-20 float-end" style="width: auto; height: fit-content;">Update</button>
+                        <button type="submit" class="lufera-bg lufera-text text-md px-56 py-11 radius-8 mt-20 float-end" style="width: auto; height: fit-content;">Update</button>
                     <?php endif; ?>
                 </div>
                 </div>
