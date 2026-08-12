@@ -783,16 +783,57 @@
                                 \$durationStmt = \$conn->prepare("INSERT INTO durations (package_id, duration, price, created_at, preview_price) VALUES (?, ?, ?, ?, ?)");
                                 
                                 foreach (\$_POST['duration_values'] as \$index => \$value) {
-                                    \$unit = \$_POST['duration_units'][\$index] ?? '';
+                                    // \$unit = \$_POST['duration_units'][\$index] ?? '';
+                                    // \$price = \$_POST['prices'][\$index] ?? '';
+                                    // \$pre_prices = \$_POST['pre_prices'][\$index] ?? '';
+                                    
+                                    // if (!empty(\$value) && !empty(\$unit) && !empty(\$price)) {
+                                    //     // Combine value + unit
+                                    //     \$duration_text = \$value . ' ' . \$unit;
+                                    //     \$durationStmt->bind_param("isdsd", \$package_id, \$duration_text, \$price, \$created_at, \$pre_prices);
+                                    //     \$durationStmt->execute();
+                                    // }
+
+                                    \$unit = strtolower(trim(\$_POST['duration_units'][\$index] ?? ''));
                                     \$price = \$_POST['prices'][\$index] ?? '';
                                     \$pre_prices = \$_POST['pre_prices'][\$index] ?? '';
-                                    
+
                                     if (!empty(\$value) && !empty(\$unit) && !empty(\$price)) {
-                                        // Combine value + unit
-                                        \$duration_text = \$value . ' ' . \$unit;
-                                        \$durationStmt->bind_param("isdsd", \$package_id, \$duration_text, \$price, \$created_at, \$pre_prices);
+
+                                        // Convert singular/plural and capitalize first letter
+                                        if (\$unit == "days") {
+
+                                            \$unitText = (\$value == 1) ? "Day" : "Days";
+
+                                        } elseif (\$unit == "months") {
+
+                                            \$unitText = (\$value == 1) ? "Month" : "Months";
+
+                                        } elseif (\$unit == "years") {
+
+                                            \$unitText = (\$value == 1) ? "Year" : "Years";
+
+                                        } else {
+
+                                            \$unitText = ucfirst(\$unit);
+
+                                        }
+
+                                        // Final duration text
+                                        \$duration_text = \$value . " " . \$unitText;
+
+                                        \$durationStmt->bind_param(
+                                            "isdsd",
+                                            \$package_id,
+                                            \$duration_text,
+                                            \$price,
+                                            \$created_at,
+                                            \$pre_prices
+                                        );
+
                                         \$durationStmt->execute();
                                     }
+
                                 }
                                 \$durationStmt->close();
                             }
@@ -1158,7 +1199,7 @@
                                         </div>
                                         
                                         <div class="d-flex align-items-center justify-content-center gap-3">
-                                            <button type="submit" name="save_package" class="btn lufera-bg text-white text-md px-56 py-12 radius-8">
+                                            <button type="submit" name="save_package" class="btn lufera-bg lufera-text text-md px-56 py-12 radius-8">
                                                 Submit
                                             </button>
                                         </div>

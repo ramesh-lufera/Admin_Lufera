@@ -183,7 +183,6 @@
                         Swal.fire({
                             icon: 'success',
                             title: 'Success',
-                            // text: 'Website details updated successfully',
                             text: 'Details updated successfully',
                             confirmButtonColor: '#3085d6'
                         });
@@ -439,7 +438,7 @@
                     <?php include 'renewal.php'; ?>
                     <a href="upgrade_plan.php?web_id=<?= $websiteId ?>&prod_id=<?= $productId?>&duration=<?= $Duration ?>"><button type="button" class="btn btn-sm btn-upgrade">Upgrade</button></a>
                 <?php endif; ?>
-                <a href="./lufera-one-wizard.php?id=<?= $websiteId ?>&prod_id=<?= $productId ?>"><button type="button" class="btn btn-sm btn-edit-website">Wizard</button></a>
+                <a href="./existing-website-revamp-wizard.php?id=<?= $websiteId ?>&prod_id=<?= $productId ?>"><button type="button" class="btn btn-sm btn-edit-website">Wizard</button></a>
             </div>
         </div>
         <form method="post" autocomplete="off">
@@ -468,137 +467,42 @@
             </div>
             </div>
         
-            <!-- <div class="col-lg-6">
-                <div class="card h-100 p-0">
-                    <div class="card-header border-bottom bg-base py-16 px-24">
-                        <h6 class="text-lg fw-semibold mb-0">Website Details:</h6>
-                    </div>
-                    <div class="card-body p-24 plan-details-shadow bg-base">
-                        <div class="d-flex justify-content-between my-3">
-                            <span>Access your Website at</span>
-                            <?php if ($role == '1' || $role == '2'): ?>
-                                <input type="text" class="border" name="access1" value="<?= htmlspecialchars($access1 ?? '') ?>">
-                            <?php else: ?>
-                                <?php if (!empty($access1)): ?>
-                                    <span><?= htmlspecialchars($access1) ?></span>
-                                <?php else: ?>
-                                    <span>N/A</span>
-                                <?php endif; ?>
-                            <?php endif; ?>
-                        </div>
-                        <hr />
-                        <div class="d-flex justify-content-between my-3">
-                            <span>Access your Website with www</span>
-                            <?php if ($role == '1' || $role == '2'): ?>
-                                <input type="text" class="border" name="access_www" value="<?= htmlspecialchars($access_www ?? '') ?>">
-                            <?php else: ?>
-                                <?php if (!empty($access_www)): ?>
-                                    <span><?= htmlspecialchars($access_www) ?></span>
-                                <?php else: ?>
-                                    <span>N/A</span>
-                                <?php endif; ?>
-                            <?php endif; ?>
-                        </div>
-                        <hr />
-                        <div class="d-flex justify-content-between my-3">
-                            <span>Website IP address</span>
-                            <?php if ($role == '1' || $role == '2'): ?>
-                                <input type="text" class="border" name="ip_address" value="<?= htmlspecialchars($ip_address ?? '') ?>">
-                            <?php else: ?>
-                                <?php if (!empty($ip_address)): ?>
-                                    <span><?= htmlspecialchars($ip_address) ?></span>
-                                <?php else: ?>
-                                    <span>N/A</span>
-                                <?php endif; ?>
-                            <?php endif; ?>
-                        </div>
-                    </div>
-                </div>
-            </div> -->
-
-            <!-- <div class="col-lg-6">
-                <div class="card h-100 p-0">
-                    <div class="card-header border-bottom bg-base py-16 px-24">
-                        <h6 class="text-lg fw-semibold mb-0">Nameservers:</h6>
-                    </div>
-                    <div class="card-body p-24 plan-details-shadow bg-base">
-                        <div class="d-flex justify-content-between my-3">
-                            <span>Nameserver 1</span>
-                            <?php if ($role == '1' || $role == '2'): ?>
-                                <input type="text" class="border" name="nameserver1" value="<?= htmlspecialchars($nameserver1 ?? '') ?>">
-                            <?php else: ?>
-                                <?php if (!empty($nameserver1)): ?>
-                                    <span><?= htmlspecialchars($nameserver1) ?></span>
-                                <?php else: ?>
-                                    <span>N/A</span>
-                                <?php endif; ?>
-                            <?php endif; ?>
-                        </div>
-                        <hr />
-                        <div class="d-flex justify-content-between my-3">
-                            <span>Nameserver 2</span>
-                            <?php if ($role == '1' || $role == '2'): ?>
-                                <input type="text" class="border" name="nameserver2" value="<?= htmlspecialchars($nameserver2 ?? '') ?>">
-                            <?php else: ?>
-                                <?php if (!empty($nameserver2)): ?>
-                                    <span><?= htmlspecialchars($nameserver2) ?></span>
-                                <?php else: ?>
-                                    <span>N/A</span>
-                                <?php endif; ?>
-                            <?php endif; ?>
-                        </div>
-                    </div>
-                </div>
-            </div> -->
-
             <div class="col-lg-6">
                 <div class="card h-100 p-0">
                     <div class="card-header border-bottom bg-base py-16 px-24">
-                        <h6 class="text-lg fw-semibold mb-0">Subscription Details:</h6>
+                        <h6 class="text-lg fw-semibold mb-0">Order Details:</h6>
                     </div>
 
                     <div class="card-body p-24 plan-details-shadow bg-base">
 
                         <div class="d-flex justify-content-between my-3">
-                            <span>Subscription Status</span>
+                            <span>Order Status</span>
                             <?php if ($role == '1' || $role == '2'): ?>
                                 <input type="text" class="border" name="access1" value="<?= htmlspecialchars($access1 ?? '') ?>">
                             <?php else: ?>
-                                <?php if (!empty($access1)): ?>
-                                    <span><?= htmlspecialchars($access1) ?></span>
-                                <?php else: ?>
-                                    <span>N/A</span>
-                                <?php endif; ?>
+                                <?= !empty($access1) ? '<span>'.htmlspecialchars($access1).'</span>' : '<span>N/A</span>'; ?>
                             <?php endif; ?>
                         </div>
 
                         <hr>
 
                         <div class="d-flex justify-content-between my-3">
-                            <span>Active Plan</span>
+                            <span>Track Shipment</span>
                             <?php if ($role == '1' || $role == '2'): ?>
                                 <input type="text" class="border" name="access_www" value="<?= htmlspecialchars($access_www ?? '') ?>">
                             <?php else: ?>
-                                <?php if (!empty($access_www)): ?>
-                                    <span><?= htmlspecialchars($access_www) ?></span>
-                                <?php else: ?>
-                                    <span>N/A</span>
-                                <?php endif; ?>
+                                <?= !empty($access_www) ? '<span>'.htmlspecialchars($access_www).'</span>' : '<span>N/A</span>'; ?>
                             <?php endif; ?>
                         </div>
 
                         <hr>
 
                         <div class="d-flex justify-content-between my-3">
-                            <span>Renewal Date</span>
+                            <span>Expected Delivery Date</span>
                             <?php if ($role == '1' || $role == '2'): ?>
                                 <input type="text" class="border" name="ip_address" value="<?= htmlspecialchars($ip_address ?? '') ?>">
                             <?php else: ?>
-                                <?php if (!empty($ip_address)): ?>
-                                    <span><?= htmlspecialchars($ip_address) ?></span>
-                                <?php else: ?>
-                                    <span>N/A</span>
-                                <?php endif; ?>
+                                <?= !empty($ip_address) ? '<span>'.htmlspecialchars($ip_address).'</span>' : '<span>N/A</span>'; ?>
                             <?php endif; ?>
                         </div>
 
@@ -609,36 +513,28 @@
             <div class="col-lg-6">
                 <div class="card h-100 p-0">
                     <div class="card-header border-bottom bg-base py-16 px-24">
-                        <h6 class="text-lg fw-semibold mb-0">Website Integration:</h6>
+                        <h6 class="text-lg fw-semibold mb-0">Project Information:</h6>
                     </div>
 
                     <div class="card-body p-24 plan-details-shadow bg-base">
 
                         <div class="d-flex justify-content-between my-3">
-                            <span>Pricing Widget Status</span>
+                            <span>Project Progress</span>
                             <?php if ($role == '1' || $role == '2'): ?>
                                 <input type="text" class="border" name="nameserver1" value="<?= htmlspecialchars($nameserver1 ?? '') ?>">
                             <?php else: ?>
-                                <?php if (!empty($nameserver1)): ?>
-                                    <span><?= htmlspecialchars($nameserver1) ?></span>
-                                <?php else: ?>
-                                    <span>N/A</span>
-                                <?php endif; ?>
+                                <?= !empty($nameserver1) ? '<span>'.htmlspecialchars($nameserver1).'</span>' : '<span>N/A</span>'; ?>
                             <?php endif; ?>
                         </div>
 
                         <hr>
 
                         <div class="d-flex justify-content-between my-3">
-                            <span>Website Integration</span>
+                            <span>Assigned Developer</span>
                             <?php if ($role == '1' || $role == '2'): ?>
                                 <input type="text" class="border" name="nameserver2" value="<?= htmlspecialchars($nameserver2 ?? '') ?>">
                             <?php else: ?>
-                                <?php if (!empty($nameserver2)): ?>
-                                    <span><?= htmlspecialchars($nameserver2) ?></span>
-                                <?php else: ?>
-                                    <span>N/A</span>
-                                <?php endif; ?>
+                                <?= !empty($nameserver2) ? '<span>'.htmlspecialchars($nameserver2).'</span>' : '<span>N/A</span>'; ?>
                             <?php endif; ?>
                         </div>
 
