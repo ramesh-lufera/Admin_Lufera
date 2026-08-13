@@ -1527,22 +1527,25 @@
                         </div>
                     </li>
                 <?php } ?>
-            <?php } ?>
-            <?php if ($row['role'] == "1" || $row['role'] == "2") { ?>
-            <li>
-                <a href="form_dashboard.php">
-                <iconify-icon icon="solar:clipboard-text-outline" class="menu-icon"></iconify-icon>
-                    <span>Form Builder</span>
-                </a>
-
-                <a href="dashboard-sheets.php">
-                    <iconify-icon icon="tabler:file-spreadsheet" class="menu-icon"></iconify-icon>
-                    <span>Sheets</span>
-                </a>
-            </li>
-            <?php } ?>
+            <?php } ?>            
             </ul>
             <ul class="sidebar-menu bottom-menu" id="sidebar-menu" style="border-top: 1px solid #eee; ">
+            <?php if ($row['role'] == "1" || $row['role'] == "2") { ?>
+            <li class="dropdown">
+                    <a href="javascript:void(0)">
+                        <iconify-icon icon="hugeicons:invoice-03" class="menu-icon"></iconify-icon>
+                        <span>LuferaSheets</span>
+                    </a>
+                    <ul class="sidebar-submenu">
+                        <li>
+                            <a href="dashboard-sheets.php"><i class="ri-circle-fill circle-icon text-warning-600 w-auto"></i> Sheets</a>
+                        </li>
+                        <li>
+                            <a href="form_dashboard.php"><i class="ri-circle-fill circle-icon text-warning-600 w-auto"></i> Form Builder</a>
+                        </li>
+                    </ul>
+                </li>
+            <?php } ?>
             <li class="dropdown">
                 <a href="javascript:void(0)">
                     <iconify-icon icon="hugeicons:invoice-03" class="menu-icon"></iconify-icon>
