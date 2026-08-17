@@ -1467,6 +1467,7 @@
         <a href="admin-dashboard.php" class="sidebar-logo">
             <img src="uploads/company_logo/<?php echo $logo; ?>" alt="site logo" class="light-logo">
             <img src="uploads/company_logo/<?php echo $logo; ?>" alt="site logo" class="dark-logo">
+            <img src="assets/images/Lufera-icon.png" alt="site logo" class="logo-icon">
         </a>
     </div>
     <div class="sidebar-menu-area">
@@ -1533,7 +1534,8 @@
             <?php if ($row['role'] == "1" || $row['role'] == "2") { ?>
             <li class="dropdown">
                     <a href="javascript:void(0)">
-                        <iconify-icon icon="hugeicons:invoice-03" class="menu-icon"></iconify-icon>
+                        <!-- <iconify-icon icon="hugeicons:invoice-03" class="menu-icon"></iconify-icon> -->
+                        <iconify-icon icon="hugeicons:table" class="menu-icon"></iconify-icon>
                         <span>LuferaSheets</span>
                     </a>
                     <ul class="sidebar-submenu">
@@ -1564,16 +1566,17 @@
                 </ul>
             </li>
             <?php if ($row['role'] == "1" || $row['role'] == "2") { ?>
-            <li>
+            <!-- <li>
                 <a href="users.php">
                     <iconify-icon icon="hugeicons:user-03" class="menu-icon"></iconify-icon>
                     <span>Users</span>
                 </a>
-            </li>
+            </li> -->
             <?php } if ($row['role'] == "1") { ?>
                 <li class="dropdown">
                     <a href="javascript:void(0)">
-                        <iconify-icon icon="hugeicons:invoice-03" class="menu-icon"></iconify-icon>
+                        <!-- <iconify-icon icon="hugeicons:invoice-03" class="menu-icon"></iconify-icon> -->
+                        <iconify-icon icon="hugeicons:package" class="menu-icon"></iconify-icon>
                         <span>Inventory</span>
                     </a>
                     <ul class="sidebar-submenu">
@@ -1598,6 +1601,7 @@
                     </a>
                     <ul class="sidebar-submenu">
                         <li><a href="bank_details.php"><i class="ri-circle-fill circle-icon text-warning-600 w-auto"></i> Bank Details</a></li>
+                        <li><a href="buy_for_customer.php"><i class="ri-circle-fill circle-icon text-warning-600 w-auto"></i> Buy For Customer</a></li>
                         <li><a href="company.php"><i class="ri-circle-fill circle-icon text-warning-600 w-auto"></i> Company</a></li>
                         <li><a href="credentials.php"><i class="ri-circle-fill circle-icon text-warning-600 w-auto"></i> Credentials</a></li>
                         <li><a href="currencies.php"><i class="ri-circle-fill circle-icon text-warning-600 w-auto"></i> Currencies</a></li>
@@ -1608,6 +1612,7 @@
                         <li><a href="role-access.php"><i class="ri-circle-fill circle-icon text-warning-600 w-auto"></i> Roles</a></li>
                         <li><a href="taxes.php"><i class="ri-circle-fill circle-icon text-warning-600 w-auto"></i> Taxes</a></li>
                         <li><a href="add_terms_conditions.php"><i class="ri-circle-fill circle-icon text-warning-600 w-auto"></i> Terms and Conditions</a></li>
+                        <li><a href="theme_colors.php"><i class="ri-circle-fill circle-icon text-warning-600 w-auto"></i> Theme Colors</a></li>
                     </ul>
 
                 </li>

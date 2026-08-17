@@ -749,7 +749,7 @@ if ($oldSlug !== $newSlug) {
                             <button type="button" class="border border-danger-600 bg-hover-danger-200 text-danger-600 text-md px-56 py-11 radius-8">
                                 Cancel
                             </button>
-                            <button type="submit" class="btn lufera-bg text-white text-md px-56 py-12 radius-8" name="save">
+                            <button type="submit" class="btn lufera-bg lufera-text text-md px-56 py-12 radius-8" name="save">
                                 Update
                             </button>
                         </div>

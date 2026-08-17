@@ -127,6 +127,11 @@
                     <select name="template" class="form-control" id="template" required>
                         <option value="">-- Select Module --</option>
                         <option value="lufera-one">LuferaOne</option>
+                        <option value="lufera-sheets">LuferaSheets</option>
+                        <option value="lufera-idx">LuferaIDX</option>
+                        <option value="lufera-cart">LuferaCart</option>
+                        <option value="lufera-web">LuferaWeb</option>
+                        <option value="lufera-core">LuferaCore</option>
                         <option value="website">Website</option>
                         <option value="marketing">Marketing</option>
                         <option value="visa">Visa</option>
@@ -135,6 +140,14 @@
                         <option value="domain-onboarding">Domain Onboarding</option>
                         <option value="email-onboarding">Email Onboarding</option>
                         <option value="mobile-app-onboarding">Mobile App Onboarding</option>
+                        <option value="hosting">Hosting</option>
+                        <option value="existing-website-revamp">Existing Website Revamp</option>
+                        <option value="website-seo-revamp">Website SEO Revamp</option>
+                        <option value="logo-designing">Logo Designing</option>
+                        <option value="business-stationery">Business Stationery</option>
+                        <option value="visiting-cards">Visiting Cards</option>
+                        <option value="envelopes">Envelopes</option>
+                        <option value="letterheads">Letterheads</option>
                     </select>
                 </div>
                 <!-- Type Radio Toggle -->
@@ -186,6 +199,11 @@
                     <select name="template" class="form-control" id="edit_template" required>
                         <option value="">-- Select Module --</option>
                         <option value="lufera-one">LuferaOne</option>
+                        <option value="lufera-sheets">LuferaSheets</option>
+                        <option value="lufera-idx">LuferaIDX</option>
+                        <option value="lufera-cart">LuferaCart</option>
+                        <option value="lufera-web">LuferaWeb</option>
+                        <option value="lufera-core">LuferaCore</option>
                         <option value="website">Website</option>
                         <option value="marketing">Marketing</option>
                         <option value="visa">Visa</option>
@@ -194,6 +212,14 @@
                         <option value="domain-onboarding">Domain Onboarding</option>
                         <option value="email-onboarding">Email Onboarding</option>
                         <option value="mobile-app-onboarding">Mobile App Onboarding</option>
+                        <option value="hosting">Hosting</option>
+                        <option value="existing-website-revamp">Existing Website Revamp</option>
+                        <option value="website-seo-revamp">Website SEO Revamp</option>
+                        <option value="logo-designing">Logo Designing</option>
+                        <option value="business-stationery">Business Stationery</option>
+                        <option value="visiting-cards">Visiting Cards</option>
+                        <option value="envelopes">Envelopes</option>
+                        <option value="letterheads">Letterheads</option>
                     </select>
                 </div>
             </div>
