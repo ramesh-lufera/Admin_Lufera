@@ -18,7 +18,9 @@
             })
         })()
         </script>';?>
+
 <?php include './partials/layouts/layoutTop.php';
+
 ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
@@ -2408,7 +2410,7 @@ if ($stmt->execute()) {
                             </div>
                         </div>
                         <!-- Submit Button -->
-                        <button type="submit" name="save_product" class="lufera-bg text-center text-white text-sm btn-sm px-12 py-10 radius-8 mt-28 submit-btn">Submit</button>
+                        <button type="submit" name="save_product" class="lufera-bg text-center lufera-text text-sm btn-sm px-12 py-10 radius-8 mt-28 submit-btn">Submit</button>
                     </form>
                 </div>
             </div>

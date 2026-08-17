@@ -14612,7 +14612,8 @@ td.fc-header-center {
   position: sticky;
   top: 0;
   padding: 1rem 1.5rem;
-  z-index: 10;
+  /* z-index: 10; */
+  z-index: 2;
 }
 
 .sidebar-toggle,

@@ -117,6 +117,7 @@
 ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
+
 //$id = isset($_GET['id']) ? intval($_GET['id']) : 0;
 
 // Accept package ID from either POST (preferred) or GET (fallback)
@@ -584,7 +585,7 @@ $featureStmt->close();
                             </div>
                         </div>
                         <!-- Submit Button -->
-                        <button type="submit" name="save" class="lufera-bg text-center text-white text-sm btn-sm px-12 py-10 radius-8 mt-28 submit-btn">Submit</button>
+                        <button type="submit" name="save" class="lufera-bg text-center lufera-text text-sm btn-sm px-12 py-10 radius-8 mt-28 submit-btn">Submit</button>
                     </form>
                 </div>
             </div>
