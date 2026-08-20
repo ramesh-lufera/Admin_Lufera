@@ -885,7 +885,7 @@ if ($stmt->execute()) {
             </style>
             </head>
             <body>
-                <div class="content-wrapper">
+                <div class="container-fluid">
 
                     <!-- HERO -->
 
@@ -1754,7 +1754,7 @@ if ($stmt->execute()) {
     </head>
     <body>
 
-        <div class="content-wrapper" style="padding: 10px 15px; margin: 20px 0">
+        <div class="container-fluid">
             <!-- Header Navbar -->
             
             

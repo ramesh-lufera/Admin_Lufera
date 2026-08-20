@@ -45,7 +45,7 @@
                 FROM orders
                 LEFT JOIN package ON (orders.type = 'package' AND orders.plan = package.id)
                 LEFT JOIN products ON (orders.type = 'product' AND orders.plan = products.id)
-            where invoice_id = $invoice_id
+            where invoice_id = '$invoice_id'
         ";
     }
 
