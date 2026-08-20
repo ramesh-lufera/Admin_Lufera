@@ -1,10 +1,8 @@
 <?php
 include 'partials/layouts/layoutTop.php';
-
 // ini_set('display_errors', 1);
 // ini_set('display_startup_errors', 1);
 // error_reporting(E_ALL);
-
 $sheetId   = isset($_GET['id']) ? intval($_GET['id']) : 0;
 date_default_timezone_set('Asia/Kolkata');
 if ($sheetId <= 0) {
@@ -39,6 +37,31 @@ if (isset($_GET['id'])) {
         $sheetData = json_decode($row['data'], true);
     }
 }
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'create_sheet') {
+    $sheet_name = trim($_POST['sheet_name'] ?? '');
+
+    if (strlen($sheet_name) >= 1 && strlen($sheet_name) <= 100) {  // adjust length limit as needed
+        $stmt = $conn->prepare("INSERT INTO sheets (name, created_at, updated_at) VALUES (?, NOW(), NOW())");
+        $stmt->bind_param("s", $sheet_name);
+        
+        if ($stmt->execute()) {
+            $new_sheet_id = $conn->insert_id;
+            logActivity(
+                $conn,
+                $loggedInUserId,
+                "Sheets",
+                "Created new sheet: {$sheet_name}"
+            );
+            echo "<script>window.location.href='sheets.php?id={$new_sheet_id}';</script>";
+            exit;
+        } else {
+            $error = "Database error: " . $conn->error;
+        }
+        $stmt->close();
+    } else {
+        $error = "Please enter a valid sheet name (1–100 characters).";
+    }
+}
 ?>
 <!doctype html>
 <html lang="en">
@@ -49,17 +72,45 @@ if (isset($_GET['id'])) {
 
   <style>
     :root{--cell-width:150px;--cell-height:auto;--header-bg:#f3f4f6}
-    .sheet{border:1px solid #ddd;overflow:auto;max-width:100%;box-shadow:0 2px 6px rgba(0,0,0,0.04)}
-    table{border-collapse:collapse;min-width:900px}
-    th,td{border-right:1px solid #e6e6e6;border-bottom:1px solid #e6e6e6;padding:0;margin:0;}
-    th{position:sticky;top:0;z-index:3;text-align:center;font-weight:600;background:var(--header-bg)}
-    .row-header{position:sticky;left:0;z-index:100;width:40px;text-align:center;background:var(--header-bg);border-right: 1px solid #f3f4f6;}
-    .cell{font-size:14px;height:var(--cell-height);min-width:var(--cell-width);padding:4px;box-sizing:border-box;cursor:text;}
-    .cell:focus{outline:2px solid #2563eb}
-    .selected{background:rgba(37,99,235,0.08)}
+    .sheet{border:1px solid #ddd;overflow:auto;max-width:100%;box-shadow:0 2px 6px rgba(0,0,0,0.04);max-height: 590px;}
+    table{border-collapse:collapse;min-width:900px;font-size:14px;width:100%}
+    th,td{border-right:1px solid #e6e6e6;border-bottom:1px solid #e6e6e6;padding:0 10px !important;margin:0;box-sizing: border-box;}
+    th{top:0;font-weight:600;vertical-align:middle;}
+    thead th{background-color:#f4f4f4 !important}
+    .row-header{left:0;width:40px;text-align:center;background:var(--header-bg);border-right: 1px solid #e6e6e6;}
+    /* .cell{font-size:14px;height:40px;min-width:var(--cell-width);padding:4px;box-sizing:border-box;cursor:text;align-content: center;} */
+    /* .cell:focus{outline:2px solid #2563eb} */
+    /* .selected{background:rgba(37,99,235,0.08)} */
     caption{caption-side:top;text-align:left;padding:8px;font-weight:600}
     .cell.checkbox, .cell>select{text-align:center}
     /* input[type=file]{display:none} */
+    .cell {
+    /* position: relative; */
+    height: 40px;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    width: 200px;
+    align-content: center;
+    }
+
+    .cell-preview{
+    position:fixed;
+    display:none;
+    max-width:350px;
+    min-width:200px;
+    padding:12px;
+    background:#fff;
+    border-radius:10px;
+    border:1px solid #ddd;
+    box-shadow:0 8px 24px rgba(0,0,0,.18);
+    z-index:99999;
+    white-space:pre-wrap;
+    word-break:break-word;
+    line-height:1.5;
+    pointer-events:none;
+}
+
 /* Modal for column type */
 #columnTypeModal {
     display:none;
@@ -224,32 +275,34 @@ input, select{
     position: relative;
 }
 
-.dropdown-menu {
+/* .dropdown-menus {
     display: none;
     position: absolute;
     top: 250%;
-    left: 0;
+    left: -20px !important;
     background: #fff;
     border: 1px solid #d1d5db;
     border-radius: 6px;
     box-shadow: 0 4px 12px rgba(0,0,0,0.15);
     min-width: 160px;
     z-index: 1000;
-    padding: 8px;
+    padding: 5px 0;
+    font-weight: 300;
+    cursor:pointer;
 }
 
 .dropdown-menu button {
-    width: 100%;
+    width: 200px;
     text-align: left;
     padding: 8px 12px;
     border: none;
     background: none;
     cursor: pointer;
-} 
+}  
 
 .dropdown-menu button:hover {
     background: #f3f4f6;
-}
+}*/
 
 .dropdown.open .dropdown-menu {
     display: block;
@@ -339,6 +392,234 @@ tr:hover .bell-icon {
     overflow: hidden;
     text-overflow: ellipsis;
 }
+.sort-col-icon{
+    opacity:0;
+    margin-left:6px;
+    color:#6b7280;
+    transition:.2s;
+    display: flex;
+    flex-grow: 1;
+}
+
+thead th:hover .sort-col-icon{
+    opacity:1;
+}
+
+.sort-col-icon:hover{
+    color:#1c8a8a;
+}
+
+.format-toolbar button.active{
+    background:var(--lufera-main-color);
+    color:#fff;
+}
+
+.format-toolbar button{
+    width:36px;
+    height:36px;
+    padding:0;
+}
+/* .cell.selected{
+outline:2px solid #2563eb;
+outline-offset:-2px;
+} */
+
+.row-dropdown{
+    position:relative;
+    display:inline-block;
+}
+
+.row-menu-btn{
+    cursor:pointer;
+    padding:6px;
+}
+
+.row-dropdown-menu{
+    position:absolute;
+    left:25px;
+    top:0;
+    display:none;
+    background:#fff;
+    min-width:210px;
+    border:1px solid #ddd;
+    border-radius:8px;
+    box-shadow:0 8px 20px rgba(0,0,0,.15);
+    z-index:9999;
+}
+
+.row-dropdown.open .row-dropdown-menu{
+    display:block;
+}
+
+.row-dropdown-menu button{
+    width:100%;
+    border:none;
+    background:none;
+    padding:10px 14px;
+    text-align:left;
+    cursor:pointer;
+    display:flex;
+}
+
+.row-dropdown-menu button:hover{
+    background:#f3f4f6;
+}
+.cell[data-c="1"]{
+    overflow: visible !important;
+    width:auto;
+}
+
+/* Column header dropdown */
+thead th .dropdown {
+    position: relative;
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+thead th .dropdown > .fa-ellipsis-v {
+    padding: 4px 6px;
+    cursor: pointer;
+}
+
+thead th .dropdown .dropdown-menu {
+    display: none;
+    position: absolute;
+    top: calc(100% + 4px);
+    right: 0;
+    left: auto;
+    min-width: 200px;
+    z-index: 9999;
+}
+
+thead th .dropdown.open .dropdown-menu {
+    display: block;
+}
+
+/* Dropdown buttons */
+thead th .dropdown .dropdown-menu button {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    padding: 8px 12px;
+    border: 0;
+    background: transparent;
+    text-align: left;
+    white-space: nowrap;
+}
+
+thead th .dropdown .dropdown-menu button:hover {
+    background: #f3f4f6;
+}
+
+/* Excel-style color buttons */
+.xl-color-picker {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+}
+
+.xl-color-btn {
+    position: relative;
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    border: 1px solid #dee2e6;
+    background: #fff;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: #333;
+}
+
+.xl-color-btn:hover {
+    background: #f3f4f6;
+    border-color: #c8cdd3;
+}
+
+.xl-color-btn .fa {
+    font-size: 16px;
+}
+
+/* Excel-style color indicator underneath icon */
+.xl-color-line {
+    position: absolute;
+    bottom: 3px;
+    left: 7px;
+    right: 7px;
+    height: 3px;
+    border-radius: 1px;
+    background: #000;
+}
+
+/* Fill color indicator */
+#fillColorLine {
+    background: #ffffff;
+    border: 1px solid #999;
+}
+
+/* Hide native color input */
+.xl-color-picker input[type="color"] {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+    pointer-events: none;
+}
+#formatPainterBtn {
+    width: 36px;
+    height: 36px;
+    padding: 0;
+}
+
+#formatPainterBtn.active {
+    background: #dbeafe;
+    border-color: #2563eb;
+    color: #2563eb;
+}
+
+#formatPainterBtn:hover {
+    background: #f3f4f6;
+}
+/* Excel-style column resize handle */
+thead th {
+    position: sticky;
+    top: 0;
+    /* z-index: 3; */
+}
+#sheet table {
+    width: max-content;
+    min-width: 100%;
+    table-layout: fixed;
+}
+.column-resize-handle {
+    position: absolute;
+    top: 0;
+    right: -3px;
+    width: 7px;
+    height: 100%;
+    cursor: col-resize;
+    z-index: 20;
+}
+
+/* Show resize area on hover */
+.column-resize-handle:hover {
+    background: rgba(37, 99, 235, 0.35);
+}
+
+/* While dragging */
+body.column-resizing {
+    cursor: col-resize !important;
+    user-select: none !important;
+}
+
+body.column-resizing * {
+    cursor: col-resize !important;
+    user-select: none !important;
+}
 </style>
   
 </head>
@@ -353,43 +634,470 @@ tr:hover .bell-icon {
         <div class="text-center flex-grow-1">
             <h6 class="fw-semibold mb-0 sheet_title"><?= htmlspecialchars($sheetName) ?></h6>
         </div>
-        <div style="width:120px"></div> <!-- spacer to balance layout -->
+        <!-- <button id="import-file">
+            <span class="fa fa-upload text-xl"></span>
+        </button> -->
+        <!-- <input type="file" id="importInput" accept=".csv,.xlsx,.xls" style="display:none">
+        <button id="export-csv"><span class="fa fa-file-export text-xl"></span></button>
+         <a class="btn lufera-bg text-white text-sm btn-sm px-12 py-12 radius-8 d-flex align-items-center gap-2" data-bs-toggle="modal" data-bs-target="#createSheetModal">
+            Create New Sheet
+        </a> 
+        <div class="dropdown">
+            <button class="btn lufera-bg text-white text-sm btn-sm px-12 py-12 radius-8 d-flex align-items-center gap-2 dropdown-toggle toggle-icon" type="button" data-bs-toggle="dropdown" aria-expanded="false">New Sheet</button>
+            <ul class="dropdown-menus">
+                <li><a class="dropdown-item px-16 py-8 rounded text-secondary-light bg-hover-neutral-200 text-hover-neutral-900" data-bs-toggle="modal" data-bs-target="#createSheetModal">Create New</a></li>
+                <li><a class="dropdown-item px-16 py-8 rounded text-secondary-light bg-hover-neutral-200 text-hover-neutral-900" id="import-file">Import</a></li>
+            </ul>
+        </div> -->
+        <a onclick="handleBack()" class="cursor-pointer fw-bold visibility-hidden">
+            <span class="fa fa-arrow-left"></span> Back
+        </a>
     </div>
 
     <div class="card radius-12 h-100">
         <div class="card-body p-24">
+        <div class="d-lg-flex align-items-center justify-content-between">
 
-            <!--<div class="toolbar mb-3 d-flex gap-2 align-items-center">                
-                 <div class="select">
-                    <button class="dropdown-btn">File</button>
-                    <div class="dropdown-menu">
-                        <button class="new_sheet" onclick="Redirect()">New</button>
-                        <button id="export-csv">Export</button>
-                        <button id="load-db">Open</button>
-                        <button id="clear">Clear</button>
-                    </div>
-                </div> 
+<!-- Left Section -->
+<div class="d-flex align-items-center gap-3 mb-3">
 
-                <div class="select">
-                    <button class="dropdown-btn px-3">Form</button>
-                    <div class="dropdown-menu">
-                        <button id="export-to-form">Create Form</button>
-                    </div>
-                </div>                
-            </div>-->
+    <div class="dropdowns">
+        <button type="button" data-bs-toggle="dropdown">File</button>
+        <ul class="dropdown-menu" style="box-shadow: 0px 0px 15px 5px rgba(0, 0, 0, 0.13), 0 1px 1px 0 rgba(0, 0, 0, 0.11);">
+            <li><a class="dropdown-item px-16 py-8 rounded text-secondary-light bg-hover-neutral-200 text-hover-neutral-900 cursor-pointer" data-bs-toggle="modal" data-bs-target="#createSheetModal">Create New</a></li>
+            <li><a class="dropdown-item px-16 py-8 rounded text-secondary-light bg-hover-neutral-200 text-hover-neutral-900 cursor-pointer" id="import-file">Import</a></li>
+            <input type="file" id="importInput" accept=".csv,.xlsx,.xls" style="display:none">
+            <!-- <li><a class="dropdown-item px-16 py-8 rounded text-secondary-light bg-hover-neutral-200 text-hover-neutral-900 cursor-pointer">Open</a></li> -->
+            <li><a class="dropdown-item px-16 py-8 rounded text-secondary-light bg-hover-neutral-200 text-hover-neutral-900 cursor-pointer" id="save-db">Save</a></li>
+            <li><a class="dropdown-item px-16 py-8 rounded text-secondary-light bg-hover-neutral-200 text-hover-neutral-900 cursor-pointer" onclick="refreshSheet()">Refresh</a></li>
+            <li><a class="dropdown-item px-16 py-8 rounded text-secondary-light bg-hover-neutral-200 text-hover-neutral-900 cursor-pointer" onclick="renameSheet()">Rename</a></li>
+            <!-- <li><a class="dropdown-item px-16 py-8 rounded text-secondary-light bg-hover-neutral-200 text-hover-neutral-900 cursor-pointer">Delete</a></li> -->
+            <!-- <li><a class="dropdown-item px-16 py-8 rounded text-secondary-light bg-hover-neutral-200 text-hover-neutral-900 cursor-pointer" onclick="printSheet()">Print</a></li> -->
+            <li><a class="dropdown-item px-16 py-8 rounded text-secondary-light bg-hover-neutral-200 text-hover-neutral-900 cursor-pointer" id="export-csv">Export</a></li>
+        </ul>
+    </div>
 
-            <div class="mb-3 d-flex gap-3 align-items-center toolbar">
-                <button id="save-db"><span class="fa fa-save text-xxl text-primary"></span></button>
-                <button id="export-csv"><span class="fa fa-download text-xxl text-success"></span></button>
-                <button id="load-db"><span class="fa fa-folder-open text-xxl text-warning"></span></button>
-                <button id="clear"><span class="fa fa-close text-xxl text-danger"></span></button>
-                <button id="export-to-form"><span class="fa fa-share text-xxl text-secondary"></span></button>
-            </div>
+    <!-- <button id="clear">Clear</button> -->
+    <button id="export-to-form">Forms</button>
+
+    <!-- Formatting Toolbar -->
+    <div class="format-toolbar d-lg-flex d-none align-items-center gap-2 ms-3">
+
+        <select id="fontFamily" class="form-select form-select-sm" style="width:150px">
+            <option value="Arial">Arial</option>
+            <option value="Calibri">Calibri</option>
+            <option value="Verdana">Verdana</option>
+            <option value="Tahoma">Tahoma</option>
+            <option value="Times New Roman">Times New Roman</option>
+            <option value="Georgia">Georgia</option>
+        </select>
+
+        <select id="fontSize" class="form-select form-select-sm" style="width:80px">
+            <option>10</option>
+            <option>11</option>
+            <option selected>14</option>
+            <option>16</option>
+            <option>18</option>
+            <option>20</option>
+            <option>24</option>
+            <option>28</option>
+            <option>32</option>
+        </select>
+
+        <button id="boldBtn" class="xl-color-btn">
+            <b>B</b>
+        </button>
+
+        <button id="italicBtn" class="xl-color-btn">
+            <i>I</i>
+        </button>
+
+        <button id="underlineBtn" class="xl-color-btn">
+            <u>U</u>
+        </button>
+        <!-- Font Color -->
+<div class="xl-color-picker">
+    <button type="button" class="xl-color-btn" id="textColorBtn" title="Font Color">
+        <span class="fa fa-font"></span>
+        <span class="xl-color-line" id="textColorLine"></span>
+    </button>
+
+    <input type="color" id="textColor" value="#000000">
+</div>
+
+<!-- Fill Color -->
+<div class="xl-color-picker">
+    <button type="button" class="xl-color-btn" id="fillColorBtn" title="Fill Color">
+        <span class="fa fa-fill-drip"></span>
+        <span class="xl-color-line" id="fillColorLine"></span>
+    </button>
+
+    <input type="color" id="fillColor" value="#ffffff">
+</div>
+<!-- Format Painter -->
+<button id="formatPainterBtn"
+        class="btn btn-light"
+        type="button"
+        title="Format Painter">
+    <i class="fa fa-paint-brush"></i>
+</button>
+        <button id="alignLeft" class="btn btn-light">
+            <i class="fa fa-align-left"></i>
+        </button>
+
+        <button id="alignCenter" class="btn btn-light">
+            <i class="fa fa-align-center"></i>
+        </button>
+
+        <button id="alignRight" class="btn btn-light">
+            <i class="fa fa-align-right"></i>
+        </button>
+    </div>
+
+</div>
+
+<!-- Right Section -->
+<input
+    type="text"
+    id="tableSearch"
+    class="form-control mb-3"
+    placeholder="Search..."
+    style="border-radius:25px;max-width: fit-content;"
+>
+
+</div>
+            
             <div class="sheet" id="sheet"></div>
         </div>
     </div>
+    <div class="modal fade" id="createSheetModal" tabindex="-1" aria-labelledby="createSheetModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="createSheetModalLabel">Create New Sheet</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                
+                <form method="POST" action="" id="createSheetForm">
+                    <input type="hidden" name="action" value="create_sheet">
+                    
+                    <div class="modal-body">
+                        <?php if (isset($error)): ?>
+                            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                                <?= htmlspecialchars($error) ?>
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            </div>
+                        <?php endif; ?>
+                        
+                        <div class="mb-3">
+                            <label for="sheet_name" class="form-label fw-semibold">Sheet Name <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="sheet_name" name="sheet_name" required minlength="1" maxlength="100" autofocus>
+                            <div class="invalid-feedback">
+                                Please enter a sheet name.
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn lufera-bg text-white">Create Sheet</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
 </div>
+<div id="cellPreview" class="cell-preview"></div>
+<script>
+    document.addEventListener("keydown", function(e) {
+    if (e.target.id === "commentText" && e.key === "Enter" && !e.shiftKey) {
+        e.preventDefault();
+        e.stopPropagation();
 
+        saveComment();
+    }
+});
+    function addColumnResizeHandle(th, col) {
+
+// Don't create duplicate handles
+if (th.querySelector(".column-resize-handle")) {
+    return;
+}
+
+const handle = document.createElement("div");
+handle.className = "column-resize-handle";
+
+handle.addEventListener("mousedown", function(e) {
+
+    e.preventDefault();
+    e.stopPropagation();
+
+    const startX = e.clientX;
+    const startWidth = th.getBoundingClientRect().width;
+
+    document.body.classList.add("column-resizing");
+
+    function onMouseMove(e) {
+
+        const diff = e.clientX - startX;
+
+        // Minimum width
+        const newWidth = Math.max(220, startWidth + diff);
+
+        // Remember width
+        columnWidths[col] = newWidth;
+
+        // Resize header
+        th.style.width = newWidth + "px";
+        th.style.minWidth = newWidth + "px";
+        th.style.maxWidth = newWidth + "px";
+
+        // Resize all cells in this column
+        document
+            .querySelectorAll(`#sheet [data-c="${col}"]`)
+            .forEach(cell => {
+
+                const td = cell.closest("td");
+
+                if (td) {
+                    td.style.width = newWidth + "px";
+                    td.style.minWidth = newWidth + "px";
+                    td.style.maxWidth = newWidth + "px";
+                }
+            });
+
+        hasUnsavedChanges = true;
+    }
+
+    function onMouseUp() {
+
+        document.body.classList.remove("column-resizing");
+
+        document.removeEventListener("mousemove", onMouseMove);
+        document.removeEventListener("mouseup", onMouseUp);
+    }
+
+    document.addEventListener("mousemove", onMouseMove);
+    document.addEventListener("mouseup", onMouseUp);
+});
+
+th.appendChild(handle);
+} 
+    </script>
+<script>
+    function applyColumnWidths() {
+
+Object.keys(columnWidths).forEach(col => {
+
+    const width = columnWidths[col];
+
+    const th = document.querySelector(
+        `thead th[data-c="${col}"]`
+    );
+
+    if (th) {
+        th.style.width = width + "px";
+        th.style.minWidth = width + "px";
+        th.style.maxWidth = width + "px";
+    }
+
+    document
+        .querySelectorAll(`#sheet [data-c="${col}"]`)
+        .forEach(cell => {
+
+            const td = cell.closest("td");
+
+            if (td) {
+                td.style.width = width + "px";
+                td.style.minWidth = width + "px";
+                td.style.maxWidth = width + "px";
+            }
+        });
+});
+}
+</script>
+<script>
+document.getElementById("import-file").onclick = () => {
+    document.getElementById("importInput").click();
+};
+
+document.getElementById("importInput").addEventListener("change", importSheet);
+
+async function importSheet(e){
+
+const file = e.target.files[0];
+
+if(!file) return;
+
+const buffer = await file.arrayBuffer();
+
+const workbook = XLSX.read(buffer,{
+    type:"array"
+});
+
+const sheet = workbook.Sheets[
+    workbook.SheetNames[0]
+];
+
+const rows = XLSX.utils.sheet_to_json(sheet,{
+    header:1,
+    defval:""
+});
+
+if(rows.length===0) return;
+
+COLS = Math.max(2, rows[0].length + 1);
+ROWS = Math.max(1, rows.length - 1);
+
+columnHeaders = {};
+columnTypes = {};
+Object.keys(data).forEach(k=>delete data[k]);
+
+for(let c=2;c<=COLS;c++){
+
+    columnHeaders[c]=rows[0][c-2] || "Column Field";
+
+    columnTypes[c]={
+        type:"text"
+    };
+
+}
+
+for(let r=1;r<rows.length;r++){
+
+    for(let c=2;c<=COLS;c++){
+
+        const value=rows[r][c-2] ?? "";
+
+        data[cellId(r,c)] = {
+            raw: value.toString(),
+            style: {
+                fontFamily: "Arial",
+                fontSize: "14px",
+                fontWeight: "normal",
+                fontStyle: "normal",
+                textDecoration: "none",
+                color: "#000000",
+                background: "#ffffff",
+                textAlign: "left"
+            }
+        };
+
+    }
+
+}
+
+rebuildPreserveData();
+
+hasUnsavedChanges=true;
+
+Swal.fire({
+    icon:"success",
+    title:"Imported",
+    text:"Imported successfully."
+});
+
+}
+</script>
+
+<script>
+    document.addEventListener("click", function(e){
+    document.querySelectorAll(".row-dropdown")
+        .forEach(d=>{
+            if(!d.contains(e.target))
+                d.classList.remove("open");
+        });
+    });
+    document.addEventListener("click",function(e){
+    if(!e.target.classList.contains("row-menu-btn"))
+        return;
+    e.stopPropagation();
+    const menu=e.target.closest(".row-dropdown");
+    menu.classList.toggle("open");
+    });
+    function insertRowAbove(row){
+        addRowBefore(row);
+    }
+    function insertRowBelow(row){
+        addRowAfter(row);
+    }
+    let copiedRow = null;
+    let isCutOperation = false;
+    function copyRow(row){
+        copiedRow = {};
+        for(let c=2;c<=COLS;c++){
+            copiedRow[c] = structuredClone(
+                data[cellId(row,c)] || {raw:""}
+            );
+        }
+    }
+
+    function cutRow(row){
+    copyRow(row);
+    for(let c=2;c<=COLS;c++){
+        data[cellId(row,c)] = {
+            raw:""
+        };
+    }
+    rebuildPreserveData();
+    }
+
+    function pasteRow(row){
+        if(!copiedRow) return;
+        for(let c=2;c<=COLS;c++){
+            data[cellId(row,c)] = structuredClone(copiedRow[c]);
+        }
+        if(isCutOperation){
+            for(let c=2;c<=COLS;c++){
+                data[cellId(copiedRow.sourceRow,c)] = {
+                    raw:""
+                };
+            }
+            isCutOperation = false;
+        }
+        rebuildPreserveData();
+    }
+
+    const lockedRows = {};
+    function lockRow(row){
+    lockedRows[row] = !lockedRows[row];
+    document
+        .querySelectorAll(`.cell[data-r="${row}"]`)
+        .forEach(cell=>{
+            if(cell.dataset.c=="1") return;
+            cell.contentEditable =
+                !lockedRows[row];
+        });
+    }
+    function printRow(row){
+    let html="<table border='1'>";
+    for(let c=2;c<=COLS;c++){
+        html+=`
+        <tr>
+            <th>${columnHeaders[c]}</th>
+            <td>${data[cellId(row,c)]?.raw||""}</td>
+        </tr>`;
+
+    }
+    html+="</table>";
+    const w=window.open("");
+    w.document.write(html);
+    w.print();
+    }
+</script>
+
+
+<script>
+document.getElementById('createSheetForm')?.addEventListener('submit', function(e) {
+    const input = document.getElementById('sheet_name');
+    if (!input.value.trim()) {
+        e.preventDefault();
+        input.classList.add('is-invalid');
+    } else {
+        input.classList.remove('is-invalid');
+    }
+});
+</script>
 <script>
 let hasUnsavedChanges = false;
 let isAddingNewColumn = false;
@@ -456,18 +1164,20 @@ document.getElementById("export-to-form").onclick = () => {
    BASE VARIABLES (init first)
 ------------------------------------------------------------ */
 let focusedCell = null;
+let selectedCell = null;
 const data = {};
 let ROWS = 10;
 let COLS = 4;
 let columnHeaders = {};
 let columnTypes = {};
+let columnWidths = {};
 let currentColumnForType = null;
 
 // IMPORTANT: Declared early to avoid initialization errors
 const rowComments = {};        // { rowNumber: commentCount }
 const rowAttachments = {};     // { rowNumber: attachmentCount }
 const rowReminders  = {};
-
+const columnSortState = {};
 let activeRow = null;
 let activeAttachRow = null;
 let activeSheetId = <?= $sheetId ?>;
@@ -482,7 +1192,8 @@ let activeSheetId = <?= $sheetId ?>;
     const loaded = <?= json_encode($sheetData) ?>;
 
     ROWS = loaded.rows || ROWS;
-    COLS = loaded.cols || COLS;
+COLS = loaded.cols || COLS;
+columnWidths = loaded.columnWidths || {};
 
     if (loaded.cells) {
         Object.keys(loaded.cells).forEach(oldKey => {
@@ -492,10 +1203,34 @@ let activeSheetId = <?= $sheetId ?>;
                 const row = parseInt(match[1], 10);
                 const col = parseInt(match[2], 10);
                 const newKey = colName(col) + row;          // ← B1, C1, B2, ...
-                data[newKey] = { raw: loaded.cells[oldKey] };
+                const cell = loaded.cells[oldKey];
+
+                if (cell && typeof cell === "object") {
+
+                    data[newKey] = cell;
+
+                } else {
+
+                    data[newKey] = {
+                        raw: cell
+                    };
+
+                }
             } else {
                 // Already in A1-style or unknown → keep as is
-                data[oldKey] = { raw: loaded.cells[oldKey] };
+                const cell = loaded.cells[oldKey];
+
+if (cell && typeof cell === "object") {
+
+    data[oldKey] = cell;
+
+} else {
+
+    data[oldKey] = {
+        raw: cell
+    };
+
+}
             }
         });
     }
@@ -609,16 +1344,28 @@ function renderCellContent(cellEl, col) {
         case "text":
         default:
             cellEl.textContent = saved;
+            cellEl.dataset.fulltext = saved;
             cellEl.contentEditable = true;
             cellEl.classList.add("text");
+            applyStyle(cellEl);
             return;
     }
 
     input.addEventListener("change", () => {
-        const value = type === "checkbox" ? input.checked : input.value;
-        data[id] = { raw: value.toString() };
-        recalcAll();
-    });
+
+const value = type === "checkbox"
+    ? input.checked
+    : input.value;
+
+if (!data[id]) data[id] = {};
+
+data[id].raw = value.toString();
+
+cellEl.dataset.fulltext = value.toString();
+
+recalcAll();
+
+});
 
     input.addEventListener("focus", () => cellEl.classList.add("selected"));
     input.addEventListener("blur", () => cellEl.classList.remove("selected"));
@@ -632,7 +1379,7 @@ function renderCellContent(cellEl, col) {
 function buildTable() {
     const sheetEl = document.getElementById("sheet");
     const table = document.createElement("table");
-
+    //table.className = "table table-striped table-hover";
     const thead = document.createElement("thead");
     const hRow = document.createElement("tr");
     hRow.appendChild(Object.assign(document.createElement("th"), { className: "row-header" }));
@@ -651,75 +1398,114 @@ function buildTable() {
         if (c === 1) {
             th.textContent = "Tasks";
             th.contentEditable = false;
-            th.style.minWidth = "160px";
+            th.style.width = "30px";
             th.style.height = "40px";
             th.style.alignContent = "center";
+            th.style.textAlign = "center";
         } else {
             // Container for name and trash
             const wrapper = document.createElement("div");
             wrapper.style.display = "flex";
             wrapper.style.alignItems = "center";
-            wrapper.style.justifyContent = "center";
             wrapper.style.width = "100%";
             wrapper.style.position = "relative";
             wrapper.style.gap = "6px";
-            wrapper.style.minWidth = "200px";
+            wrapper.style.minWidth = "0";
             // Column name
             const nameSpan = document.createElement("span");
             nameSpan.textContent = columnHeaders[c] || "Column Field";
-            // ➕ Add column button
-            const addSpan = document.createElement("span");
-            addSpan.className = "fa fa-plus text-success add-col-icon";
-            addSpan.title = "Add column";
-            addSpan.style.cursor = "pointer";
-            addSpan.style.fontSize = "11px";
-            addSpan.onclick = (e) => {
-                e.stopPropagation();
-                e.preventDefault();
+            
+            const sortSpan = document.createElement("span");
+sortSpan.className = "fa fa-sort sort-col-icon";
+sortSpan.title = "Sort";
+sortSpan.style.cursor = "pointer";
+sortSpan.style.fontSize = "12px";
+sortSpan.onclick = (e) => {
+    e.stopPropagation();
 
-                isAddingNewColumn = true;
-                insertAfterColumn = c;
+    columnSortState[c] =
+        columnSortState[c] === "asc" ? "desc" : "asc";
 
-                openColumnTypeModal(c + 1);         // open modal for the would-be new column
-            };
-            // Trash icon
-            const trashSpan = document.createElement("span");
-            trashSpan.className = "delete-col-icon fa fa-close text-danger position-absolute";
-            trashSpan.style.right = "8px";
-            trashSpan.style.opacity = "0";
-            trashSpan.style.transition = "opacity 0.2s ease";
-            trashSpan.style.cursor = "pointer";
-            trashSpan.style.fontSize = "12px";
-            trashSpan.title = "Delete this column";
-            trashSpan.onclick = (e) => {
-                e.stopPropagation();
-                deleteColumn(c);
-            };
+    sortColumn(c, columnSortState[c]);
 
-            wrapper.appendChild(nameSpan);
-            wrapper.appendChild(addSpan);
-            wrapper.appendChild(trashSpan);
-            th.appendChild(wrapper);
+    sortSpan.className =
+        columnSortState[c] === "asc"
+        ? "fa fa-sort-up sort-col-icon"
+        : "fa fa-sort-down sort-col-icon";
+};
+            const menuWrapper = document.createElement("div");
+menuWrapper.className = "dropdown";
 
-            th.style.cursor = "pointer";
-            th.style.height = "40px";
-            th.style.alignContent = "center";
-            th.title = "Click to edit column • Hover for delete";
+const menuBtn = document.createElement("span");
+menuBtn.className = "fa fa-ellipsis-v";
+menuBtn.style.cursor = "pointer";
 
-            // Hover: show/hide trash icon
-            th.addEventListener("mouseenter", () => {
-                trashSpan.style.opacity = "1";
-            });
-            th.addEventListener("mouseleave", () => {
-                trashSpan.style.opacity = "0";
-            });
+const menu = document.createElement("div");
+menu.className = "dropdown-menu";
 
-            // Click header (not trash) to open modal
-            th.addEventListener("click", (e) => {
-                if (e.target.classList.contains("delete-col-icon")) return;
-                currentColumnForType = c;
-                openColumnTypeModal(c);
-            });
+const addBtn = document.createElement("button");
+addBtn.innerHTML = '<span class="fa fa-plus"></span> Add Column';
+
+addBtn.onclick = (e)=>{
+    e.stopPropagation();
+    isAddingNewColumn = true;
+    insertAfterColumn = c;
+    openColumnTypeModal(c + 1);
+    menuWrapper.classList.remove("open");
+};
+
+const deleteBtn = document.createElement("button");
+deleteBtn.innerHTML = '<span class="fa fa-trash-alt"></span> Remove Column';
+
+deleteBtn.onclick = (e)=>{
+    e.stopPropagation();
+    deleteColumn(c);
+    menuWrapper.classList.remove("open");
+};
+
+menu.append(addBtn, deleteBtn);
+menuWrapper.append(menuBtn, menu);
+
+wrapper.appendChild(nameSpan);
+wrapper.appendChild(sortSpan);
+wrapper.appendChild(menuWrapper);
+menuBtn.onclick = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    // Close all other column dropdowns
+    document.querySelectorAll("thead .dropdown.open").forEach(d => {
+        if (d !== menuWrapper) {
+            d.classList.remove("open");
+        }
+    });
+
+    // Keep this dropdown open
+    menuWrapper.classList.toggle("open");
+};
+
+menu.onclick = (e) => {
+    e.stopPropagation();
+};
+
+menuBtn.onclick = (e)=>{
+    e.stopPropagation();
+
+    document.querySelectorAll(".dropdown")
+        .forEach(d => {
+            if (d !== menuWrapper)
+                d.classList.remove("open");
+        });
+
+    menuWrapper.classList.toggle("open");
+};
+
+th.appendChild(wrapper);
+
+// Add resize handle
+if (c !== 1) {
+    addColumnResizeHandle(th, c);
+}
         }
 
         hRow.appendChild(th);
@@ -752,10 +1538,66 @@ function buildTable() {
             container.dataset.c = c;
             container.id = cellId(r, c);
 
+            container.addEventListener("mouseenter", showCellPreview);
+            container.addEventListener("mousemove", moveCellPreview);
+            container.addEventListener("mouseleave", hideCellPreview);
+
             if (c === 1) {
                 container.innerHTML = `
                     <span class="task-text" contenteditable="false"></span>
                     <span class="task-actions">
+                        <div class="row-dropdown">
+                        <span class="fa fa-ellipsis-v row-menu-btn"></span>
+                        <div class="row-dropdown-menu">
+                            <button onclick="insertRowAbove(${r})">
+                                <span class="fa fa-arrow-up mt-4 me-4"></span>
+                                Insert Above
+                            </button>
+                            <button onclick="insertRowBelow(${r})">
+                                <span class="fa fa-arrow-down mt-4 me-4"></span>
+                                Insert Below
+                            </button>
+                            <hr>
+                            <button onclick="cutRow(${r})">
+                                <span class="fa fa-scissors mt-4 me-4"></span>
+                                Cut Row
+                            </button>
+                            <button onclick="copyRow(${r})">
+                                <span class="fa fa-copy mt-4 me-4"></span>
+                                Copy Row
+                            </button>
+                            <button onclick="pasteRow(${r})">
+                                <span class="fa fa-paste mt-4 me-4"></span>
+                                Paste Row
+                            </button>
+                            <button onclick="deleteRow(${r})">
+                                <span class="fa fa-trash mt-4 me-4"></span>
+                                Delete Row
+                            </button>
+                            <hr>
+                            <button onclick="openAttachments(${r})">
+                                <span class="fa fa-paperclip mt-4 me-4"></span>
+                                Attachments
+                            </button>
+                            <button onclick="openComments(${r})">
+                                <span class="fa fa-comment mt-4 me-4"></span>
+                                Comments
+                            </button>
+                            <button onclick="openReminderModal(${r})">
+                                <span class="fa fa-bell mt-4 me-4"></span>
+                                Reminder
+                            </button>
+                            <hr>
+                            <button onclick="lockRow(${r})">
+                                <span class="fa fa-lock mt-4 me-4"></span>
+                                Lock
+                            </button>
+                            <button onclick="printRow(${r})">
+                                <span class="fa fa-print mt-4 me-4"></span>
+                                Print
+                            </button>
+                        </div>
+                    </div>
                         <span class="comment-icon fa fa-message cursor-pointer" title="Comments" onclick="openComments(${r})"></span>
                         <span class="attach-icon fa fa-paperclip cursor-pointer" title="Attachments" onclick="openAttachments(${r})"></span>
                         <!--  ──► NEW ──►  -->
@@ -763,12 +1605,6 @@ function buildTable() {
                         title="${rowReminders[r] > 0 ? 'Has reminder(s)' : 'Set Reminder'}" 
                         onclick="openReminderModal(${r})"></span>
                         <!--  ─────────────── -->
-                        <span class="fa fa-plus add-row-icon cursor-pointer text-success" 
-                        title="Insert row below" 
-                        onclick="addRowAfter(${r})"></span>
-                        <span class="delete-row-icon fa fa-close cursor-pointer text-danger" 
-                        title="Delete this row" 
-                        onclick="deleteRow(${r})"></span>
                     </span>
                 `;
                 container.contentEditable = false;
@@ -788,8 +1624,105 @@ function buildTable() {
     table.appendChild(tbody);
     sheetEl.innerHTML = "";
     sheetEl.appendChild(table);
+    applyColumnWidths();
 }
 
+document.addEventListener("click", function(e) {
+
+if (!e.target.closest("thead .dropdown")) {
+    document.querySelectorAll("thead .dropdown.open")
+        .forEach(dropdown => {
+            dropdown.classList.remove("open");
+        });
+}
+
+});
+
+document.getElementById("tableSearch")
+    .addEventListener("input", filterTable);
+
+    function filterTable() {
+
+const keyword = document
+    .getElementById("tableSearch")
+    .value
+    .toLowerCase()
+    .trim();
+
+const rows = document.querySelectorAll("#sheet tbody tr");
+
+rows.forEach(row => {
+
+    let found = false;
+
+    row.querySelectorAll(".cell").forEach(cell => {
+
+        if (found) return;
+
+        let text = "";
+
+        const input = cell.querySelector("input, select");
+
+        if (input) {
+
+            if (input.type === "checkbox") {
+                text = input.checked ? "true" : "false";
+            } else {
+                text = input.value;
+            }
+
+        } else {
+
+            text = data[cell.id]?.raw || cell.textContent;
+
+        }
+
+        if (text.toString().toLowerCase().includes(keyword)) {
+            found = true;
+        }
+
+    });
+
+    row.style.display = found || keyword === ""
+        ? ""
+        : "none";
+
+});
+
+}
+
+const preview = document.getElementById("cellPreview");
+
+function showCellPreview(e) {
+    const cell = e.currentTarget;
+
+    if (cell.dataset.c == "1") return;
+
+    let element = cell;
+
+    // Ignore input/select columns (fixed content)
+    const input = cell.querySelector("input, select");
+    if (input) return;
+
+    const text = data[cell.id]?.raw || "";
+    if (!text.trim()) return;
+
+    // Only show when text is truncated
+    if (element.scrollWidth <= element.clientWidth) return;
+
+    preview.textContent = text;
+    preview.style.display = "block";
+    moveCellPreview(e);
+}
+
+function moveCellPreview(e){
+    preview.style.left = (e.clientX + 15) + "px";
+    preview.style.top  = (e.clientY + 15) + "px";
+}
+
+function hideCellPreview(){
+    preview.style.display = "none";
+}
 function rebuildPreserveData() {
     const dataSnapshot = JSON.parse(JSON.stringify(data));
     const headerSnapshot = { ...columnHeaders };
@@ -1142,14 +2075,276 @@ function onEdit(e) {
     else if (["number", "datetime-local", "select", "email"].includes(type)) value = e.target.value;
     else value = cell.textContent;
 
-    data[id] = { raw: value.toString() };
+    if (!data[id]) data[id] = {};
+
+data[id].raw = value.toString();
+    cell.dataset.fulltext = value.toString();
     recalcAll();
 }
 
-function onFocus(e) {
-    document.querySelectorAll(".cell").forEach(c => c.classList.remove("selected"));
-    const cell = e.target.closest(".cell") || e.target;
-    if (cell.classList.contains("cell")) cell.classList.add("selected");
+function onFocus(e){
+document
+    .querySelectorAll(".cell")
+    .forEach(c=>c.classList.remove("selected"));
+    selectedCell=e.target.closest(".cell");
+    if(!selectedCell) return;
+    selectedCell.classList.add("selected");
+    loadToolbarState();
+}
+
+function getCellStyle(cell){
+if(!data[cell.id])
+    data[cell.id]={raw:""};
+if(!data[cell.id].style){
+    data[cell.id].style={
+    fontFamily:"Arial",
+    fontSize:"14px",
+    fontWeight:"normal",
+    fontStyle:"normal",
+    textDecoration:"none",
+    color:"#000000",
+    background:"#ffffff",
+    textAlign:"left"
+
+    };
+}
+return data[cell.id].style;
+}
+
+function applyStyle(cell){
+
+if(!cell) return;
+
+const style=getCellStyle(cell);
+
+cell.style.fontFamily=style.fontFamily;
+cell.style.fontSize=style.fontSize;
+
+cell.style.fontWeight=style.fontWeight;
+cell.style.fontStyle=style.fontStyle;
+
+cell.style.textDecoration=style.textDecoration;
+
+cell.style.color=style.color;
+
+cell.style.background=style.background;
+
+cell.style.textAlign=style.textAlign;
+
+}
+
+function loadToolbarState(){
+if(!selectedCell) return;
+const style=getCellStyle(selectedCell);
+fontFamily.value=style.fontFamily;
+fontSize.value=parseInt(style.fontSize);
+boldBtn.classList.toggle(
+    "active",
+    style.fontWeight==="bold"
+);
+italicBtn.classList.toggle(
+    "active",
+    style.fontStyle==="italic"
+);
+underlineBtn.classList.toggle(
+    "active",
+    style.textDecoration==="underline"
+);
+textColor.value=style.color;
+
+fillColor.value=style.background;
+
+alignLeft.classList.remove("active");
+alignCenter.classList.remove("active");
+alignRight.classList.remove("active");
+
+switch(style.textAlign){
+
+    case "center":
+
+        alignCenter.classList.add("active");
+
+        break;
+
+    case "right":
+
+        alignRight.classList.add("active");
+
+        break;
+
+    default:
+
+        alignLeft.classList.add("active");
+
+}
+}
+
+fontFamily.onchange=function(){
+if(!selectedCell) return;
+const style=getCellStyle(selectedCell);
+style.fontFamily=this.value;
+applyStyle(selectedCell);
+};
+
+fontSize.onchange=function(){
+if(!selectedCell) return;
+const style=getCellStyle(selectedCell);
+style.fontSize=this.value+"px";
+applyStyle(selectedCell);
+};
+
+boldBtn.onclick=function(){
+if(!selectedCell) return;
+const style=getCellStyle(selectedCell);
+style.fontWeight=
+    style.fontWeight==="bold"
+    ?"normal"
+    :"bold";
+applyStyle(selectedCell);
+loadToolbarState();
+};
+
+italicBtn.onclick=function(){
+if(!selectedCell) return;
+const style=getCellStyle(selectedCell);
+style.fontStyle=
+    style.fontStyle==="italic"
+    ?"normal"
+    :"italic";
+applyStyle(selectedCell);
+loadToolbarState();
+};
+
+underlineBtn.onclick=function(){
+if(!selectedCell) return;
+const style=getCellStyle(selectedCell);
+style.textDecoration=
+    style.textDecoration==="underline"
+    ?"none"
+    :"underline";
+applyStyle(selectedCell);
+loadToolbarState();
+};
+
+
+textColor.onchange=function(){
+if(!selectedCell) return;
+const style=getCellStyle(selectedCell);
+style.color=this.value;
+applyStyle(selectedCell);
+};
+
+fillColor.onchange=function(){
+if(!selectedCell) return;
+const style=getCellStyle(selectedCell);
+style.background=this.value;
+applyStyle(selectedCell);
+};
+
+function setAlignment(type){
+if(!selectedCell) return;
+const style=getCellStyle(selectedCell);
+style.textAlign=type;
+applyStyle(selectedCell);
+loadToolbarState();
+}
+
+alignLeft.onclick=function(){
+setAlignment("left");
+};
+alignCenter.onclick=function(){
+setAlignment("center");
+};
+alignRight.onclick=function(){
+setAlignment("right");
+};
+
+function refreshSheet() {
+    if (hasUnsavedChanges) {
+        Swal.fire({
+            title: "Discard changes?",
+            text: "You have unsaved changes.",
+            icon: "warning",
+            showCancelButton: true,
+            confirmButtonText: "Refresh"
+        }).then(result => {
+            if (result.isConfirmed) {
+                location.reload();
+            }
+        });
+    } else {
+        location.reload();
+    }
+}
+
+function renameSheet() {
+Swal.fire({
+    title: "Rename Sheet",
+    input: "text",
+    inputValue: document.querySelector(".sheet_title").textContent,
+    showCancelButton: true,
+    confirmButtonText: "Save"
+}).then(result => {
+    if (!result.isConfirmed) return;
+    fetch("rename_sheet.php", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/x-www-form-urlencoded"
+        },
+        body:
+            "id=" + activeSheetId +
+            "&name=" + encodeURIComponent(result.value)
+    })
+    .then(r => r.json())
+    .then(res => {
+        if (res.success) {
+            document.querySelector(".sheet_title").textContent =
+                result.value;
+            Swal.fire(
+                "Success",
+                "Sheet renamed.",
+                "success"
+            );
+        } else {
+            Swal.fire(
+                "Error",
+                res.message,
+                "error"
+            );
+        }
+    });
+});
+}
+
+function printSheet(){
+const printWindow = window.open("", "_blank");
+printWindow.document.write(`
+    <html>
+    <head>
+    <title>${document.querySelector(".sheet_title").textContent}</title>
+    <style>
+        table{
+            border-collapse:collapse;
+            width:100%;
+        }
+        td,th{
+            border:1px solid #999;
+            padding:8px;
+        }
+    </style>
+    </head>
+    <body>
+    <h2>
+        ${document.querySelector(".sheet_title").textContent}
+    </h2>
+    ${document.querySelector("#sheet").innerHTML}
+    </body>
+    </html>
+`);
+
+printWindow.document.close();
+printWindow.focus();
+printWindow.print();
 }
 
 function onKeyDown(e) {
@@ -1223,13 +2418,14 @@ document.getElementById("save-db").onclick = async () => {
     // Name is already in DB — we don't change it here anymore
 
     const payload = {
-        id: activeSheetId,           // ← always send ID → backend will UPDATE
-        rows: ROWS,
-        cols: COLS,
-        headers: [],
-        columnTypes: columnTypes,
-        cells: {}
-    };
+    id: activeSheetId,
+    rows: ROWS,
+    cols: COLS,
+    headers: [],
+    columnTypes: columnTypes,
+    columnWidths: columnWidths,
+    cells: {}
+};
 
     // Collect visible header names (from UI)
     document.querySelectorAll("thead th[data-c]").forEach(th => {
@@ -1239,13 +2435,22 @@ document.getElementById("save-db").onclick = async () => {
         }
     });
 
-    // Collect cell data (only non-empty)
+    // Collect cell data (including styles)
     document.querySelectorAll(".cell").forEach(cell => {
-        if (cell.dataset.c == "1") return; // skip Tasks
-        const raw = data[cell.id]?.raw?.trim();
-        if (raw) {
-            payload.cells[cell.id] = raw;
-        }
+
+    if (cell.dataset.c == "1") return;
+
+    const cellData = data[cell.id];
+
+    if (!cellData) return;
+
+    const hasRaw = (cellData.raw ?? "").toString().trim() !== "";
+    const hasStyle = cellData.style && Object.keys(cellData.style).length > 0;
+
+    if (hasRaw || hasStyle) {
+        payload.cells[cell.id] = structuredClone(cellData);
+    }
+
     });
 
     try {
@@ -1295,7 +2500,7 @@ window.addEventListener("beforeunload", function (e) {
    INITIAL BUILD & LOAD
 ------------------------------------------------------------ */
 buildTable();
-
+loadCountsAndRefreshIcons();
 document.addEventListener("DOMContentLoaded", () => {
 
     document.getElementById("export-csv").onclick = () => {
@@ -1491,6 +2696,7 @@ document.addEventListener("DOMContentLoaded", () => {
             ROWS = sheet.rows || 10;
             COLS = sheet.cols || 4;
             columnTypes = sheet.columnTypes || {};
+            columnWidths = sheet.columnWidths || {};
             activeSheetId = id;
 
             // 1. Build table structure first (creates elements with correct IDs)
@@ -1660,9 +2866,9 @@ function showReplyBox(commentId, parentElement) {
                   placeholder="Write your reply..." 
                   id="replyText_${commentId}"></textarea>
         <div class="mt-1 text-end">
-            <button class="btn btn-sm btn-secondary lufera-text me-2" 
+            <button class="btn btn-sm btn-secondary me-2" 
                     onclick="cancelReply('${commentId}')">Cancel</button>
-            <button class="btn btn-sm lufera-bg lufera-text" 
+            <button class="btn btn-sm lufera-bg text-white" 
                     onclick="saveReply(${commentId})">Send Reply</button>
         </div>
     `;
@@ -1797,7 +3003,7 @@ async function loadAttachments() {
         </div>
         <div class="d-inline-block ms-3">
             <span class="file-name">${displayName}</span>
-            ${meta?.rowLabel    ? `<small class="attachment-row d-block bg-success lufera-text px-3 py-1 mt-1">${meta.rowLabel}</small>` : ""}
+            ${meta?.rowLabel    ? `<small class="attachment-row d-block bg-success text-white px-3 py-1 mt-1">${meta.rowLabel}</small>` : ""}
             ${meta?.createdLabel ? `<small class="d-block text-muted">${meta.createdLabel}</small>` : ""}
         </div>`;
 
@@ -1889,6 +3095,28 @@ async function uploadAttachment() {
     } else {
         alert(out.error || "Upload failed");
     }
+}
+
+function addRowBefore(row) {
+// Increase total rows
+ROWS++;
+// Shift all rows down
+for (let r = ROWS; r > row; r--) {
+    for (let c = 2; c <= COLS; c++) {
+        const newId = cellId(r, c);
+        const oldId = cellId(r - 1, c);
+        data[newId] = data[oldId]
+            ? structuredClone(data[oldId])
+            : { raw: "" };
+    }
+}
+
+// Clear the inserted row
+for (let c = 2; c <= COLS; c++) {
+    data[cellId(row, c)] = { raw: "" };
+}
+
+rebuildPreserveData();
 }
 
 function addRowAfter(row) {
@@ -2058,6 +3286,59 @@ function deleteColumn(col) {
     });
 }
 
+function sortColumn(col, direction = "asc"){
+
+const rows = [];
+
+for(let r=1;r<=ROWS;r++){
+
+    const id = cellId(r,col);
+
+    rows.push({
+        row:r,
+        value:data[id]?.raw || ""
+    });
+
+}
+
+rows.sort((a,b)=>
+    a.value.toString().localeCompare(
+        b.value.toString(),
+        undefined,
+        {numeric:true,sensitivity:"base"}
+    )
+);
+if (direction === "desc") {
+    rows.reverse();
+}
+const snapshot = {};
+
+for(let r=1;r<=ROWS;r++){
+
+    for(let c=1;c<=COLS;c++){
+
+        snapshot[cellId(r,c)] = data[cellId(r,c)];
+
+    }
+
+}
+
+rows.forEach((item,index)=>{
+
+    const targetRow=index+1;
+
+    for(let c=1;c<=COLS;c++){
+
+        data[cellId(targetRow,c)] =
+            snapshot[cellId(item.row,c)];
+
+    }
+
+});
+
+rebuildPreserveData();
+}
+
 // Dropdown toggle logic
 document.querySelectorAll(".dropdown-btn").forEach(btn => {
     btn.addEventListener("click", e => {
@@ -2209,7 +3490,7 @@ async function saveReminder() {
 
     <div class="comment-input">
         <textarea id="commentText" placeholder="Write a comment..."></textarea>
-        <button class="btn btn-secondary lufera-text float-end mt-10" onclick="saveComment()">Send</button>
+        <button class="btn lufera-bg lufera-text float-end mt-10" onclick="saveComment()" id="commentSubmit">Send</button>
     </div>
 </div>
 
@@ -2223,7 +3504,7 @@ async function saveReminder() {
 
     <div class="comment-input">
         <input type="file" id="attachFile" />
-        <button class="btn btn-secondary lufera-text mt-10" onclick="uploadAttachment()">Upload</button>
+        <button class="btn lufera-bg lufera-text mt-10" onclick="uploadAttachment()">Upload</button>
     </div>
 </div>
 <!-- Add these just before closing </body> (after the two existing panels) -->
@@ -2287,8 +3568,8 @@ async function saveReminder() {
     </div>
     
     <div class="text-end">
-        <button class="btn btn-sm btn-secondary lufera-text me-1" onclick="closeReminderModal()">Cancel</button>
-        <button class="btn btn-sm lufera-bg lufera-text" onclick="saveReminder()">Save Reminder</button>
+        <button class="btn btn-sm btn-secondary me-1" onclick="closeReminderModal()">Cancel</button>
+        <button class="btn btn-sm lufera-bg text-white" onclick="saveReminder()">Save Reminder</button>
     </div>
 </div>
 
@@ -2325,7 +3606,7 @@ async function saveReminder() {
             <!-- Optional: extra info like row, column, mime type, etc. -->
             <div class="mb-3" id="previewExtraInfo" style="display:none;"></div>
 
-            <a id="downloadLink" class="btn btn-sm lufera-bg lufera-text me-10" href="#" download>Download</a>
+            <a id="downloadLink" class="btn btn-sm lufera-bg text-white me-10" href="#" download>Download</a>
             <!-- <button class="btn btn-lg btn-secondary" onclick="closePreviewModal()">Close</button> -->
         </div>
     </div>
@@ -2343,6 +3624,7 @@ async function saveReminder() {
 </style>
 
 <script>
+    document.getElementById("commentSubmit")?.click();
     // ────────────────────────────────────────────────
     // Helper: make any textarea support Enter=send, Shift+Enter=newline
     // ────────────────────────────────────────────────
@@ -2566,7 +3848,135 @@ function closeAttachments() {
 }
 </script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script>
+    const textColorBtn  = document.getElementById("textColorBtn");
+const textColor     = document.getElementById("textColor");
+const textColorLine = document.getElementById("textColorLine");
 
+const fillColorBtn  = document.getElementById("fillColorBtn");
+const fillColor     = document.getElementById("fillColor");
+const fillColorLine = document.getElementById("fillColorLine");
+
+
+/* Font Color */
+textColorBtn.addEventListener("click", () => {
+    textColor.click();
+});
+
+textColor.addEventListener("input", function () {
+    textColorLine.style.background = this.value;
+
+    // Your existing formatting logic
+    applyTextColor(this.value);
+});
+
+
+/* Fill Color */
+fillColorBtn.addEventListener("click", () => {
+    fillColor.click();
+});
+
+fillColor.addEventListener("input", function () {
+    fillColorLine.style.background = this.value;
+
+    // Your existing formatting logic
+    applyFillColor(this.value);
+});
+function applyTextColor(color) {
+    if (!selectedCell) return;
+
+    selectedCell.style.color = color;
+
+    if (!data[selectedCell.id]) {
+        data[selectedCell.id] = {};
+    }
+
+    if (!data[selectedCell.id].style) {
+        data[selectedCell.id].style = {};
+    }
+
+    data[selectedCell.id].style.color = color;
+}
+
+
+function applyFillColor(color) {
+    if (!selectedCell) return;
+
+    selectedCell.style.backgroundColor = color;
+
+    if (!data[selectedCell.id]) {
+        data[selectedCell.id] = {};
+    }
+
+    if (!data[selectedCell.id].style) {
+        data[selectedCell.id].style = {};
+    }
+
+    data[selectedCell.id].style.background = color;
+}
+</script>
+<script>
+    let formatPainterActive = false;
+let formatPainterStyle = null;
+
+document.getElementById("formatPainterBtn").addEventListener("click", function () {
+
+    if (!selectedCell) {
+        return;
+    }
+
+    const sourceId = selectedCell.id;
+    const sourceData = data[sourceId];
+
+    if (!sourceData || !sourceData.style) {
+        return;
+    }
+
+    // Copy the formatting
+    formatPainterStyle = structuredClone(sourceData.style);
+
+    formatPainterActive = true;
+
+    this.classList.add("active");
+
+    document.querySelectorAll(".cell").forEach(cell => {
+        cell.style.cursor = "copy";
+    });
+});
+
+document.addEventListener("click", function(e) {
+
+if (!formatPainterActive) return;
+
+const targetCell = e.target.closest(".cell");
+
+if (!targetCell) return;
+
+// Don't apply to the original cell
+if (targetCell.id === selectedCell?.id) return;
+
+if (!data[targetCell.id]) {
+    data[targetCell.id] = {};
+}
+
+data[targetCell.id].style = structuredClone(formatPainterStyle);
+
+// Apply formatting visually
+applyStyle(targetCell);
+
+// Turn off painter
+formatPainterActive = false;
+formatPainterStyle = null;
+
+document.getElementById("formatPainterBtn")
+    .classList.remove("active");
+
+document.querySelectorAll(".cell").forEach(cell => {
+    cell.style.cursor = "";
+});
+});
+    </script>
+    
 </body>
 </html>
 

@@ -127,7 +127,7 @@ $remindersResult->data_seek(0); // reset again for display
     </div>
 
     <!-- Offcanvas - Right Side Notifications Panel -->
-    <div class="offcanvas offcanvas-end w-25" tabindex="-1" id="notificationsOffcanvas" aria-labelledby="notificationsOffcanvasLabel">
+    <div class="offcanvas offcanvas-end" tabindex="-1" id="notificationsOffcanvas" aria-labelledby="notificationsOffcanvasLabel">
         <div class="offcanvas-header border-bottom">
             <h6 class="offcanvas-title" id="notificationsOffcanvasLabel">
                 <i class="fa fa-bell me-2"></i> Notifications & Reminders
