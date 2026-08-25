@@ -36,7 +36,9 @@ error_reporting(E_ALL);
     if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $full_name = $_POST['full_name'];
         $email = $_POST['email'];
-        $phone_no = $_POST['phone_no'];
+        $country_code = isset($_POST['country_code']) ? trim($_POST['country_code']) : '';
+        $raw_phone = isset($_POST['phone_no']) ? trim($_POST['phone_no']) : '';
+        $phone_no = $country_code . ' ' . $raw_phone;
         $website = $_POST['website'];
         $country = $_POST['country'];
         $city = $_POST['city'];
@@ -56,19 +58,29 @@ error_reporting(E_ALL);
         $sign_in_name = $sign_in_img;
         $sign_up_name = $sign_up_img;
         $allowed_types = ['jpg','jpeg','png','gif','webp'];
+        $max_file_size = 1 * 1024 * 1024; // 1 MB
 
-        //LOGO IMAGE
+        // LOGO IMAGE
         if (isset($_FILES['logo']) && $_FILES['logo']['error'] == 0) {
             $file_tmp = $_FILES['logo']['tmp_name'];
-            $file_name = time() . '_' . basename($_FILES['logo']['name']);
-            $target_file = $upload_dir . $file_name;
-
-            $imageFileType = strtolower(pathinfo($target_file, PATHINFO_EXTENSION));
-            $allowed_types = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
-
-            if (in_array($imageFileType, $allowed_types)) {
-                if (move_uploaded_file($file_tmp, $target_file)) {
-                    $logo_name = $file_name;
+            $file_size = $_FILES['logo']['size'];
+            if ($file_size > $max_file_size) {
+                echo "<script>
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'File Too Large',
+                        text: 'Company Logo must not exceed 1 MB.',
+                        confirmButtonText: 'OK'
+                    });
+                </script>";
+            } else {
+                $file_name = time() . '_' . basename($_FILES['logo']['name']);
+                $target_file = $upload_dir . $file_name;
+                $imageFileType = strtolower(pathinfo($target_file, PATHINFO_EXTENSION));
+                if (in_array($imageFileType, $allowed_types)) {
+                    if (move_uploaded_file($file_tmp, $target_file)) {
+                        $logo_name = $file_name;
+                    }
                 }
             }
         }
@@ -76,24 +88,46 @@ error_reporting(E_ALL);
         // SIGN IN IMAGE
         if (isset($_FILES['sign_in_img']) && $_FILES['sign_in_img']['error'] == 0) {
             $tmp = $_FILES['sign_in_img']['tmp_name'];
-            $name = time() . '_signin_' . basename($_FILES['sign_in_img']['name']);
-            $path = $upload_dir . $name;
-
-            $ext = strtolower(pathinfo($path, PATHINFO_EXTENSION));
-            if (in_array($ext, $allowed_types) && move_uploaded_file($tmp, $path)) {
-                $sign_in_name = $name;
+            $file_size = $_FILES['sign_in_img']['size'];
+            if ($file_size > $max_file_size) {
+                echo "<script>
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'File Too Large',
+                        text: 'Sign In Image must not exceed 1 MB.',
+                        confirmButtonText: 'OK'
+                    });
+                </script>";
+            } else {
+                $name = time() . '_signin_' . basename($_FILES['sign_in_img']['name']);
+                $path = $upload_dir . $name;
+                $ext = strtolower(pathinfo($path, PATHINFO_EXTENSION));
+                if (in_array($ext, $allowed_types) && move_uploaded_file($tmp, $path)) {
+                    $sign_in_name = $name;
+                }
             }
         }
 
         // SIGN UP IMAGE
         if (isset($_FILES['sign_up_img']) && $_FILES['sign_up_img']['error'] == 0) {
             $tmp = $_FILES['sign_up_img']['tmp_name'];
-            $name = time() . '_signup_' . basename($_FILES['sign_up_img']['name']);
-            $path = $upload_dir . $name;
-
-            $ext = strtolower(pathinfo($path, PATHINFO_EXTENSION));
-            if (in_array($ext, $allowed_types) && move_uploaded_file($tmp, $path)) {
-                $sign_up_name = $name;
+            $file_size = $_FILES['sign_up_img']['size'];
+            if ($file_size > $max_file_size) {
+                echo "<script>
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'File Too Large',
+                        text: 'Sign Up Image must not exceed 1 MB.',
+                        confirmButtonText: 'OK'
+                    });
+                </script>";
+            } else {
+                $name = time() . '_signup_' . basename($_FILES['sign_up_img']['name']);
+                $path = $upload_dir . $name;
+                $ext = strtolower(pathinfo($path, PATHINFO_EXTENSION));
+                if (in_array($ext, $allowed_types) && move_uploaded_file($tmp, $path)) {
+                    $sign_up_name = $name;
+                }
             }
         }
 
@@ -218,49 +252,126 @@ error_reporting(E_ALL);
                             <div class="col-sm-6">
                                 <div class="mb-20">
                                     <label for="name" class="form-label fw-semibold text-primary-light text-sm mb-8">Full Name <span class="text-danger-600">*</span></label>
-                                    <input type="text" class="form-control radius-8" name="full_name" value="<?php echo htmlspecialchars($full_name); ?>" required>
+                                    <input type="text" class="form-control radius-8" name="full_name" value="<?php echo htmlspecialchars($full_name); ?>" maxlength="50px" required>
                                 </div>
                             </div>
                             <div class="col-sm-6">
                                 <div class="mb-20">
                                     <label for="email" class="form-label fw-semibold text-primary-light text-sm mb-8">Email <span class="text-danger-600">*</span></label>
-                                    <input type="text" class="form-control radius-8" name="email" value="<?php echo htmlspecialchars($email); ?>" required>
+                                    <input type="text" class="form-control radius-8" name="email" value="<?php echo htmlspecialchars($email); ?>" maxlength="50px" required>
                                 </div>
                             </div>
-                            <div class="col-sm-6">
-                                <div class="mb-20">
-                                    <label for="number" class="form-label fw-semibold text-primary-light text-sm mb-8">Phone Number</label>
-                                    <input type="text" class="form-control radius-8" name="phone_no" value="<?php echo htmlspecialchars($phone_no); ?>" required>
-                                </div>
+                            <?php
+                        // Extract country code and actual phone number if already stored combined (e.g., "+1 9876543210")
+                        $selected_country_code = "+91"; // Default fallback
+                        $raw_phone_number = $phone_no;
+
+                        // Simple parsing logic if phone_no has a space or plus format
+                        if (!empty($phone_no)) {
+                            $parts = explode(' ', trim($phone_no), 2);
+                            if (count($parts) == 2 && str_starts_with($parts[0], '+')) {
+                                $selected_country_code = $parts[0];
+                                $raw_phone_number = $parts[1];
+                            }
+                        }
+
+                        // Comprehensive list with Country Name as the key and Code as the value/label display
+                        $country_codes = [
+                            "Afghanistan" => "+93",
+                            "Albania" => "+355",
+                            "Algeria" => "+213",
+                            "Argentina" => "+54",
+                            "Australia" => "+61",
+                            "Austria" => "+43",
+                            "Bangladesh" => "+880",
+                            "Belgium" => "+32",
+                            "Brazil" => "+55",
+                            "Canada / USA" => "+1",
+                            "China" => "+86",
+                            "Colombia" => "+57",
+                            "Egypt" => "+20",
+                            "France" => "+33",
+                            "Germany" => "+49",
+                            "Greece" => "+30",
+                            "Hong Kong" => "+852",
+                            "Hungary" => "+36",
+                            "India" => "+91",
+                            "Indonesia" => "+62",
+                            "Ireland" => "+353",
+                            "Israel" => "+972",
+                            "Italy" => "+39",
+                            "Japan" => "+81",
+                            "Kenya" => "+254",
+                            "Malaysia" => "+60",
+                            "Mexico" => "+52",
+                            "Netherlands" => "+31",
+                            "New Zealand" => "+64",
+                            "Nigeria" => "+234",
+                            "Norway" => "+47",
+                            "Pakistan" => "+92",
+                            "Philippines" => "+63",
+                            "Poland" => "+48",
+                            "Portugal" => "+351",
+                            "Russia" => "+7",
+                            "Saudi Arabia" => "+966",
+                            "Singapore" => "+65",
+                            "South Africa" => "+27",
+                            "South Korea" => "+82",
+                            "Spain" => "+34",
+                            "Sweden" => "+46",
+                            "Switzerland" => "+41",
+                            "Taiwan" => "+886",
+                            "Thailand" => "+66",
+                            "Turkey" => "+90",
+                            "United Arab Emirates" => "+971",
+                            "United Kingdom" => "+44",
+                            "Vietnam" => "+84"
+                        ];
+                    ?>
+
+                    <div class="col-sm-6">
+                        <div class="mb-20">
+                            <label for="number" class="form-label fw-semibold text-primary-light text-sm mb-8">Phone Number <span class="text-danger-600">*</span></label>
+                            <div class="input-group">
+                                <select name="country_code" class="form-select radius-8 p-10" style="max-width: 75px; flex: 0 0 90px; height: 2.75rem" required>
+                                    <?php foreach ($country_codes as $country_name => $code): ?>
+                                        <option value="<?php echo $code; ?>" <?php echo ($selected_country_code == $code) ? 'selected' : ''; ?>>
+                                            <?php echo ' ' . $code . ' ' . $country_name; ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
+                                <input type="text" class="form-control radius-8" name="phone_no" value="<?php echo htmlspecialchars($raw_phone_number); ?>" placeholder="Phone number" maxlength="20px" required>
                             </div>
+                        </div>
+                    </div>
                             <div class="col-sm-6">
                                 <div class="mb-20">
                                     <label for="Website" class="form-label fw-semibold text-primary-light text-sm mb-8"> Website</label>
-                                    <input type="text" class="form-control radius-8" name="website" value="<?php echo htmlspecialchars($website); ?>" required>
+                                    <input type="text" class="form-control radius-8" name="website" value="<?php echo htmlspecialchars($website); ?>" maxlength="50px" required>
                                 </div>
                             </div>
                             <div class="col-sm-6">
                                 <div class="mb-20">
                                     <label for="country" class="form-label fw-semibold text-primary-light text-sm mb-8">Country <span class="text-danger-600">*</span> </label>
-                                    <input type="text" class="form-control radius-8" name="country" value="<?php echo htmlspecialchars($country); ?>" required>
+                                    <input type="text" class="form-control radius-8" name="country" value="<?php echo htmlspecialchars($country); ?>" maxlength="50px" required>
                                 </div>
                             </div>
                             <div class="col-sm-6">
                                 <div class="mb-20">
                                     <label for="city" class="form-label fw-semibold text-primary-light text-sm mb-8">City <span class="text-danger-600">*</span> </label>
-                                    <input type="text" class="form-control radius-8" name="city" value="<?php echo htmlspecialchars($city); ?>" required>
+                                    <input type="text" class="form-control radius-8" name="city" value="<?php echo htmlspecialchars($city); ?>" maxlength="50px" required>
                                 </div>
                             </div>
                             <div class="col-sm-6">
                                 <div class="mb-20">
                                     <label for="state" class="form-label fw-semibold text-primary-light text-sm mb-8">State <span class="text-danger-600">*</span> </label>
-                                    <input type="text" class="form-control radius-8" name="state" value="<?php echo htmlspecialchars($state); ?>" required>
+                                    <input type="text" class="form-control radius-8" name="state" value="<?php echo htmlspecialchars($state); ?>" maxlength="50px" required>
                                 </div>
                             </div>
                             <div class="col-sm-6">
                                 <div class="mb-20">
                                     <label for="zip" class="form-label fw-semibold text-primary-light text-sm mb-8"> Zip Code <span class="text-danger-600">*</span></label>
-                                    <input type="text" class="form-control radius-8" name="zip_code" value="<?php echo htmlspecialchars($zip_code); ?>" required>
+                                    <input type="text" class="form-control radius-8" name="zip_code" value="<?php echo htmlspecialchars($zip_code); ?>" maxlength="50px" required>
                                 </div>
                             </div>
                             <div class="col-sm-6">
@@ -272,7 +383,7 @@ error_reporting(E_ALL);
                             <div class="col-sm-6">
                                 <div class="mb-20">
                                     <label for="address" class="form-label fw-semibold text-primary-light text-sm mb-8"> GSTIN <span class="text-danger-600">*</span></label>
-                                    <input type="text" class="form-control radius-8" name="gst_in" value="<?php echo htmlspecialchars($gst_in); ?>" required>
+                                    <input type="text" class="form-control radius-8" name="gst_in" value="<?php echo htmlspecialchars($gst_in); ?>" maxlength="50px" required>
                                 </div>
                             </div>
                             <div class="col-sm-6">
@@ -308,39 +419,22 @@ error_reporting(E_ALL);
                             </div>
 
                             <div class="col-sm-12">
-
                                 <div class="mb-20">
-
                                     <label class="form-label fw-semibold text-primary-light text-sm mb-12">
                                         Maintenance Mode
                                     </label>
-
                                     <div class="d-flex align-items-center gap-3">
-
                                         <label class="custom-switch">
-
-                                            <input 
-                                                type="checkbox"
-                                                name="maintenance_mode"
-                                                id="maintenance_mode"
-                                                value="1"
-                                                <?php echo ($maintenance_mode == '1') ? 'checked' : ''; ?>
-                                            >
-
+                                            <input type="checkbox" name="maintenance_mode" id="maintenance_mode" value="1" <?php echo ($maintenance_mode == '1') ? 'checked' : ''; ?>>
                                             <span class="slider"></span>
-
                                         </label>
 
                                         <span class="fw-medium">
                                             Enable/Disable Maintenance Mode
                                         </span>
-
                                     </div>
-
                                 </div>
-
                             </div>
-
                             <style>
 
                             .custom-switch {
@@ -401,5 +495,40 @@ error_reporting(E_ALL);
                 </div>
             </div>
         </div>
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const maxSize = 1 * 1024 * 1024; // 1 MB
+    const fileInputs = [
+        document.querySelector('input[name="logo"]'),
+        document.querySelector('input[name="sign_in_img"]'),
+        document.querySelector('input[name="sign_up_img"]')
+    ];
 
+    fileInputs.forEach(function (input) {
+        if (!input) return;
+        input.addEventListener("change", function () {
+            const file = this.files[0];
+            if (!file) return;
+            if (file.size > maxSize) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'File Too Large',
+                    text: 'Image size must not exceed 1 MB.',
+                    confirmButtonText: 'OK'
+                });
+                // Clear selected file
+                this.value = '';
+            }
+        });
+    });
+    const restrictedFields = document.querySelectorAll('input[name="phone_no"], input[name="zip_code"]');
+    restrictedFields.forEach(function (input) {
+        input.addEventListener("input", function () {
+            // Allow numbers (0-9), hyphens (-), parentheses ( ), and spaces
+            // Replaces any forbidden characters (like letters) with an empty string instantly
+            this.value = this.value.replace(/[^0-9\-() ]/g, '');
+        });
+    });
+});
+</script>
 <?php include './partials/layouts/layoutBottom.php' ?>

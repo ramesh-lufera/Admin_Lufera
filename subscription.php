@@ -15,20 +15,22 @@
         pointer-events: none;  /* Prevents clicking */
         opacity: 0.5;  /* Makes the button appear blurred */
     }
-    .support-chat-modal {
-      position: fixed !important;
-      bottom: 20px !important;
-      right: 20px !important;
-      margin: 0 !important;
-      max-width: 450px !important;
-      width: 100% !important;
-      height: auto !important;
+    @media (min-width: 540px) {
+        .support-chat-modal {
+        position: fixed !important;
+        bottom: 20px !important;
+        right: 20px !important;
+        margin: 0 !important;
+        max-width: 450px !important;
+        width: 100% !important;
+        height: auto !important;
+        }
+
+        
+        .support-chat-modal .modal-body {
+        overflow-y: auto !important;
+        }
     }
-    
-    .support-chat-modal .modal-body {
-      overflow-y: auto !important;
-    }
-    
     .dropdown-menu{
         z-index: 9999; 
         min-width: 160px;

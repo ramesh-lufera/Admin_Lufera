@@ -1,8 +1,4 @@
-<?php include './partials/layouts/layoutTop.php';
-ini_set('display_errors', 1);
-    ini_set('display_startup_errors', 1);
-    error_reporting(E_ALL);
-?>
+<?php include './partials/layouts/layoutTop.php'; ?>
 <?php
 if(isset($_POST['save_invoice']))
 {
@@ -79,8 +75,15 @@ if(isset($_POST['save_invoice']))
     if(mysqli_query($conn, $sql))
     {
         echo "<script>
-                alert('Invoice Saved Successfully');
-                window.location.href='';
+                Swal.fire({
+                    title: 'Success!',
+                    text: 'Invoice Added Successfully',
+                    confirmButtonText: 'OK'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        window.location.href = window.location.pathname;
+                    }
+                });
               </script>";
         exit;
     }
@@ -571,7 +574,7 @@ $suffix = $invoiceData['suffix'] ?? '';
                                                     <?php } ?>
                                                 </select>
 
-                                                <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addUserModal">
+                                                <button type="button" class="btn lufera-bg lufera-text" data-bs-toggle="modal" data-bs-target="#addUserModal">
                                                     + New User
                                                 </button>
                                             </div>
@@ -634,8 +637,8 @@ $suffix = $invoiceData['suffix'] ?? '';
                                             <tr>
                                                 <th class="w-10 inv-table text-center">S.No</th>
                                                 <th class="inv-table">Item</th>
-                                                <th class="text-end inv-table">Rate</th>
-                                                <th class="text-end inv-table">Tax</th>
+                                                <th class="inv-table">Rate</th>
+                                                <th class="inv-table">Tax</th>
                                                 <th class="text-end inv-table">Tax Amount</th>
                                                 <th class="text-end inv-table">Amount</th>
                                                 <th class="w-10 text-center inv-table">Action</th>
@@ -648,7 +651,7 @@ $suffix = $invoiceData['suffix'] ?? '';
                                                     <input type="text" class="item-name w-100 border-0">
                                                 </td>
                                                 <td class="inv-table">
-                                                    <input type="number" class="price-input w-100">
+                                                    <input type="text" inputmode="numeric" maxlength="10" oninput="this.value = this.value.replace(/[^0-9]/g, '')" class="price-input w-100">
                                                 </td>
                                                 <td class="inv-table">
                                                     <select class="tax-select w-100">
@@ -678,7 +681,7 @@ $suffix = $invoiceData['suffix'] ?? '';
                                         </tbody>
                                     </table>
                                     <div class="mt-3">
-                                        <button type="button" class="btn btn-primary" id="addItem">
+                                        <button type="button" class="btn lufera-bg lufera-text" id="addItem">
                                             + Add Item
                                         </button>
                                     </div>
@@ -740,7 +743,7 @@ $suffix = $invoiceData['suffix'] ?? '';
                                     <input type="hidden" name="total_gst" id="total_gst">
                                     <input type="hidden" name="total_amount" id="total_amount">
                                     
-                                    <input type="submit" class="btn btn-success mt-3" value="Save Invoice" name="save_invoice">
+                                    <input type="submit" class="lufera-bg lufera-text text-md px-56 py-11 radius-8 m-auto d-block" value="Save Invoice" name="save_invoice">
                                 <div class="text-center border-footer mt-20 pt-20 pdf-footer">
                                     <p class="d-inline">Crafted with ease using</p> 
                                     <img src="uploads/invoice/<?php echo $invoice_logo; ?>" class="footer-logo" alt="Lufera Logo" class="mb-4" style="margin-bottom: 6px; max-width: 120px;">
@@ -867,7 +870,7 @@ $suffix = $invoiceData['suffix'] ?? '';
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
                     Close
                 </button>
-                <button type="button" class="btn btn-primary" id="saveInvoicePreference">
+                <button type="button" class="btn lufera-bg lufera-text" id="saveInvoicePreference">
                     Submit
                 </button>
             </div>
@@ -993,7 +996,7 @@ $('#addItem').click(function(){
         </td>
 
         <td class="inv-table">
-            <input type="number" class="price-input w-100">
+            <input type="text" inputmode="numeric" maxlength="10" oninput="this.value = this.value.replace(/[^0-9]/g, '')" class="price-input w-100">
         </td>
 
         <td class="inv-table">

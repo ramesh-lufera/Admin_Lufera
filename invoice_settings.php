@@ -31,33 +31,40 @@
         $created_at = date('Y-m-d H:i:s');
         $created_by = $loggedInUserId;
         // Upload Logo
-        $invoice_logo = "";
-    
-        if(isset($_FILES['invoice_logo']) && $_FILES['invoice_logo']['error'] == 0){
-    
-            $uploadDir = "uploads/invoice/";
-    
-            if(!is_dir($uploadDir)){
-                mkdir($uploadDir, 0777, true);
-            }
-    
-            $fileExt = strtolower(pathinfo($_FILES['invoice_logo']['name'], PATHINFO_EXTENSION));
-    
-            $allowed = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
-    
-            if(in_array($fileExt, $allowed)){
-    
-                $fileName = time() . "_" . uniqid() . "." . $fileExt;
-    
-                $targetFile = $uploadDir . $fileName;
-    
-                if(move_uploaded_file($_FILES['invoice_logo']['tmp_name'], $targetFile)){
-                    $invoice_logo = $fileName; // Save only filename
+        $invoice_logo = $row['invoice_logo'] ?? ''; // Keep old image by default
+        $max_file_size = 1 * 1024 * 1024; // 1 MB
+
+        if (isset($_FILES['invoice_logo']) && $_FILES['invoice_logo']['error'] == 0) {
+            $file_size = $_FILES['invoice_logo']['size'];
+
+            if ($file_size > $max_file_size) {
+                echo "<script>
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'File Too Large',
+                        text: 'Invoice Logo must not exceed 1 MB.',
+                        confirmButtonText: 'OK'
+                    });
+                </script>";
+            } else {
+                $uploadDir = "uploads/invoice/";
+
+                if (!is_dir($uploadDir)) {
+                    mkdir($uploadDir, 0777, true);
+                }
+
+                $fileExt = strtolower(pathinfo($_FILES['invoice_logo']['name'], PATHINFO_EXTENSION));
+                $allowed = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+
+                if (in_array($fileExt, $allowed)) {
+                    $fileName = time() . "_" . uniqid() . "." . $fileExt;
+                    $targetFile = $uploadDir . $fileName;
+
+                    if (move_uploaded_file($_FILES['invoice_logo']['tmp_name'], $targetFile)) {
+                        $invoice_logo = $fileName; // Save new filename
+                    }
                 }
             }
-        } else {
-            // Keep old image while updating
-            $invoice_logo = $row['invoice_logo'] ?? '';
         }
     
         if ($id > 0) {
@@ -135,17 +142,15 @@
                             <label class="form-label fw-semibold text-primary-light text-sm mb-8">Custom Invoice Number</label>
                             <div class="row">
                                 <div class="col-lg-4">
-                                    <input type="text" class="form-control radius-8" name="prefix"
-                                        value="<?= htmlspecialchars($prefix ?? '') ?>"
-                                        placeholder="Prefix" required>
+                                    <input type="text" class="form-control radius-8" name="prefix" value="<?= htmlspecialchars($prefix ?? '') ?>"placeholder="Prefix" required maxlength="10">
                                 </div>
 
                                 <div class="col-lg-4">
-                                    <input type="text" class="form-control radius-8" name="series" value="<?= htmlspecialchars($series ?? '') ?>" placeholder="Series" inputmode="numeric" oninput="this.value=this.value.replace(/[^0-9]/g,'')" required>
+                                    <input type="text" class="form-control radius-8" name="series" value="<?= htmlspecialchars($series ?? '') ?>" placeholder="Series" inputmode="numeric" oninput="this.value=this.value.replace(/[^0-9]/g,'')" required maxlength="10">
                                 </div>
 
                                 <div class="col-lg-4">
-                                    <input type="text" class="form-control radius-8" name="suffix" value="<?= htmlspecialchars($suffix ?? '') ?>" placeholder="Suffix" required>
+                                    <input type="text" class="form-control radius-8" name="suffix" value="<?= htmlspecialchars($suffix ?? '') ?>" placeholder="Suffix" required maxlength="10">
                                 </div>
                             </div>                           
                         </div>
@@ -165,7 +170,7 @@
                         </div>
                         
                         <div class="d-flex align-items-center justify-content-center gap-3 mt-24">
-                            <button type="submit" class="lufera-bg bg-hover-warning-400 text-white text-md px-56 py-11 radius-8 m-auto d-block">
+                            <button type="submit" class="lufera-bg text-white text-md px-56 py-11 radius-8 m-auto d-block">
                                 Update
                             </button>
                         </div>
@@ -176,4 +181,28 @@
     </div>
 </div>
 
+<script>
+document.addEventListener('DOMContentLoaded', function() { 
+    const maxSize = 1 * 1024 * 1024; // 1 MB
+    const logoInput = document.querySelector('input[name="invoice_logo"]');
+
+    if (logoInput) {
+        logoInput.addEventListener('change', function() {
+            const file = this.files[0];
+            if (!file) return;
+
+            if (file.size > maxSize) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'File Too Large',
+                    text: 'Invoice Logo must not exceed 1 MB.',
+                    confirmButtonText: 'OK'
+                });
+                // Clear the selected file input
+                this.value = '';
+            }
+        });
+    }
+});
+</script>
 <?php include './partials/layouts/layoutBottom.php' ?>

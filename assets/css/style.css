@@ -633,7 +633,7 @@ summary {
 }
 
 [contenteditable]:focus {
-  outline: auto;
+  /* outline: auto; */
 }
 
 table {
@@ -14612,8 +14612,8 @@ td.fc-header-center {
   position: sticky;
   top: 0;
   padding: 1rem 1.5rem;
-  /* z-index: 10; */
-  z-index: 2;
+  z-index: 10;
+  /* z-index: 2; */
 }
 
 .sidebar-toggle,
@@ -14725,7 +14725,7 @@ td.fc-header-center {
   position: fixed;
   inset-block-start: 0;
   inset-inline-start: -100%;
-  width: 15.625rem;
+  width: 17.625rem;
   height: 100vh;
   background-color: var(--white);
   z-index: 3;
@@ -14753,7 +14753,7 @@ td.fc-header-center {
   inset-inline-end: 0.625rem;
   width: 1.75rem;
   height: 1.75rem;
-  border: 1px solid var(--input-form-light);
+  border: 1px solid #000;
   border-radius: 50%;
   -webkit-border-radius: 50%;
   -moz-border-radius: 50%;
@@ -14868,7 +14868,6 @@ td.fc-header-center {
 }
 
 .sidebar-logo img {
-  /* max-height: 3.4375rem; */
   max-height: 3rem;
 }
 
@@ -15178,5 +15177,9 @@ table.dataTable thead>tr>th.dt-orderable-asc:hover, table.dataTable thead>tr>th.
 .jodit-status-bar-link, .jodit-ui-group_group_info{
     display: none !important;
 }
-
+@media (max-width: 1200px) {
+  .sidebar-logo img {
+    width: 200px;
+  }
+}
 /* === footer css end === */

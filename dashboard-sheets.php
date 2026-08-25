@@ -1,29 +1,55 @@
-<?php include './partials/layouts/layoutTop.php';
-
-date_default_timezone_set('Asia/Kolkata');
-?>
-<style>
-    .fa-file{
-        padding: 10px 20px;
-        /* background: #fcf1c9; */
-        background: var(--lufera-focus-color);
-        margin: -40px 0px 10px;
-        align-items: center;
-        justify-content: center;
-        display: flex;
-        border-radius: 8px;
-        /* color: #fec700; */
-        color: var(--lufera-main-color);
-    }
-</style>
 <?php
+ob_start();
+date_default_timezone_set('Asia/Kolkata');
+include './partials/layouts/layoutTop.php';
+
+if (
+    $_SERVER['REQUEST_METHOD'] === 'POST' &&
+    isset($_POST['action']) &&
+    $_POST['action'] === 'delete'
+) {
+    $id = intval($_POST['id'] ?? 0);
+    ob_clean();
+    header('Content-Type: application/json; charset=utf-8');
+    if ($id <= 0) {
+        echo json_encode([
+            'status' => 'error',
+            'message' => 'Invalid sheet ID'
+        ]);
+        exit;
+    }
+    $stmt2 = $conn->prepare("DELETE FROM `sheets` WHERE id = ?");
+    if (!$stmt2) {
+        echo json_encode([
+            'status' => 'error',
+            'message' => 'Prepare failed: ' . $conn->error
+        ]);
+        exit;
+    }
+    $stmt2->bind_param('i', $id);
+    if ($stmt2->execute()) {
+        echo json_encode([
+            'status' => 'success',
+            'message' => 'Sheet Deleted Successfully'
+        ]);
+    } else {
+        echo json_encode([
+            'status' => 'error',
+            'message' => 'Delete failed: ' . $stmt2->error
+        ]);
+    }
+    $stmt2->close();
+    exit;
+}
+?>
+
+<?php
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'create_sheet') {
     $sheet_name = trim($_POST['sheet_name'] ?? '');
-
     if (strlen($sheet_name) >= 1 && strlen($sheet_name) <= 100) {  // adjust length limit as needed
         $stmt = $conn->prepare("INSERT INTO sheets (name, created_at, updated_at) VALUES (?, NOW(), NOW())");
-        $stmt->bind_param("s", $sheet_name);
-        
+        $stmt->bind_param("s", $sheet_name);        
         if ($stmt->execute()) {
             $new_sheet_id = $conn->insert_id;
             logActivity(
@@ -76,6 +102,21 @@ while ($rem = $remindersResult->fetch_assoc()) {
 $remindersResult->data_seek(0); // reset again for display
 ?>
 
+<style>
+    .fa-file{
+        padding: 10px 20px;
+        /* background: #fcf1c9; */
+        background: var(--lufera-focus-color);
+        margin: -40px 0px 10px;
+        align-items: center;
+        justify-content: center;
+        display: flex;
+        border-radius: 8px;
+        /* color: #fec700; */
+        color: var(--lufera-main-color);
+    }
+</style>
+
 <div class="dashboard-main-body">
 
     <!-- Notifications Button (top right or near title) -->
@@ -96,7 +137,7 @@ $remindersResult->data_seek(0); // reset again for display
             </button>
 
             <button type="button" class="add-role-btn btn lufera-bg text-white text-sm btn-sm px-12 py-12 radius-8 d-flex align-items-center gap-2 visibility-hidden" data-bs-toggle="modal" data-bs-target="#createSheetModal">
-                <iconify-icon icon="ic:baseline-plus" class="icon text-xl line-height-1"></iconify-icon>
+                <i class="fa fa-plus me-1"></i> 
                 Create New Sheet
             </button>
         </div>
@@ -119,8 +160,8 @@ $remindersResult->data_seek(0); // reset again for display
             </button>
 
             <!-- <button type="button" class="add-role-btn btn lufera-bg text-white text-sm btn-sm px-12 py-12 radius-8 d-flex align-items-center gap-2" data-bs-toggle="modal" data-bs-target="#createSheetModal"> -->
-            <button type="button" class="add-role-btn btn lufera-bg lufera-text text-sm btn-sm px-12 py-12 radius-8 d-flex align-items-center gap-2" data-bs-toggle="modal" data-bs-target="#createSheetModal">
-                <iconify-icon icon="ic:baseline-plus" class="icon text-xl line-height-1"></iconify-icon>
+            <button type="button" class="add-role-btn btn lufera-bg lufera-text" data-bs-toggle="modal" data-bs-target="#createSheetModal">
+                <i class="fa fa-plus"></i> 
                 Create New Sheet
             </button>
         </div>
@@ -206,7 +247,7 @@ $remindersResult->data_seek(0); // reset again for display
                         
                         <div class="mb-3">
                             <label for="sheet_name" class="form-label fw-semibold">Sheet Name <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control" id="sheet_name" name="sheet_name" required minlength="1" maxlength="100" autofocus>
+                            <input type="text" class="form-control" id="sheet_name" name="sheet_name" required minlength="1" maxlength="50" autofocus>
                             <div class="invalid-feedback">
                                 Please enter a sheet name.
                             </div>
@@ -221,45 +262,167 @@ $remindersResult->data_seek(0); // reset again for display
             </div>
         </div>
     </div>
-    <!-- Your existing sheets grid -->
-    <div class="row g-3">
-        <?php if (empty($sheets)): ?>
-            <div class="col-12 text-center py-5">
-                <h5>No sheets found</h5>
-                <p>Create your first sheet!</p>
-            </div>
-        <?php endif; ?>
+    <div class="card">
+        <div class="card-body">
+            <ul class="nav button-tab nav-pills mb-16" id="pills-tab-four" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link d-flex align-items-center gap-2 fw-semibold text-primary-light radius-4 px-16 py-10 active" id="pills-button-icon-home-tab" data-bs-toggle="pill" data-bs-target="#pills-button-icon-home" type="button" role="tab" aria-controls="pills-button-icon-home" aria-selected="true">
+                        <span class="fa fa-th"></span>
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link d-flex align-items-center gap-2 fw-semibold text-primary-light radius-4 px-16 py-10" id="pills-button-icon-details-tab" data-bs-toggle="pill" data-bs-target="#pills-button-icon-details" type="button" role="tab" aria-controls="pills-button-icon-details" aria-selected="false">
+                    <span class="fa fa-list"></span>
+                    </button>
+                </li>
+            </ul>
+            <div class="tab-content" id="pills-tab-fourContent">
+                <div class="tab-pane fade show active" id="pills-button-icon-home" role="tabpanel" aria-labelledby="pills-button-icon-home-tab" tabindex="0">
+                        <!-- Your existing sheets grid -->
+                    <div class="row g-3">
+                        <?php if (empty($sheets)): ?>
+                            <div class="col-12 text-center py-5">
+                                <h5>No sheets found</h5>
+                                <p>Create your first sheet!</p>
+                            </div>
+                        <?php endif; ?>
 
-        <?php foreach ($sheets as $sheet): ?>
-            <div class="col-xl-3 col-lg-4 col-md-6 col-sm-12">
-                <div class="card radius-12 cursor-pointer h-100" onclick="window.location='sheets.php?id=<?= $sheet['id'] ?>'">
-                <img src="assets/images/sheets.png" style="border-radius: 10px 10px 0 0;">
-                    <div class="card-body p-24">
-                    <span class="float-end" style="margin-top: -25px">ID: <?= htmlspecialchars($sheet['id']) ?></span>
-                    <span class="fa fa-thin fa-file"></span>
-                        <h6 class="fw-semibold mb-8"><?= htmlspecialchars($sheet['name']) ?></h6>
-                        <p class="text-muted mb-0" style="font-size: 14px;">
-                            Last Updated: <br>
-                            <?php
-                            $adjusted_updated = date('Y-m-d H:i:s', strtotime($sheet['updated_at'] . ' +5 hours 30 minutes'));
-                            ?>
-                            <strong><?= date("M d, Y h:i A", strtotime($adjusted_updated)) ?></strong>
-                        </p>
+                        <?php foreach ($sheets as $sheet): ?>
+                            <div class="col-xl-3 col-lg-4 col-md-6 col-sm-12">
+                                <div class="card radius-12 cursor-pointer h-100 border" onclick="window.location='sheets.php?id=<?= $sheet['id'] ?>'">
+                                <img src="assets/images/sheets.png" style="border-radius: 10px 10px 0 0;">
+                                    <div class="card-body p-24">
+                                    <span class="float-end" style="margin-top: -25px">ID: <?= htmlspecialchars($sheet['id']) ?></span>
+                                    <span class="fa fa-thin fa-file"></span>
+                                        <h6 class="fw-semibold mb-8"><?= htmlspecialchars($sheet['name']) ?></h6>
+                                        <p class="text-muted mb-0" style="font-size: 14px;">
+                                            Last Updated: <br>
+                                            <?php
+                                            $adjusted_updated = date('Y-m-d H:i:s', strtotime($sheet['updated_at'] . ' +5 hours 30 minutes'));
+                                            ?>
+                                            <strong><?= date("M d, Y h:i A", strtotime($adjusted_updated)) ?></strong>
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+                <div class="tab-pane fade" id="pills-button-icon-details" role="tabpanel" aria-labelledby="pills-button-icon-details-tab" tabindex="0">
+                    <div class="table-responsive scroll-sm">
+                        <table class="table bordered-table mb-0" id="role-table">
+                            <thead>
+                                <tr>
+                                    <th scope="col">Name</th>
+                                    <th scope="col" class="text-center">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php 
+                                    $service = "SELECT * FROM `sheets`"; 
+                                    $results = $conn->query($service);
+                                    if (mysqli_num_rows($results) > 0) {
+                                        while ($row = mysqli_fetch_assoc($results)) {
+                                ?>
+                                <tr>
+                                    <td><?php echo htmlspecialchars($row['name']); ?></td>
+                                    <td class="text-center">
+                                        <div class="d-flex align-items-center gap-10 justify-content-center">
+                                        <button type="button" class="fa fa-trash-alt deleteBtn bg-danger-focus bg-hover-danger-200 text-danger-600 fw-medium w-40-px h-40-px d-flex justify-content-center align-items-center rounded-circle" data-id="<?= $row['id'] ?>"></button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <?php 
+                                        }
+                                    }
+                                ?>
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </div>
-        <?php endforeach; ?>
+        </div>
     </div>
 </div>
 <script>
-document.getElementById('createSheetForm')?.addEventListener('submit', function(e) {
-    const input = document.getElementById('sheet_name');
-    if (!input.value.trim()) {
-        e.preventDefault();
-        input.classList.add('is-invalid');
-    } else {
-        input.classList.remove('is-invalid');
-    }
-});
+    document.getElementById('createSheetForm')?.addEventListener('submit', function(e) {
+        const input = document.getElementById('sheet_name');
+        if (!input.value.trim()) {
+            e.preventDefault();
+            input.classList.add('is-invalid');
+        } else {
+            input.classList.remove('is-invalid');
+        }
+    });
+    
+    document.addEventListener('DOMContentLoaded', function () {
+        document.querySelectorAll('.deleteBtn').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                const id = this.dataset.id;
+                Swal.fire({
+                    title: 'Are you sure?',
+                    text: 'This sheet will be permanently deleted.',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonText: 'Yes, delete it!',
+                    cancelButtonText: 'Cancel'
+                }).then(function (res) {
+                    if (!res.isConfirmed) {
+                        return;
+                    }
+                    const fd = new FormData();
+                    fd.append('action', 'delete');
+                    fd.append('id', id);
+                    fetch(window.location.href, {
+                        method: 'POST',
+                        body: fd
+                    })
+                    .then(function (response) {
+                        return response.text();
+                    })
+                    .then(function (text) {
+                        console.log('Delete response:', text);
+                        let data;
+                        try {
+                            data = JSON.parse(text);
+                        } catch (error) {
+                            console.error('Invalid JSON response:', text);
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Server Error',
+                                text: 'The server returned an invalid response.'
+                            });
+                            return;
+                        }
+                        if (data.status === 'success') {
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Deleted!',
+                                text: data.message,
+                                confirmButtonText: 'OK'
+                            }).then(function () {
+                                window.location.reload();
+                            });
+                        } else {
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Delete Failed',
+                                text: data.message || 'Unable to delete the sheet.'
+                            });
+
+                        }
+                    })
+                    .catch(function (error) {
+                        console.error('Fetch error:', error);
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error',
+                            text: 'Something went wrong while deleting the sheet.'
+                        });
+                    });
+                });
+            });
+        });
+    });
 </script>
 <?php include './partials/layouts/layoutBottom.php'; ?>
