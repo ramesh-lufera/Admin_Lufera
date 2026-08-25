@@ -11,7 +11,10 @@
     $cart_id= $_GET['id'] ?? null;
 
     if (isset($_POST['save_cart'])) {
-        $client_id = $_SESSION['user_id'];
+        // $client_id = $_SESSION['user_id'];
+        $client_id = !empty($_POST['selected_user_id'])
+        ? intval($_POST['selected_user_id'])
+        : $_SESSION['user_id'];
         $type = $_POST['type'];
         $plan_id = $_POST['id'];
         $plan_name = $_POST['plan_name'];
@@ -33,7 +36,9 @@
 
 <?php
     $Id = $_SESSION['user_id'];
-    $cat_id = $_SESSION['cat_id'] ?? null;
+
+    // $cat_id = $_SESSION['cat_id'] ?? null;
+    $cat_id = 0;
     
     $sql = "select user_id, username, role, photo from users where id = $Id";
     $result = $conn ->query($sql);
@@ -228,6 +233,26 @@
     if (isset($_POST['save'])) {
         $plan_id = $_POST['id'];
         $type = $_POST['type'];
+
+        // Get Category ID from selected Package/Product
+        if ($type == "package") {
+        
+            $catQuery = mysqli_query($conn, "SELECT cat_id FROM package WHERE id = '$plan_id' LIMIT 1");
+        
+        } else {
+        
+            $catQuery = mysqli_query($conn, "SELECT cat_id FROM products WHERE id = '$plan_id' LIMIT 1");
+        
+        }
+        
+        if ($catQuery && mysqli_num_rows($catQuery) > 0) {
+        
+            $catRow = mysqli_fetch_assoc($catQuery);
+        
+            $cat_id = (int)$catRow['cat_id'];
+        
+        }
+
         $pay_method = $_POST['pay_method'];
         $receipt_id = $_POST['receipt_id'];
         $invoice_id = $_POST['invoice_id'];
@@ -242,7 +267,10 @@
         $get_packages = $_POST['get_packages'] ?? '';
         $get_products = $_POST['get_products'] ?? '';
         $addon_total = floatval($_POST['addon-total']);
-        $user_id = $_SESSION['user_id'];
+        // $user_id = $_SESSION['user_id'];
+        $user_id = !empty($_POST['selected_user_id'])
+        ? intval($_POST['selected_user_id'])
+        : $_SESSION['user_id'];
         // $subtotal = $total_price;
         $subtotal = $price + $addon_total;
         $discount_amount = floatval($_POST['discount_amount'] ?? 0);
@@ -1293,6 +1321,10 @@
         <input type="hidden" value="<?php echo $invoice_id; ?>" name="invoice_id">
         <input type="hidden" value="<?php echo $hostinger_balance; ?>" name="hostinger_balance">
         <input type="hidden" value="<?php echo $current_plan_id; ?>" name="current_plan_id">
+        <input
+            type="hidden"
+            name="selected_user_id"
+            value="<?php echo htmlspecialchars($_POST['selected_user_id'] ?? ''); ?>">
 
         <?php if (isset($_POST['renewal']) && $_POST['renewal'] == 1): ?>
             <input type="hidden" name="renewal" value="1">

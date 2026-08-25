@@ -372,16 +372,61 @@ if ($oldSlug !== $newSlug) {
             if ($durationStmt === false) {
                 die("Prepare failed for durations insert: " . $conn->error);
             }
+
+            // foreach ($_POST['duration_values'] as $index => $value) {
+            //     $unit = $_POST['duration_units'][$index] ?? '';
+            //     $price = $_POST['prices'][$index] ?? '';
+            //     $pre_price = $_POST['pre_prices'][$index] ?? '';
+            //     if (!empty($value) && !empty($unit) && !empty($price)) {
+            //         $duration_text = $value . ' ' . $unit;
+            //         $durationStmt->bind_param("isdsd", $package_id, $duration_text, $price, $updated_at, $pre_price);
+            //         $durationStmt->execute();
+            //     }
+            // }
+
             foreach ($_POST['duration_values'] as $index => $value) {
-                $unit = $_POST['duration_units'][$index] ?? '';
+
+                $unit = strtolower(trim($_POST['duration_units'][$index] ?? ''));
                 $price = $_POST['prices'][$index] ?? '';
                 $pre_price = $_POST['pre_prices'][$index] ?? '';
+
                 if (!empty($value) && !empty($unit) && !empty($price)) {
-                    $duration_text = $value . ' ' . $unit;
-                    $durationStmt->bind_param("isdsd", $package_id, $duration_text, $price, $updated_at, $pre_price);
+
+                    // Convert singular/plural and capitalize first letter
+                    if ($unit == "days") {
+
+                        $unitText = ($value == 1) ? "Day" : "Days";
+
+                    } elseif ($unit == "months") {
+
+                        $unitText = ($value == 1) ? "Month" : "Months";
+
+                    } elseif ($unit == "years") {
+
+                        $unitText = ($value == 1) ? "Year" : "Years";
+
+                    } else {
+
+                        $unitText = ucfirst($unit);
+
+                    }
+
+                    // Final duration text
+                    $duration_text = $value . " " . $unitText;
+
+                    $durationStmt->bind_param(
+                        "isdsd",
+                        $package_id,
+                        $duration_text,
+                        $price,
+                        $updated_at,
+                        $pre_price
+                    );
+
                     $durationStmt->execute();
                 }
             }
+
             $durationStmt->close();
         }
 

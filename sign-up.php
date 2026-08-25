@@ -24,6 +24,9 @@
 
 <?php 
     session_start();
+
+    $recaptchaAction = "register";
+
     include './partials/head.php';
     include './partials/connection.php';
     include './partials/theme_colors_loader.php';
@@ -48,6 +51,19 @@
     }
 
     if ($_SERVER["REQUEST_METHOD"] == "POST") {
+
+        require_once './partials/recaptcha/recaptcha_verify.php';
+
+        $recaptchaToken = $_POST['g-recaptcha-response'] ?? '';
+        
+        $recaptcha = verifyRecaptcha($recaptchaToken, "register");
+        
+        if (!$recaptcha['success']) {
+        
+            $errors['general'] = $recaptcha['message'];
+        
+        }
+
         $username = trim($_POST['username']);
         $email = trim($_POST['email']);
         $password = trim($_POST['password']);
@@ -272,6 +288,11 @@
                 <?php endif; ?>
 
                 <form method="post" action="" id="registerForm">
+
+                    <input
+                    type="hidden"
+                    id="g-recaptcha-response"
+                    name="g-recaptcha-response">
                     
                     <div class="icon-field mb-16">
                         <span class="icon translate-middle-y">
@@ -394,7 +415,31 @@
 
     <?php include './partials/scripts.php' ?>
 
+    <?php include './partials/recaptcha/recaptcha_script.php'; ?>
+
 </body>
+
+<script>
+    document.getElementById("registerForm").addEventListener("submit", async function (e) {
+
+        e.preventDefault();
+    
+        try {
+    
+            await generateRecaptchaToken("register");
+    
+            this.submit();
+    
+        } catch (error) {
+    
+            console.error("Google reCAPTCHA Error:", error);
+    
+            alert("Unable to verify Google reCAPTCHA. Please try again.");
+    
+        }
+    
+    });
+</script>
 
 <script>
     document.getElementById('email').addEventListener('input', function() {

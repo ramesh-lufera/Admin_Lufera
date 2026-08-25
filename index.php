@@ -1,6 +1,8 @@
 <?php
     session_start();
 
+    $recaptchaAction = "login";
+
     require_once 'vendor/autoload.php';
      include './partials/connection.php';
      include './partials/theme_colors_loader.php';
@@ -64,6 +66,10 @@
                     <p class="mb-32 text-secondary-light text-lg">Welcome back! Enter your details</p>
                 </div>
                 <form id="login-form">
+                    <input
+                    type="hidden"
+                    id="g-recaptcha-response"
+                    name="g-recaptcha-response">
                     <div class="icon-field mb-16">
                         <span class="icon translate-middle-y">
                             <iconify-icon icon="mage:email"></iconify-icon>
@@ -147,9 +153,14 @@
 
 <?php include './partials/scripts.php' ?>
 
+<?php include './partials/recaptcha/recaptcha_script.php'; ?>
+
 <script>
-    document.getElementById("login-form").addEventListener("submit", function (e) {
+    // document.getElementById("login-form").addEventListener("submit", function (e) {
+    document.getElementById("login-form").addEventListener("submit", async function (e) {
         e.preventDefault();
+
+        await generateRecaptchaToken("login");
 
         // Clear previous errors
         ["email", "password"].forEach(field => {

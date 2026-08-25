@@ -23,6 +23,7 @@
         $type = $_POST['type'];
         $id = $_POST['id'];
         $plan_name = $_POST['plan_name'];
+        $selected_user_id = $_POST['selected_user_id'] ?? '';
         $title = $_POST['title'];
         $subtitle = $_POST['subtitle'];
         $price = $_POST['price'];
@@ -545,6 +546,10 @@
             <input type="hidden" class="gst-hidden" name="gst" value="<?php echo $gst; ?>">
             <input type="hidden" class="subtotal-display-hidden" name="subtotal-display" value="<?php echo $price; ?>">
             <input type="hidden" name="gst_id" value="<?php echo $gst_id; ?>">
+            <input
+                type="hidden"
+                name="selected_user_id"
+                value="<?php echo htmlspecialchars($selected_user_id); ?>">
             
             <input type="submit" name="save_cart" class="lufera-bg lufera-text text-center btn-sm px-12 py-10 float-end" style="width:150px; border: 1px solid #000" value="Continue"> 
             
@@ -566,6 +571,10 @@
             <input type="hidden" class="gst-hidden" name="gst" value="<?php echo $gst; ?>">
             <input type="hidden" class="subtotal-display-hidden" name="subtotal-display" value="<?php echo $price; ?>">
             <input type="hidden" name="gst_id" value="<?php echo $gst_id; ?>">
+            <input
+                type="hidden"
+                name="selected_user_id"
+                value="<?php echo htmlspecialchars($selected_user_id); ?>">
 
             <button type="submit" class="lufera-bg lufera-text text-center btn-sm px-12 py-10 float-end" style="width:150px; border: 1px solid #000">Continue</button>
         </form>
