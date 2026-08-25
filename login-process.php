@@ -1,12 +1,29 @@
 <?php
 session_start();
 include './partials/connection.php';
+require_once './partials/recaptcha/recaptcha_verify.php';
 include './log.php';
 
 $response = [
     'success' => false,
     'errors' => []
 ];
+
+$recaptchaToken = $_POST['g-recaptcha-response'] ?? '';
+
+$recaptcha = verifyRecaptcha($recaptchaToken, "login");
+
+// Temporary Debug
+$response['recaptcha_debug'] = $recaptcha;
+
+if (!$recaptcha['success']) {
+
+    $response['errors']['recaptcha'] = $recaptcha['message'];
+
+    header('Content-Type: application/json');
+    echo json_encode($response);
+    exit;
+}
 
 if (!empty($_POST['email']) && !empty($_POST['password'])) {
     $email = $_POST['email'];

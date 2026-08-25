@@ -1,6 +1,8 @@
 <?php
     session_start();
 
+    $recaptchaAction = "login";
+
     require_once 'vendor/autoload.php';
     include './partials/connection.php';
     include './partials/theme_colors_loader.php';
@@ -64,6 +66,10 @@
                     <p class="mb-32 text-secondary-light text-lg">Welcome back! Enter your details</p>
                 </div>
                 <form id="login-form">
+                    <input
+                    type="hidden"
+                    id="g-recaptcha-response"
+                    name="g-recaptcha-response">
                     <div class="icon-field mb-16">
                         <span class="icon translate-middle-y">
                             <iconify-icon icon="mage:email"></iconify-icon>
@@ -147,9 +153,15 @@
 
 <?php include './partials/scripts.php' ?>
 
+<?php include './partials/recaptcha/recaptcha_script.php'; ?>
+
 <script>
-    document.getElementById("login-form").addEventListener("submit", function (e) {
+    // document.getElementById("login-form").addEventListener("submit", function (e) {
+    document.getElementById("login-form").addEventListener("submit", async function (e) {
         e.preventDefault();
+
+        // Generate Google reCAPTCHA v3 token
+        await generateRecaptchaToken("login");
 
         // Clear previous errors
         ["email", "password"].forEach(field => {
@@ -160,7 +172,8 @@
         const urlParams = new URLSearchParams(window.location.search);
         const redirectUrl = urlParams.get('redirect') || '';
 
-        const form = e.target;
+        // const form = e.target;
+        const form = document.getElementById("login-form");
         const formData = new FormData(form);
         formData.append('redirect', redirectUrl);
 
@@ -170,7 +183,18 @@
         })
         .then(res => res.json())
         .then(data => {
+
+            // console.log("========== Google reCAPTCHA Debug ==========");
+            // console.log(data.recaptcha_debug);
+            // console.log("===========================================");
+
             if (data.success) {
+
+                // console.group("Google reCAPTCHA v3");
+
+                // console.log(data.recaptcha_debug);
+
+                // console.groupEnd();
 
                 const redirectUrl = data.redirect || '';
 
@@ -231,9 +255,19 @@
                     document.getElementById("password-error").innerText = errors.password;
                     document.getElementById("password").classList.add("border-danger");
                 }
+
+                // // Google reCAPTCHA error
+                // if (errors.recaptcha) {
+                //     document.getElementById("login-error").innerText = errors.recaptcha;
+                // }
+
             }
         })
         .catch(error => console.error("Error:", error));
+        // .catch(error => {
+        //     console.error(error);
+        //     document.getElementById("login-error").innerText = "Something went wrong. Please try again.";
+        // });
     });
 </script>
 

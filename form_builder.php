@@ -27,6 +27,10 @@
 
     $dotenv = Dotenv\Dotenv::createImmutable(__DIR__);
     $dotenv->load();
+
+    include './partials/recaptcha/recaptcha.php';
+
+    $recaptchaAction = "form_builder";
 ?>
 
 <?php
@@ -82,6 +86,27 @@
     }
 
     if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['sheet_data'])) {
+
+        require_once './partials/recaptcha/recaptcha_verify.php';
+
+        $recaptchaToken = $_POST['g-recaptcha-response'] ?? '';
+
+        $recaptcha = verifyRecaptcha(
+            $recaptchaToken,
+            "form_builder"
+        );
+
+        if (!$recaptcha['success']) {
+
+            http_response_code(403);
+
+            echo json_encode([
+                "success" => false,
+                "message" => $recaptcha['message']
+            ]);
+
+            exit;
+        }
 
         $formId   = (int)$_POST['form_id'];
         $newData  = json_decode($_POST['sheet_data'], true);
@@ -2450,6 +2475,11 @@
         <input type="hidden" name="form_id" value="<?= (int)$formId ?>">
         <input type="hidden" name="sheet_id" value="<?= (int)$sheet_id_from_url ?>">
         <input type="hidden" name="sheet_data" id="sheetJSON">
+
+        <input
+        type="hidden"
+        id="g-recaptcha-response"
+        name="g-recaptcha-response">
     </form>
 
     <script>
@@ -2896,13 +2926,29 @@
                 //     document.getElementById("sheetForm").submit();
                 // };
 
-                btn.onclick = () => {
+                // btn.onclick = () => {
+
+                btn.onclick = async () => {
 
                     // 🚫 If already clicked once → stop
                     if (btn.dataset.submitted === "true") return;
 
                     // ✅ Run validation first
                     if (!validateFormFieldsInline()) return;
+
+                    try {
+
+                        await generateRecaptchaToken("form_builder");
+
+                    } catch (error) {
+
+                        console.error(error);
+
+                        alert("Google reCAPTCHA verification failed.");
+
+                        return;
+
+                    }
 
                     // ✅ Lock the button after first click
                     btn.dataset.submitted = "true";
@@ -3480,6 +3526,10 @@
 
 </body>
 </html>
+
+<?php if ($isViewMode): ?>
+    <?php include './partials/recaptcha/recaptcha_script.php'; ?>
+<?php endif; ?>
 
 <?php
     if (!$isViewMode) {

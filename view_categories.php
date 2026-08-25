@@ -418,7 +418,8 @@
 
                                 /* CARD */
                                 .card {
-                                    background: #fff !important;
+                                    /* background: #fff !important; */
+                                    background: #f9f9f9 !important;
                                     border-radius: 10px !important;
                                     box-shadow: 0 2px 8px rgba(0,0,0,0.08) !important;
                                     padding: 18px !important;
@@ -601,6 +602,376 @@
                                 .modal-body h5 {
                                     font-weight: 600;
                                 }
+
+                                /* =====================================================
+                                MODERN PACKAGES PRICING TABLE
+                                ===================================================== */
+
+                                .package-card{
+                                    position:relative;
+                                    border-radius:24px;
+                                    overflow:hidden;
+                                    padding:35px 30px;
+                                    height:100%;
+                                    transition:.35s ease;
+                                    display:flex;
+                                    flex-direction:column;
+                                    justify-content:flex-start;
+                                    box-shadow:0 8px 25px rgba(0,0,0,.08);
+                                    border:none;
+                                }
+
+                                /* Odd Cards */
+                                .package-light{
+                                    background:#ffffff;
+                                    color:#111;
+                                }
+
+                                /* Even Cards */
+                                .package-dark{
+                                    background:#1e8a8a;
+                                    color:#ffffff;
+                                }
+
+                                .package-title{
+                                    font-size:34px;
+                                    font-weight:700;
+                                    margin-bottom:10px;
+                                    line-height:1.2;
+                                }
+
+                                .package-subtitle{
+                                    font-size:16px;
+                                    margin-bottom:25px;
+                                    opacity:.9;
+                                }
+
+                                .package-light .package-subtitle{
+                                    color:#555;
+                                }
+
+                                .package-dark .package-subtitle{
+                                    color:#fff;
+                                }
+
+                                .package-light .package-title{
+                                    color:#0c1e21;
+                                }
+
+                                .package-dark .package-title{
+                                    color:#fff;
+                                }
+
+                                .old-price{
+                                    font-size:15px;
+                                    opacity:.7;
+                                    text-decoration:line-through;
+                                    margin-bottom:8px;
+                                }
+
+                                .package-price{
+                                    font-size:40px;
+                                    font-weight:800;
+                                    line-height:1;
+                                    margin-bottom:25px;
+                                }
+
+                                .package-price span{
+                                    font-size:22px;
+                                    font-weight:500;
+                                }
+
+                                .package-description{
+                                    font-size:15px;
+                                    margin-bottom:25px;
+                                    min-height:45px;
+                                }
+
+                                /* Buttons */
+
+                                .package-btn{
+                                    width:100%;
+                                    height:56px;
+                                    border-radius:100px;
+                                    font-size:18px;
+                                    font-weight:600;
+                                    border:none;
+                                    transition:.3s;
+                                    margin-bottom:30px;
+                                    text-align: center;
+                                }
+
+                                .package-light .package-btn{
+                                    background:#fff;
+                                    color:#222;
+                                    border:1.5px solid #1e8a8a;
+                                }
+
+                                .package-dark .package-btn{
+                                    background:#fff;
+                                    color:#222;
+                                }
+
+                                .package-btn:hover{
+                                    transform:scale(1.02);
+                                }
+
+                                /* Feature List */
+
+                                .package-features{
+                                    list-style:none;
+                                    padding:0;
+                                    margin:0;
+                                    flex:1;
+                                }
+
+                                .package-features li{
+                                    display:flex;
+                                    align-items:flex-start;
+                                    gap:12px;
+                                    margin-bottom:15px;
+                                    font-size:15px;
+                                    line-height:1.5;
+                                }
+
+                                .package-icon{
+                                    width:24px;
+                                    height:24px;
+                                    border-radius:50%;
+                                    display:flex;
+                                    align-items:center;
+                                    justify-content:center;
+                                    flex-shrink:0;
+                                    font-size:12px;
+                                    font-weight:bold;
+                                }
+
+                                /* White Card */
+
+                                .package-light .package-icon{
+                                    background:#1e8a8a;
+                                    color:#fff;
+                                }
+
+                                /* Green Card */
+
+                                .package-dark .package-icon{
+                                    background:#fff;
+                                    color:#1e8a8a;
+                                }
+
+                                /* Inactive */
+
+                                .package-inactive{
+                                    position:absolute;
+                                    top:20px;
+                                    right:20px;
+                                    background:#dc3545;
+                                    color:#fff;
+                                    padding:4px 12px;
+                                    border-radius:20px;
+                                    font-size:12px;
+                                    font-weight:600;
+                                }
+
+                                /* Tabs */
+
+                                .button-tab .nav-link{
+                                    border-radius:100px !important;
+                                    padding:12px 28px;
+                                    font-weight:600;
+                                }
+
+                                .button-tab .nav-link.active{
+                                    background:#1e8a8a !important;
+                                    color:#fff !important;
+                                }
+
+                                /* Responsive */
+
+                                @media(max-width:1200px){
+
+                                .package-price{
+                                font-size:58px;
+                                }
+
+                                }
+
+                                @media(max-width:991px){
+
+                                .package-card{
+                                margin-bottom:20px;
+                                }
+
+                                }
+
+                                @media(max-width:767px){
+
+                                .package-price{
+                                font-size:52px;
+                                }
+
+                                .package-title{
+                                font-size:28px;
+                                }
+
+                                }
+
+                                .package-scroll{
+                                    width:100%;
+                                    overflow-x:auto;
+                                    overflow-y:hidden;
+                                    padding-bottom:12px;
+                                }
+
+                                .package-row{
+                                    display:flex;
+                                    gap:25px;
+                                    flex-wrap:nowrap;
+                                }
+
+                                .package-column{
+                                    flex:0 0 calc((100% - 50px)/3);
+                                }
+
+                                @media(max-width:992px){
+
+                                .package-column{
+                                    flex:0 0 calc((100% - 25px)/2);
+                                }
+
+                                }
+
+                                @media (max-width:768px){
+
+                                    /* Remove outer spacing */
+                                    .card:has(.package-scroll){
+                                        padding:0 !important;
+                                    }
+
+                                    .card:has(.package-scroll) h4{
+                                        padding:18px 18px 0 !important;
+                                        margin-bottom:15px;
+                                    }
+
+                                    .card:has(.package-scroll) .card-body{
+                                        padding:0 !important;
+                                    }
+
+                                    /* Horizontal Scroll */
+                                    .package-scroll{
+                                        width:100%;
+                                        overflow-x:auto;
+                                        overflow-y:hidden;
+                                        margin:0;
+                                        padding:0;
+                                        -webkit-overflow-scrolling:touch;
+
+                                        scroll-snap-type:x mandatory;
+                                        scroll-behavior:smooth;
+
+                                        -ms-overflow-style:none;
+                                        scrollbar-width:none;
+                                    }
+
+                                    .package-scroll::-webkit-scrollbar{
+                                        display:none;
+                                    }
+
+                                    .package-row{
+                                        display:flex;
+                                        flex-wrap:nowrap;
+                                        gap:0;
+                                        width:100%;
+                                    }
+
+                                    /* One package = full screen width */
+                                    .package-column{
+                                        flex:0 0 100%;
+                                        min-width:100%;
+                                        max-width:100%;
+                                        width:100%;
+
+                                        padding:0;
+
+                                        scroll-snap-align:start;
+                                        scroll-snap-stop:always;
+                                    }
+
+                                    .package-card{
+                                        width:100%;
+                                        min-height:100%;
+                                        margin:0;
+                                        border-radius:24px;
+                                        overflow:hidden;
+                                        box-sizing:border-box;
+                                    }
+
+                                    /* Mobile Font Sizes */
+
+                                    .package-title{
+                                        font-size:24px !important;
+                                    }
+
+                                    .package-subtitle{
+                                        font-size:15px !important;
+                                    }
+
+                                    .old-price{
+                                        font-size:14px !important;
+                                    }
+
+                                    .package-price{
+                                        font-size:32px !important;
+                                    }
+
+                                    .package-price span{
+                                        font-size:18px !important;
+                                    }
+                                }
+
+                                .package-view-more{
+                                    list-style:none;
+                                    width:100%;
+                                    display:flex;
+                                    justify-content:center;
+                                    align-items:center;
+                                    margin-top:50px;      /* More space above */
+                                    margin-bottom:10px;   /* Optional bottom spacing */
+                                }
+
+                                .view-more-btn{
+                                    display:inline-flex;
+                                    justify-content:center;
+                                    align-items:center;
+                                    padding:10px 22px;
+                                    border-radius:50px;
+                                    font-size:15px;
+                                    font-weight:600;
+                                    text-decoration:none;
+                                    transition:all .3s ease;
+                                    background:#1e8a8a;
+                                    color:#fff;
+                                    border:2px solid #1e8a8a;
+                                }
+
+                                .package-light .view-more-btn:hover{
+                                    background:#157373;
+                                    border-color:#157373;
+                                    color:#fff;
+                                }
+
+                                .package-dark .view-more-btn{
+                                    background:#fff;
+                                    color:#1e8a8a;
+                                    border-color:#fff;
+                                }
+
+                                .package-dark .view-more-btn:hover{
+                                    background:transparent;
+                                    color:#fff;
+                                    border-color:#fff;
+                                }
                             </style>
                             </head>
                             <body>
@@ -753,141 +1124,232 @@
                                                 ?>
                                                 <div class="card">
                                                     <h4>Packages Pricing Table</h4>
-                                                    <div class="card-body">
-                                                        <div class="row justify-content-center">
-                                                            <div class="col-xxl-10">
+                                                    <div class="card-body">                                     
+                                                        <?php if (!empty(\$packages)): ?>
+                                                            <!-- Duration Tabs -->
+                                                            <ul class="nav nav-pills button-tab mt-32 mb-32 justify-content-center" id="pills-tab" role="tablist">
+                                                                <?php \$first = true; foreach (\$durations as \$duration_name): ?>
+                                                                    <li class="nav-item" role="presentation">
+                                                                        <button 
+                                                                            class="nav-link px-24 py-10 text-md rounded-pill text-secondary-light fw-medium <?= \$first ? 'active' : '' ?>" 
+                                                                            id="tab-<?= md5(\$duration_name) ?>" 
+                                                                            data-bs-toggle="pill" 
+                                                                            data-bs-target="#tab-pane-<?= md5(\$duration_name) ?>" 
+                                                                            type="button" 
+                                                                            role="tab" 
+                                                                            aria-controls="tab-pane-<?= md5(\$duration_name) ?>" 
+                                                                            aria-selected="<?= \$first ? 'true' : 'false' ?>">
+                                                                            <?= htmlspecialchars(\$duration_name) ?>
+                                                                        </button>
+                                                                    </li>
+                                                                <?php \$first = false; endforeach; ?>
+                                                            </ul>
 
-                                                            <?php if (!empty(\$packages)): ?>
-                                                                <!-- Duration Tabs -->
-                                                                <ul class="nav nav-pills button-tab mt-32 mb-32 justify-content-center" id="pills-tab" role="tablist">
-                                                                    <?php \$first = true; foreach (\$durations as \$duration_name): ?>
-                                                                        <li class="nav-item" role="presentation">
-                                                                            <button 
-                                                                                class="nav-link px-24 py-10 text-md rounded-pill text-secondary-light fw-medium <?= \$first ? 'active' : '' ?>" 
-                                                                                id="tab-<?= md5(\$duration_name) ?>" 
-                                                                                data-bs-toggle="pill" 
-                                                                                data-bs-target="#tab-pane-<?= md5(\$duration_name) ?>" 
-                                                                                type="button" 
-                                                                                role="tab" 
-                                                                                aria-controls="tab-pane-<?= md5(\$duration_name) ?>" 
-                                                                                aria-selected="<?= \$first ? 'true' : 'false' ?>">
-                                                                                <?= htmlspecialchars(\$duration_name) ?>
-                                                                            </button>
-                                                                        </li>
-                                                                    <?php \$first = false; endforeach; ?>
-                                                                </ul>
+                                                            <!-- Duration Tab Content -->
+                                                            <div class="tab-content" id="pills-tabContent">
+                                                                <?php \$first = true; foreach (\$durations as \$duration_name): ?>
+                                                                <?php
+                                                                    \$totalPackageCount = count(\$packages[\$duration_name]);
+                                                                ?>
+                                                                <div class="tab-pane fade <?= \$first ? 'show active' : '' ?>" 
+                                                                    id="tab-pane-<?= md5(\$duration_name) ?>" 
+                                                                    role="tabpanel" 
+                                                                    aria-labelledby="tab-<?= md5(\$duration_name) ?>" 
+                                                                    tabindex="0">
 
-                                                                <!-- Duration Tab Content -->
-                                                                <div class="tab-content" id="pills-tabContent">
-                                                                    <?php \$first = true; foreach (\$durations as \$duration_name): ?>
-                                                                        <div class="tab-pane fade <?= \$first ? 'show active' : '' ?>" 
-                                                                            id="tab-pane-<?= md5(\$duration_name) ?>" 
-                                                                            role="tabpanel" 
-                                                                            aria-labelledby="tab-<?= md5(\$duration_name) ?>" 
-                                                                            tabindex="0">
+                                                                    <div class="package-scroll">
+                                                                        <div class="package-row">
+                                                                            <?php
+                                                                                \$cardIndex = 0;
+                                                                                foreach (\$packages[\$duration_name] as \$package):
 
-                                                                            <div class="row gy-4">
-                                                                                <?php foreach (\$packages[\$duration_name] as \$package): ?>
-                                                                                    <div class="col-xxl-4 col-sm-6">
-                                                                                        <div class="pricing-plan position-relative radius-24 overflow-hidden border">
-                                                                                            <?php \$isActive = (\$package['pkg_active'] == 1); ?>
-                                                                                            <?php if (!\$isActive): ?>
-                                                                                                <p class="mb-0 text-sm text-danger fw-semibold mt-2 float-end">Inactive</p>
-                                                                                            <?php endif; ?> 
+                                                                                \$isActive = (\$package['pkg_active'] == 1);
+
+                                                                                /* Card Color */
+                                                                                \$cardClass = (\$cardIndex % 2 == 0) ? "package-light" : "package-dark";
+
+                                                                                /* Package URL */
+                                                                                \$packageName = \$package['package_name'] ?? '';
+                                                                                \$packageSlug = strtolower(trim(\$packageName));
+                                                                                \$packageSlug = preg_replace('/[^a-z0-9]+/i', '-', \$packageSlug);
+                                                                                \$packageSlug = trim(\$packageSlug, '-');
+                                                                                \$packageUrl = \$packageSlug . ".php";
+                                                                                ?>
+
+                                                                                <div class="package-column">
+
+                                                                                    <div class="package-card <?= \$cardClass ?>">
+
+                                                                                        <?php if(!\$isActive): ?>
+                                                                                            <span class="package-inactive">
+                                                                                                Inactive
+                                                                                            </span>
+                                                                                        <?php endif; ?>
+
+                                                                                        <!-- TITLE -->
+
+                                                                                        <h3 class="package-title">
+                                                                                            <a href="<?= htmlspecialchars(\$packageUrl) ?>"
+                                                                                            style="text-decoration:none;color:inherit;">
+
+                                                                                                <?= htmlspecialchars(\$package['title']) ?>
+
+                                                                                            </a>
+                                                                                        </h3>
+
+                                                                                        <!-- SUBTITLE -->
+
+                                                                                        <div class="package-subtitle">
+
+                                                                                            <?= htmlspecialchars(\$package['subtitle']) ?>
+
+                                                                                        </div>
+
+                                                                                        <!-- PRICE -->
+
+                                                                                        <?php if(!empty(\$package['preview_price'])): ?>
+
+                                                                                            <div class="old-price">
+
+                                                                                                <?= htmlspecialchars(\$symbol) ?>
+                                                                                                <?= number_format((float)\$package['preview_price'],0,'.',',') ?>
+
+                                                                                            </div>
+
+                                                                                        <?php endif; ?>
+
+                                                                                        <div class="package-price">
+
+                                                                                            <?= htmlspecialchars(\$symbol) ?>
+
+                                                                                            <?= number_format((float)\$package['price'],0,'.',',') ?>
+
+                                                                                            <span>
+
+                                                                                                /<?= htmlspecialchars(\$package['duration']) ?>
+
+                                                                                            </span>
+
+                                                                                        </div>
+
+                                                                                        <!-- BUTTON -->
+
+                                                                                        <form action="cart.php" method="POST">
+
+                                                                                            <input type="hidden" name="type" value="package">
+                                                                                            <input type="hidden" name="id" value="<?= htmlspecialchars(\$package['package_id']) ?>">
+                                                                                            <input type="hidden" name="plan_name" value="<?= htmlspecialchars(\$package['package_name']) ?>">
+                                                                                            <input type="hidden" name="title" value="<?= htmlspecialchars(\$package['title']) ?>">
+                                                                                            <input type="hidden" name="subtitle" value="<?= htmlspecialchars(\$package['subtitle']) ?>">
+                                                                                            <input type="hidden" name="price" value="<?= htmlspecialchars(\$package['price']) ?>">
+                                                                                            <input type="hidden" name="duration" value="<?= htmlspecialchars(\$package['duration']) ?>">
+                                                                                            <input type="hidden" name="created_on" value="<?= date("Y-m-d") ?>">
+                                                                                            <input type="hidden" name="addon_service" value="<?= htmlspecialchars(\$package['addon_service']) ?>">
+                                                                                            <input type="hidden" name="addon_package" value="<?= htmlspecialchars(\$package['addon_package']) ?>">
+                                                                                            <input type="hidden" name="addon_product" value="<?= htmlspecialchars(\$package['addon_product']) ?>">
+                                                                                            <input type="hidden" name="gst_id" value="<?= htmlspecialchars(\$package['gst_id']) ?>">
+
+                                                                                            <button
+                                                                                                class="package-btn"
+                                                                                                type="submit"
+                                                                                                <?= !\$isActive ? 'disabled' : '' ?>>
+
+                                                                                                Choose Package ->
+
+                                                                                            </button>
+
+                                                                                        </form>
+
+                                                                                        <!-- FEATURES -->
+
+                                                                                        <ul class="package-features">
 
                                                                                             <?php
-                                                                                                // Get package_name from database
-                                                                                                \$packageName = \$package['package_name'] ?? '';
 
-                                                                                                // Convert package_name to lowercase
-                                                                                                \$packageSlug = strtolower(trim(\$packageName));
-
-                                                                                                // Replace spaces and special characters with "-"
-                                                                                                \$packageSlug = preg_replace('/[^a-z0-9]+/i', '-', \$packageSlug);
-
-                                                                                                // Remove extra "-" from beginning/end
-                                                                                                \$packageSlug = trim(\$packageSlug, '-');
-
-                                                                                                // Final dynamic URL
-                                                                                                \$packageUrl = \$packageSlug . ".php";
-                                                                                            ?>
-
-                                                                                            <h5 class="mb-0 lufera-color">
-                                                                                                <a href="<?= htmlspecialchars(\$packageUrl) ?>"
-                                                                                                style="text-decoration:none; color:inherit;">
-
-                                                                                                    <?= htmlspecialchars(\$package['title']) ?>
-
-                                                                                                </a>
-                                                                                            </h5>
-
-                                                                                            <p class="mb-0 text-secondary-light mb-28"><?= htmlspecialchars(\$package['subtitle']) ?></p>
-
-                                                                                            <h4 class="mb-24">
-                                                                                            <p class="text-sm text-muted mt-0 mb-10 text-decoration-line-through"><?= htmlspecialchars(\$symbol) ?> <?= number_format((float)\$package['preview_price'], 0, '.', ',') ?></p>
-                                                                                                <?= htmlspecialchars(\$symbol) ?>
-                                                                                                <?= number_format((float)\$package['price'], 0, '.', ',') ?>
-                                                                                                <span class="fw-medium text-md text-secondary-light">/
-                                                                                                    <?= htmlspecialchars(\$package['duration']) ?>
-                                                                                                </span>
-                                                                                                
-                                                                                            </h4>
-
-                                                                                            <span class="mb-20 fw-medium"><?= htmlspecialchars(\$package['description']) ?></span>
-
-                                                                                            <ul>
-                                                                                                <?php
                                                                                                 \$package_id = \$package['package_id'];
-                                                                                                \$feature_sql = "SELECT feature FROM features WHERE package_id = \$package_id";
+
+                                                                                                \$feature_sql = "SELECT feature
+                                                                                                                FROM features
+                                                                                                                WHERE package_id=\$package_id";
+
                                                                                                 \$feature_result = \$conn->query(\$feature_sql);
-                                                                                                if (\$feature_result && \$feature_result->num_rows > 0):
-                                                                                                    while (\$feat = \$feature_result->fetch_assoc()):
+
+                                                                                                \$featureCount = 0;
+
+                                                                                                if(\$feature_result && \$feature_result->num_rows > 0):
+
+                                                                                                    while(\$feat = \$feature_result->fetch_assoc()):
+
+                                                                                                        \$featureCount++;
+
+                                                                                                        // Show only first 5 features
+                                                                                                        if(\$featureCount <= 5):
+
                                                                                                 ?>
-                                                                                                    <li class="d-flex align-items-center gap-16 mb-16">
-                                                                                                        <span class="w-24-px h-24-px p-2 d-flex justify-content-center align-items-center lufera-bg rounded-circle">
-                                                                                                            <iconify-icon icon="iconamoon:check-light" class="text-white text-lg"></iconify-icon>
-                                                                                                        </span>
-                                                                                                        <span class="text-secondary-light text-lg"><?= htmlspecialchars(\$feat['feature']) ?></span>
-                                                                                                    </li>
-                                                                                                <?php endwhile; endif; ?>
-                                                                                            </ul>
 
-                                                                                            <form action="cart.php" method="POST">
-                                                                                                <input type="hidden" name="type" value="package">
-                                                                                                <input type="hidden" name="id" value="<?= htmlspecialchars(\$package['package_id']) ?>">
-                                                                                                <input type="hidden" name="plan_name" value="<?= htmlspecialchars(\$package['package_name']) ?>">
-                                                                                                <input type="hidden" name="title" value="<?= htmlspecialchars(\$package['title']) ?>">
-                                                                                                <input type="hidden" name="subtitle" value="<?= htmlspecialchars(\$package['subtitle']) ?>">
-                                                                                                <input type="hidden" name="price" value="<?= htmlspecialchars(\$package['price']) ?>">
-                                                                                                <input type="hidden" name="duration" value="<?= htmlspecialchars(\$package['duration']) ?>">
-                                                                                                <input type="hidden" name="created_on" value="<?= date("Y-m-d") ?>">
-                                                                                                <input type="hidden" name="addon_service" value="<?= htmlspecialchars(\$package['addon_service']) ?>">
-                                                                                                <input type="hidden" name="addon_package" value="<?= htmlspecialchars(\$package['addon_package']) ?>">
-                                                                                                <input type="hidden" name="addon_product" value="<?= htmlspecialchars(\$package['addon_product']) ?>">
-                                                                                                <input type="hidden" name="gst_id" value="<?= htmlspecialchars(\$package['gst_id']) ?>">
+                                                                                                <li>
 
-                                                                                                <button type="submit" class="lufera-bg lufera-text text-center text-sm btn-sm px-12 py-10 w-100 radius-8 mt-28" <?= !\$isActive ? 'disabled' : '' ?>>Get started</button>
-                                                                                            </form>
-                                                                                        </div>
+                                                                                                    <span class="package-icon">✔</span>
+
+                                                                                                    <span>
+                                                                                                        <?= htmlspecialchars(\$feat['feature']) ?>
+                                                                                                    </span>
+
+                                                                                                </li>
+
+                                                                                                <?php
+                                                                                                        endif;
+
+                                                                                                    endwhile;
+
+                                                                                                    // Show View More button only if more than 5 features
+                                                                                                    if(\$featureCount > 5):
+                                                                                                ?>
+
+                                                                                                <li class="package-view-more">
+
+                                                                                                    <a href="<?= htmlspecialchars(\$packageUrl) ?>" class="view-more-btn">
+
+                                                                                                        View More →
+
+                                                                                                    </a>
+
+                                                                                                </li>
+
+                                                                                                <?php
+                                                                                                    endif;
+
+                                                                                                endif;
+                                                                                                ?>
+
+                                                                                        </ul>
+
                                                                                     </div>
-                                                                                <?php endforeach; ?>
-                                                                            </div>
+
+                                                                                </div>
+
+                                                                                <?php
+
+                                                                                \$cardIndex++;
+
+                                                                                endforeach;
+
+                                                                            ?>
                                                                         </div>
-                                                                    <?php \$first = false; endforeach; ?>
-                                                                </div>
-                                                            <?php else: ?>
-                                                                <div class="text-center py-32">
-                                                                    <div class="radius-12 p-12">
-                                                                        <h6 class="mb-0" style="color: #000; font-size: 1.125rem; font-weight: 600;">
-                                                                            No packages available.
-                                                                        </h6>
-                                                                        <div style="height: 3px; width: 60px; background-color: var(--lufera-main-color); margin: 12px auto 0; border-radius: 2px;"></div>
                                                                     </div>
                                                                 </div>
-                                                            <?php endif; ?>
-
+                                                                <?php \$first = false; endforeach; ?>
                                                             </div>
-                                                        </div>
+                                                        <?php else: ?>
+                                                            <div class="text-center py-32">
+                                                                <div class="radius-12 p-12">
+                                                                    <h6 class="mb-0" style="color: #000; font-size: 1.125rem; font-weight: 600;">
+                                                                        No packages available.
+                                                                    </h6>
+                                                                    <div style="height: 3px; width: 60px; background-color: var(--lufera-main-color); margin: 12px auto 0; border-radius: 2px;"></div>
+                                                                </div>
+                                                            </div>
+                                                        <?php endif; ?>
                                                     </div>
                                                 </div>
                                             <?php endif; ?>

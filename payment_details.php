@@ -71,6 +71,7 @@ $script = '<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1
 ?>
 
 <?php include './partials/layouts/layoutTop.php' ?>
+
 <style>
 .pay-rec {
     width: 600px; /* Constrain width for PDF rendering */
@@ -118,11 +119,27 @@ $script = '<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1
         display:block !important;
     }
 }
+
+/* For Footer */
+
+.border-footer{
+    border-top: 1px solid #dde2e6;
+}
+.footer-logo{
+    margin-bottom: 0 !important;
+}
+
 </style>
+
 <?php
 $company_sql = "select * from company";
 $company_fetch = $conn->query($company_sql);
 $company_row = $company_fetch->fetch_assoc();
+
+$invoice_settings = "select * from invoice";
+$invoice_settings_fetch = $conn->query($invoice_settings);
+$invoice_row = $invoice_settings_fetch->fetch_assoc();
+$invoice_logo = $invoice_row['invoice_logo'];
 
 $trans_id = $_GET['id'];
 $transaction = "select * from record_payment where id = $trans_id";
@@ -188,6 +205,7 @@ function numberToWords($number) {
 
 $amountInWords = numberToWords($amount);
 ?>
+
 <div class="dashboard-main-body">
     <div class="d-flex flex-wrap align-items-center text-center justify-content-between gap-3 mb-24">
         <a class="cursor-pointer fw-bold back_btn" onclick="history.back()"><span class="fa fa-arrow-left"></span>&nbsp; Back</a>    
@@ -321,7 +339,8 @@ $amountInWords = numberToWords($amount);
                     </div>
                     <div class="pay-rec">                    
                         <div class="d-flex flex-wrap justify-content-between gap-3 my-20">
-                            <div>
+                            <!-- <div> -->
+                            <div class="align-content-center">
                                 <!-- <img src="assets/images/logo_lufera.png" alt="image" class="mb-8" width="200px"> -->
                                 <img src="uploads/company_logo/<?php echo $logo; ?>" alt="site logo" class="light-logo" width="200px">
                             </div>
@@ -356,13 +375,16 @@ $amountInWords = numberToWords($amount);
                             </div>
                             <div class="col-lg-4">
                                 <div class="amt-rec">
-                                    <p class="mb-0">Amount Received</p>
-                                    <p class="mb-0"><?= htmlspecialchars($symbol) ?> <?php echo number_format($amount, 2); ?></p>
+                                    <!-- <p class="mb-0">Amount Received</p>
+                                    <p class="mb-0"><?= htmlspecialchars($symbol) ?> <?php echo number_format($amount, 2); ?></p> -->
+                                    <p class="mb-0"><b>Amount Received</b></p>
+                                    <p class="mb-0" style="font-size: 18px;"><b><?= htmlspecialchars($symbol) ?> <?php echo number_format($amount, 2); ?></b></p>
                                 </div>
                             </div>
                         </div>
 
-                        <div class="d-flex flex-wrap justify-content-between gap-3 my-20">
+                        <!-- <div class="d-flex flex-wrap justify-content-between gap-3 my-20"> -->
+                        <div class="d-flex flex-wrap justify-content-between align-items-end gap-3 my-20">
                             <div>
                                 <p class="mb-0 text-sm text-gray"><b>Received From</b></p>
                                 <p class="mb-0"><b><?php echo $row['business_name']; ?></b></p>
@@ -370,7 +392,8 @@ $amountInWords = numberToWords($amount);
                                 <p class="mb-0 text-sm"><?php echo $row['city']; ?>, <?php echo $row['state']; ?> <?php echo $row['pincode']; ?></p>
                                 <p class="mb-0 text-sm"><?php echo $row['country']; ?></p>
                             </div>
-                            <div class="text-end">
+                            <!-- <div class="text-end"> -->
+                            <div style="margin-right: 30px;">
                                 <p class="mb-0 text-sm">Authorized Signature</p>
                             </div>
                         </div>
@@ -406,9 +429,18 @@ $amountInWords = numberToWords($amount);
                                 $content = $tc_row['content'];
                             }
                             if ($tc_result->num_rows > 0) { ?>
-                            <p>Terms & Conditions</p>
+                            <!-- <p>Terms & Conditions</p> -->
+                            <p style="margin-top: -25px;margin-bottom: 5px;">Terms & Conditions</p>
                             <?php echo $content; ?>
                         <?php } ?>
+
+                        <!-- Footer -->
+
+                        <div class="text-center border-footer mt-40 pt-10">
+                            <p class="d-inline">Crafted with ease using</p> 
+                            <img src="uploads/invoice/<?php echo $invoice_logo; ?>" class="footer-logo" alt="Lufera Logo" class="mb-4" style="margin-bottom: 6px; max-width: 120px;">
+                        </div>
+
                     </div>
                 </div>
             </div>                            

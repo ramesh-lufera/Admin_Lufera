@@ -1,4 +1,5 @@
 <?php include './partials/layouts/layoutTop.php';
+
     require_once __DIR__ . '/vendor/autoload.php';
     require_once __DIR__ . '/vendor_pdf/autoload.php';
     use Dotenv\Dotenv;
@@ -92,7 +93,8 @@ function numberToWords($num) {
    RESPONSIVE DESIGN
     ========================= */
 
-    @media (max-width: 991px){
+    /* @media (max-width: 991px){ */
+    @media screen and (max-width: 991px){
 
     .col-sec{
         width:100% !important;
@@ -146,7 +148,8 @@ function numberToWords($num) {
     }
 
     /* Mobile */
-    @media (max-width:768px){
+    /* @media (max-width:768px){ */
+    @media screen and (max-width:768px){
 
     .card-body{
         padding:15px !important;
@@ -210,7 +213,8 @@ function numberToWords($num) {
     }
 
     /* Extra Small Devices */
-    @media (max-width:576px){
+    /* @media (max-width:576px){ */
+    @media screen and (max-width:576px){
 
     .invoice-logo{
         max-width:130px;
@@ -247,6 +251,7 @@ function numberToWords($num) {
         padding:3px 0 !important;
     }
     }
+
     /* Hide everything by default when printing */
 @media print {
     body * {
@@ -383,7 +388,8 @@ function numberToWords($num) {
         flex: 0 0 100% !important;
     }
     .pdf-mode .pdf-footer {
-        margin-top: 70% !important;
+        /* margin-top: 70% !important; */
+        margin-top: 47% !important;
         padding-top: 10px;
         bottom:10px;
     }
@@ -396,7 +402,8 @@ function numberToWords($num) {
     .pdf-mode th,
     .pdf-mode div,
     .pdf-mode li {
-        font-size: 10px !important;
+        /* font-size: 10px !important; */
+        font-size: 11px !important;
         line-height: 1.4 !important;
     }
     /* Headings slightly larger */
@@ -457,6 +464,11 @@ function numberToWords($num) {
     $company_sql = "select * from company";
     $company_fetch = $conn->query($company_sql);
     $company_row = $company_fetch->fetch_assoc();
+
+    $invoice_settings = "select * from invoice";
+    $invoice_settings_fetch = $conn->query($invoice_settings);
+    $invoice_row = $invoice_settings_fetch->fetch_assoc();
+    $invoice_logo = $invoice_row['invoice_logo'];
 
     $invoice_id = $_GET['id'];
     $type = $_GET['type'] ?? 'normal';
@@ -1162,9 +1174,13 @@ if (isset($_POST['send_invoice'])) {
                                 </table>
                             </div>
                                 <p class="p-8 text-end">Total In Words <b><i style="font-style: italic;"><?= htmlspecialchars(numberToWords($row['amount'])) ?></i></b></p>
-                        <div class="text-center border-footer mt-40 pt-20 pdf-footer">
+                        <!-- <div class="text-center border-footer mt-40 pt-20 pdf-footer">
                             <p class="d-inline">Crafted with ease using</p> 
                             <img src="https://admin2.luferatech.com/uploads/company_logo/<?php echo $company_row['logo']; ?>" class="footer-logo" alt="Lufera Logo" class="mb-4" style="margin-bottom: 6px; max-width: 120px;">
+                        </div> -->
+                        <div class="text-center border-footer mt-40 pt-20 pdf-footer">
+                            <p class="d-inline">Crafted with ease using</p> 
+                            <img src="uploads/invoice/<?php echo $invoice_logo; ?>" class="footer-logo" alt="Lufera Logo" class="mb-4" style="margin-bottom: 6px; max-width: 120px;">
                         </div>
                     
                         <?php 
@@ -1531,8 +1547,10 @@ if (isset($_POST['send_invoice'])) {
                 <div class="col-sec">
                     <div class="shadow-4 border radius-8">
                         <div class="p-20">
-                            <div class="d-flex flex-column flex-md-row justify-content-between gap-3 mb-3">
-                                <div class="align-content-end">
+                            <!-- <div class="d-flex flex-column flex-md-row justify-content-between gap-3 mb-3"> -->
+                            <div class="d-flex justify-content-between gap-3 mb-3">
+                                <!-- <div class="align-content-end"> -->
+                                <div class="align-content-center">
                                     <img src="uploads/company_logo/<?php echo $logo; ?>" alt="site logo" class="invoice-logo">
                                 </div>
 
@@ -1558,7 +1576,8 @@ if (isset($_POST['send_invoice'])) {
                                 <?php } ?>
                                 
                             </div>
-                            <div class="d-flex flex-column flex-md-row align-items-start justify-content-between gap-3 mt-3">
+                            <!-- <div class="d-flex flex-column flex-md-row align-items-start justify-content-between gap-3 mt-3"> -->
+                            <div class="d-flex align-items-start justify-content-between gap-3 mt-3">
                                 <div>
                                     <p class="text-md mb-0 bill_to">Bill To:</p>
                                     <h6 class="text-md mb-0 bill_to"><?php echo $rows['business_name']; ?></h6>
@@ -1879,10 +1898,10 @@ if (isset($_POST['send_invoice'])) {
                                     </table>
                                 </div>
                                     <p class="p-8 text-end">Total In Words <b><i style="font-style: italic;"><?= htmlspecialchars(numberToWords($row['amount'])) ?></i></b></p>
-                            <div class="text-center border-footer mt-40 pt-20 pdf-footer">
+                            <!-- <div class="text-center border-footer mt-40 pt-20 pdf-footer">
                                 <p class="d-inline">Crafted with ease using</p> 
                                 <img src="uploads/company_logo/<?php echo $logo; ?>" class="footer-logo" alt="Lufera Logo" class="mb-4" style="margin-bottom: 6px; max-width: 120px;">
-                            </div>
+                            </div> -->
                         
                             <?php 
                                 // Resolve Terms & Conditions, preferring frozen snapshot content when available
@@ -1937,6 +1956,12 @@ if (isset($_POST['send_invoice'])) {
                                     $useSnapshot = true;
                                 }
                             ?>
+
+                            <div class="text-center border-footer mt-40 pt-20 pdf-footer">
+                                <p class="d-inline">Crafted with ease using</p> 
+                                <img src="uploads/invoice/<?php echo $invoice_logo; ?>" class="footer-logo" alt="Lufera Logo" class="mb-4" style="margin-bottom: 6px; max-width: 120px;">
+                            </div>
+                            
                         </div>
                     </div>
                 </div>
