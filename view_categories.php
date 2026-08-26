@@ -3244,7 +3244,8 @@
                                         <span>|</span>
                                         <a href="https://luferatech.com" style="display:flex; align-items:center; gap:5px;">
                                             <span>Made by</span>
-                                            <span style="color:#fec700;">Lufera Infotech</span>
+                                            <!-- <span style="color:#fec700;">Lufera Infotech</span> -->
+                                            <span class="lufera-color">Lufera Infotech</span>
                                         </a>
                                     </div>
                                 </div>
