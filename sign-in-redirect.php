@@ -101,7 +101,8 @@
                     $mail->setFrom($_ENV['EMAIL_USERNAME'], 'Lufera Infotech');
                     $mail->addAddress($email, $username);
                     $mail->isHTML(true);
-                    $mail->Subject = "Welcome to Admin Dashboard!";
+                    // $mail->Subject = "Welcome to Admin Dashboard!";
+                    $mail->Subject = "Welcome to LuferaOne!";
                     $mail->ContentType = 'text/html; charset=UTF-8';
                     
                     $mail->Body = '
@@ -115,19 +116,27 @@
                                 style="background:#ffffff;border:1px solid #e0e0e0;border-radius:8px;box-shadow:0 2px 6px rgba(0,0,0,0.08);overflow:hidden;">
                                 <tr>
                                     <td style="padding:20px;text-align:center;">
+                                    <!-- <img src="' . htmlspecialchars($_ENV['EMAIL_IMAGE_LINK']) . '?text=L" alt="Lufera Infotech Logo" 
+                                        style="width:150px;height:48px;display:block;margin:auto;"> -->
                                     <img src="' . htmlspecialchars($_ENV['EMAIL_IMAGE_LINK']) . '?text=L" alt="Lufera Infotech Logo" 
-                                        style="width:150px;height:48px;display:block;margin:auto;">
+                                        style="width:250px;display:block;margin:auto;">
                                     </td>
                                 </tr>
                                 <tr><td style="border-top:1px solid #eaeaea;"></td></tr>
                                 <tr>
                                     <td style="padding:30px 40px;text-align:left;font-size:15px;line-height:1.6;color:#101010;">
                                     <h3 style="margin:0 0 15px;font-size:20px;font-weight:500;">Welcome, ' . htmlspecialchars($fname) . '!</h3>
-                                    <p>We’re excited to have you on board at <b>Admin Dashboard</b>.</p>
+                                    <!-- <p>We’re excited to have you on board at <b>Admin Dashboard</b>.</p> -->
+                                    <p>We’re excited to have you on board at <b>LuferaOne</b>.</p>
                                     <p>Your account has been successfully created and verified. You can now log in and start exploring our platform.</p>
                                     <div style="margin:30px 0;text-align:center;">
-                                        <a href="' . htmlspecialchars($login_link) . '" 
+                                        <!-- <a href="' . htmlspecialchars($login_link) . '" 
                                         style="background:#fec700;color:#101010;text-decoration:none;
+                                                padding:12px 28px;border-radius:4px;font-weight:bold;display:inline-block;">
+                                        Go to Login
+                                        </a> -->
+                                        <a href="' . htmlspecialchars($login_link) . '" 
+                                        style="background:#1e8a8a;color:#FFFFFF;text-decoration:none;
                                                 padding:12px 28px;border-radius:4px;font-weight:bold;display:inline-block;">
                                         Go to Login
                                         </a>
@@ -137,9 +146,13 @@
                                 </tr>
                                 <tr><td style="border-top:1px solid #eaeaea;"></td></tr>
                                 <tr>
-                                    <td style="padding:20px;text-align:center;font-size:12px;color:#777;">
+                                    <!-- <td style="padding:20px;text-align:center;font-size:12px;color:#777;">
                                     You’re receiving this email because your account has been successfully created.<br>
                                     &copy; 2025 Lufera Infotech. All rights reserved.
+                                    </td> -->
+                                    <td style="padding:20px;text-align:center;font-size:12px;color:#777;">
+                                    You’re receiving this email because your account has been successfully created.<br>
+                                    &copy; 2026 Lufera Infotech. All rights reserved.
                                     </td>
                                 </tr>
                             </table>

@@ -140,7 +140,8 @@
                 $mail->setFrom($_ENV['EMAIL_USERNAME'], 'Lufera Infotech');
                 $mail->addAddress($email, $username);
                 $mail->isHTML(true);
-                $mail->Subject = "Verify your Admin Dashboard Account";
+                // $mail->Subject = "Verify your Admin Dashboard Account";
+                $mail->Subject = "Verify your LuferaOne Account";
                 $mail->ContentType = 'text/html; charset=UTF-8';
                 
                 $mail->Body = '
@@ -160,7 +161,8 @@
                             <!-- Header -->
                             <tr>
                                 <td style="padding:20px;text-align:center;">
-                                <img src="' . htmlspecialchars($_ENV['EMAIL_IMAGE_LINK']) . '" alt="Lufera Infotech Logo" style="width:150px;height:48px;display:block;margin:auto;">
+                                <!-- <img src="' . htmlspecialchars($_ENV['EMAIL_IMAGE_LINK']) . '" alt="Lufera Infotech Logo" style="width:150px;height:48px;display:block;margin:auto;"> -->
+                                <img src="' . htmlspecialchars($_ENV['EMAIL_IMAGE_LINK']) . '" alt="Lufera Infotech Logo" style="width:250px;display:block;margin:auto;">
                                 </td>
                             </tr>
 
@@ -174,10 +176,16 @@
                                 <td style="padding:30px 40px;text-align:left;font-size:15px;line-height:1.6;color:#101010;">
                                 <h3 style="margin:0 0 15px;font-size:20px;font-weight:500;">Verify your email address</h3>
                                 <p>Hello <b>' . htmlspecialchars($username) . '</b>,</p>
-                                <p>You recently created an account at <b>Admin Dashboard</b>. Please verify your email address to activate your account.</p>
+                                <!-- <p>You recently created an account at <b>Admin Dashboard</b>. Please verify your email address to activate your account.</p> -->
+                                <p>You recently created an account at <b>LuferaOne</b>. Please verify your email address to activate your account.</p>
                                 <div style="margin:30px 0;text-align:center;">
-                                    <a href="' . $verify_link . '" 
+                                    <!-- <a href="' . $verify_link . '" 
                                     style="background:#fec700;color:#101010;text-decoration:none;
+                                            padding:12px 28px;border-radius:4px;font-weight:bold;display:inline-block;">
+                                    Verify Email
+                                    </a> -->
+                                    <a href="' . $verify_link . '" 
+                                    style="background:#1e8a8a;color:#ffffff;text-decoration:none;
                                             padding:12px 28px;border-radius:4px;font-weight:bold;display:inline-block;">
                                     Verify Email
                                     </a>
@@ -193,9 +201,13 @@
 
                             <!-- Footer -->
                             <tr>
-                                <td style="padding:20px;text-align:center;font-size:12px;color:#777;">
+                                <!-- <td style="padding:20px;text-align:center;font-size:12px;color:#777;">
                                 You’re receiving this email to verify your Admin Dashboard account.<br>
                                 &copy; 2025 Lufera Infotech. All rights reserved.
+                                </td> -->
+                                <td style="padding:20px;text-align:center;font-size:12px;color:#777;">
+                                You’re receiving this email to verify your LuferaOne account.<br>
+                                &copy; 2026 Lufera Infotech. All rights reserved.
                                 </td>
                             </tr>
 
