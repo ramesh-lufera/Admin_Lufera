@@ -190,7 +190,8 @@
                         <!-- Header -->
                         <tr>
                             <td style="padding:20px;text-align:center;">
-                            <img src="' . htmlspecialchars($_ENV['EMAIL_IMAGE_LINK']) . '" alt="Lufera Infotech Logo" style="width:150px;height:48px;display:block;margin:auto;">
+                            <!-- <img src="' . htmlspecialchars($_ENV['EMAIL_IMAGE_LINK']) . '" alt="Lufera Infotech Logo" style="width:150px;height:48px;display:block;margin:auto;"> -->
+                            <img src="' . htmlspecialchars($_ENV['EMAIL_IMAGE_LINK']) . '" alt="Lufera Infotech Logo" style="width:250px;display:block;margin:auto;">
                             </td>
                         </tr>
 
@@ -215,8 +216,13 @@
                             <p>You can now access your purchased service from your dashboard.</p>
                             
                             <div style="margin:30px 0;text-align:center;">
-                                <a href="' . htmlspecialchars($_ENV['EMAIL_COMMON_LINK']) . '/orders.php" 
+                                <!-- <a href="' . htmlspecialchars($_ENV['EMAIL_COMMON_LINK']) . '/orders.php" 
                                 style="background:#fec700;color:#101010;text-decoration:none;
+                                        padding:12px 28px;border-radius:4px;font-weight:bold;display:inline-block;">
+                                View My Orders
+                                </a> -->
+                                <a href="' . htmlspecialchars($_ENV['EMAIL_COMMON_LINK']) . '/subscription.php" 
+                                style="background:#1e8a8a;color:#FFFFFF;text-decoration:none;
                                         padding:12px 28px;border-radius:4px;font-weight:bold;display:inline-block;">
                                 View My Orders
                                 </a>
@@ -233,9 +239,13 @@
 
                         <!-- Footer -->
                         <tr>
-                            <td style="padding:20px;text-align:center;font-size:12px;color:#777;">
+                            <!-- <td style="padding:20px;text-align:center;font-size:12px;color:#777;">
                             You’re receiving this email because your payment was approved at <b>Admin Dashboard</b>.<br>
                             &copy; 2025 Lufera Infotech. All rights reserved.
+                            </td> -->
+                            <td style="padding:20px;text-align:center;font-size:12px;color:#777;">
+                            You’re receiving this email because your payment was approved at <b>LuferaOne</b>.<br>
+                            &copy; 2026 Lufera Infotech. All rights reserved.
                             </td>
                         </tr>
 
@@ -351,7 +361,8 @@
                             <!-- Header -->
                             <tr>
                                 <td style="padding:20px;text-align:center;">
-                                <img src="' . htmlspecialchars($_ENV['EMAIL_IMAGE_LINK']) . '" alt="Lufera Infotech Logo" style="width:150px;height:48px;display:block;margin:auto;">
+                                <!-- <img src="' . htmlspecialchars($_ENV['EMAIL_IMAGE_LINK']) . '" alt="Lufera Infotech Logo" style="width:150px;height:48px;display:block;margin:auto;"> -->
+                                <img src="' . htmlspecialchars($_ENV['EMAIL_IMAGE_LINK']) . '" alt="Lufera Infotech Logo" style="width:250px;display:block;margin:auto;">
                                 </td>
                             </tr>
 
@@ -394,9 +405,13 @@
 
                             <!-- Footer -->
                             <tr>
-                                <td style="padding:20px;text-align:center;font-size:12px;color:#777;">
+                                <!-- <td style="padding:20px;text-align:center;font-size:12px;color:#777;">
                                 You’re receiving this email because your order was cancelled by the <b>Admin Dashboard</b>.<br>
                                 &copy; 2025 Lufera Infotech. All rights reserved.
+                                </td> -->
+                                <td style="padding:20px;text-align:center;font-size:12px;color:#777;">
+                                You’re receiving this email because your order was cancelled by the <b>LuferaOne</b>.<br>
+                                &copy; 2026 Lufera Infotech. All rights reserved.
                                 </td>
                             </tr>
 
@@ -623,7 +638,7 @@
                 LEFT JOIN products ON (orders.type = 'product' AND orders.plan = products.id)
                 LEFT JOIN websites ON orders.invoice_id = websites.invoice_id
 
-            WHERE orders.plan IS NOT NULL, orders.is_Active = 1 AND orders.user_id = '$sessionId';
+            WHERE orders.plan IS NOT NULL AND orders.is_Active = 1 AND orders.user_id = '$sessionId';
         ";
     } else {
         $query = "
@@ -877,7 +892,8 @@
 
         /* ---------- CURRENT PLAN PRICE ---------- */
 
-        $currentPrice = "N/A";
+        // $currentPrice = "N/A";
+        $currentPrice = 0.0;
 
         if (!empty($planId) && !empty($type)) {
 
@@ -1061,7 +1077,6 @@
 
         $showMo = false;
     }
-
 ?>
 
 <body>
