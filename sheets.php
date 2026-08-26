@@ -424,41 +424,58 @@ outline:2px solid #2563eb;
 outline-offset:-2px;
 } */
 
-.row-dropdown{
-    position:relative;
-    display:inline-block;
+/* Row ellipsis dropdown */
+.row-dropdown {
+    position: relative;
+    display: inline-block;
 }
 
-.row-menu-btn{
-    cursor:pointer;
-    padding:6px;
+.row-menu-btn {
+    cursor: pointer;
+    padding: 6px;
+    border: 0;
+    background: transparent;
 }
 
-.row-dropdown-menu{
-    position:absolute;
-    left:25px;
-    top:0;
-    display:none;
-    background:#fff;
-    min-width:210px;
-    border:1px solid #ddd;
-    border-radius:8px;
-    box-shadow:0 8px 20px rgba(0,0,0,.15);
-    z-index:9999;
+/* Hidden by default */
+.row-dropdown-menu {
+    position: absolute;
+    left: 25px;
+    top: 0;
+
+    display: none;
+
+    min-width: 210px;
+    background: #fff;
+
+    border: 1px solid #ddd;
+    border-radius: 8px;
+
+    box-shadow: 0 8px 20px rgba(0, 0, 0, .15);
+
+    z-index: 99999;
 }
 
-.row-dropdown.open .row-dropdown-menu{
-    display:block;
+/* ONLY JavaScript controls open/close */
+.row-dropdown.open > .row-dropdown-menu {
+    display: block;
 }
 
-.row-dropdown-menu button{
-    width:100%;
-    border:none;
-    background:none;
-    padding:10px 14px;
-    text-align:left;
-    cursor:pointer;
-    display:flex;
+/* Menu buttons */
+.row-dropdown-menu button {
+    width: 100%;
+    border: none;
+    background: transparent;
+    padding: 10px 14px;
+    text-align: left;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.row-dropdown-menu button:hover {
+    background: #f3f4f6;
 }
 
 .row-dropdown-menu button:hover{
@@ -620,6 +637,15 @@ body.column-resizing * {
     cursor: col-resize !important;
     user-select: none !important;
 }
+.xl-color-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.xl-color-btn:disabled:hover {
+    background: #fff;
+    border-color: #dee2e6;
+}
 </style>
   
 </head>
@@ -704,20 +730,26 @@ body.column-resizing * {
             <option>32</option>
         </select>
 
-        <button id="boldBtn" class="xl-color-btn">
+        <button
+            id="boldBtn"
+            type="button"
+            class="xl-color-btn"
+            data-bs-toggle="tooltip"
+            data-bs-placement="top"
+            title="Bold">
             <b>B</b>
         </button>
 
-        <button id="italicBtn" class="xl-color-btn">
+        <button id="italicBtn" type="button" class="xl-color-btn" data-bs-toggle="tooltip" data-bs-placement="top" title="Italic">
             <i>I</i>
         </button>
 
-        <button id="underlineBtn" class="xl-color-btn">
+        <button id="underlineBtn" type="button" class="xl-color-btn" data-bs-toggle="tooltip" data-bs-placement="top" title="Underline">
             <u>U</u>
         </button>
         <!-- Font Color -->
 <div class="xl-color-picker">
-    <button type="button" class="xl-color-btn" id="textColorBtn" title="Font Color">
+    <button type="button" class="xl-color-btn" id="textColorBtn" title="Font Color" data-bs-toggle="tooltip" data-bs-placement="top" title="Color">
         <span class="fa fa-font"></span>
         <span class="xl-color-line" id="textColorLine"></span>
     </button>
@@ -727,7 +759,7 @@ body.column-resizing * {
 
 <!-- Fill Color -->
 <div class="xl-color-picker">
-    <button type="button" class="xl-color-btn" id="fillColorBtn" title="Fill Color">
+    <button type="button" class="xl-color-btn" id="fillColorBtn" data-bs-toggle="tooltip" data-bs-placement="top" title="Fill">
         <span class="fa fa-fill-drip"></span>
         <span class="xl-color-line" id="fillColorLine"></span>
     </button>
@@ -735,22 +767,27 @@ body.column-resizing * {
     <input type="color" id="fillColor" value="#ffffff">
 </div>
 <!-- Format Painter -->
-<button id="formatPainterBtn"
-        class="btn btn-light"
-        type="button"
-        title="Format Painter">
+<button id="formatPainterBtn" class="btn btn-light xl-color-btn" type="button" title="Format Painter" data-bs-toggle="tooltip">
     <i class="fa fa-paint-brush"></i>
 </button>
-        <button id="alignLeft" class="btn btn-light">
+        <button id="alignLeft" type="button" class="xl-color-btn" data-bs-toggle="tooltip" data-bs-placement="top" title="Left">
             <i class="fa fa-align-left"></i>
         </button>
 
-        <button id="alignCenter" class="btn btn-light">
+        <button id="alignCenter" type="button" class="xl-color-btn" data-bs-toggle="tooltip" data-bs-placement="top" title="Center">
             <i class="fa fa-align-center"></i>
         </button>
 
-        <button id="alignRight" class="btn btn-light">
+        <button id="alignRight" type="button" class="xl-color-btn" data-bs-toggle="tooltip" data-bs-placement="top" title="Right">
             <i class="fa fa-align-right"></i>
+        </button>
+
+        <button id="undoBtn" type="button" class="xl-color-btn" data-bs-toggle="tooltip" data-bs-placement="top" title="Undo">
+            <i class="fa fa-undo"></i>
+        </button>
+
+        <button id="redoBtn" type="button" class="xl-color-btn" data-bs-toggle="tooltip" data-bs-placement="top" title="Redo">
+            <i class="fa fa-redo"></i>
         </button>
     </div>
 
@@ -1001,20 +1038,37 @@ Swal.fire({
 </script>
 
 <script>
-    document.addEventListener("click", function(e){
-    document.querySelectorAll(".row-dropdown")
-        .forEach(d=>{
-            if(!d.contains(e.target))
-                d.classList.remove("open");
-        });
-    });
-    document.addEventListener("click",function(e){
-    if(!e.target.classList.contains("row-menu-btn"))
-        return;
+    document.addEventListener('click', function (e) {
+
+const button = e.target.closest('.row-menu-btn');
+
+// Clicked the ellipsis
+if (button) {
+
     e.stopPropagation();
-    const menu=e.target.closest(".row-dropdown");
-    menu.classList.toggle("open");
+
+    const dropdown = button.closest('.row-dropdown');
+
+    // Close other row dropdowns
+    document.querySelectorAll('.row-dropdown.open').forEach(function (item) {
+        if (item !== dropdown) {
+            item.classList.remove('open');
+        }
     });
+
+    // Toggle this dropdown
+    dropdown.classList.toggle('open');
+
+    return;
+}
+
+// Clicked outside → close all row dropdowns
+document.querySelectorAll('.row-dropdown.open').forEach(function (dropdown) {
+    dropdown.classList.remove('open');
+});
+
+});
+
     function insertRowAbove(row){
         addRowBefore(row);
     }
@@ -1181,7 +1235,93 @@ const columnSortState = {};
 let activeRow = null;
 let activeAttachRow = null;
 let activeSheetId = <?= $sheetId ?>;
+let undoStack = [];
+let redoStack = [];
 
+const MAX_HISTORY = 50;
+
+function cloneSheetData() {
+    return structuredClone(data);
+}
+
+function saveHistory() {
+    undoStack.push(cloneSheetData());
+
+    if (undoStack.length > MAX_HISTORY) {
+        undoStack.shift();
+    }
+
+    // Once a new change is made,
+    // redo history is no longer valid.
+    redoStack = [];
+
+    updateUndoRedoButtons();
+}
+
+function undo() {
+
+if (undoStack.length === 0) return;
+
+// Save current state for redo
+redoStack.push(cloneSheetData());
+
+const previousState = undoStack.pop();
+
+// Restore previous state
+Object.keys(data).forEach(key => delete data[key]);
+
+Object.assign(
+    data,
+    structuredClone(previousState)
+);
+
+rebuildPreserveData();
+
+updateUndoRedoButtons();
+
+hasUnsavedChanges = true;
+}
+
+function redo() {
+
+if (redoStack.length === 0) return;
+
+// Save current state for undo
+undoStack.push(cloneSheetData());
+
+const nextState = redoStack.pop();
+
+Object.keys(data).forEach(key => delete data[key]);
+
+Object.assign(
+    data,
+    structuredClone(nextState)
+);
+
+rebuildPreserveData();
+
+updateUndoRedoButtons();
+
+hasUnsavedChanges = true;
+}
+
+document.getElementById("undoBtn").addEventListener("click", undo);
+
+document.getElementById("redoBtn").addEventListener("click", redo);
+
+function updateUndoRedoButtons() {
+
+const undoBtn = document.getElementById("undoBtn");
+const redoBtn = document.getElementById("redoBtn");
+
+if (undoBtn) {
+    undoBtn.disabled = undoStack.length === 0;
+}
+
+if (redoBtn) {
+    redoBtn.disabled = redoStack.length === 0;
+}
+}
 /* ------------------------------------------------------------
    PRELOAD PHP DATA BEFORE TABLE IS BUILT
 ------------------------------------------------------------ */
@@ -1414,8 +1554,70 @@ function buildTable() {
             // Column name
             const nameSpan = document.createElement("span");
             nameSpan.textContent = columnHeaders[c] || "Column Field";
+            nameSpan.style.cursor = "text";
+            nameSpan.title = "Double-click to edit";
+
+            // Double-click header to edit
+            nameSpan.addEventListener("dblclick", (e) => {
+                e.stopPropagation();
+
+                const oldName = columnHeaders[c] || "Column Field";
+
+                const input = document.createElement("input");
+                input.type = "text";
+                input.value = oldName;
+
+                input.style.width = "100%";
+                input.style.minWidth = "0";
+                input.style.border = "1px solid #2563eb";
+                input.style.borderRadius = "4px";
+                input.style.padding = "3px 6px";
+                input.style.outline = "none";
+                input.style.font = "inherit";
+                input.style.fontWeight = "inherit";
+                input.style.background = "#fff";
+
+                nameSpan.replaceWith(input);
+                input.focus();
+                input.select();
+
+                let finished = false;
+
+                function finishEdit() {
+                    if (finished) return;
+                    finished = true;
+
+                    const newName = input.value.trim();
+
+                    columnHeaders[c] = newName || oldName;
+
+                    nameSpan.textContent = columnHeaders[c];
+
+                    input.replaceWith(nameSpan);
+
+                    hasUnsavedChanges = true;
+                }
+
+                // Save on Enter
+                input.addEventListener("keydown", (e) => {
+                    if (e.key === "Enter") {
+                        e.preventDefault();
+                        finishEdit();
+                    }
+
+                    // Cancel with Escape
+                    if (e.key === "Escape") {
+                        e.preventDefault();
+                        finished = true;
+                        input.replaceWith(nameSpan);
+                    }
+                });
+
+                // Save when clicking outside
+                input.addEventListener("blur", finishEdit);
+            });
             
-            const sortSpan = document.createElement("span");
+const sortSpan = document.createElement("span");
 sortSpan.className = "fa fa-sort sort-col-icon";
 sortSpan.title = "Sort";
 sortSpan.style.cursor = "pointer";
@@ -1694,34 +1896,116 @@ rows.forEach(row => {
 const preview = document.getElementById("cellPreview");
 
 function showCellPreview(e) {
-    const cell = e.currentTarget;
 
-    if (cell.dataset.c == "1") return;
+const cell = e.currentTarget;
+const preview = document.getElementById("cellPreview");
 
-    let element = cell;
+if (!preview) return;
 
-    // Ignore input/select columns (fixed content)
-    const input = cell.querySelector("input, select");
-    if (input) return;
+const fullText = cell.dataset.fulltext;
 
-    const text = data[cell.id]?.raw || "";
-    if (!text.trim()) return;
-
-    // Only show when text is truncated
-    if (element.scrollWidth <= element.clientWidth) return;
-
-    preview.textContent = text;
-    preview.style.display = "block";
-    moveCellPreview(e);
-}
-
-function moveCellPreview(e){
-    preview.style.left = (e.clientX + 15) + "px";
-    preview.style.top  = (e.clientY + 15) + "px";
-}
-
-function hideCellPreview(){
+if (!fullText || !fullText.trim()) {
     preview.style.display = "none";
+    return;
+}
+
+preview.textContent = fullText;
+
+// Show it temporarily so we can measure its actual size
+preview.style.display = "block";
+preview.style.visibility = "hidden";
+
+const cellRect = cell.getBoundingClientRect();
+const previewRect = preview.getBoundingClientRect();
+
+const margin = 8;
+
+const viewportWidth = window.innerWidth;
+const viewportHeight = window.innerHeight;
+
+let left = cellRect.left;
+
+// Prevent popup from going outside the right side
+if (left + previewRect.width > viewportWidth - margin) {
+    left = viewportWidth - previewRect.width - margin;
+}
+
+// Prevent popup from going outside the left side
+if (left < margin) {
+    left = margin;
+}
+
+// Space below the cell
+const spaceBelow = viewportHeight - cellRect.bottom;
+
+// Space above the cell
+const spaceAbove = cellRect.top;
+
+let top;
+
+// Prefer below when there is enough room
+if (spaceBelow >= previewRect.height + margin) {
+
+    top = cellRect.bottom + margin;
+
+}
+// Otherwise show above
+else if (spaceAbove >= previewRect.height + margin) {
+
+    top = cellRect.top - previewRect.height - margin;
+
+}
+// Neither side has enough room
+else {
+
+    // Choose the side with more available space
+    if (spaceBelow >= spaceAbove) {
+
+        top = cellRect.bottom + margin;
+
+    } else {
+
+        top = Math.max(
+            margin,
+            cellRect.top - previewRect.height - margin
+        );
+    }
+}
+
+// Final vertical safety check
+top = Math.max(
+    margin,
+    Math.min(
+        top,
+        viewportHeight - previewRect.height - margin
+    )
+);
+
+preview.style.left = `${left}px`;
+preview.style.top = `${top}px`;
+
+preview.style.visibility = "visible";
+}
+
+function moveCellPreview(e) {
+
+const preview = document.getElementById("cellPreview");
+
+if (!preview || preview.style.display === "none") {
+    return;
+}
+
+showCellPreview(e);
+}
+
+function hideCellPreview() {
+
+const preview = document.getElementById("cellPreview");
+
+if (preview) {
+    preview.style.display = "none";
+    preview.style.visibility = "hidden";
+}
 }
 function rebuildPreserveData() {
     const dataSnapshot = JSON.parse(JSON.stringify(data));
@@ -2059,11 +2343,47 @@ function applyColumnType() {
 /* ------------------------------------------------------------
    EVENT HANDLERS
 ------------------------------------------------------------ */
+let editingCell = null;
+let editingCellHistorySaved = false;
+
+function onFocus(e) {
+    document
+        .querySelectorAll(".cell")
+        .forEach(c => c.classList.remove("selected"));
+
+    selectedCell = e.target.closest(".cell");
+
+    if (!selectedCell) return;
+
+    selectedCell.classList.add("selected");
+    loadToolbarState();
+
+    // Start a new editing session
+    editingCell = selectedCell;
+    editingCellHistorySaved = false;
+}
+
 function onEdit(e) {
     const cell = e.target.closest(".cell");
+
     if (!cell || cell.dataset.c == 1) return;
 
-    hasUnsavedChanges = true; // ← ADD THIS
+    /*
+     * IMPORTANT:
+     * Save the state only once when editing this cell starts.
+     * Do NOT call saveHistory() for every input/keystroke.
+     */
+    if (editingCell !== cell) {
+        editingCell = cell;
+        editingCellHistorySaved = false;
+    }
+
+    if (!editingCellHistorySaved) {
+        saveHistory();
+        editingCellHistorySaved = true;
+    }
+
+    hasUnsavedChanges = true;
 
     const id = cell.id;
     const col = parseInt(cell.dataset.c);
@@ -2071,25 +2391,27 @@ function onEdit(e) {
     const type = config.type;
 
     let value;
-    if (type === "checkbox") value = e.target.checked;
-    else if (["number", "datetime-local", "select", "email"].includes(type)) value = e.target.value;
-    else value = cell.textContent;
 
-    if (!data[id]) data[id] = {};
+    if (type === "checkbox") {
+        value = e.target.checked;
+    }
+    else if (
+        ["number", "datetime-local", "select", "email"].includes(type)
+    ) {
+        value = e.target.value;
+    }
+    else {
+        value = cell.textContent;
+    }
 
-data[id].raw = value.toString();
+    if (!data[id]) {
+        data[id] = {};
+    }
+
+    data[id].raw = value.toString();
     cell.dataset.fulltext = value.toString();
-    recalcAll();
-}
 
-function onFocus(e){
-document
-    .querySelectorAll(".cell")
-    .forEach(c=>c.classList.remove("selected"));
-    selectedCell=e.target.closest(".cell");
-    if(!selectedCell) return;
-    selectedCell.classList.add("selected");
-    loadToolbarState();
+    recalcAll();
 }
 
 function getCellStyle(cell){
@@ -2354,21 +2676,76 @@ function onKeyDown(e) {
     const r = parseInt(cell.dataset.r);
     const c = parseInt(cell.dataset.c);
 
-    let nr = r, nc = c;
-    if (e.key === "Enter") { e.preventDefault(); nr++; }
-    if (e.key === "ArrowDown") { e.preventDefault(); nr++; }
-    if (e.key === "ArrowUp") { e.preventDefault(); nr--; }
-    if (e.key === "ArrowRight") { e.preventDefault(); nc++; }
-    if (e.key === "ArrowLeft") { e.preventDefault(); nc--; }
+    const isTextEditing =
+        cell.contentEditable === "true" ||
+        e.target.isContentEditable;
+
+    if (isTextEditing) {
+        if (e.key === "ArrowLeft" || e.key === "ArrowRight") {
+            return;
+        }
+    }
+
+    let nr = r;
+    let nc = c;
+
+    // Enter → next row
+    if (e.key === "Enter") {
+        e.preventDefault();
+        nr++;
+    }
+
+    // Up / Down → next/previous row
+    if (e.key === "ArrowDown") {
+        e.preventDefault();
+        nr++;
+    }
+
+    if (e.key === "ArrowUp") {
+        e.preventDefault();
+        nr--;
+    }
+
+    if (!isTextEditing && e.key === "ArrowRight") {
+        e.preventDefault();
+        nc++;
+    }
+
+    if (!isTextEditing && e.key === "ArrowLeft") {
+        e.preventDefault();
+        nc--;
+    }
+
+    // TAB → next cell
+    if (e.key === "Tab") {
+        e.preventDefault();
+
+        nc += e.shiftKey ? -1 : 1;
+
+        if (nc > COLS) {
+            nc = 1;
+            nr++;
+        }
+
+        if (nc < 1) {
+            nc = COLS;
+            nr--;
+        }
+    }
 
     nr = Math.max(1, Math.min(nr, ROWS));
     nc = Math.max(1, Math.min(nc, COLS));
 
     const next = document.getElementById(cellId(nr, nc));
+
     if (next) {
         next.focus();
+
         const input = next.querySelector("input, select");
-        if (input) input.focus();
+
+        if (input) {
+            input.focus();
+        }
     }
 }
 
@@ -2602,43 +2979,7 @@ document.addEventListener("DOMContentLoaded", () => {
     
 };
 
-    document.getElementById("clear").onclick = () => {
-        //if (!confirm("Clear all data?")) return;
-        Swal.fire({
-            title: 'Are you sure?',
-            text: "This will clear all data in the sheet!",
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonColor: '#d33',
-            cancelButtonColor: '#6b7280',
-            confirmButtonText: 'Yes, clear it!',
-            cancelButtonText: 'Cancel'
-        }).then((result) => {
-            if (result.isConfirmed) {
-                // your clear logic here...
-                for (let r = 1; r <= ROWS; r++) {
-                    for (let c = 1; c <= COLS; c++) {
-                        const id = cellId(r, c);
-                        data[id] = { raw: "" };
-                        const el = document.getElementById(id);
-                        if (el) {
-                            if (c === 1) el.querySelector(".task-text").textContent = "";
-                            else renderCellContent(el, c);
-                        }
-                    }
-                }
-                Swal.fire(
-                    'Cleared!',
-                    'All data has been removed.',
-                    'success'
-                );
-            }
-        });        
-        Object.keys(rowComments).forEach(k => delete rowComments[k]);
-        Object.keys(rowAttachments).forEach(k => delete rowAttachments[k]);
-        Object.keys(rowReminders).forEach(k => delete rowReminders[k]);  
-        refreshAllActivityIcons(); 
-    };
+    
 
     document.getElementById("load-db").onclick = async () => {
         try {
@@ -3096,60 +3437,129 @@ async function uploadAttachment() {
         alert(out.error || "Upload failed");
     }
 }
+function shiftRowActivityForInsert(insertRow) {
+    // Move activity mappings down from bottom to top
+    for (let r = ROWS; r >= insertRow; r--) {
 
-function addRowBefore(row) {
-// Increase total rows
-ROWS++;
-// Shift all rows down
-for (let r = ROWS; r > row; r--) {
-    for (let c = 2; c <= COLS; c++) {
-        const newId = cellId(r, c);
-        const oldId = cellId(r - 1, c);
-        data[newId] = data[oldId]
-            ? structuredClone(data[oldId])
-            : { raw: "" };
+        if (rowComments[r] !== undefined) {
+            rowComments[r + 1] = rowComments[r];
+        } else {
+            delete rowComments[r + 1];
+        }
+
+        if (rowAttachments[r] !== undefined) {
+            rowAttachments[r + 1] = rowAttachments[r];
+        } else {
+            delete rowAttachments[r + 1];
+        }
+
+        if (rowReminders[r] !== undefined) {
+            rowReminders[r + 1] = rowReminders[r];
+        } else {
+            delete rowReminders[r + 1];
+        }
     }
-}
 
-// Clear the inserted row
-for (let c = 2; c <= COLS; c++) {
-    data[cellId(row, c)] = { raw: "" };
+    // New row has no activity
+    delete rowComments[insertRow];
+    delete rowAttachments[insertRow];
+    delete rowReminders[insertRow];
 }
+function addRowBefore(row) {
 
-rebuildPreserveData();
-}
+    // Save history before changing the sheet
+    saveHistory();
 
-function addRowAfter(row) {
+    // Increase total rows
     ROWS++;
 
-    // Shift rows down
-    for (let r = ROWS; r > row + 1; r--) {
+    // Move row data down
+    for (let r = ROWS; r > row; r--) {
+        for (let c = 2; c <= COLS; c++) {
+
+            const newId = cellId(r, c);
+            const oldId = cellId(r - 1, c);
+
+            data[newId] = data[oldId]
+                ? structuredClone(data[oldId])
+                : { raw: "" };
+        }
+    }
+
+    // Clear the newly inserted row
+    for (let c = 2; c <= COLS; c++) {
+        data[cellId(row, c)] = { raw: "" };
+    }
+
+    // IMPORTANT:
+    // Move comments, attachments and reminders with their parent row
+    shiftRowActivityForInsert(row);
+
+    rebuildPreserveData();
+
+    refreshAllActivityIcons();
+    }
+
+    async function addRowAfter(row) {
+
+const insertAt = row + 1;
+
+try {
+
+    const response = await fetch("shift_row_activity.php", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+            sheet_id: activeSheetId,
+            insert_at: insertAt
+        })
+    });
+
+    const result = await response.json();
+
+    if (!result.success) {
+        throw new Error(result.error || "Failed to shift row activity");
+    }
+
+    ROWS++;
+
+    // Shift sheet data
+    for (let r = ROWS; r > insertAt; r--) {
+
         for (let c = 1; c <= COLS; c++) {
+
             const oldId = cellId(r - 1, c);
             const newId = cellId(r, c);
 
             if (data[oldId]) {
-                data[newId] = data[oldId];
-                delete data[oldId];
+                data[newId] = structuredClone(data[oldId]);
             } else {
                 delete data[newId];
             }
         }
-
-        // Move comments & attachments
-        rowComments[r] = rowComments[r - 1] || 0;
-        rowAttachments[r] = rowAttachments[r - 1] || 0;
     }
 
-    // Initialize new row
+    // Clear inserted row
     for (let c = 1; c <= COLS; c++) {
-        delete data[cellId(row + 1, c)];
+        delete data[cellId(insertAt, c)];
     }
-    rowComments[row + 1] = 0;
-    rowAttachments[row + 1] = 0;
 
     rebuildPreserveData();
-    refreshAllActivityIcons();
+
+    loadCountsAndRefreshIcons();
+
+} catch (error) {
+
+    console.error("Insert row below failed:", error);
+
+    Swal.fire({
+        icon: "error",
+        title: "Insert failed",
+        text: error.message || "Could not insert row."
+    });
+}
 }
 
 function deleteRow(row) {
@@ -3914,25 +4324,32 @@ function applyFillColor(color) {
 
     data[selectedCell.id].style.background = color;
 }
-</script>
-<script>
-    let formatPainterActive = false;
-let formatPainterStyle = null;
 
-document.getElementById("formatPainterBtn").addEventListener("click", function () {
+let formatPainterActive = false;
+let formatPainterStyle = null;
+let formatPainterSourceId = null;
+
+document.getElementById("formatPainterBtn").addEventListener("mousedown", function(e) {
+    // Prevent the toolbar button from taking focus away from the cell
+    e.preventDefault();
+});
+
+document.getElementById("formatPainterBtn").addEventListener("click", function(e) {
 
     if (!selectedCell) {
         return;
     }
 
-    const sourceId = selectedCell.id;
-    const sourceData = data[sourceId];
+    // Remember the source cell permanently
+    formatPainterSourceId = selectedCell.id;
+
+    const sourceData = data[formatPainterSourceId];
 
     if (!sourceData || !sourceData.style) {
         return;
     }
 
-    // Copy the formatting
+    // Copy the source formatting
     formatPainterStyle = structuredClone(sourceData.style);
 
     formatPainterActive = true;
@@ -3941,6 +4358,57 @@ document.getElementById("formatPainterBtn").addEventListener("click", function (
 
     document.querySelectorAll(".cell").forEach(cell => {
         cell.style.cursor = "copy";
+    });
+});
+
+
+document.addEventListener("click", function(e) {
+
+    if (!formatPainterActive) {
+        return;
+    }
+
+    const targetCell = e.target.closest(".cell");
+
+    if (!targetCell) {
+        return;
+    }
+
+    // Don't paste back into the source cell
+    if (targetCell.id === formatPainterSourceId) {
+        return;
+    }
+
+    // Save undo history BEFORE changing the target
+    saveHistory();
+
+    if (!data[targetCell.id]) {
+        data[targetCell.id] = {};
+    }
+
+    // Copy the complete style
+    data[targetCell.id].style =
+        structuredClone(formatPainterStyle);
+
+    // Apply style to the target cell
+    applyStyle(targetCell);
+
+    hasUnsavedChanges = true;
+
+    // Select the target cell
+    selectedCell = targetCell;
+
+    // Turn painter off
+    formatPainterActive = false;
+    formatPainterStyle = null;
+    formatPainterSourceId = null;
+
+    document
+        .getElementById("formatPainterBtn")
+        .classList.remove("active");
+
+    document.querySelectorAll(".cell").forEach(cell => {
+        cell.style.cursor = "";
     });
 });
 
@@ -3975,9 +4443,99 @@ document.querySelectorAll(".cell").forEach(cell => {
     cell.style.cursor = "";
 });
 });
-    </script>
-    
+
+document.addEventListener("DOMContentLoaded", () => {
+    document
+        .querySelectorAll('[data-bs-toggle="tooltip"]')
+        .forEach(el => {
+            new bootstrap.Tooltip(el, {
+                placement: "bottom",
+                fallbackPlacements: [],
+                boundary: "viewport"
+            });
+        });
+});
+
+document.addEventListener("keydown", function(e) {
+
+if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "z") {
+    e.preventDefault();
+
+    if (e.shiftKey) {
+        redo();
+    } else {
+        undo();
+    }
+}
+
+if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "y") {
+    e.preventDefault();
+    redo();
+}
+
+});
+
+async function addRowBefore(row) {
+
+try {
+
+    // First update database activity references
+    const response = await fetch("shift_row_activity.php", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+            sheet_id: activeSheetId,
+            insert_at: row
+        })
+    });
+
+    const result = await response.json();
+
+    if (!result.success) {
+        throw new Error(result.error || "Failed to shift row activity");
+    }
+
+    // Increase total rows
+    ROWS++;
+
+    // Shift sheet data down
+    for (let r = ROWS; r > row; r--) {
+
+        for (let c = 2; c <= COLS; c++) {
+
+            const newId = cellId(r, c);
+            const oldId = cellId(r - 1, c);
+
+            data[newId] = data[oldId]
+                ? structuredClone(data[oldId])
+                : { raw: "" };
+        }
+    }
+
+    // Clear the newly inserted row
+    for (let c = 2; c <= COLS; c++) {
+        data[cellId(row, c)] = { raw: "" };
+    }
+
+    rebuildPreserveData();
+
+    // Reload activity counts from DB
+    loadCountsAndRefreshIcons();
+
+} catch (error) {
+
+    console.error("Insert row above failed:", error);
+
+    Swal.fire({
+        icon: "error",
+        title: "Insert failed",
+        text: error.message || "Could not insert row."
+    });
+}
+}
+</script>
 </body>
 </html>
-
 <?php include './partials/layouts/layoutBottom.php'; ?>

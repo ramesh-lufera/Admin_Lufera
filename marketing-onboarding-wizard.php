@@ -581,88 +581,247 @@
     }
 
     if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['inline_update'])) {
-        $field = $_POST['field'] ?? '';
-        $website_id = isset($_GET['id']) ? intval($_GET['id']) : 0;
 
-        if (!$field || !$website_id) {
+        header('Content-Type: text/plain; charset=utf-8');
+    
+        $field = trim($_POST['field'] ?? '');
+        $website_id = isset($_GET['id']) ? intval($_GET['id']) : 0;
+    
+        if ($field === '' || $website_id <= 0) {
+            http_response_code(400);
             echo 'invalid request';
             exit;
         }
-
-        // Fetch existing JSON
-        $stmt = $conn->prepare("SELECT name FROM json WHERE website_id = ?");
-        $stmt->bind_param("i", $website_id);
+    
+        // Find the JSON record using the SAME identifiers
+        // used by the normal Save handler.
+        $jsonId = 0;
+        $jsonData = '';
+    
+        $stmt = $conn->prepare("
+            SELECT id, name
+            FROM json
+            WHERE user_id = ?
+              AND website_id = ?
+              AND template = ?
+            ORDER BY id DESC
+            LIMIT 1
+        ");
+    
+        $stmt->bind_param(
+            "iis",
+            $user_id,
+            $website_id,
+            $template
+        );
+    
         $stmt->execute();
-        $stmt->bind_result($jsonData);
-        $stmt->fetch();
-        $stmt->close();
-
-        $decoded = json_decode($jsonData, true);
-
-        if (!isset($decoded[$field])) {
-            echo 'field not found';
-            exit;
+        $result = $stmt->get_result();
+    
+        if ($row = $result->fetch_assoc()) {
+            $jsonId = (int)$row['id'];
+            $jsonData = $row['name'];
         }
-
-        // === FILE upload ===
-        if (!empty($_FILES['file'])) {
-            $fileTmp = $_FILES['file']['tmp_name'];
-            $fileName = basename($_FILES['file']['name']);
-            $uploadDir = 'Uploads/';
-            $targetPath = $uploadDir . time() . '_' . preg_replace("/[^a-zA-Z0-9.\-_]/", "", $fileName);
-
-            if (!is_dir($uploadDir)) {
-                mkdir($uploadDir, 0777, true);
+    
+        $stmt->close();
+    
+    
+        // Existing JSON record
+        $decoded = [];
+    
+        if (!empty($jsonData)) {
+            $decoded = json_decode($jsonData, true);
+    
+            if (!is_array($decoded)) {
+                $decoded = [];
             }
-
-            if (move_uploaded_file($fileTmp, $targetPath)) {
-                $decoded[$field]['value'] = $targetPath;
-                $decoded[$field]['status'] = 'pending';
-            } else {
+        }
+    
+    
+        // Create the field if it doesn't already exist.
+        if (!isset($decoded[$field]) || !is_array($decoded[$field])) {
+            $decoded[$field] = [
+                'value' => '',
+                'status' => 'pending'
+            ];
+        }
+    
+    
+        // ─────────────────────────────────────
+        // FILE UPLOAD
+        // ─────────────────────────────────────
+        if (
+            isset($_FILES['file']) &&
+            $_FILES['file']['error'] === UPLOAD_ERR_OK
+        ) {
+    
+            $uploadDir = 'Uploads/';
+    
+            if (!is_dir($uploadDir)) {
+                if (!mkdir($uploadDir, 0755, true)) {
+                    http_response_code(500);
+                    echo 'could not create upload directory';
+                    exit;
+                }
+            }
+    
+            $extension = strtolower(
+                pathinfo(
+                    $_FILES['file']['name'],
+                    PATHINFO_EXTENSION
+                )
+            );
+    
+            $filename = time() . '_' . uniqid('', true);
+    
+            if ($extension !== '') {
+                $filename .= '.' . $extension;
+            }
+    
+            $targetPath = $uploadDir . $filename;
+    
+            if (!move_uploaded_file(
+                $_FILES['file']['tmp_name'],
+                $targetPath
+            )) {
+                http_response_code(500);
                 echo 'file upload failed';
                 exit;
             }
+    
+            $decoded[$field]['value'] = $targetPath;
+    
+        } else {
+    
+            // Normal text / textarea / select / radio / checkbox
+            $decoded[$field]['value'] = $_POST['value'] ?? '';
         }
-        // === NORMAL text/radio/checkbox ===
+    
+    
+        // Any inline edit becomes pending.
+        $decoded[$field]['status'] = 'pending';
+    
+    
+        $updatedJson = json_encode(
+            $decoded,
+            JSON_UNESCAPED_UNICODE |
+            JSON_UNESCAPED_SLASHES
+        );
+    
+        if ($updatedJson === false) {
+            http_response_code(500);
+            echo 'json encoding failed';
+            exit;
+        }
+    
+    
+        // ─────────────────────────────────────
+        // EXISTING RECORD → UPDATE
+        // ─────────────────────────────────────
+        if ($jsonId > 0) {
+    
+            $updateStmt = $conn->prepare("
+                UPDATE json
+                SET name = ?
+                WHERE id = ?
+                LIMIT 1
+            ");
+    
+            $updateStmt->bind_param(
+                "si",
+                $updatedJson,
+                $jsonId
+            );
+    
+            if (!$updateStmt->execute()) {
+                http_response_code(500);
+                echo 'database update failed';
+                $updateStmt->close();
+                exit;
+            }
+    
+            $updateStmt->close();
+    
+        }
+    
+        // ─────────────────────────────────────
+        // NO RECORD → INSERT
+        // ─────────────────────────────────────
         else {
-            $value = $_POST['value'] ?? '';
-            $decoded[$field]['value'] = $value;
-            $decoded[$field]['status'] = 'pending';
+    
+            $prefill_name = '';
+    
+            $insertStmt = $conn->prepare("
+                INSERT INTO json
+                    (name, user_id, website_id, template, prefill_name)
+                VALUES
+                    (?, ?, ?, ?, ?)
+            ");
+    
+            $insertStmt->bind_param(
+                "siiss",
+                $updatedJson,
+                $user_id,
+                $website_id,
+                $template,
+                $prefill_name
+            );
+    
+            if (!$insertStmt->execute()) {
+                http_response_code(500);
+                echo 'database insert failed';
+                $insertStmt->close();
+                exit;
+            }
+    
+            $insertStmt->close();
         }
-
-        // Update JSON
-        $updatedJson = json_encode($decoded);
-        $updateStmt = $conn->prepare("UPDATE json SET name = ? WHERE website_id = ?");
-        $updateStmt->bind_param("si", $updatedJson, $website_id);
-        $updateStmt->execute();
-        $updateStmt->close();
-
-        // Fetch prefill_name for logging
-        $stmt_prefill = $conn->prepare("SELECT prefill_name FROM json WHERE website_id = ?");
-        $stmt_prefill->bind_param("i", $website_id);
+    
+    
+        // ─────────────────────────────────────
+        // ACTIVITY LOG
+        // ─────────────────────────────────────
+        $prefillLabel = '';
+    
+        $stmt_prefill = $conn->prepare("
+            SELECT prefill_name
+            FROM json
+            WHERE user_id = ?
+              AND website_id = ?
+              AND template = ?
+            ORDER BY id DESC
+            LIMIT 1
+        ");
+    
+        $stmt_prefill->bind_param(
+            "iis",
+            $user_id,
+            $website_id,
+            $template
+        );
+    
         $stmt_prefill->execute();
-        $stmt_prefill->bind_result($prefill_name_db);
+        $stmt_prefill->bind_result($prefillLabel);
         $stmt_prefill->fetch();
         $stmt_prefill->close();
     
-        $prefillLabel = !empty($prefill_name_db) ? $prefill_name_db : null;
         $actionText = "Field updated for " . $field;
-        if ($prefillLabel) {
-            $safePrefill = htmlspecialchars($prefillLabel, ENT_QUOTES, 'UTF-8');
-            $actionText .= " in {$safePrefill}";
+    
+        if (!empty($prefillLabel)) {
+            $actionText .= " in " . $prefillLabel;
         }
     
-        // Log activity
         logActivity(
             $conn,
             $session_user_id,
             "wizard",
             $actionText
         );
-
+    
         echo 'updated';
         exit;
     }
+    
     // Check if all main fields are approved
     $mainFields = [
         'bussiness_name', 'industry_niche', 'target_audience',

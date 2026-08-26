@@ -48,7 +48,6 @@
                             <tr>
                                 <th scope="col">Name</th>
                                 <th scope="col" class="text-center">Title</th>
-                                <th scope="col" class="text-center">Subtitle</th>
                                 <th scope="col" class="text-center">Price</th>
                                 <th scope="col" class="text-center">Duration</th>
                                 <th scope="col" class="text-center">Status</th>
@@ -70,7 +69,6 @@
                                     </div>
                                 </td>
                                 <td class="text-center"><?= htmlspecialchars($row['title']) ?></td>
-                                <td class="text-center"><?= htmlspecialchars($row['subtitle']) ?></td>
                                 <td class="text-center" id="currency-symbol-display"><?= htmlspecialchars($symbol) ?> <?= number_format($row['price'], 2) ?></td>
                                 <td class="text-center"><?= htmlspecialchars($row['duration']) ?></td>
                                 <td class="text-center">

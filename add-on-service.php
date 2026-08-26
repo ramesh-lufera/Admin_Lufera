@@ -68,17 +68,9 @@ error_reporting(E_ALL);?>
                             </td>
                             <td class="text-center">
                                 <div class="d-flex align-items-center gap-10 justify-content-center">
-                                    <button 
-                                        type="button" 
-                                        class="fa fa-edit edit-role-btn bg-success-focus text-success-600 bg-hover-success-200 fw-medium w-40-px h-40-px d-flex justify-content-center align-items-center rounded-circle"
-                                        data-id="<?= $row['id'] ?>"
-                                        data-bs-toggle="modal" 
-                                        data-bs-target="#exampleModal">
+                                    <button type="button" class="fa fa-edit edit-role-btn bg-success-focus text-success-600 bg-hover-success-200 fw-medium w-40-px h-40-px d-flex justify-content-center align-items-center rounded-circle" data-id="<?= $row['id'] ?>" data-bs-toggle="modal" data-bs-target="#exampleModal">
                                     </button>
-                                    <button 
-                                        type="button" 
-                                        class="fa fa-trash-alt remove-item-btn bg-danger-focus bg-hover-danger-200 text-danger-600 fw-medium w-40-px h-40-px d-flex justify-content-center align-items-center rounded-circle" 
-                                        data-id="<?= $row['id'] ?>">
+                                    <button type="button" class="fa fa-trash-alt remove-item-btn bg-danger-focus bg-hover-danger-200 text-danger-600 fw-medium w-40-px h-40-px d-flex justify-content-center align-items-center rounded-circle" data-id="<?= $row['id'] ?>">
                                     </button>
                                 </div>
                             </td>
@@ -107,7 +99,7 @@ error_reporting(E_ALL);?>
                     <input type="hidden" id="serviceId" name="id">
                     <div class="mb-3">
                         <label for="serviceName" class="form-label">Service Name</label>
-                        <input type="text" class="form-control" id="serviceName" name="name" required>
+                        <input type="text" class="form-control" id="serviceName" name="name" maxlength="50" required>
                     </div>
                     <div class="mb-3">
                         <label for="serviceDescription" class="form-label">Description</label>
@@ -115,21 +107,22 @@ error_reporting(E_ALL);?>
                     </div>
                     <div class="mb-3">
                         <label for="serviceCost" class="form-label">Cost</label>
-                        <input type="number" class="form-control" id="serviceCost" name="cost" onkeydown="return event.key !== 'e'" required maxlength="10">
+                        <input type="text" inputmode="numeric" maxlength="10" class="form-control" id="serviceCost" name="cost" oninput="this.value = this.value.replace(/[^0-9]/g, '')" required>
                     </div>
                     <div class="mb-3">
                         <label for="serviceDuration" class="form-label">Duration</label>
                         <!-- <input type="text" class="form-control" id="serviceDuration" name="duration" required> -->
                         <div class="d-flex gap-2">
-                            <input type="number" name="duration_value" class="form-control radius-8" required min="1" style="width: 50%;">
-                            <select name="duration_unit" class="form-control radius-8" required style="width: 50%;">
+                            <input type="number" name="duration_value" id="durationValue" class="form-control radius-8" required min="1" style="width: 50%;">
+                            <select name="duration_unit" id="durationUnit" class="form-control radius-8" required style="width: 50%;">
+                                <option value="day">Day</option>
                                 <option value="days">Days</option>
+                                <option value="month">Month</option>
                                 <option value="months">Months</option>
+                                <option value="year">Year</option>
                                 <option value="years">Years</option>
-                                <!-- <option value="hours">Hours</option> -->
                             </select>
-                        </div>
-                                
+                        </div>                               
                     </div>
                     <div class="form-check">
                         <input class="form-check-input" type="checkbox" id="isActive" name="isActive" checked>
@@ -150,9 +143,7 @@ error_reporting(E_ALL);?>
 $(document).ready(function() {
     $('#role-table').DataTable();
 });
-
-document.addEventListener('DOMContentLoaded', function() {
-    
+document.addEventListener('DOMContentLoaded', function() { 
     // Edit button click handler
     document.querySelectorAll('.edit-role-btn').forEach(button => {
         button.addEventListener('click', function() {
@@ -264,7 +255,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // Submit form handler
+// Submit form handler
 document.getElementById('submitService').addEventListener('click', function() {
     const form = document.getElementById('serviceForm');
     if (!form.checkValidity()) {
@@ -330,6 +321,43 @@ $(document).ready(function() {
         // Replace '#add-category-form' with your actual form's ID
         $('#serviceForm')[0].reset();
     });
+});
+
+document.addEventListener('DOMContentLoaded', function() {
+    const durationInput = document.getElementById('durationValue');
+    const durationSelect = document.getElementById('durationUnit');
+    if (durationInput && durationSelect) {
+        function updateUnitLabels() {
+            const val = parseInt(durationInput.value) || 1;
+            const currentSelected = durationSelect.value; // Keep current unit if possible            
+            Array.from(durationSelect.options).forEach(option => {
+                let baseWord = '';
+                const optVal = option.value.toLowerCase();
+                if (optVal.includes('day')) baseWord = 'day';
+                else if (optVal.includes('month')) baseWord = 'month';
+                else if (optVal.includes('year')) baseWord = 'year';
+                if (baseWord) {
+                    const targetWord = val > 1 ? baseWord + 's' : baseWord;
+                    option.value = targetWord;
+                    option.text = targetWord.charAt(0).toUpperCase() + targetWord.slice(1);
+                }
+            });
+            // Try to re-select the correct unit base if value changed
+            if (currentSelected) {
+                const base = currentSelected.replace('s', '');
+                const match = Array.from(durationSelect.options).find(opt => opt.value.startsWith(base) && (val > 1 ? opt.value.endsWith('s') : !opt.value.endsWith('s')));
+                if (match) durationSelect.value = match.value;
+            }
+        }
+        durationInput.addEventListener('input', updateUnitLabels);
+        durationInput.addEventListener('change', updateUnitLabels);
+        // Trigger update when editing an existing record
+        document.querySelectorAll('.edit-role-btn').forEach(button => {
+            button.addEventListener('click', function() {
+                setTimeout(updateUnitLabels, 150); // Small delay to let AJAX populate fields first
+            });
+        });
+    }
 });
 </script>
 

@@ -1,6 +1,24 @@
 <?php include './partials/layouts/layoutTop.php'; ?>
 
 <style>
+    .form-wrapper {
+        max-width: 75% !important;
+        margin: 40px auto !important;
+        padding: 40px !important;
+        background: #ffffff !important;
+        border-radius: 16px !important;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05) !important;
+    }
+
+    .form-wrapper h4 {
+        font-size: 1.8rem !important;
+        font-weight: bold !important;
+        color: #101010 !important;
+        border-bottom: 2px solid #fec700 !important;
+        padding-bottom: 10px !important;
+        margin-bottom: 30px !important;
+    }
+
     .form-group {
         margin-bottom: 24px !important;
     }
@@ -55,6 +73,35 @@
         cursor: pointer !important;
     }
 
+    @media (max-width: 768px) {
+        .form-wrapper {
+            width: 90% !important;
+            padding: 30px !important;
+        }
+
+        .form-check-group {
+            flex-direction: column !important;
+            align-items: flex-start !important;
+        }
+    }
+    .progress {
+        height: 40px;
+        background-color: #f3f3f3;
+        border-radius: 8px;
+        overflow: hidden;
+    }
+    .progress-bar {
+        /* background-color: #fec700 !important; Match your form's primary color */
+        background-color: var(--lufera-main-color) !important; /* Match your form's primary color */
+        color: #000;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: width 0.6s ease;
+        height: 40px;
+        font-size:20px;
+    }
 
     /* Remove browser defaults for consistency */
     .custom-checkbox-yellow {
@@ -119,75 +166,16 @@
         padding: 10px;
         text-align: center;
     }
-
-    .form-section-title {
-        font-size: 24px;
-        font-weight: 600;
-        color: #333;
-        padding: 12px 16px;
-        margin-bottom: 25px;
-        border-left: 5px solid #fec700;
-        background-color: #fffdf3;
-        border-radius: 6px;
-        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-    }
-    .modal {
-        position: fixed;
-        z-index: 1050;
-        top: 0; left: 0;
-        width: 100%; height: 100%;
-        background: rgba(0, 0, 0, 0.5);
-        display: none;
-        align-items: center;
-        justify-content: center;
-    }
-    .modal-content {
-        background: #fff;
-        padding: 25px 20px;
-        border-radius: 8px;
-        width: 100%;
-        max-width: 400px;
-        box-shadow: 0 5px 25px rgba(0, 0, 0, 0.2);
-        position: relative;
-    }
-    .close-btn {
-        position: absolute;
-        right: 15px;
-        top: 12px;
-        font-size: 20px;
-        cursor: pointer;
-        color: #aaa;
-    }
-    .close-btn:hover {
-        color: #000;
-    }
-    h5 {
-       font-size: 1.25rem !important;
-    }
-    .progress {
-        height: 40px;
-        background-color: #f3f3f3;
-        border-radius: 8px;
-        overflow: hidden;
-    }
-    .progress-bar {
-        /* background-color: #fec700 !important; Match your form's primary color */
-        background-color: var(--lufera-main-color) !important; /* Match your form's primary color */
-        color: #000;
-        font-weight: 600;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        transition: width 0.6s ease;
-        height: 40px;
-        font-size:20px;
-    }
     .w-85{
         width:85% !important;
     }
 </style>
-
+<div class="dashboard-main-body">
+    <div class="d-flex flex-wrap align-items-center gap-3 mb-24 justify-content-between">
+        <div class="d-flex align-self-end">
+            <a class="cursor-pointer fw-bold" onclick="history.back()"><span class="fa fa-arrow-left"></span>&nbsp; </a>     
+            <h6 class="fw-semibold mb-0">Visa</h6>
+        </div>
 <?php
     $session_user_id = $_SESSION['user_id'];
     $prod_id = intval($_GET['prod_id']);
@@ -202,18 +190,19 @@
         $sql = "SELECT * FROM package where id = $prod_id";
         $result = $conn->query($sql);
         $row = $result->fetch_assoc();
-        $template = $row['template'];     
+        $template = $row['template'];
     }
     elseif($type == "product"){
         $sql = "SELECT * FROM products where id = $prod_id";
         $result = $conn->query($sql);
         $row = $result->fetch_assoc();
-        $template = $row['template'];   
+        $template = $row['template'];
     }
 
     // Fetch all past records of this user
     $prevRecords = [];
-    $stmt = $conn->prepare("SELECT id, name FROM json WHERE user_id = ? AND template = ?");
+    //$stmt = $conn->prepare("SELECT id, name FROM json WHERE user_id = ? AND template = ?");
+    $stmt = $conn->prepare("SELECT id, name, prefill_name FROM json WHERE user_id = ? AND template = ? AND prefill_name IS NOT NULL AND prefill_name != ''");
     $stmt->bind_param("is", $session_user_id, $template);
     $stmt->execute();
     $result = $stmt->get_result();
@@ -223,7 +212,8 @@
         if ($decoded && isset($decoded['name']['value'])) {
             $prevRecords[] = [
                 'id' => $row['id'],
-                'data' => $decoded
+                'data' => $decoded,
+                'prefill_name'=> $row['prefill_name']
             ];
         }
     }
@@ -270,15 +260,19 @@
         $query->bind_result($jsonData);
         $query->fetch();
         $savedData = json_decode($jsonData, true);
-    } 
+    }
     $query->close();
 
+    // if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_POST['save'])) {
         $name = $_POST['name'] ?? '';
-        $email = $_POST['email'] ?? '';
+        $Passport_no = $_POST['passport_no'] ?? '';
         $hasPhone = $_POST['has_phone'] ?? '';
         $websiteName = $_POST['website_name'] ?? [];
-        $address = $_POST['address'] ?? '';
+        $Address = $_POST['address'] ?? '';
+        $allow_prefill = isset($_POST['allow_prefill']) && $_POST['allow_prefill'] === 'on';
+        $prefill_name = $allow_prefill ? ($_POST['prefill_name'] ?? '') : '';
+
         $logo = $_FILES['logo']['name'] ?? '';
 
         $finalLogoPath = $_POST['logo_existing'] ?? ''; // keep old if no new upload
@@ -288,6 +282,7 @@
             if (!is_dir($uploadDir)) {
                 mkdir($uploadDir, 0777, true);
             }
+
             $uniqueName = uniqid() . '-' . basename($_FILES['logo']['name']);
             $finalLogoPath = $uploadDir . $uniqueName;
             move_uploaded_file($_FILES['logo']['tmp_name'], $finalLogoPath);
@@ -302,11 +297,12 @@
 
         $data = json_encode([
             'name' => createField($name),
-            'email' => createField($email),
+            'passport_no' => createField($Passport_no),
             'has_phone' => createField($hasPhone),
             'website_name' => createField($websiteName),
-            'address' => createField($address),
+            'address' => createField($Address),
             'logo' => createField($finalLogoPath),
+            'prefill_name' => createField($prefill_name),
         ]);
 
         $website_id = isset($_GET['id']) ? intval($_GET['id']) : 0;
@@ -317,34 +313,46 @@
         $check->store_result();
 
         if ($check->num_rows > 0) {
-            $update = $conn->prepare("UPDATE json SET name = ? WHERE user_id = ? AND website_id = ? AND template = ?");
-            $update->bind_param("siis", $data, $user_id, $website_id, $template);
+            $update = $conn->prepare("UPDATE json SET name = ?, prefill_name = ? WHERE user_id = ? AND website_id = ? AND template = ?");
+            $update->bind_param("ssiis", $data, $prefill_name, $user_id, $website_id, $template);
             $success = $update->execute();
             $update->close();
         } else {
-            $insert = $conn->prepare("INSERT INTO json (name, user_id, website_id, template) VALUES (?, ?, ?, ?)");
-            $insert->bind_param("siis", $data, $user_id, $website_id, $template);
+            $insert = $conn->prepare("INSERT INTO json (name, user_id, website_id, template, prefill_name) VALUES (?, ?, ?, ?, ?)");
+            $insert->bind_param("siiss", $data, $user_id, $website_id, $template, $prefill_name);
             $success = $insert->execute();
             $insert->close();
         }
 
         $check->close();
 
-        echo '
-            <script>
-                Swal.fire({
-                    icon: "success",
-                    title: "Success!",
-                    text: "Data saved successfully!"
-                }).then(() => {
-                    // window.location.href = "website-wizard.php";
-                    window.history.back();
-                });
-            </script>';
+        if ($success) {
+            echo '
+                <script>
+                    Swal.fire({
+                        icon: "success",
+                        title: "Success!",
+                        text: "Data saved successfully!"
+                    }).then(() => {
+                        window.history.back();
+                    });
+                </script>';
+        } else {
+            echo '
+                <script>
+                    Swal.fire({
+                        icon: "error",
+                        title: "Failed!",
+                        text: "Something went wrong. Please try again."
+                    }).then(() => {
+                        window.history.back();
+                    });
+                </script>';
+        }
     }
 
     if (!empty($prevRecords)): ?>
-        <div class="d-flex justify-content-center justify-content-md-end mt-3 me-md-5" style="margin-bottom:0;">
+        <div class="d-flex justify-content-center justify-content-md-end" style="margin-bottom:0;">
             <div class="p-3 rounded shadow-sm w-100 w-md-40" 
                 style="font-size: 0.85rem; background-color: #fffbea; max-width: 600px; text-align:left;">
                 <h6 class="fw-bold text-dark mb-3" style="font-size: 0.9rem;">
@@ -359,7 +367,7 @@
                                 data-record='<?php echo json_encode($record['data']); ?>'
                                 id="rec_<?php echo $record['id']; ?>">
                             <label for="rec_<?php echo $record['id']; ?>" class="form-check-label ms-1" style="font-size: 0.9rem;">
-                                <?php echo htmlspecialchars($record['data']['name']['value']); ?>
+                                <?php echo htmlspecialchars($record['prefill_name']); ?>
                             </label>
                         </div>
                     <?php endforeach; ?>
@@ -367,7 +375,7 @@
             </div>
         </div>
     <?php endif;
-    
+
     function renderFieldExtended($fieldName, $savedData, $user_role, $label = '', $placeholder = '', $type = 'text', $options = []) {
         $val = $savedData[$fieldName]['value'] ?? '';
         $status = $savedData[$fieldName]['status'] ?? 'pending';
@@ -399,9 +407,9 @@
         $styleClass = $status === 'approved' ? 'field-approved' : ($status === 'rejected' ? 'field-rejected' : '');
         echo '<div class="input-group">';
 
-        // === TEXT / EMAIL ===
+        // === TEXT / Passport No ===
         if ($type === 'text' || $type === 'email') {
-            echo '<input type="' . $type . '" class="form-control  w-85 ' . $styleClass . '" id="' . $inputId . '" name="' . htmlspecialchars($fieldName) . '" placeholder="' . htmlspecialchars($placeholder) . '" value="' . htmlspecialchars($val) . '" ' . $isReadonly . ' required>';
+            echo '<input type="' . $type . '" class="form-control w-85 ' . $styleClass . '" id="' . $inputId . '" name="' . htmlspecialchars($fieldName) . '" placeholder="' . htmlspecialchars($placeholder) . '" value="' . htmlspecialchars($val) . '" ' . $isReadonly . ' required>';
         }
 
         // === TEXTAREA ===
@@ -437,10 +445,9 @@
         // === FILE ===
         elseif ($type === 'file') {
             // echo '<input type="file" class="form-control ' . $styleClass . '" id="' . $inputId . '" name="' . htmlspecialchars($fieldName) . '" ' . ($isAdmin ? 'disabled' : '') . '>';
-            echo '<input type="file" class="form-control w-85 ' . $styleClass . '" id="' . $inputId . '" name="' . htmlspecialchars($fieldName) . '" ' . $isDisabled . '>';
+            echo '<input type="file" class="form-control ' . $styleClass . '" id="' . $inputId . '" name="' . htmlspecialchars($fieldName) . '" ' . $isDisabled . '>';
             // hidden input to store old path
             echo '<input type="hidden" name="' . htmlspecialchars($fieldName) . '_existing" value="' . htmlspecialchars($val) . '">';
-            
             if (!empty($val)) {
                 echo '<div class="mt-3">';
                 echo '<label class="d-block fw-bold">Uploaded File:</label>';
@@ -458,11 +465,11 @@
         // === Admin Buttons ===
         if ($isAdmin) {
             echo '<div class="btn-group mt-2 ms-1">';
-            // echo '<button type="button" class="btn btn-sm edit-icon" style="background-color: #FEC700; color: black;" data-field="' . htmlspecialchars($fieldName) . '" title="Edit">&#9998;</button>';
-            echo '<button type="button" class="btn btn-sm edit-icon" style="background-color: orange; color: black;" data-field="' . htmlspecialchars($fieldName) . '" title="Edit">&#9998;</button>';
-            echo '<button type="button" class="btn btn-sm update-icon d-none" style="background-color: #00B4D8; color: white;" data-field="' . htmlspecialchars($fieldName) . '" title="Update">&#128190;</button>';
-            echo '<button type="button" class="btn btn-success btn-sm approve-btn" data-field="' . htmlspecialchars($fieldName) . '" title="Approve">&#10004;</button>';
-            echo '<button type="button" class="btn btn-danger btn-sm reject-btn" data-field="' . htmlspecialchars($fieldName) . '" title="Reject">&#10006;</button>';
+            // echo '<button type="button" class="btn btn-sm edit-icon" style="background-color: #FEC700; color: black;" data-field="' . htmlspecialchars($fieldName) . '" title="Edit">Edit</button>';
+            echo '<button type="button" class="btn btn-sm edit-icon" style="background-color: orange; color: black;" data-field="' . htmlspecialchars($fieldName) . '" title="Edit">Edit</button>';
+            echo '<button type="button" class="btn btn-sm update-icon d-none" style="background-color: #00B4D8; color: white;" data-field="' . htmlspecialchars($fieldName) . '" title="Update">Update</button>';
+            echo '<button type="button" class="btn btn-success btn-sm approve-btn" data-field="' . htmlspecialchars($fieldName) . '" title="Approve">Approve</button>';
+            echo '<button type="button" class="btn btn-danger btn-sm reject-btn" data-field="' . htmlspecialchars($fieldName) . '" title="Reject">Reject</button>';
             echo '</div>';
         }
 
@@ -526,83 +533,214 @@
         exit;
     }
 
+    // ────────────────────────────────────────────────
+    // INLINE UPDATE HANDLER
+    // UPDATE existing JSON record OR INSERT a new one
+    // ────────────────────────────────────────────────
     if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['inline_update'])) {
-        $field = $_POST['field'] ?? '';
+
+        header('Content-Type: text/plain; charset=utf-8');
+
+        $field = trim($_POST['field'] ?? '');
         $website_id = isset($_GET['id']) ? intval($_GET['id']) : 0;
 
-        if (!$field || !$website_id) {
+        if ($field === '' || $website_id <= 0) {
+            http_response_code(400);
             echo 'invalid request';
             exit;
         }
 
-        // Fetch existing JSON
-        $stmt = $conn->prepare("SELECT name FROM json WHERE website_id = ?");
-        $stmt->bind_param("i", $website_id);
+        /*
+         * Match the same JSON record used by the normal Save handler:
+         * user_id + website_id + template.
+         */
+        $jsonId = 0;
+        $jsonData = '';
+
+        $stmt = $conn->prepare("
+            SELECT id, name
+            FROM json
+            WHERE user_id = ?
+              AND website_id = ?
+              AND template = ?
+            ORDER BY id DESC
+            LIMIT 1
+        ");
+
+        $stmt->bind_param(
+            "iis",
+            $user_id,
+            $website_id,
+            $template
+        );
+
         $stmt->execute();
-        $stmt->bind_result($jsonData);
-        $stmt->fetch();
-        $stmt->close();
+        $result = $stmt->get_result();
 
-        $decoded = json_decode($jsonData, true);
-
-        if (!isset($decoded[$field])) {
-            echo 'field not found';
-            exit;
+        if ($row = $result->fetch_assoc()) {
+            $jsonId = (int)$row['id'];
+            $jsonData = $row['name'];
         }
 
-        // === FILE upload ===
-        if (!empty($_FILES['file'])) {
+        $stmt->close();
+
+        /*
+         * Existing record: decode its JSON.
+         * Missing record: start with an empty JSON object.
+         */
+        $decoded = [];
+
+        if (!empty($jsonData)) {
+            $decoded = json_decode($jsonData, true);
+
+            if (!is_array($decoded)) {
+                $decoded = [];
+            }
+        }
+
+        /*
+         * If the field does not exist yet, create it.
+         * This avoids "field not found" for a new field.
+         */
+        if (!isset($decoded[$field]) || !is_array($decoded[$field])) {
+            $decoded[$field] = [
+                'value' => '',
+                'status' => 'pending'
+            ];
+        }
+
+        // ────────────────────────────────────────────────
+        // FILE UPLOAD
+        // ────────────────────────────────────────────────
+        if (
+            isset($_FILES['file']) &&
+            $_FILES['file']['error'] === UPLOAD_ERR_OK
+        ) {
+
             $fileTmp = $_FILES['file']['tmp_name'];
             $fileName = basename($_FILES['file']['name']);
+
             $uploadDir = 'uploads/';
-            $targetPath = $uploadDir . time() . '_' . preg_replace("/[^a-zA-Z0-9.\-_]/", "", $fileName);
 
             if (!is_dir($uploadDir)) {
-                mkdir($uploadDir, 0777, true);
+                if (!mkdir($uploadDir, 0777, true)) {
+                    http_response_code(500);
+                    echo 'could not create upload directory';
+                    exit;
+                }
             }
 
-            if (move_uploaded_file($fileTmp, $targetPath)) {
-                $decoded[$field]['value'] = $targetPath;
-                $decoded[$field]['status'] = 'pending';
-            } else {
+            $safeFileName = preg_replace(
+                "/[^a-zA-Z0-9.\-_]/",
+                "",
+                $fileName
+            );
+
+            $targetPath = $uploadDir . time() . '_' . $safeFileName;
+
+            if (!move_uploaded_file($fileTmp, $targetPath)) {
+                http_response_code(500);
                 echo 'file upload failed';
                 exit;
             }
-        }
-        // === NORMAL text/radio/checkbox ===
-        else {
-            $value = $_POST['value'] ?? '';
-            $decoded[$field]['value'] = $value;
-            $decoded[$field]['status'] = 'pending';
+
+            $decoded[$field]['value'] = $targetPath;
+
+        } else {
+
+            // Text / textarea / select / radio / checkbox
+            $decoded[$field]['value'] = $_POST['value'] ?? '';
         }
 
-        // Update JSON
-        $updatedJson = json_encode($decoded);
-        $updateStmt = $conn->prepare("UPDATE json SET name = ? WHERE website_id = ?");
-        $updateStmt->bind_param("si", $updatedJson, $website_id);
-        $updateStmt->execute();
-        $updateStmt->close();
+        // Every admin inline edit becomes pending.
+        $decoded[$field]['status'] = 'pending';
+
+        $updatedJson = json_encode(
+            $decoded,
+            JSON_UNESCAPED_UNICODE |
+            JSON_UNESCAPED_SLASHES
+        );
+
+        if ($updatedJson === false) {
+            http_response_code(500);
+            echo 'json encoding failed';
+            exit;
+        }
+
+        // ────────────────────────────────────────────────
+        // EXISTING RECORD → UPDATE ONLY THE EDITED FIELD
+        // ────────────────────────────────────────────────
+        if ($jsonId > 0) {
+
+            $updateStmt = $conn->prepare("
+                UPDATE json
+                SET name = ?
+                WHERE id = ?
+                LIMIT 1
+            ");
+
+            $updateStmt->bind_param(
+                "si",
+                $updatedJson,
+                $jsonId
+            );
+
+            if (!$updateStmt->execute()) {
+                http_response_code(500);
+                echo 'database update failed';
+                $updateStmt->close();
+                exit;
+            }
+
+            $updateStmt->close();
+
+        } else {
+
+            // ────────────────────────────────────────────
+            // NO RECORD → INSERT A NEW JSON RECORD
+            // ────────────────────────────────────────────
+            $insertStmt = $conn->prepare("
+                INSERT INTO json
+                    (name, user_id, website_id, template)
+                VALUES
+                    (?, ?, ?, ?)
+            ");
+
+            $insertStmt->bind_param(
+                "siis",
+                $updatedJson,
+                $user_id,
+                $website_id,
+                $template
+            );
+
+            if (!$insertStmt->execute()) {
+                http_response_code(500);
+                echo 'database insert failed';
+                $insertStmt->close();
+                exit;
+            }
+
+            $insertStmt->close();
+        }
 
         echo 'updated';
         exit;
     }
+
 ?>
 
-<div class="dashboard-main-body">
-    <div class="d-flex flex-wrap align-items-center gap-3 mb-24">
-    <a class="cursor-pointer fw-bold" onclick="history.back()"><span class="fa fa-arrow-left"></span>&nbsp; </a>     
-        <h6 class="fw-semibold mb-0">Website</h6>
     </div>
-
     <div class="card h-100 p-0 radius-12 overflow-hidden">               
         <div class="card-body p-40">
+
             <div class="row justify-content-center">
                 <div class="col-xxl-10">
                 <section class="wizard-section">
                     <div class="row no-gutters">
                         <div class="col-lg-12">
                             <div class="form-wizard">
-                            <!-- Progress Bar -->   
+                                <!-- Progress Bar -->
                                 <div class="progress mb-20">
                                     <div class="progress-bar progress-bar-striped progress-bar-animated bg-warning"
                                         role="progressbar"
@@ -611,8 +749,7 @@
                                         0%
                                     </div>
                                 </div>
-
-                                <form action="" method="post" id="myForm" role="form" enctype="multipart/form-data">
+                                <form action="" method="post" id="myForm" role="form" enctype="multipart/form-data">                                    
                                     <?php if (in_array($user_role, [1, 2, 7])): ?>
                                         <div class="d-flex justify-content-between align-items-center mb-3">
                                             <div class="form-check d-flex align-items-center m-0">
@@ -626,22 +763,50 @@
                                         </div>
                                     <?php endif; ?>
 
-                                        <?php
-                                            renderFieldExtended('name', $savedData, $user_role, 'Name', 'Enter your name', 'text');
+                                    <?php
+                                        renderFieldExtended('name', $savedData, $user_role, 'Name', 'Enter your name', 'text');
 
-                                            renderFieldExtended('email', $savedData, $user_role, 'Email', 'Enter your email', 'email');
+                                        renderFieldExtended('passport_no', $savedData, $user_role, 'Passport No', 'Passport No', 'text');
 
-                                            renderFieldExtended('has_phone', $savedData, $user_role, 'Do you have a phone?', '', 'radio', ['Yes', 'No']);
+                                        renderFieldExtended('has_phone', $savedData, $user_role, 'Do you have a phone?', '', 'radio', ['Yes', 'No']);
 
-                                            renderFieldExtended('website_name', $savedData, $user_role, 'Website Name', '', 'checkbox', ['Static', 'Dynamic']);
+                                        renderFieldExtended('website_name', $savedData, $user_role, 'Website Name', '', 'checkbox', ['Static', 'Dynamic']);
 
-                                            renderFieldExtended('address', $savedData, $user_role, 'Address', 'Enter your address', 'textarea');
+                                        renderFieldExtended('address', $savedData, $user_role, 'Address', 'Enter your address', 'textarea');
 
-                                            renderFieldExtended('logo', $savedData, $user_role, 'Logo', '', 'file');
+                                        renderFieldExtended('logo', $savedData, $user_role, 'Photo', '', 'file');
+                                    ?>
+                                    <!-- NEW: Allow Prefill Data -->
+                                    <?php
+                                        if ($user_role != 1 && $user_role != 2) {
+                                        $prefillName = $savedData['prefill_name']['value'] ?? '';
+                                        $allowPrefill = !empty($prefillName);
                                         ?>
-                                        <?php if (in_array($user_role, [8])): ?>
-                                            <input type="submit" name="save" class="lufera-bg lufera-text text-md px-56 py-11 radius-8 m-auto d-block" value="Save" >
-                                        <?php endif; ?>
+                                        <div class="mt-5 p-20">
+                                            <div class="form-check">
+                                                <input class="form-check-input mt-4 me-4" type="checkbox" id="allow_prefill" name="allow_prefill" <?= $allowPrefill ? 'checked' : '' ?>>
+                                                <label class="form-check-label fw-bold" for="allow_prefill">
+                                                    Allow users to save prefill data
+                                                </label>
+                                            </div>
+
+                                            <div id="prefill_name_wrapper" class="mt-3" style="display:<?= $allowPrefill ? 'block' : 'none' ?>;">
+                                                <?php
+                                                renderFieldExtended(
+                                                    'prefill_name',
+                                                    $savedData,
+                                                    $user_role,
+                                                    'Prefill name (will appear in “Fill Values From Previous Wizards”)',
+                                                    '',
+                                                    'text'
+                                                );
+                                            }
+                                                ?>
+                                            </div>
+                                        </div>
+                                    <?php if (in_array($user_role, [8])): ?>
+                                        <input type="submit" name="save" class="lufera-bg lufera-text text-md px-56 py-11 radius-8 m-auto d-block mt-4" value="Save">
+                                    <?php endif; ?>
                                 </form>
                             </div>
                         </div>
@@ -653,6 +818,50 @@
     </div>
 </div>
 
+<style>
+    .modal {
+        position: fixed;
+        z-index: 1050;
+        top: 0; left: 0;
+        width: 100%; height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        display: none;
+        align-items: center;
+        justify-content: center;
+    }
+    .modal-content {
+        background: #fff;
+        padding: 25px 20px;
+        border-radius: 8px;
+        width: 100%;
+        max-width: 400px;
+        box-shadow: 0 5px 25px rgba(0, 0, 0, 0.2);
+        position: relative;
+    }
+    .close-btn {
+        position: absolute;
+        right: 15px;
+        top: 12px;
+        font-size: 20px;
+        cursor: pointer;
+        color: #aaa;
+    }
+    .close-btn:hover {
+        color: #000;
+    }
+    h5 {
+       font-size: 1.25rem !important;
+    }
+</style>
+<script>
+    document.getElementById('allow_prefill').addEventListener('change', function () {
+        document.getElementById('prefill_name_wrapper').style.display = this.checked ? 'block' : 'none';
+        if (!this.checked) {
+            const inp = document.getElementById('field_prefill_name');
+            if (inp) inp.value = '';
+        }
+    });
+</script>
 <script>
     document.addEventListener('DOMContentLoaded', () => {
         let currentField = '';
@@ -766,7 +975,7 @@
 </script>
 
 <div id="editModal" class="modal" style="display:none;">
-    <div class="modal-content p-4 rounded" style="background:#fff; max-width:500px; margin:auto;">
+    <div class="modal-content p-20 rounded" style="background:#fff; max-width:500px; margin:auto;">
         <span class="close-btn float-end" title="Close" style="cursor:pointer;">&times;</span>
         <h5 class="mb-3">Edit Field</h5>
         <div id="editFieldContainer" class="mb-3"></div>
@@ -936,8 +1145,8 @@
     });
 </script>
 
-<!-- Progress bar -->
-<script>
+<!-- Progress Bar -->
+<script>    
     function updateProgressBar() {
         let filled = 0;
         const totalFields = 6;
@@ -945,8 +1154,8 @@
         const name = $('#field_name').val()?.trim();
         if (name) filled++;
  
-        const email = $('#field_email').val()?.trim();
-        if (email) filled++;
+        const pass_no = $('#field_passport_no').val()?.trim();
+        if (pass_no) filled++;
  
         const hasPhone = $('input[name="has_phone"]:checked').val();
         if (hasPhone) filled++;
@@ -969,10 +1178,12 @@
     $(document).ready(function () {
         updateProgressBar(); // Initial calculation on page load
  
-        $('#field_name, #field_email, #field_address').on('input', updateProgressBar);
-        $('input[name="has_phone"]').on('change', updateProgressBar);
-        $('input[name="website_name[]"]').on('change', updateProgressBar);
-        $('#field_logo').on('change', updateProgressBar);
+        // $('#field_name, #field_passport_no, #field_address').on('input', updateProgressBar);
+        // $('input[name="has_phone"]').on('change', updateProgressBar);
+        // $('input[name="website_name[]"]').on('change', updateProgressBar);
+        // $('#field_logo').on('change', updateProgressBar);
+
+        $(document).on('input change', 'input, select, textarea', updateProgressBar);
     });
 </script>
 
@@ -1054,9 +1265,14 @@ document.addEventListener('DOMContentLoaded', function () {
 
                 // === Fill fields ===
                 if (data.name?.value) document.getElementById('field_name').value = data.name.value;
-                if (data.email?.value) document.getElementById('field_email').value = data.email.value;
+                if (data.passport_no?.value) document.getElementById('field_passport_no').value = data.passport_no.value;
                 if (data.address?.value) document.getElementById('field_address').value = data.address.value;
-
+                if (data.prefill_name?.value) {
+                    const prefillInput = document.getElementById('field_prefill_name');
+                    if (prefillInput) prefillInput.value = data.prefill_name.value;
+                    document.getElementById('allow_prefill').checked = true;
+                    document.getElementById('prefill_name_wrapper').style.display = 'block';
+                }
                 // Radio
                 if (data.has_phone?.value) {
                     document.querySelectorAll('input[name="has_phone"]').forEach(r => {

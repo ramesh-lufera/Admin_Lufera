@@ -280,73 +280,884 @@
                         \$landingSlug = strtolower(preg_replace('/\s+/', '-', \$package_name));
                         \$landingFileName = \$landingSlug . ".php";                    
 
-                        // LANDING content
+                        // =====================================================
+                        // CREATE LANDING FILE CONTENT
+                        // =====================================================
+
                         \$landingContent = <<<'LANDING'
-                        
-                        <?php 
-                        session_start();
+                        <?php
                         include '../../partials/connection.php';
-                        include '../head.php'; 
+                        include '../head.php';
+                        include '../scripts.php';
+                        session_start();
+                        \$isLoggedIn = isset(\$_SESSION['user_id']) && \$_SESSION['user_id'] > 0;
+                        \$product_id = __PACKAGE_ID__; // or your generated product id
+                        \$stmt = \$conn->prepare("
+                            SELECT *
+                            FROM package
+                            WHERE id = ? AND is_deleted = 0
+                        ");
+                        \$stmt->bind_param("i", \$product_id);
+                        \$stmt->execute();
+                        \$product = \$stmt->get_result()->fetch_assoc();
+                        \$inclusive = [];
+                        \$exclusive = [];
+                        \$stmt = \$conn->prepare("
+                            SELECT feature_type, feature
+                            FROM features
+                            WHERE package_id = ?
+                            AND cat_type = 1
+                            ORDER BY id ASC
+                        ");
+                        \$stmt->bind_param("i", \$product['id']);
+                        \$stmt->execute();
+                        \$result = \$stmt->get_result();
+                        while (\$row = \$result->fetch_assoc()) {
+
+                            if (strtolower(trim(\$row['feature_type'])) == 'inclusive') {
+                                \$inclusive[] = \$row['feature'];
+                            } elseif (strtolower(trim(\$row['feature_type'])) == 'exclusive') {
+                                \$exclusive[] = \$row['feature'];
+                            }
+
+                        }
+                        \$stmt->close();
+
+                        // ================= COMPANY LOGO =================
+                        \$company = \$conn->query("SELECT logo, phone_no, email FROM company LIMIT 1");
+                        \$companyRow = \$company->fetch_assoc();
+
+                        \$logo = \$companyRow['logo'] ?? '';
+                        \$phone_no = \$companyRow['phone_no'] ?? '';
+                        \$email = \$companyRow['email'] ?? '';
+
+                        // ✅ COMPANY DATA
+                        \$company = [];
+                        \$res = \$conn->query("SELECT phone_no, address FROM company LIMIT 1");
+                        if (\$res && \$res->num_rows > 0) {
+                            \$company = \$res->fetch_assoc();
+                        }
                         ?>
+                        <!DOCTYPE html>
+                        <html lang="en">
+                            <head>
+                            <meta charset="UTF-8">
+                            <title>Package</title>
+                            <style>
+                                :root {
+                                    --yellow: #fec700;
+                                    --black: #101010;
+                                }
+                                /* GLOBAL TEXT SIZE */
+                                body {
+                                    font-size: 15px !important;
+                                }
+                                /* HEADINGS */
+                                h1 { font-size: 26px !important; }
+                                h2 { font-size: 24px !important; }
+                                h3 { font-size: 22px !important; }
+                                h4 { font-size: 20px !important; }
+                                h5 { font-size: 18px !important; }
+                                h6 { font-size: 16px !important; }
+                                /* TEXT */
+                                p {
+                                    font-size: 15px !important;
+                                    line-height: 1.6 !important;
+                                }
+                                /* ===== HEADER FULL WIDTH ===== */
+                                .top-header {
+                                    width: 100%;
+                                    display: flex;
+                                    justify-content: space-between; /* left + right */
+                                    align-items: center;
+                                    padding: 12px 30px;
+                                    box-sizing: border-box;
+                                }
+                                /* LEFT LOGO */
+                                .header-left img {
+                                    height: 50px;
+                                    object-fit: contain;
+                                }
+                                /* RIGHT PHONE */
+                                .header-right {
+                                    display: flex;
+                                    align-items: center;
+                                    gap: 15px; /* space between phone & email */
+                                    font-size: 14px;
+                                    font-weight: 500;
+                                }
+                                /* EACH ITEM */
+                                .contact-item {
+                                    white-space: nowrap;
+                                }
+                                /* ===== BANNER ===== */
+                                .banner-section {
+                                    position: relative;
+                                    width: 100%;
+                                    height: 280px;
+
+                                    margin-top: 20px;   /* 🔥 spacing from header */
+                                    margin-bottom: 20px;
+
+                                    overflow: hidden;
+                                }
+                                /* FULL WIDTH IMAGE */
+                                .banner-img {
+                                    width: 100%;
+                                    height: 100%;
+                                    object-fit: cover;
+                                }
+
+                                /* OVERLAY */
+                                .banner-overlay {
+                                    position: absolute;
+                                    top: 0;
+                                    left: 0;
+                                    right: 0;
+                                    bottom: 0;
+
+                                    display: flex;
+                                    align-items: center;
+                                    justify-content: center;
+
+                                    background: rgba(0,0,0,0.4);
+                                }
+                                /* TITLE CENTER */
+                                .banner-title {
+                                    color: #fff;
+                                    font-size: 28px;
+                                    font-weight: 700;
+                                    text-align: center;
+                                    text-shadow: 0 2px 8px rgba(0,0,0,0.7);
+                                }
+                                .breadcrumb-path {
+                                    font-size: 14px !important;
+                                    color: #ccc !important;
+                                }
+                                .breadcrumb-path a {
+                                    color: var(--yellow) !important;
+                                    text-decoration: none !important;
+                                }
+                                .row {
+                                    display: flex !important;
+                                }
+                                .col-left {
+                                    flex: 2 !important;
+                                }
+                                .col-right {
+                                    flex: 1 !important;
+                                }
+                                /* CARD */
+                                .card {
+                                    background: #fff !important;
+                                    border-radius: 10px !important;
+                                    box-shadow: 0 2px 8px rgba(0,0,0,0.08) !important;
+                                    padding: 18px !important;
+                                    margin-bottom: 20px !important;
+                                    line-height: 1.6 !important;
+                                }
+                                /* IMAGE */
+                                .feature-img {
+                                    width: 100% !important;
+                                    border-radius: 8px !important;
+                                    max-height: 300px !important;
+                                    object-fit: cover !important;
+                                }
+                                /* LIST */
+                                .custom-list {
+                                    list-style: none !important;
+                                    padding: 0 !important;
+                                }
+
+                                .custom-list li {
+                                    padding: 6px 0 !important;
+                                    font-size: 15px !important;
+                                }
+                                /* RESPONSIVE */
+                                @media (max-width: 768px) {
+                                    .row {
+                                        flex-direction: column !important;
+                                    }
+                                }
+                                /* ===== FEATURES SECTION ===== */
+                                .features-row {
+                                    display: flex !important;
+                                    gap: 25px !important;
+                                    margin-top: 10px !important;
+                                }
+                                .features-col {
+                                    flex: 1 !important;
+                                    padding: 15px !important;
+                                    border-radius: 10px !important;
+                                }
+                                /* LIST */
+                                .custom-list {
+                                    list-style: none !important;
+                                    padding: 0 !important;
+                                }
+                                .custom-list li {
+                                    padding: 6px 0 !important;
+                                    font-size: 15px !important;
+                                }
+                                /* ICONS */
+                                .features-col.inclusions li::before {
+                                    content: "✔ " !important;
+                                    // color: #28a745 !important;
+                                    font-weight: bold;
+                                }
+                                .features-col.exclusions li::before {
+                                    content: "✖ " !important;
+                                    // color: #dc3545 !important;
+                                    font-weight: bold;
+                                }
+                                /* MOBILE */
+                                @media (max-width: 768px) {
+                                    .features-row {
+                                        flex-direction: column !important;
+                                    }
+                                }
+                                /* ===== LOGIN POPUP ===== */
+                                .login-modal {
+                                    display: none;
+                                    position: fixed;
+                                    z-index: 9999;
+                                    left: 0;
+                                    top: 0;
+                                    width: 100%;
+                                    height: 100%;
+                                    background: rgba(0,0,0,0.7);
+                                }
+                                .login-modal-content {
+                                    position: relative;
+                                    width: 95%;           /* more width */
+                                    max-width: 900px;     /* increased from 500px */
+                                    height: 80vh;         /* responsive height */
+                                    margin: 3% auto;      /* less top gap */
+                                    background: #fff;
+                                    border-radius: 10px;
+                                    overflow: hidden;
+                                }
+                                /* iframe */
+                                #loginFrame {
+                                    width: 100%;
+                                    height: 100%;
+                                    border: none;
+                                }
+                                /* close button */
+                                .close-btn {
+                                    position: absolute;
+                                    top: 10px;
+                                    right: 15px;
+                                    font-size: 22px;
+                                    font-weight: bold;
+                                    cursor: pointer;
+                                    z-index: 10;
+                                }
+                                /* ===== CONTACT SECTION ===== */
+                                .contact-section {
+                                    margin-top: 30px;
+                                    text-align: left;
+                                }
+                                .contact-btn {
+                                    display: block;
+                                    width: 100%;
+                                    background-color: #fec700;
+                                    color: #000;
+                                    padding: 12px;
+                                    text-align: center;
+                                    border: none;
+                                    border-radius: 6px;
+                                    font-weight: 600;
+                                    cursor: pointer;
+                                }
+                                /* ===== MODAL ===== */
+                                .contact-modal {
+                                    display: none;
+                                    position: fixed;
+                                    z-index: 9999;
+                                    left: 0;
+                                    top: 0;
+                                    width: 100%;
+                                    height: 100%;
+                                    background: rgba(0,0,0,0.6);
+
+                                    align-items: center;
+                                    justify-content: center;
+                                }
+                                /* ===== MODAL BOX ===== */
+                                .contact-modal-content {
+                                    background: #fff;
+                                    width: 600px;
+                                    max-width: 90%;
+                                    border-radius: 10px;
+                                    display: flex;
+                                    overflow: hidden;
+                                    position: relative;
+                                }
+                                /* CLOSE BUTTON */
+                                .close-btn {
+                                    position: absolute;
+                                    right: 15px;
+                                    top: 10px;
+                                    font-size: 22px;
+                                    cursor: pointer;
+                                }
+                                /* LEFT INFO */
+                                .contact-left {
+                                    width: 40%;
+                                    background: #fec700;
+                                    padding: 20px;
+                                    color: #000;
+                                }
+                                /* RIGHT FORM */
+                                .contact-right {
+                                    width: 60%;
+                                    padding: 20px;
+                                }
+                                .contact-right input,
+                                .contact-right textarea {
+                                    width: 100%;
+                                    margin-bottom: 10px;
+                                    padding: 10px;
+                                    border: 1px solid #ccc;
+                                    border-radius: 6px;
+                                }
+                                /* SWEET ALERT FIX */
+                                .swal2-container {
+                                    z-index: 1000000 !important;
+                                }
+                                /* ===== STATIC SECTION ===== */
+                                .static-section {
+                                    margin-top: 30px;
+                                    text-align: left;
+                                }
+                                /* ===== LANDING CONTACT MODAL ===== */
+                                .landing-contact-modal {
+                                    display: none;
+                                    position: fixed;
+                                    z-index: 9999;
+                                    left: 0;
+                                    top: 0;
+                                    width: 100%;
+                                    height: 100%;
+                                    background: rgba(0,0,0,0.6);
+
+                                    align-items: center;
+                                    justify-content: center;
+                                }
+                                .landing-contact-modal-content {
+                                    width: 80%;
+                                    max-width: 900px;
+                                    background: #fff;
+                                    border-radius: 10px;
+                                    overflow: hidden;
+                                    position: relative;
+                                }
+                                .landing-contact-container {
+                                    display: flex;
+                                }
+                                /* LEFT */
+                                .landing-contact-left {
+                                    width: 40%;
+                                    background: #f5f5f5;
+                                    padding: 20px;
+                                }
+                                /* RIGHT */
+                                .landing-contact-right {
+                                    width: 60%;
+                                    padding: 20px;
+                                }
+                                .landing-contact-right input,
+                                .landing-contact-right textarea {
+                                    width: 100%;
+                                    padding: 10px;
+                                    margin-bottom: 10px;
+                                    border: 1px solid #ccc;
+                                }
+                                .landing-contact-right button {
+                                    background: #fec700;
+                                    border: none;
+                                    padding: 10px;
+                                    width: 100%;
+                                    border-radius: 20px;
+                                    cursor: pointer;
+                                    font-weight: 600;
+                                }
+                                .landing-contact-close {
+                                    position: absolute;
+                                    top: 10px;
+                                    right: 15px;
+                                    font-size: 26px;
+                                    font-weight: bold;
+                                    cursor: pointer;
+                                }
+                                .swal2-container {
+                                    z-index: 1000000 !important;
+                                }
+                                .btn-yellow {
+                                    background: var(--yellow) !important;
+                                    color: #000 !important;
+                                    width: 10%;
+                                }
+                            </style>
+                            </head>
+                            <body>
+                                <div class="container">
+                                    <!-- HERO -->
+                                    <div class="top-header">
+                                        <!-- LEFT: LOGO -->
+                                        <div class="header-left">
+                                            <?php if (!empty(\$logo)): ?>
+                                                <img src="../../uploads/company_logo/<?php echo htmlspecialchars(\$logo); ?>" alt="Company Logo">
+                                            <?php endif; ?>
+                                        </div>
+                                        <!-- RIGHT: CONTACT -->
+                                        <div class="header-right">
+                                            <?php if (!empty(\$phone_no)): ?>
+                                                <span class="contact-item">📞 <?php echo htmlspecialchars(\$phone_no); ?></span>
+                                            <?php endif; ?>
+                                            <?php if (!empty(\$email)): ?>
+                                                <span class="contact-item">✉ <?php echo htmlspecialchars(\$email); ?></span>
+                                            <?php endif; ?>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="banner-section">
+                                        <?php if (!empty(\$product['package_name'])): ?>
+                                            <img src="../../uploads/products/<?php echo htmlspecialchars(\$product['package_img']); ?>" class="banner-img">
+                                        <?php endif; ?>
+                                        <div class="banner-overlay">
+                                            <h2 class="banner-title">
+                                                <?php echo htmlspecialchars(\$product['package_name']); ?>
+                                            </h2>
+                                        </div>
+                                    </div>
+
+                                    <div class="row">
+                                        <!-- LEFT -->
+                                        <div class="col-left" style="flex: 100% !important;">
+                                            <div class="card">
+                                                <h4>Description</h4>
+                                                <p><?php echo nl2br(htmlspecialchars(\$product['description'])); ?></p>
+                                            </div>
+                                            <div class="card">
+                                                <h4>Features</h4>
+                                                <div class="features-row">
+                                                    <!-- INCLUSIONS -->
+                                                    <div class="features-col inclusions">
+                                                        <ul class="custom-list">
+                                                            <?php if (!empty(\$inclusive)): ?>
+                                                                <?php foreach (\$inclusive as \$item): ?>
+                                                                    <li><?php echo htmlspecialchars(\$item); ?></li>
+                                                                <?php endforeach; ?>
+                                                            <?php else: ?>
+                                                                <li>No inclusions available</li>
+                                                            <?php endif; ?>
+                                                        </ul>
+                                                    </div>
+                                                    <!-- EXCLUSIONS -->
+                                                    <div class="features-col exclusions">
+                                                        <ul class="custom-list">
+                                                            <?php if (!empty(\$exclusive)): ?>
+                                                                <?php foreach (\$exclusive as \$item): ?>
+                                                                    <li><?php echo htmlspecialchars(\$item); ?></li>
+                                                                <?php endforeach; ?>
+                                                            <?php else: ?>
+                                                                <li>No exclusions available</li>
+                                                            <?php endif; ?>
+                                                        </ul>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                                <?php
+                                                    // Currency
+                                                    \$symbol = "$";
+                                                    \$r = \$conn->query("SELECT symbol FROM currencies WHERE is_active=1 LIMIT 1");
+                                                    if(\$row = \$r->fetch_assoc()){
+                                                        \$symbol = \$row['symbol'];
+                                                    }
+                                                    \$loginRequired = (\$product['is_login'] == 1);
+                                                ?>
+                                                <?php if(\$loginRequired && !\$isLoggedIn): ?>
+                                                    <div class="card">
+                                                        <h4>Products Pricing Table</h4>
+                                                        <p class="text-center" style="font-size:16px;font-weight:600;margin-top:15px;">
+                                                            <a href="#" onclick="openLoginPopup()" class="btn mt-2"> 🔒 Sign-In to See the Product</a>
+                                                        </p>
+                                                    </div>
+                                                    <?php else: ?>
+                                                    <?php
+                                                        \$packages = [];
+                                                        \$durations = [];
+                                                        \$stmt = \$conn->prepare("
+                                                            SELECT * FROM package
+                                                            WHERE id = ? AND is_deleted = 0 AND is_active = 1
+                                                        ");
+                                                        \$stmt->bind_param("i", \$product['id']);
+                                                        \$stmt->execute();
+                                                        \$res = \$stmt->get_result();
+                                                        \$data = [];
+                                                        while (\$row = \$res->fetch_assoc()) {
+                                                            \$data[\$row['id']] = \$row;
+                                                        }
+                                                        \$stmt->close();
+                                                        if (!empty(\$data)) {
+                                                            \$ids = implode(',', array_keys(\$data));
+                                                            \$sql = "SELECT d.*, p.title, p.subtitle, p.description,
+                                                                        p.package_name, p.is_active pkg_active
+                                                                    FROM durations d
+                                                                    JOIN package p ON d.package_id = p.id
+                                                                    WHERE d.package_id IN (\$ids)";
+                                                            \$r = \$conn->query(\$sql);
+                                                            while (\$row = \$r->fetch_assoc()) {
+                                                                \$dur = \$row['duration'];
+                                                                \$packages[\$dur][] = \$row;
+                                                                \$durations[\$dur] = \$dur;
+                                                            }
+                                                        }
+                                                        // currency
+                                                        \$symbol="$";
+                                                        \$r=\$conn->query("SELECT symbol FROM currencies WHERE is_active=1 LIMIT 1");
+                                                        if(\$row=\$r->fetch_assoc()) 
+                                                        \$symbol=\$row['symbol'];
+                                                    ?>
+                                                    <div class="card">
+                                                        <h4>Packages Pricing Table</h4>
+                                                        <div class="card-body">
+                                                            <div class="row justify-content-center">
+                                                                <div class="col-xxl-10">
+
+                                                                <?php if (!empty(\$packages)): ?>
+                                                                    <!-- Duration Tabs -->
+                                                                    <ul class="nav nav-pills button-tab mt-32 mb-32 justify-content-center" id="pills-tab" role="tablist">
+                                                                        <?php \$first = true; foreach (\$durations as \$duration_name): ?>
+                                                                            <li class="nav-item" role="presentation">
+                                                                                <button class="nav-link px-24 py-10 text-md rounded-pill text-secondary-light fw-medium <?= \$first ? 'active' : '' ?>" id="tab-<?= md5(\$duration_name) ?>" data-bs-toggle="pill" 
+                                                                                    data-bs-target="#tab-pane-<?= md5(\$duration_name) ?>" type="button" role="tab" aria-controls="tab-pane-<?= md5(\$duration_name) ?>" aria-selected="<?= \$first ? 'true' : 'false' ?>">
+                                                                                    <?= htmlspecialchars(\$duration_name) ?>
+                                                                                </button>
+                                                                            </li>
+                                                                        <?php \$first = false; endforeach; ?>
+                                                                    </ul>
+
+                                                                    <!-- Duration Tab Content -->
+                                                                    <div class="tab-content" id="pills-tabContent">
+                                                                        <?php \$first = true; foreach (\$durations as \$duration_name): ?>
+                                                                            <div class="tab-pane fade <?= \$first ? 'show active' : '' ?>" id="tab-pane-<?= md5(\$duration_name) ?>" role="tabpanel" aria-labelledby="tab-<?= md5(\$duration_name) ?>" tabindex="0">
+                                                                                <div class="row gy-4">
+                                                                                    <?php foreach (\$packages[\$duration_name] as \$package): ?>
+                                                                                        <div class="col-xxl-4 col-sm-6">
+                                                                                            <div class="pricing-plan position-relative radius-24 overflow-hidden border">
+                                                                                                <?php \$isActive = (\$package['pkg_active'] == 1); ?>
+                                                                                                <?php if (!\$isActive): ?>
+                                                                                                    <p class="mb-0 text-sm text-danger fw-semibold mt-2 float-end">Inactive</p>
+                                                                                                <?php endif; ?> 
+                                                                                                <?php
+                                                                                                    // Generate SEO URL from package_name
+                                                                                                    \$packageSlug = strtolower(trim(\$package['package_name']));
+                                                                                                    \$packageSlug = preg_replace('/[^a-z0-9]+/i', '-', \$packageSlug);
+                                                                                                    \$packageSlug = trim(\$packageSlug, '-');
+                                                                                                    // Final URL
+                                                                                                    \$packageUrl = "../../pages/packages/" . \$packageSlug . ".php";
+                                                                                                ?>
+                                                                                                <h5 class="mb-0 lufera-color">
+                                                                                                    <a href="<?= htmlspecialchars(\$packageUrl) ?>" style="text-decoration:none; color:inherit;"> <?= htmlspecialchars(\$package['title']) ?></a>
+                                                                                                </h5>
+                                                                                                <p class="mb-0 text-secondary-light mb-28"><?= htmlspecialchars(\$package['subtitle']) ?></p>
+                                                                                                <h4 class="mb-24">
+                                                                                                <p class="text-sm text-muted mt-0 mb-10 text-decoration-line-through"><?= htmlspecialchars(\$symbol) ?> <?= number_format((float)\$package['preview_price'], 0, '.', ',') ?></p>
+                                                                                                    <?= htmlspecialchars(\$symbol) ?>
+                                                                                                    <?= number_format((float)\$package['price'], 0, '.', ',') ?>
+                                                                                                    <span class="fw-medium text-md text-secondary-light">/
+                                                                                                        <?= htmlspecialchars(\$package['duration']) ?>
+                                                                                                    </span>
+                                                                                                </h4>
+                                                                                                <span class="mb-20 fw-medium"><?= htmlspecialchars(\$package['description']) ?></span>
+                                                                                                <ul>
+                                                                                                    <?php
+                                                                                                    \$package_id = \$package['package_id'];
+                                                                                                    \$feature_sql = "SELECT feature FROM features WHERE package_id = \$package_id";
+                                                                                                    \$feature_result = \$conn->query(\$feature_sql);
+                                                                                                    if (\$feature_result && \$feature_result->num_rows > 0):
+                                                                                                        while (\$feat = \$feature_result->fetch_assoc()):
+                                                                                                    ?>
+                                                                                                        <li class="d-flex align-items-center gap-16 mb-16">
+                                                                                                            <span class="w-24-px h-24-px p-2 d-flex justify-content-center align-items-center lufera-bg rounded-circle">
+                                                                                                                <iconify-icon icon="iconamoon:check-light" class="text-white text-lg"></iconify-icon>
+                                                                                                            </span>
+                                                                                                            <span class="text-secondary-light text-lg"><?= htmlspecialchars(\$feat['feature']) ?></span>
+                                                                                                        </li>
+                                                                                                    <?php endwhile; endif; ?>
+                                                                                                </ul>
+                                                                                                <form action="../../cart.php" method="POST">
+                                                                                                    <input type="hidden" name="type" value="package">
+                                                                                                    <input type="hidden" name="id" value="<?= htmlspecialchars(\$package['package_id']) ?>">
+                                                                                                    <input type="hidden" name="plan_name" value="<?= htmlspecialchars(\$package['package_name']) ?>">
+                                                                                                    <input type="hidden" name="title" value="<?= htmlspecialchars(\$package['title']) ?>">
+                                                                                                    <input type="hidden" name="subtitle" value="<?= htmlspecialchars(\$package['subtitle']) ?>">
+                                                                                                    <input type="hidden" name="price" value="<?= htmlspecialchars(\$package['price']) ?>">
+                                                                                                    <input type="hidden" name="duration" value="<?= htmlspecialchars(\$package['duration']) ?>">
+                                                                                                    <input type="hidden" name="created_on" value="<?= date("Y-m-d") ?>">
+                                                                                                    <!-- <input type="hidden" name="addon_service" value="<?= htmlspecialchars(\$package['addon_service']) ?>">
+                                                                                                    <input type="hidden" name="addon_package" value="<?= htmlspecialchars(\$package['addon_package']) ?>">
+                                                                                                    <input type="hidden" name="addon_product" value="<?= htmlspecialchars(\$package['addon_product']) ?>">
+                                                                                                    <input type="hidden" name="gst_id" value="<?= htmlspecialchars(\$package['gst_id']) ?>"> -->
+                                                                                                    <button type="submit" class="lufera-bg text-center text-white text-sm btn-sm px-12 py-10 w-100 radius-8 mt-28" <?= !\$isActive ? 'disabled' : '' ?>>Get started</button>
+                                                                                                </form>
+                                                                                            </div>
+                                                                                        </div>
+                                                                                    <?php endforeach; ?>
+                                                                                </div>
+                                                                            </div>
+                                                                        <?php \$first = false; endforeach; ?>
+                                                                    </div>
+                                                                <?php else: ?>
+                                                                    <div class="text-center py-32">
+                                                                        <div class="radius-12 p-12">
+                                                                            <h6 class="mb-0" style="color: #000; font-size: 1.125rem; font-weight: 600;">
+                                                                                No packages available.
+                                                                            </h6>
+                                                                            <div style="height: 3px; width: 60px; background-color: #fdc701; margin: 12px auto 0; border-radius: 2px;"></div>
+                                                                        </div>
+                                                                    </div>
+                                                                <?php endif; ?>
+
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                            <?php endif; ?> 
+                                            <!-- ================= CONTACT BUTTON SECTION ================= -->
+                                            <div class="card" style="text-align:left;">
+                                                <h4>Need Help?</h4>
+                                                <button onclick="openContactPopup()" class="btn btn-yellow" style="margin-top:10px;">
+                                                    Contact Us
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <!-- ===== FOOTER ===== -->
+                                    <footer class="d-footer" style="padding:15px 10px; border-top:1px solid #eee;">
+                                        <div class="row align-items-center justify-content-between">
+                                            <div class="col-auto">
+                                                <p class="mb-0">© <?php echo date("Y"); ?> Lufera Infotech. All Rights Reserved.</p>
+                                            </div>
+                                            <div class="col-auto" style="display:flex; gap:15px; align-items:center; flex-wrap:wrap;">
+                                                <a href="privacy_policy.php">Privacy Policy</a>
+                                                <span>|</span>
+                                                <a href="terms_conditions.php">Terms and Conditions</a>
+                                                <span>|</span>
+                                                <a href="https://luferatech.com" style="display:flex; align-items:center; gap:5px;">
+                                                    <span>Made by</span>
+                                                    <span style="color:#fec700;">Lufera Infotech</span>
+                                                </a>
+                                            </div>
+                                        </div>
+                                    </footer>
+                                </div>
+
+                                <!-- LOGIN POPUP -->
+                                <div id="loginModal" class="login-modal">
+                                    <div class="login-modal-content">
+                                        <!-- CLOSE BUTTON -->
+                                        <span class="close-btn" onclick="closeLoginPopup()">&times;</span>
+                                        <!-- LOGIN PAGE -->
+                                        <iframe id="loginFrame" src=""></iframe>
+                                    </div>
+                                </div>
+                                <script>
+                                    function openLoginPopup() {
+                                        document.getElementById("loginModal").style.display = "block";
+                                        // Load login page inside popup
+                                        document.getElementById("loginFrame").src =
+                                            "../../sign-in.php?redirect=<?php echo urlencode(\$_SERVER['REQUEST_URI']); ?>";
+                                    }
+                                    function closeLoginPopup() {
+                                        document.getElementById("loginModal").style.display = "none";
+                                    }
+                                    // Close when clicking outside
+                                    window.onclick = function(event) {
+                                        let modal = document.getElementById("loginModal");
+                                        if (event.target === modal) {
+                                            closeLoginPopup();
+                                        }
+                                    };
+
+                                </script>
+
+                                <!-- ================= LANDING CONTACT POPUP ================= -->
+                                <div id="landingContactModal" class="landing-contact-modal">
+                                    <div class="landing-contact-modal-content">
+                                        <span class="landing-contact-close" onclick="closeContactPopup()">&times;</span>
+                                        <div class="landing-contact-container">
+                                            <!-- LEFT SIDE -->
+                                            <div class="landing-contact-left">
+                                                <h4>CALL US</h4>
+                                                <p><?php echo htmlspecialchars(\$company['phone_no'] ?? 'N/A'); ?></p>
+                                                <h4>LOCATION</h4>
+                                                <p><?php echo htmlspecialchars(\$company['address'] ?? 'N/A'); ?></p>
+                                                <h4>BUSINESS HOURS</h4>
+                                                <p>Mon - Fri: 10am - 6pm</p>
+                                            </div>
+                                            <!-- RIGHT SIDE -->
+                                            <div class="landing-contact-right">
+                                                <h3>CONTACT US</h3>
+                                                <input type="text" id="contactName" placeholder="Enter your name" required>
+                                                <input type="text" id="contactPhone" placeholder="Enter your phone number" required>
+                                                <input type="email" id="contactEmail" placeholder="Enter your email address" required>
+                                                <textarea id="contactMessage" placeholder="Enter your message" rows="4" required></textarea>
+                                                <button onclick="submitContact()">SUBMIT</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+                                <script>
+                                    function openContactPopup() {
+                                        document.getElementById("landingContactModal").style.display = "flex";
+                                    }
+
+                                    function closeContactPopup() {
+                                        document.getElementById("landingContactModal").style.display = "none";
+                                    }
+
+                                    function submitContact() {
+
+                                        const name = document.getElementById("contactName").value.trim();
+                                        const phone = document.getElementById("contactPhone").value.trim();
+                                        const email = document.getElementById("contactEmail").value.trim();
+                                        const message = document.getElementById("contactMessage").value.trim();
+
+                                        const emailPattern = /^[a-zA-Z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$/;
+
+                                        // ✅ 1. Email format check FIRST (only if user typed something)
+                                        if (email && !emailPattern.test(email)) {
+                                            Swal.fire({
+                                                icon: 'error',
+                                                title: 'Invalid Email',
+                                                text: 'Please enter a valid email address (e.g. john@gmail.com)',
+                                                confirmButtonColor: '#fec700'
+                                            });
+                                            return;
+                                        }
+
+                                        // ✅ 2. Required fields check
+                                        if (!name || !phone || !email || !message) {
+                                            Swal.fire({
+                                                icon: 'warning',
+                                                title: 'Missing Fields',
+                                                text: 'Please fill all fields',
+                                                confirmButtonColor: '#fec700'
+                                            });
+                                            return;
+                                        }
+
+                                        // ✅ 3. Proceed
+                                        Swal.fire({
+                                            title: 'Submitting...',
+                                            allowOutsideClick: false,
+                                            didOpen: () => {
+                                                Swal.showLoading();
+                                            }
+                                        });
+
+                                        setTimeout(() => {
+                                            Swal.fire({
+                                                icon: 'success',
+                                                title: 'Submitted!',
+                                                text: 'Our team will contact you.',
+                                                confirmButtonColor: '#fec700'
+                                            }).then(() => {
+
+                                                closeContactPopup();
+
+                                                document.getElementById("contactName").value = "";
+                                                document.getElementById("contactPhone").value = "";
+                                                document.getElementById("contactEmail").value = "";
+                                                document.getElementById("contactMessage").value = "";
+                                            });
+                                        }, 1000);
+                                    }
+                                </script>
+                            </body>
+                        </html>
+                        LANDING;
+                        \$landingContent = str_replace('__PACKAGE_ID__',\$package_id,\$landingContent);
+
+
+                        // =====================================================
+                        // CREATE ROOT FILE CONTENT
+                        // =====================================================
+
+                        \$rootContent = <<<'ROOT'
+
+                        <?php include './partials/layouts/layoutTop.php'; ?>
                         <!DOCTYPE html>
                         <html>
                         <head>
                         <meta charset="UTF-8">
                         <title>Product View</title>
                         <?php
-                        \$sql = "SELECT * FROM company LIMIT 1";
-                        \$result = \$conn->query(\$sql);
-                        if (\$result && \$result->num_rows > 0) {
-                            \$row_com = \$result->fetch_assoc();
-                            \$company_name = \$row_com['full_name'];
-                            \$logo = \$row_com['logo'];
-                            \$email = \$row_com['email'];
-                            \$phone = \$row_com['phone_no'];
-                            \$address = \$row_com['address'];
+                            \$sql = "SELECT * FROM company LIMIT 1";
+                            \$result =\$conn->query(\$sql);
+                            if (\$result && \$result->num_rows > 0) {
+                                \$row = \$result->fetch_assoc();
+                                \$company_name = \$row['full_name'];
+                                \$logo = \$row['logo'];
+                                \$email = \$row['email'];
+                                \$phone = \$row['phone_no'];
+                                \$address = \$row['address'];
 
-                        }    
-                        \$Id = __PACKAGE_ID__;
-                        \$sql = "select * from package where id = \$Id";
-                        \$result = \$conn ->query(\$sql);
-                        \$row = \$result ->fetch_assoc();
+                            }    
+                            \$Id = __PACKAGE_ID__;
+                            \$sql = "select * from package where id = \$Id";
+                            \$result = \$conn ->query(\$sql);
+                            \$row = \$result ->fetch_assoc();
+                            \$package_img = \$row['package_img'];
+                            \$package_name = \$row['package_name'];
+                            \$title = \$row['title'];
+                            \$subtitle = \$row['subtitle'];
+                            \$duration = \$row['duration'];
+                            \$gst = \$row['gst_id'];
+                            \$cat_id_sc = \$row['cat_id'];
 
-                        // Decode image_data JSON
-                        \$imageData = json_decode(\$row['image_data'], true);
+                            // Decode image_data JSON
+                            \$imageData = json_decode(\$row['image_data'], true);
 
-                        \$breadcrumbImage = \$imageData['breadcrumb_image'] ?? '';
-                        \$previewImages   = \$imageData['preview_images'] ?? [];
+                            \$breadcrumbImage = \$imageData['breadcrumb_image'] ?? '';
+                            \$previewImages   = \$imageData['preview_images'] ?? [];
 
-                        \$duration_sql = "SELECT * FROM durations WHERE package_id = \$Id ORDER BY id ASC LIMIT 1";
-                        \$duration_result = \$conn->query(\$duration_sql);
-                        \$duration = \$duration_result->fetch_assoc();
-
-                        \$package_img = \$row['package_img'];
-                        \$package_name = \$row['package_name'];
-                        \$cat_id_sc = \$row['cat_id'];
-                        \$title_sc = \$row['title'];
-                        \$gst_id = \$row['gst_id'];
-                        
-                        // Get active symbol
-                        \$result2 = \$conn->query("SELECT symbol FROM currencies WHERE is_active = 1 LIMIT 1");
-                        \$symbol = "$"; // default
-                        if (\$row1 = \$result2->fetch_assoc()) {
-                            \$symbol = \$row1['symbol'];
-                        }
+                            \$duration_sql = "SELECT * FROM durations WHERE package_id = \$Id ORDER BY id ASC LIMIT 1";
+                            \$duration_result = \$conn->query(\$duration_sql);
+                            \$duration = \$duration_result->fetch_assoc();
                         ?>
                         <style>
+                        .custom-list {
+                            list-style: none !important;
+                            padding: 0 !important;
+                        }
+                        .custom-list li {
+                            padding: 6px 0 !important;
+                            font-size: 15px !important;
+                        }
                         .feature-img {
                             width: 100%;
-                            height: auto;
+                            height: 400px;
                             object-fit: cover;
                             border-radius:8px;
                         }
-                        /* ===== FEATURES SECTION ===== */
                         .features-row {
                             display: flex !important;
                             gap: 25px !important;
                             margin-top: 10px !important;
                         }
-
+                        @media (max-width: 768px) {
+                            .features-row {
+                                flex-direction: column !important;
+                            }
+                        }
                         .features-col {
                             flex: 1 !important;
                             border-radius: 10px !important;
@@ -365,102 +1176,115 @@
                             background-position: center; 
                             height: 300px;
                         }
+                        @media (min-width: 768px) {
+                            .api-btn{    
+                                top: 50%;
+                                right: 20px;
+                                transform: translateY(-50%);
+                                display: flex;
+                                gap: 10px;
+                            }
+                        }
+                        @media (max-width: 768px) {
+                            .api-btn{
+                                justify-self: center;
+                            }
+                        }
+                        .breadcrumb-title{
+                            text-shadow: 0px 0px 3px var(--lufera-text-color);
+                        }
                         </style>
                         </head>
-                        <body>
-                            <div class="container-fluid">
+                        <body>    
+                            <!-- Header Navbar -->
+                            <div class="container">
                                 <section class="breadcrumb-hero position-relative w-100 mt-20 mx-auto d-flex align-items-center m-20">
                                     <div class="container">
                                         <div class="row">
                                             <div class="col-xl-12 col-lg-12">
                                                 <div class="breadcrumb-content text-center">
-                                                    <h2 class="text-capitalize"><?php echo \$package_name; ?></h2>
+                                                    <h2 class="text-capitalize breadcrumb-title"><?php echo \$package_name; ?></h2>
                                                     <nav aria-label="breadcrumb">
                                                         <ol class="breadcrumb justify-content-center">
-                                                            <li class="breadcrumb-item"><a href="admin-dashboard.php">Home</a></li>
-                                                            <li class="breadcrumb-item active" aria-current="page"><?php echo \$package_name; ?></li>
+                                                            <li class="breadcrumb-item">Package</li>
+                                                            <li class="breadcrumb-item" aria-current="page"><?php echo \$package_name; ?></li>
                                                         </ol>                   
                                                     </nav>
                                                 </div>
-                                                <div style="position:absolute; top:50%; right:20px; transform:translateY(-50%); display:flex; gap:10px;">
-                                                    <button class="btn btn-dark" data-bs-toggle="modal" data-bs-target="#apiModal">API</button>
+                                                <div class="api-btn position-absolute">
+                                                    <button class="btn lufera-bg lufera-text" data-bs-toggle="modal" data-bs-target="#apiModal">API</button>
                                                 </div>  
                                             </div>
                                         </div>
                                     </div>
                                 </section>
-                            </div>
+                            </div>        
                                 <!-- ===== API DATA PREPARATION ===== -->
                                 <?php
                                 // BASE URL (dynamic)
                                 \$protocol = (!empty(\$_SERVER['HTTPS']) && \$_SERVER['HTTPS'] !== 'off') ? "https://" : "http://";
                                 \$host = \$_SERVER['HTTP_HOST'];
-
                                 //\$basePath = dirname(\$_SERVER['SCRIPT_NAME']);
                                 \$basePath = rtrim(dirname(\$_SERVER['SCRIPT_NAME']), '');
-                    
+
                                 //\$currentBaseUrl = \$protocol . \$host . \$basePath;
                                 \$currentBaseUrl = rtrim(\$protocol . \$host . \$basePath, '/');
-                    
+
                                 \$slug = strtolower(trim(\$package_name));        // lowercase + trim
                                 \$slug = preg_replace('/\s+/', '-', \$slug);      // replace spaces with hyphens
                                 \$slug = preg_replace('/[^a-z0-9\-]/', '', \$slug); // remove special chars
-                    
+
                                 // FINAL LANDING URL
                                 \$landingUrl = \$currentBaseUrl . "/pages/packages/" . \$slug . ".php";
-                    
+
                                 // FULL PLAN SHORTCODE
-                                \$fullPlanShortcode = "Package-Shortcode-" . \$cat_id_sc;
+                                \$fullPlanShortcode = "Product-Shortcode-" . \$cat_id_sc;
                                 \$categoryShortcode = "Category-Shortcode-" . \$cat_id_sc;
-                                \$indPlanShortcode = "Package-\$title_sc-Shortcode-" . \$Id;
+                                \$indPlanShortcode = "Product-\$title-Shortcode-" . \$Id;
+                                
                                 ?>
+
                                 <div class="modal fade" id="apiModal" tabindex="-1">
                                     <div class="modal-dialog modal-dialog-centered custom-modal">
                                         <div class="modal-content p-4">
-                    
                                             <!-- HEADER -->
                                             <div class="modal-header">
                                                 <h5 class="modal-title" style="font-size:18px !important">API Details</h5>
                                                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                                             </div>
-                    
                                             <!-- BODY -->
                                             <div class="modal-body">
-
-                                            <!-- LANDING URL -->
-                                            <h6 class="fs-16">Landing URL</h6>
-                                            <div class="input-group mb-3">
-                                                <input type="text" id="landingUrl" class="form-control" value="<?php echo \$landingUrl; ?>" readonly>
-                                                <button class="btn copy-btn lufera-bg" onclick="copyText('landingUrl')">Copy</button>
+                                                <!-- LANDING URL -->
+                                                <h6>Landing URL</h6>
+                                                <div class="input-group mb-3">
+                                                    <input type="text" id="landingUrl" class="form-control" value="<?php echo \$landingUrl; ?>" readonly>
+                                                    <button class="btn copy-btn lufera-bg" onclick="copyText('landingUrl')">Copy</button>
+                                                </div>
+                                                <hr style="margin:15px 0 10px;">
+                                                <!-- SHORTCODES TITLE -->
+                                                <h5 style="font-size:18px !important">Shortcodes</h5>
+                                                <h6>Category Shortcode</h6>
+                                                <div class="input-group mb-3">
+                                                    <input type="text" id="catShortcode" class="form-control" value="<?php echo \$categoryShortcode; ?>" readonly>
+                                                    <button class="btn copy-btn lufera-bg" onclick="copyText('catShortcode')">Copy</button>
+                                                </div>
+                                                <h6>Full Plan Shortcode</h6>
+                                                <div class="input-group mb-3">
+                                                    <input type="text" id="fullPlan" class="form-control" value="<?php echo \$fullPlanShortcode; ?>" readonly>
+                                                    <button class="btn copy-btn lufera-bg" onclick="copyText('fullPlan')">Copy</button>
+                                                </div>
+                                                <!-- FULL PLAN -->
+                                                <h6>Individual Plan Shortcode</h6>
+                                                <?php echo \$title; ?>
+                                                <div class="input-group mb-3">
+                                                    <input type="text" id="ind_Plan" class="form-control" value="<?php echo \$indPlanShortcode; ?>" readonly>
+                                                    <button class="btn copy-btn lufera-bg" onclick="copyText('ind_Plan')">Copy</button>
+                                                </div>
                                             </div>
-                                            <hr style="margin:15px 0 10px;">
-                                            <!-- SHORTCODES TITLE -->
-                                            <h5 style="font-size:18px !important">Shortcodes</h5>
-                                            
-                                            <h6 class="fs-16">Category Shortcode</h6>
-                                            <div class="input-group mb-3">
-                                                <input type="text" id="catShortcode" class="form-control" value="<?php echo \$categoryShortcode; ?>" readonly>
-                                                <button class="btn copy-btn lufera-bg" onclick="copyText('catShortcode')">Copy</button>
-                                            </div>
-                                            
-                                            <h6 class="fs-16">Full Plan Shortcode</h6>
-                                            <div class="input-group mb-3">
-                                                <input type="text" id="fullPlan" class="form-control" value="<?php echo \$fullPlanShortcode; ?>" readonly>
-                                                <button class="btn copy-btn lufera-bg" onclick="copyText('fullPlan')">Copy</button>
-                                            </div>
-                
-                                            <!-- FULL PLAN -->
-                                            <h6 class="fs-16">Individual Plan Shortcode</h6>
-                                            <?php echo \$title_sc ?>
-                                            <div class="input-group mb-3">
-                                                <input type="text" id="ind_Plan" class="form-control" value="<?php echo \$indPlanShortcode; ?>" readonly>
-                                                <button class="btn copy-btn lufera-bg" onclick="copyText('ind_Plan')">Copy</button>
-                                            </div>
-                                        </div>
                                         </div>
                                     </div>
                                 </div>
-                    
+
                                 <script>
                                     function copyText(id) {
                                         const input = document.getElementById(id);
@@ -481,271 +1305,202 @@
                                             });
                                         });
                                     }
-                                </script>   
-                            <div class="m-40">
-                                <div class="container">
-                                    <div class="row">
-                                        <div class="col-xl-6 col-lg-6">
-                                            <div class="row">
-                                                <div class="col-lg-3 text-end">
-                                                    <ul>
-                                                        <?php if (!empty(\$previewImages)): ?>
-                                                            <?php foreach(\$previewImages as \$img): ?>
-                                                                <li>
-                                                                    <img src="./uploads/products/<?php echo \$img; ?>" class="preview-img" alt="Preview Image">
-                                                                </li>
-                                                            <?php endforeach; ?>
-                                                        <?php else: ?>
-                                                            <li>
-                                                                <img src="./uploads/products/<?php echo \$package_img; ?>" class="preview-img" alt="Package Image">
-                                                            </li>
-                                                        <?php endif; ?>
-                                                    </ul>
-                                                </div>
-                                                <div class="col-lg-9">
-                                                    <img src="./uploads/products/<?php echo \$package_img; ?>" alt="Package Image" class="feature-img">
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="col-xl-6 col-lg-6">
-                                            <div class="ms-20">
-                                                <h2 class="mb-2 text-capitalize">
-                                                    <?php echo \$package_name; ?>
-                                                </h2>
-                                                <p class="price">
-                                                    <span class="amount fs-2 fw-semibold me-6">
-                                                        <?= \$symbol ?><?= \$duration['price'] ?>
-                                                    </span>
-                                                    <?php if (!empty(\$duration['preview_price'])): ?>
-                                                        <span class="text-decoration-line-through fs-2 fw-semibold">
-                                                            <?= \$symbol ?><?= \$duration['preview_price'] ?>
-                                                        </span>
-                                                    <?php endif; ?>
-                                                    <!-- <span class="package-period">
-                                                        /<?= htmlspecialchars(\$duration['duration']) ?>
-                                                    </span> -->
-                                                </p>
-                                                <p>
-                                                    <?php echo \$row['short_description']; ?>
-                                                </p>
+                                </script>
 
-                                                <form action="cart.php" method="POST">                                
-                                                    <input type="hidden" name="type" value="package">
-                                                    <input type="hidden" name="id" value="<?= \$Id ?>">
-                                                    <input type="hidden" name="price" value="<?= \$duration['price'] ?>">
-                                                    <input type="hidden" name="duration" value="<?= \$duration['duration'] ?>">
-                                                    <input type="hidden" name="title" value="<?= htmlspecialchars(\$title_sc) ?>">  
-                                                    <input type="hidden" name="gst_id" value="<?= htmlspecialchars(\$gst_id) ?>">                               
-                                                    <button type="submit" class="btn btn-dark w-50 p-12" style="border-radius: 50px;"> 
-                                                        Shop Now
-                                                    </button>        
-                                                </form>
+                                <!--Price Section -->
+                                <?php
+
+                                // Currency
+                                \$result = \$conn->query("SELECT symbol FROM currencies WHERE is_active = 1 LIMIT 1");
+                                \$symbol = "₹";
+                                if (\$row_symbol = \$result->fetch_assoc()) {
+                                    \$symbol = \$row_symbol['symbol'];
+                                }
+
+                                \$sql_login = "select * from products where id = \$Id";
+                                \$result_login = \$conn->query(\$sql_login);
+                                \$row_login = \$result_login->fetch_assoc();
+                                \$isLoginRequired = (\$row_login['is_login'] == 1);
+                                ?>        
+                                
+                            <div class="container">
+                                <div class="row">
+                                    <div class="col-xl-6 col-lg-6">
+                                        <div class="row">
+                                            <!--<div class="col-lg-3 text-end">
+                                                <ul>
+                                                    <?php if (!empty(\$previewImages)): ?>
+                                                        <?php foreach(\$previewImages as \$img): ?>
+                                                            <li>
+                                                                <img src="./uploads/products/<?php echo \$img; ?>" class="preview-img" alt="Preview Image">
+                                                            </li>
+                                                        <?php endforeach; ?>
+                                                    <?php else: ?>
+                                                        <li>
+                                                            <img src="./uploads/products/<?php echo \$package_img; ?>" class="preview-img" alt="Product Image">
+                                                        </li>
+                                                    <?php endif; ?>
+                                                </ul>
+                                            </div>-->
+                                            <div class="col-lg-12">
+                                                <img src="./uploads/products/<?php echo \$package_img; ?>" alt="Product Image" class="feature-img mb-20">
                                             </div>
                                         </div>
                                     </div>
+                                    <div class="col-xl-6 col-lg-6">
+                                        <div class="mb-20">
+                                            <h2 class="mb-4 text-capitalize">
+                                                <?php echo \$package_name; ?>
+                                            </h2>
+                                            <p class="price">
+                                                <span class="amount fs-2 fw-semibold me-6">
+                                                    <?= \$symbol ?><?= \$duration['price']; ?>
+                                                </span>
+                                                <?php if (!empty('preview_price')): ?>
+                                                <span class="text-decoration-line-through fs-2 fw-semibold">
+                                                    <?= \$symbol ?><?= \$duration['preview_price']; ?>
+                                                </span>
+                                            <?php endif; ?>
+                                            </p>
+                                            
+                                            <p>
+                                                <?php echo \$row['short_description']; ?>
+                                            </p>
 
-                                    <div class="mt-40">
-                                        <ul class="nav bordered-tab border border-top-0 border-start-0 border-end-0 d-inline-flex nav-pills mb-16 w-100 gap-50" id="pills-tab" role="tablist">
-                                            <li class="nav-item" role="presentation">
-                                                <button class="nav-link px-0 py-10 active" id="pills-home-tab" data-bs-toggle="pill" data-bs-target="#pills-home" type="button" role="tab" aria-controls="pills-home" aria-selected="true">Description</button>
-                                            </li>
-                                            <li class="nav-item" role="presentation">
-                                                <button class="nav-link px-0 py-10" id="pills-details-tab" data-bs-toggle="pill" data-bs-target="#pills-details" type="button" role="tab" aria-controls="pills-details" aria-selected="false">Features</button>
-                                            </li>
-                                        </ul>
-                                        <div class="tab-content" id="pills-tabContent">
-                                            <div class="tab-pane fade show active" id="pills-home" role="tabpanel" aria-labelledby="pills-home-tab" tabindex="0">
-                                                <div>
-                                                    <p class="text-secondary-light mb-0"><?php echo \$row['description']; ?></p>
-                                                </div>
-                                            </div>
-                                            <div class="tab-pane fade" id="pills-details" role="tabpanel" aria-labelledby="pills-details-tab" tabindex="0">
-                                                <div>
-                                                    <?php
-                                                        \$features_sql = "SELECT feature_type, feature FROM features WHERE cat_type = 1 AND package_id = \$Id";
-                                                        \$features_result = \$conn->query(\$features_sql);
-                                                        
-                                                        \$included = [];
-                                                        \$excluded = [];
-                                                        
-                                                        while (\$frow = \$features_result->fetch_assoc()) {
-                                                            if (\$frow['feature_type'] == 'inclusive') {
-                                                                \$included[] = \$frow['feature'];
-                                                            } else {
-                                                                \$excluded[] = \$frow['feature'];
-                                                            }
-                                                        }
-                                                    ?>
-                                                    
-                                                    <div class="features-row">
-                                                        <!-- INCLUSIONS -->
-                                                        <div class="features-col inclusions">
-                                                            <h6>Included</h6>
-                                                            <ul class="custom-list">
-                                                                <?php if (!empty(\$included)): ?>
-                                                                    <?php foreach (\$included as \$inc): ?>
-                                                                        <li><i class="fa fa-check"></i> <?php echo htmlspecialchars(\$inc); ?></li>
-                                                                    <?php endforeach; ?>
-                                                                <?php else: ?>
-                                                                    <li>No inclusions available</li>
-                                                                <?php endif; ?>
-                                                            </ul>
-                                                        </div>
-                                                        <!-- EXCLUSIONS -->
-                                                        <div class="features-col exclusions">
-                                                        <h6>Exclude</h6>
-                                                            <ul class="custom-list">
-                                                                <?php if (!empty(\$excluded)): ?>
-                                                                    <?php foreach (\$excluded as \$exc): ?>
-                                                                        <li><i class="fa fa-close"></i> <?php echo htmlspecialchars(\$exc); ?></li>
-                                                                    <?php endforeach; ?>
-                                                                <?php else: ?>
-                                                                    <li>No exclusions available</li>
-                                                                <?php endif; ?>
-                                                            </ul>
-                                                        </div>
-                                                    </div>                                                     
-                                                </div>
-                                            </div>
+                                            <form action="cart.php" method="POST">                                
+                                                <input type="hidden" name="type" value="product">  
+                                                <input type="hidden" name="id" value="<?= htmlspecialchars(\$Id) ?>">
+                                                <input type="hidden" name="plan_name" value="<?= htmlspecialchars(\$package_name) ?>">
+                                                <input type="hidden" name="title" value="<?= htmlspecialchars(\$title) ?>">
+                                                <input type="hidden" name="subtitle" value="<?= htmlspecialchars(\$subtitle) ?>">
+                                                <input type="hidden" name="price" value="<?= \$duration['price']; ?>">
+                                                <input type="hidden" name="duration" value="<?= \$duration['duration']; ?>">
+                                                <input type="hidden" name="created_on" value="<?= date("Y-m-d") ?>">
+                                                <input type="hidden" name="gst" value="<?= htmlspecialchars(\$gst) ?>">                            
+                                                <button type="submit" class="btn lufera-bg lufera-text w-50 p-12 mb-3" style="border-radius: 50px;"> 
+                                                    Shop Now
+                                                </button>        
+                                            </form>
+                                            <p><b>Duration</b> :
+                                                <?php echo \$duration['duration']; ?>
+                                            </p>
                                         </div>
                                     </div>
                                 </div>
-                            </div>
-                            <?php include '../scripts.php'; ?>
-                        LANDING;
-                        \$landingContent = str_replace('__PACKAGE_ID__', \$package_id, \$landingContent);
-                        // Pages version (no change needed)
-                        
-                        \$rootContent = \$landingContent;
+                            
+                                <div class="mb-20">
+                                    <ul class="nav bordered-tab border border-top-0 border-start-0 border-end-0 d-inline-flex nav-pills mb-16 w-100 gap-50" id="pills-tab" role="tablist">
+                                        <li class="nav-item" role="presentation">
+                                            <button class="nav-link px-0 py-10 active" id="pills-home-tab" data-bs-toggle="pill" data-bs-target="#pills-home" type="button" role="tab" aria-controls="pills-home" aria-selected="true">Description</button>
+                                        </li>
+                                        <li class="nav-item" role="presentation">
+                                            <button class="nav-link px-0 py-10" id="pills-details-tab" data-bs-toggle="pill" data-bs-target="#pills-details" type="button" role="tab" aria-controls="pills-details" aria-selected="false">Features</button>
+                                        </li>
+                                    </ul>
+                                    <div class="tab-content" id="pills-tabContent">
+                                        <div class="tab-pane fade show active" id="pills-home" role="tabpanel" aria-labelledby="pills-home-tab" tabindex="0">
+                                            <div>
+                                                <p class="text-secondary-light mb-0"><?php echo \$row['description']; ?></p>
+                                            </div>
+                                        </div>
+                                        <div class="tab-pane fade" id="pills-details" role="tabpanel" aria-labelledby="pills-details-tab" tabindex="0">
+                                            <div>
+                                                <?php
+                                                    \$features_sql = "SELECT feature_type, feature FROM features WHERE cat_type = 1 AND package_id = \$Id";
+                                                    \$features_result = \$conn->query(\$features_sql);
+                                                    
+                                                    \$included = [];
+                                                    \$excluded = [];
+                                                    
+                                                    while (\$frow = \$features_result->fetch_assoc()) {
+                                                        if (\$frow['feature_type'] == 'inclusive') {
+                                                            \$included[] = \$frow['feature'];
+                                                        } else {
+                                                            \$excluded[] = \$frow['feature'];
+                                                        }
+                                                    }
+                                                ?>
+                                                
+                                                <div class="features-row">
+                                                    <!-- INCLUSIONS -->
+                                                    <div class="features-col inclusions">
+                                                        <h6>Included</h6>
+                                                        <ul class="custom-list">
+                                                            <?php if (!empty(\$included)): ?>
+                                                                <?php foreach (\$included as \$inc): ?>
+                                                                    <li><i class="fa fa-check"></i> <?php echo htmlspecialchars(\$inc); ?></li>
+                                                                <?php endforeach; ?>
+                                                            <?php else: ?>
+                                                                <li>No inclusions available</li>
+                                                            <?php endif; ?>
+                                                        </ul>
+                                                    </div>
+                                                    <!-- EXCLUSIONS -->
+                                                    <div class="features-col exclusions">
+                                                    <h6>Excluded</h6>
+                                                        <ul class="custom-list">
+                                                            <?php if (!empty(\$excluded)): ?>
+                                                                <?php foreach (\$excluded as \$exc): ?>
+                                                                    <li><i class="fa fa-close"></i> <?php echo htmlspecialchars(\$exc); ?></li>
+                                                                <?php endforeach; ?>
+                                                            <?php else: ?>
+                                                                <li>No exclusions available</li>
+                                                            <?php endif; ?>
+                                                        </ul>
+                                                    </div>
+                                                </div>                                                     
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>            
+                            </div>               
+                        <?php include './partials/layouts/layoutBottom.php'; ?>
+
+                        ROOT;
 
                         \$rootContent = str_replace(
-                            'session_start();',
-                            '',
+                            '__PACKAGE_ID__',
+                            \$package_id,
                             \$rootContent
                         );
 
-                        \$rootContent = str_replace(
-                            "include '../../partials/connection.php';",
-                            "",
-                            \$rootContent
-                        );
 
-                        \$rootContent = str_replace(
-                            "include '../head.php';",
-                            "include './partials/layouts/layoutTop.php';",
-                            \$rootContent
-                        );
+                        // =====================================================
+                        // FILE NAME
+                        // =====================================================
 
-                        \$rootContent = str_replace(
-                            "<?php include '../scripts.php'; ?>",
-                            "<?php include './partials/layouts/layoutBottom.php'; ?>",
-                            \$rootContent
-                        );
+                        \$landingFileName = \$landingSlug . '.php';
 
-                        \$rootContent = str_replace(
-                            "../../uploads/products/",
-                            "./uploads/products/",
-                            \$rootContent
-                        );
-                        
-                        \$rootContent = str_replace(
-                            '<div class="content-wrapper" style="margin: 0px 15% 0px 15%;">',
-                            '<div class="content-wrapper" style="padding: 10px 15px; margin: 20px 0">',
-                            \$rootContent
-                        );
-                        
-                        \$rootContent = str_replace(
-                            "../../cart.php",
-                            "cart.php",
-                            \$rootContent
-                        );
-                        
-                        \$rootContent = str_replace(
-                            '<a href="../product-details.php?id=<?php echo \$Id; ?>" class="d-block">',
-                            '<a href="product-details.php?id=<?php echo \$Id; ?>" class="d-block">',
-                            \$rootContent
-                        );                       
 
-                        \$rootContent = preg_replace(
-                            '/<section class="top-header">.*?<\/section>/s',
-                            '',
-                            \$rootContent
-                        );  
-                        
-                        \$rootContent = preg_replace(
-                            '/<footer class="d-footer mt-20" style="padding:15px 10px; border-top:1px solid #eee;">.*?<\/footer>/s',
-                            '',
-                            \$rootContent
-                        );  
-                        
-                        \$rootContent = preg_replace(
-                            '/<section class="card mt-20 contact">.*?<\/section>/s',
-                            '',
-                            \$rootContent
-                        );  
-                        
-                        \$rootContent = preg_replace(
-                            '/<div class="package-wrapper position-relative">.*?<\/div>/s',
-                            '',
-                            \$rootContent
-                        );  
-                        
-                        \$landingContent = str_replace(
-                            './uploads/products',
-                            '../../uploads/products/',
-                            \$landingContent
-                        );
-                                
-                        \$landingContent = preg_replace(
-                            '/<section class="breadcrumb-hero position-relative">.*?<\/section>/s',
-                            '',
-                            \$landingContent
-                        );
+                        // =====================================================
+                        // CREATE LANDING FILE
+                        // pages/packages/package-name.php
+                        // =====================================================
 
-                        \$landingContent = preg_replace(
-                            '/<button class="btn btn-dark" data-bs-toggle="modal" data-bs-target="#apiModal">.*?<\/button>/s',
-                            '',
-                            \$landingContent
-                        );
-                         
-                        \$landingContent = preg_replace(
-                            '/<div class="card image-banner">.*?<\/div>/s',
-                            '',
-                            \$landingContent
-                        );                          
-                        
-                        \$landingContent = str_replace(
-                            '<img src="../uploads/company_logo/<?php echo \$logo; ?>" alt="Company Logo">',
-                            '<img src="../../uploads/company_logo/<?php echo \$logo; ?>" alt="Company Logo">',
-                            \$landingContent
-                        );
-                        
-                        \$landingContent = str_replace(
-                            '<div class="card-body product pricing">',
-                            '<div class="product pricing">',
-                            \$landingContent
-                        );
-                        
-                        \$pagesContent = \$landingContent;
-                        // Create file only if not exists
-                        \$paths = [
-                            ['dir' => realpath(__DIR__) . '/pages/packages', 'content' => \$pagesContent],
-                            ['dir' => realpath(__DIR__) . '/', 'content' => \$rootContent]
-                        ];
+                        \$pagesDir = realpath(__DIR__) . '/pages/packages';
 
-                        foreach (\$paths as \$item) {
-                            \$dir = \$item['dir'];
-                            \$content = \$item['content'];
+                        if (!is_dir(\$pagesDir)) {
+                            mkdir(\$pagesDir, 0777, true);
+                        }
 
-                            if (!is_dir(\$dir)) {
-                                mkdir(\$dir, 0777, true);
-                            }
+                        \$landingFilePath = \$pagesDir . '/' . \$landingFileName;
 
-                            \$filePath = \$dir . '/' . \$landingFileName;
+                        if (!file_exists(\$landingFilePath)) {
+                            file_put_contents(\$landingFilePath, \$landingContent);
+                        }
 
-                            if (!file_exists(\$filePath)) {
-                                file_put_contents(\$filePath, \$content); // ✅ correct
-                            }
+
+                        // =====================================================
+                        // CREATE ROOT FILE
+                        // package-name.php
+                        // =====================================================
+
+                        \$rootDir = realpath(__DIR__);
+
+                        \$rootFilePath = \$rootDir . '/' . \$landingFileName;
+
+                        if (!file_exists(\$rootFilePath)) {
+                            file_put_contents(\$rootFilePath, \$rootContent);
                         }
                             \$featureStmt = \$conn->prepare("INSERT INTO features (package_id, feature, feature_type, cat_type) VALUES (?, ?, ?, ?)");
 

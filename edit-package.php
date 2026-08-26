@@ -457,7 +457,7 @@ if ($oldSlug !== $newSlug) {
     <div class="card h-100 p-0 radius-12">
         <div class="card-body p-24">
             <div class="row justify-content-center">
-                <div class="col-xxl-12 col-xl-8 col-lg-10">
+                <div class="col-xxl-12 col-xl-12 col-lg-12">
                     <form method="POST" enctype="multipart/form-data" class="row gy-3 needs-validation" novalidate autocomplete="off">
                         <input type="hidden" name="id" value="<?php echo htmlspecialchars($get_package_id); ?>">
                         <input type="hidden" name="cat_id" value="<?php echo htmlspecialchars($get_cat_id); ?>">
@@ -791,9 +791,9 @@ if ($oldSlug !== $newSlug) {
                             </div>
                         </div>
                         <div class="d-flex align-items-center justify-content-center gap-3">
-                            <button type="button" class="border border-danger-600 bg-hover-danger-200 text-danger-600 text-md px-56 py-11 radius-8">
+                            <!-- <button type="button" class="border border-danger-600 bg-hover-danger-200 text-danger-600 text-md px-56 py-11 radius-8">
                                 Cancel
-                            </button>
+                            </button> -->
                             <button type="submit" class="btn lufera-bg lufera-text text-md px-56 py-12 radius-8" name="save">
                                 Update
                             </button>
@@ -803,7 +803,7 @@ if ($oldSlug !== $newSlug) {
             </div>
         </div>
     </div>
-
+</div>
 <script>
     const durationWrapper = document.getElementById("duration-wrapper");
         durationWrapper.addEventListener("click", function (e) {

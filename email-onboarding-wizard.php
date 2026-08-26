@@ -542,61 +542,194 @@
         exit;
     }
 
-    if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['inline_update'])) {
-        $field = $_POST['field'] ?? '';
-        $website_id = isset($_GET['id']) ? intval($_GET['id']) : 0;
+    // ────────────────────────────────────────────────
+// INLINE UPDATE HANDLER
+// UPDATE existing JSON record OR INSERT new record
+// ────────────────────────────────────────────────
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['inline_update'])) {
 
-        if (!$field || !$website_id) {
-            echo 'invalid request';
+    header('Content-Type: text/plain; charset=utf-8');
+
+    $field = trim($_POST['field'] ?? '');
+    $website_id = intval($_GET['id'] ?? 0);
+
+    if ($field === '' || $website_id <= 0) {
+        http_response_code(400);
+        echo 'invalid request';
+        exit;
+    }
+
+    // Find the JSON record for this website
+    $decoded = [];
+    $recordExists = false;
+    $jsonId = 0;
+
+    $stmt = $conn->prepare("
+        SELECT id, name
+        FROM json
+        WHERE website_id = ?
+        ORDER BY id DESC
+        LIMIT 1
+    ");
+
+    $stmt->bind_param("i", $website_id);
+    $stmt->execute();
+
+    $result = $stmt->get_result();
+
+    if ($row = $result->fetch_assoc()) {
+        $recordExists = true;
+        $jsonId = (int)$row['id'];
+
+        $decoded = json_decode($row['name'], true);
+
+        if (!is_array($decoded)) {
+            $decoded = [];
+        }
+    }
+
+    $stmt->close();
+
+
+    // Create the field if it does not already exist
+    if (!isset($decoded[$field]) || !is_array($decoded[$field])) {
+        $decoded[$field] = [
+            'value' => '',
+            'status' => 'pending'
+        ];
+    }
+
+
+    // ------------------------------------------------
+    // FILE UPLOAD
+    // ------------------------------------------------
+    if (
+        isset($_FILES['file']) &&
+        $_FILES['file']['error'] === UPLOAD_ERR_OK
+    ) {
+
+        $uploadDir = 'Uploads/';
+
+        if (!is_dir($uploadDir)) {
+            mkdir($uploadDir, 0755, true);
+        }
+
+        $fileName = basename($_FILES['file']['name']);
+
+        $safeFileName =
+            time() . '_' .
+            preg_replace(
+                "/[^a-zA-Z0-9.\-_]/",
+                "",
+                $fileName
+            );
+
+        $targetPath = $uploadDir . $safeFileName;
+
+        if (!move_uploaded_file(
+            $_FILES['file']['tmp_name'],
+            $targetPath
+        )) {
+            http_response_code(500);
+            echo 'file upload failed';
             exit;
         }
 
-        $stmt = $conn->prepare("SELECT name FROM json WHERE website_id = ?");
-        $stmt->bind_param("i", $website_id);
-        $stmt->execute();
-        $stmt->bind_result($jsonData);
-        $stmt->fetch();
-        $stmt->close();
+        $decoded[$field]['value'] = $targetPath;
 
-        $decoded = json_decode($jsonData, true);
+    } else {
 
-        if (!isset($decoded[$field])) {
-            echo 'field not found';
+        // Normal text/select/radio/checkbox value
+        $decoded[$field]['value'] = $_POST['value'] ?? '';
+    }
+
+
+    // Every admin edit returns the field to pending
+    $decoded[$field]['status'] = 'pending';
+
+
+    // Encode updated JSON
+    $updatedJson = json_encode(
+        $decoded,
+        JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES
+    );
+
+    if ($updatedJson === false) {
+        http_response_code(500);
+        echo 'json encoding failed';
+        exit;
+    }
+
+
+    // ------------------------------------------------
+    // EXISTING RECORD → UPDATE
+    // ------------------------------------------------
+    if ($recordExists) {
+
+        $updateStmt = $conn->prepare("
+            UPDATE json
+            SET name = ?
+            WHERE id = ?
+            LIMIT 1
+        ");
+
+        $updateStmt->bind_param(
+            "si",
+            $updatedJson,
+            $jsonId
+        );
+
+        if (!$updateStmt->execute()) {
+            http_response_code(500);
+            echo 'database update failed';
+            $updateStmt->close();
             exit;
         }
 
-        if (!empty($_FILES['file'])) {
-            $fileTmp = $_FILES['file']['tmp_name'];
-            $fileName = basename($_FILES['file']['name']);
-            $uploadDir = 'Uploads/';
-            $targetPath = $uploadDir . time() . '_' . preg_replace("/[^a-zA-Z0-9.\-_]/", "", $fileName);
-
-            if (!is_dir($uploadDir)) {
-                mkdir($uploadDir, 0777, true);
-            }
-
-            if (move_uploaded_file($fileTmp, $targetPath)) {
-                $decoded[$field]['value'] = $targetPath;
-                $decoded[$field]['status'] = 'pending';
-            } else {
-                echo 'file upload failed';
-                exit;
-            }
-        } else {
-            $value = $_POST['value'] ?? '';
-            $decoded[$field]['value'] = $value;
-            $decoded[$field]['status'] = 'pending';
-        }
-
-        $updatedJson = json_encode($decoded);
-        $updateStmt = $conn->prepare("UPDATE json SET name = ? WHERE website_id = ?");
-        $updateStmt->bind_param("si", $updatedJson, $website_id);
-        $updateStmt->execute();
         $updateStmt->close();
 
         echo 'updated';
         exit;
     }
+
+
+    // ------------------------------------------------
+    // NO RECORD → INSERT
+    // ------------------------------------------------
+
+    // Use the current target user and template
+    $insertUserId = intval($user_id);
+    $insertTemplate = $template;
+    $prefillName = '';
+
+    $insertStmt = $conn->prepare("
+        INSERT INTO json
+            (name, user_id, website_id, template, prefill_name)
+        VALUES
+            (?, ?, ?, ?, ?)
+    ");
+
+    $insertStmt->bind_param(
+        "siiss",
+        $updatedJson,
+        $insertUserId,
+        $website_id,
+        $insertTemplate,
+        $prefillName
+    );
+
+    if (!$insertStmt->execute()) {
+        http_response_code(500);
+        echo 'database insert failed';
+        $insertStmt->close();
+        exit;
+    }
+
+    $insertStmt->close();
+
+    echo 'updated';
+    exit;
+}
 
     // Check if all main fields are approved
     $mainFields = [

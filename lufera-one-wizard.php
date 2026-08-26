@@ -194,7 +194,7 @@
 <div class="dashboard-main-body">
     <div class="d-flex flex-wrap align-items-center gap-3 mb-24 justify-content-between">
         <div class="d-flex align-self-end">
-            <a class="cursor-pointer fw-bold" onclick="history.back()"><span class="fa fa-arrow-left"></span>  </a>
+            <a class="cursor-pointer fw-bold" onclick="history.back()"><span class="fa fa-arrow-left"></span>  </a>
             <h6 class="fw-semibold mb-0">Lufera One Wizard</h6>
         </div>
 
@@ -260,10 +260,19 @@
     $roleQuery->fetch();
     $roleQuery->close();
 
-    // Load saved data
+    // Load saved data using the exact target record:
+    // user_id + website_id + template
     $savedData = [];
-    $stmt = $conn->prepare("SELECT name FROM json WHERE website_id = ?");
-    $stmt->bind_param("i", $web_id);
+    $stmt = $conn->prepare("
+        SELECT name
+        FROM json
+        WHERE user_id = ?
+          AND website_id = ?
+          AND template = ?
+        ORDER BY id DESC
+        LIMIT 1
+    ");
+    $stmt->bind_param("iis", $user_id, $web_id, $template);
     $stmt->execute();
     $stmt->bind_result($jsonData);
     if ($stmt->fetch()) {
@@ -272,7 +281,8 @@
     $stmt->close();
 
     // ────────────────────────────────────────────────
-    //   INLINE UPDATE HANDLER - FIXED FOR update-icon & saveEditBtn
+    //   INLINE UPDATE HANDLER
+    //   UPDATE existing JSON record OR INSERT new record
     // ────────────────────────────────────────────────
     if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['inline_update'])) {
 
@@ -281,68 +291,167 @@
         $field = trim($_POST['field'] ?? '');
         $website_id = intval($_GET['id'] ?? 0);
 
-        if (!$field || $website_id <= 0) {
+        if ($field === '' || $website_id <= 0) {
             http_response_code(400);
-            echo 'missing field or website id';
+            echo 'invalid request';
             exit;
         }
 
-        // Load current JSON
-        $stmt = $conn->prepare("SELECT name FROM json WHERE website_id = ? LIMIT 1");
-        $stmt->bind_param("i", $website_id);
+        // Find the exact JSON record using the same keys as SAVE:
+        // user_id + website_id + template
+        $jsonId = 0;
+        $jsonStr = '';
+
+        $stmt = $conn->prepare("
+            SELECT id, name
+            FROM json
+            WHERE user_id = ?
+              AND website_id = ?
+              AND template = ?
+            ORDER BY id DESC
+            LIMIT 1
+        ");
+
+        $stmt->bind_param(
+            "iis",
+            $user_id,
+            $website_id,
+            $template
+        );
+
         $stmt->execute();
-        $stmt->bind_result($json_str);
-        if (!$stmt->fetch()) {
-            http_response_code(404);
-            echo 'record not found';
-            exit;
+        $result = $stmt->get_result();
+
+        if ($rowJson = $result->fetch_assoc()) {
+            $jsonId = (int) $rowJson['id'];
+            $jsonStr = $rowJson['name'];
         }
+
         $stmt->close();
 
-        $data = json_decode($json_str, true) ?? [];
-        if (!isset($data[$field])) {
-            http_response_code(400);
-            echo 'field not found in data';
-            exit;
+        // Decode existing JSON. If no row exists, start with an empty object.
+        $data = [];
+
+        if ($jsonStr !== '') {
+            $decoded = json_decode($jsonStr, true);
+
+            if (is_array($decoded)) {
+                $data = $decoded;
+            }
+        }
+
+        // Create the field if it does not exist yet.
+        if (!isset($data[$field]) || !is_array($data[$field])) {
+            $data[$field] = [
+                'value'  => '',
+                'status' => 'pending'
+            ];
         }
 
         // File upload handling
-        if (!empty($_FILES['file']) && $_FILES['file']['error'] === UPLOAD_ERR_OK) {
+        if (
+            isset($_FILES['file']) &&
+            $_FILES['file']['error'] === UPLOAD_ERR_OK
+        ) {
             $uploadDir = 'Uploads/';
-            if (!is_dir($uploadDir)) {
-                mkdir($uploadDir, 0755, true);
+
+            if (!is_dir($uploadDir) && !mkdir($uploadDir, 0755, true)) {
+                http_response_code(500);
+                echo 'could not create upload directory';
+                exit;
             }
 
-            $ext = strtolower(pathinfo($_FILES['file']['name'], PATHINFO_EXTENSION));
-            $safeName = time() . '_' . uniqid() . '.' . $ext;
+            $originalName = basename($_FILES['file']['name']);
+            $extension = strtolower(
+                pathinfo($originalName, PATHINFO_EXTENSION)
+            );
+
+            $safeName = time() . '_' . uniqid('', true);
+            if ($extension !== '') {
+                $safeName .= '.' . $extension;
+            }
+
             $target = $uploadDir . $safeName;
 
-            if (move_uploaded_file($_FILES['file']['tmp_name'], $target)) {
-                $data[$field]['value'] = $target;
-            } else {
+            if (!move_uploaded_file($_FILES['file']['tmp_name'], $target)) {
                 http_response_code(500);
                 echo 'file upload failed - check folder permissions';
                 exit;
             }
+
+            $data[$field]['value'] = $target;
         } else {
-            $value = $_POST['value'] ?? '';
-            $data[$field]['value'] = $value;
+            // Normal text/select/number/textarea/checkbox/radio value
+            $data[$field]['value'] = $_POST['value'] ?? '';
         }
 
-        // Always set to pending after edit
+        // Every inline edit becomes pending.
         $data[$field]['status'] = 'pending';
 
-        $newJson = json_encode($data);
+        $newJson = json_encode(
+            $data,
+            JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES
+        );
 
-        $update = $conn->prepare("UPDATE json SET name = ? WHERE website_id = ?");
-        $update->bind_param("si", $newJson, $website_id);
-        if ($update->execute()) {
-            echo 'updated';
-        } else {
+        if ($newJson === false) {
             http_response_code(500);
-            echo 'database update failed';
+            echo 'json encoding failed';
+            exit;
         }
-        $update->close();
+
+        // Existing record -> UPDATE
+        if ($jsonId > 0) {
+            $update = $conn->prepare("
+                UPDATE json
+                SET name = ?
+                WHERE id = ?
+                LIMIT 1
+            ");
+
+            $update->bind_param("si", $newJson, $jsonId);
+
+            if (!$update->execute()) {
+                http_response_code(500);
+                echo 'database update failed';
+                $update->close();
+                exit;
+            }
+
+            $update->close();
+
+            echo 'updated';
+            exit;
+        }
+
+        // No record -> INSERT
+        $prefill_name = '';
+
+        $insert = $conn->prepare("
+            INSERT INTO json
+                (name, user_id, website_id, template, prefill_name)
+            VALUES
+                (?, ?, ?, ?, ?)
+        ");
+
+        $insert->bind_param(
+            "siiss",
+            $newJson,
+            $user_id,
+            $website_id,
+            $template,
+            $prefill_name
+        );
+
+        if (!$insert->execute()) {
+            http_response_code(500);
+            echo 'database insert failed';
+            $insert->close();
+            exit;
+        }
+
+        $insert->close();
+
+        echo 'updated';
         exit;
     }
 
@@ -1007,14 +1116,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     confirmButtonColor: '#fec700'
                 }).then(() => location.reload());
             } else {
-                //Swal.fire('Problem', 'Server replied: ' + text, 'warning');
-                modal.style.display = 'none';
                 Swal.fire({
-                    icon: 'success',
-                    title: 'Saved!',
-                    text: 'Field updated and set to pending.',
+                    icon: 'error',
+                    title: 'Update Failed',
+                    text: text.trim() || 'The server did not save the field.',
                     confirmButtonColor: '#fec700'
-                }).then(() => location.reload());
+                });
             }
         })
         .catch(err => {
@@ -1109,13 +1216,11 @@ $(document).ready(function () {
                         timer: 1800
                     }).then(() => location.reload());
                 } else {
-                    //Swal.fire('Warning', 'Server responded but not "updated": ' + cleanResponse, 'warning');
                     Swal.fire({
-                        icon: 'success',
-                        title: 'Updated',
-                        text: 'Field has been saved and set to pending.',
-                        timer: 1800
-                    }).then(() => location.reload());
+                        icon: 'error',
+                        title: 'Update Failed',
+                        text: cleanResponse || 'The server did not save the field.',
+                    });
                 }
             },
             error: function(xhr, status, error) {

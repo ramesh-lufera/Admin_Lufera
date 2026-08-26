@@ -338,7 +338,7 @@ $featureStmt->close();
     <div class="card h-100 p-0 radius-12">
         <div class="card-body p-24">
             <div class="row justify-content-center">
-                <div class="col-xxl-12 col-xl-8 col-lg-10">
+                <div class="col-xxl-12 col-xl-12 col-lg-12">
                     <form method="POST" enctype="multipart/form-data" class="row gy-3 needs-validation card-form" novalidate autocomplete="off">
                       <input type="hidden" name="id" value="<?php echo htmlspecialchars($get_product_id); ?>">
                         <input type="hidden" class="form-control radius-8" name="cat_id" required maxlength="30"
