@@ -1554,8 +1554,70 @@ function buildTable() {
             // Column name
             const nameSpan = document.createElement("span");
             nameSpan.textContent = columnHeaders[c] || "Column Field";
+            nameSpan.style.cursor = "text";
+            nameSpan.title = "Double-click to edit";
+
+            // Double-click header to edit
+            nameSpan.addEventListener("dblclick", (e) => {
+                e.stopPropagation();
+
+                const oldName = columnHeaders[c] || "Column Field";
+
+                const input = document.createElement("input");
+                input.type = "text";
+                input.value = oldName;
+
+                input.style.width = "100%";
+                input.style.minWidth = "0";
+                input.style.border = "1px solid #2563eb";
+                input.style.borderRadius = "4px";
+                input.style.padding = "3px 6px";
+                input.style.outline = "none";
+                input.style.font = "inherit";
+                input.style.fontWeight = "inherit";
+                input.style.background = "#fff";
+
+                nameSpan.replaceWith(input);
+                input.focus();
+                input.select();
+
+                let finished = false;
+
+                function finishEdit() {
+                    if (finished) return;
+                    finished = true;
+
+                    const newName = input.value.trim();
+
+                    columnHeaders[c] = newName || oldName;
+
+                    nameSpan.textContent = columnHeaders[c];
+
+                    input.replaceWith(nameSpan);
+
+                    hasUnsavedChanges = true;
+                }
+
+                // Save on Enter
+                input.addEventListener("keydown", (e) => {
+                    if (e.key === "Enter") {
+                        e.preventDefault();
+                        finishEdit();
+                    }
+
+                    // Cancel with Escape
+                    if (e.key === "Escape") {
+                        e.preventDefault();
+                        finished = true;
+                        input.replaceWith(nameSpan);
+                    }
+                });
+
+                // Save when clicking outside
+                input.addEventListener("blur", finishEdit);
+            });
             
-            const sortSpan = document.createElement("span");
+const sortSpan = document.createElement("span");
 sortSpan.className = "fa fa-sort sort-col-icon";
 sortSpan.title = "Sort";
 sortSpan.style.cursor = "pointer";

@@ -276,75 +276,191 @@
     // ────────────────────────────────────────────────
     if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['inline_update'])) {
 
-        header('Content-Type: text/plain; charset=utf-8');
+    header('Content-Type: text/plain; charset=utf-8');
 
-        $field = trim($_POST['field'] ?? '');
-        $website_id = intval($_GET['id'] ?? 0);
+    $field = trim($_POST['field'] ?? '');
+    $website_id = intval($_GET['id'] ?? 0);
 
-        if (!$field || $website_id <= 0) {
-            http_response_code(400);
-            echo 'missing field or website id';
-            exit;
+    if (!$field || $website_id <= 0) {
+        http_response_code(400);
+        echo 'missing field or website id';
+        exit;
+    }
+
+    // ------------------------------------------------
+    // Load existing JSON record if it exists
+    // ------------------------------------------------
+    $data = [];
+    $recordExists = false;
+
+    $stmt = $conn->prepare("
+        SELECT id, name, user_id, template
+        FROM json
+        WHERE website_id = ?
+        LIMIT 1
+    ");
+
+    $stmt->bind_param("i", $website_id);
+    $stmt->execute();
+
+    $result = $stmt->get_result();
+
+    if ($result->num_rows > 0) {
+
+        $existingRow = $result->fetch_assoc();
+
+        $recordExists = true;
+
+        $data = json_decode($existingRow['name'], true) ?? [];
+
+        // Keep existing record information
+        $json_user_id = intval($existingRow['user_id']);
+        $json_template = $existingRow['template'];
+    }
+
+    $stmt->close();
+
+
+    // ------------------------------------------------
+    // Create the field if it does not already exist
+    // ------------------------------------------------
+    if (!isset($data[$field])) {
+        $data[$field] = [
+            'value' => '',
+            'status' => 'pending'
+        ];
+    }
+
+
+    // ------------------------------------------------
+    // File upload handling
+    // ------------------------------------------------
+    if (
+        !empty($_FILES['file']) &&
+        $_FILES['file']['error'] === UPLOAD_ERR_OK
+    ) {
+
+        $uploadDir = 'Uploads/';
+
+        if (!is_dir($uploadDir)) {
+            mkdir($uploadDir, 0755, true);
         }
 
-        // Load current JSON
-        $stmt = $conn->prepare("SELECT name FROM json WHERE website_id = ? LIMIT 1");
-        $stmt->bind_param("i", $website_id);
-        $stmt->execute();
-        $stmt->bind_result($json_str);
-        if (!$stmt->fetch()) {
-            http_response_code(404);
-            echo 'record not found';
-            exit;
-        }
-        $stmt->close();
+        $ext = strtolower(
+            pathinfo($_FILES['file']['name'], PATHINFO_EXTENSION)
+        );
 
-        $data = json_decode($json_str, true) ?? [];
-        if (!isset($data[$field])) {
-            http_response_code(400);
-            echo 'field not found in data';
-            exit;
-        }
+        $safeName = time() . '_' . uniqid() . '.' . $ext;
+        $target = $uploadDir . $safeName;
 
-        // File upload handling
-        if (!empty($_FILES['file']) && $_FILES['file']['error'] === UPLOAD_ERR_OK) {
-            $uploadDir = 'Uploads/';
-            if (!is_dir($uploadDir)) {
-                mkdir($uploadDir, 0755, true);
-            }
+        if (move_uploaded_file($_FILES['file']['tmp_name'], $target)) {
 
-            $ext = strtolower(pathinfo($_FILES['file']['name'], PATHINFO_EXTENSION));
-            $safeName = time() . '_' . uniqid() . '.' . $ext;
-            $target = $uploadDir . $safeName;
+            $data[$field]['value'] = $target;
 
-            if (move_uploaded_file($_FILES['file']['tmp_name'], $target)) {
-                $data[$field]['value'] = $target;
-            } else {
-                http_response_code(500);
-                echo 'file upload failed - check folder permissions';
-                exit;
-            }
         } else {
-            $value = $_POST['value'] ?? '';
-            $data[$field]['value'] = $value;
+
+            http_response_code(500);
+            echo 'file upload failed - check folder permissions';
+            exit;
         }
 
-        // Always set to pending after edit
-        $data[$field]['status'] = 'pending';
+    } else {
 
-        $newJson = json_encode($data);
+        // Normal text/select/textarea/radio/checkbox value
+        $value = $_POST['value'] ?? '';
 
-        $update = $conn->prepare("UPDATE json SET name = ? WHERE website_id = ?");
-        $update->bind_param("si", $newJson, $website_id);
+        $data[$field]['value'] = $value;
+    }
+
+
+    // ------------------------------------------------
+    // Every inline edit becomes pending
+    // ------------------------------------------------
+    $data[$field]['status'] = 'pending';
+
+
+    // ------------------------------------------------
+    // Convert updated data back to JSON
+    // ------------------------------------------------
+    $newJson = json_encode($data);
+
+    if ($newJson === false) {
+        http_response_code(500);
+        echo 'json encoding failed';
+        exit;
+    }
+
+
+    // ------------------------------------------------
+    // EXISTING RECORD → UPDATE
+    // ------------------------------------------------
+    if ($recordExists) {
+
+        $update = $conn->prepare("
+            UPDATE json
+            SET name = ?
+            WHERE website_id = ?
+            LIMIT 1
+        ");
+
+        $update->bind_param(
+            "si",
+            $newJson,
+            $website_id
+        );
+
         if ($update->execute()) {
+
             echo 'updated';
+
         } else {
+
             http_response_code(500);
             echo 'database update failed';
         }
+
         $update->close();
-        exit;
+
+    } else {
+
+        // ------------------------------------------------
+        // NO RECORD → INSERT NEW RECORD
+        // ------------------------------------------------
+        $insert_user_id = $user_id;
+        $insert_template = $template;
+        $prefill_name = '';
+
+        $insert = $conn->prepare("
+            INSERT INTO json
+                (name, user_id, website_id, template, prefill_name)
+            VALUES
+                (?, ?, ?, ?, ?)
+        ");
+
+        $insert->bind_param(
+            "siiss",
+            $newJson,
+            $insert_user_id,
+            $website_id,
+            $insert_template,
+            $prefill_name
+        );
+
+        if ($insert->execute()) {
+
+            echo 'updated';
+
+        } else {
+
+            http_response_code(500);
+            echo 'database insert failed: ' . $insert->error;
+        }
+
+        $insert->close();
     }
+
+    exit;
+}
 
     // ────────────────────────────────────────────────
     //               SAVE / UPDATE LOGIC
@@ -458,7 +574,7 @@ function renderFieldExtended($fieldName, $savedData, $user_role, $label = '', $p
         $copyButton = '<button type="button" class="btn btn-outline-secondary btn-sm copy-btn" data-field="' . htmlspecialchars($fieldName) . '" title="Copy Value"><i class="fa fa-copy"></i></button>';
     }
 
-    if ($type === 'text' || $type === 'email' || $type === 'number' || $type === 'date') {
+    if ($type === 'text' || $type === 'email' || $type === 'number' || $type === 'date' || $type === 'file') {
         echo '<input type="' . $type . '" class="form-control w-85 ' . $styleClass . '" id="' . $inputId . '" name="' . htmlspecialchars($fieldName) . '" placeholder="' . htmlspecialchars($placeholder) . '" value="' . htmlspecialchars($val) . '" ' . $isReadonly . '>';
         if ($copyButton) echo $copyButton;
     }
