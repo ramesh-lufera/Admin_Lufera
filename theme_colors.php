@@ -25,6 +25,57 @@ if(mysqli_num_rows($getThemeQuery) > 0){
 
 $themeSaved = false;
 
+$customThemeSaved = false;
+
+if (
+    isset($_POST['theme_color_name']) &&
+    trim($_POST['theme_color_name']) != ''
+) {
+
+    $themeName  = mysqli_real_escape_string(
+        $conn,
+        trim($_POST['theme_color_name'])
+    );
+
+    $mainColor = mysqli_real_escape_string(
+        $conn,
+        $_POST['theme_main_color']
+    );
+
+    $focusColor = mysqli_real_escape_string(
+        $conn,
+        $_POST['theme_focus_color']
+    );
+
+    $textColor = mysqli_real_escape_string(
+        $conn,
+        $_POST['theme_text_color']
+    );
+
+    mysqli_query($conn, "
+
+        INSERT INTO theme_colors
+        (
+            main_color,
+            focus_color,
+            text_color,
+            selected_theme
+        )
+
+        VALUES
+        (
+            '$mainColor',
+            '$focusColor',
+            '$textColor',
+            '$themeName'
+        )
+
+    ");
+
+    $customThemeSaved = true;
+
+}
+
 if(isset($_POST['selected_theme'])){
 
     $mainColor     = $_POST['main_color'];
@@ -163,7 +214,25 @@ if(isset($_POST['selected_theme'])){
 
                 <div class="mt-32">
 
-                    <h6 class="text-xl mb-16">Theme Colors</h6>
+                    <!-- <h6 class="text-xl mb-16">Theme Colors</h6> -->
+
+                    <div class="d-flex align-items-center justify-content-between mb-16">
+
+                        <h6 class="text-xl mb-0">
+                            Theme Colors
+                        </h6>
+
+                        <button
+                            type="button"
+                            class="btn lufera-bg lufera-text text-sm px-20 py-10 radius-8"
+                            data-bs-toggle="modal"
+                            data-bs-target="#addThemeColorModal">
+
+                            + Add New Color
+
+                        </button>
+
+                    </div>
 
                     <div class="row gy-4">
 
@@ -557,6 +626,260 @@ if(isset($_POST['selected_theme'])){
 
                         </div>
 
+                        <!-- Lufera Infotech -->
+                        <div class="col-xxl-4 col-md-6 col-sm-12">
+
+                            <input
+                                class="form-check-input payment-gateway-input"
+                                name="payment-gateway"
+                                type="radio"
+                                id="luferaInfotech"
+                                hidden
+                                value="luferaInfotech"
+
+                                data-main="#1e8a8a"
+                                data-focus="#d8e5e5"
+                                data-text="#0c1e21"
+
+                                <?php
+
+                                if(
+
+                                    $selectedThemeData &&
+
+                                    $selectedThemeData['selected_theme'] == 'luferaInfotech'
+
+                                ){
+
+                                    echo 'checked';
+
+                                }
+
+                                ?>
+
+                            >
+
+                            <label
+                                for="luferaInfotech"
+                                class="payment-gateway-label border radius-8 p-12 w-100">
+
+                                <span class="d-flex align-items-start justify-content-between gap-3">
+
+                                    <!-- Main -->
+
+                                    <span class="theme-color-box text-center">
+
+                                        <span
+                                            class="h-72-px radius-4 d-block"
+                                            style="background:#1e8a8a;">
+                                        </span>
+
+                                        <span class="text-secondary-light text-md fw-semibold mt-8 d-block">
+
+                                            Lufera Infotech
+
+                                        </span>
+
+                                    </span>
+
+                                    <!-- Focus -->
+
+                                    <span class="theme-color-box text-center">
+
+                                        <span
+                                            class="h-72-px radius-4 d-block"
+                                            style="background:#d8e5e5;">
+                                        </span>
+
+                                        <span class="text-secondary-light text-md fw-semibold mt-8 d-block">
+
+                                            Focus
+
+                                        </span>
+
+                                    </span>
+
+                                    <!-- Text -->
+
+                                    <span class="theme-color-box text-center">
+
+                                        <span
+                                            class="h-72-px radius-4 border d-block"
+                                            style="background:#0c1e21;">
+                                        </span>
+
+                                        <span class="text-secondary-light text-md fw-semibold mt-8 d-block">
+
+                                            Text
+
+                                        </span>
+
+                                    </span>
+
+                                </span>
+
+                            </label>
+
+                        </div>
+
+                        <?php
+
+                        $userThemes = mysqli_query($conn, "
+
+                        SELECT *
+
+                        FROM theme_colors
+
+                        WHERE selected_theme NOT IN (
+
+                        'blue',
+
+                        'magenta',
+
+                        'orange',
+
+                        'green',
+
+                        'red',
+
+                        'blueDark',
+
+                        'luferaInfotech',
+
+                        'custom'
+
+                        )
+
+                        ORDER BY id ASC
+
+                        ");
+
+                        while($theme = mysqli_fetch_assoc($userThemes)){
+
+                        ?>
+
+                        <div class="col-xxl-4 col-md-6 col-sm-12">
+
+                            <input
+
+                                class="form-check-input payment-gateway-input"
+
+                                name="payment-gateway"
+
+                                type="radio"
+
+                                hidden
+
+                                id="theme_<?php echo $theme['id']; ?>"
+
+                                value="<?php echo htmlspecialchars($theme['selected_theme']); ?>"
+
+                                data-main="<?php echo $theme['main_color']; ?>"
+
+                                data-focus="<?php echo $theme['focus_color']; ?>"
+
+                                data-text="<?php echo $theme['text_color']; ?>"
+
+                                <?php
+
+                                if(
+
+                                    $selectedThemeData &&
+
+                                    $selectedThemeData['selected_theme'] == $theme['selected_theme']
+
+                                ){
+
+                                    echo "checked";
+
+                                }
+
+                                ?>
+
+                            >
+
+                            <label
+
+                                for="theme_<?php echo $theme['id']; ?>"
+
+                                class="payment-gateway-label border radius-8 p-12 w-100">
+
+                                <span class="d-flex align-items-start justify-content-between gap-3">
+
+                                    <!-- Main -->
+
+                                    <span class="theme-color-box text-center">
+
+                                        <span
+
+                                            class="h-72-px radius-4 d-block"
+
+                                            style="background:<?php echo $theme['main_color']; ?>;">
+
+                                        </span>
+
+                                        <span
+
+                                            class="text-secondary-light text-md fw-semibold mt-8 d-block">
+
+                                            <?php echo htmlspecialchars($theme['selected_theme']); ?>
+
+                                        </span>
+
+                                    </span>
+
+                                    <!-- Focus -->
+
+                                    <span class="theme-color-box text-center">
+
+                                        <span
+
+                                            class="h-72-px radius-4 d-block"
+
+                                            style="background:<?php echo $theme['focus_color']; ?>;">
+
+                                        </span>
+
+                                        <span
+
+                                            class="text-secondary-light text-md fw-semibold mt-8 d-block">
+
+                                            Focus
+
+                                        </span>
+
+                                    </span>
+
+                                    <!-- Text -->
+
+                                    <span class="theme-color-box text-center">
+
+                                        <span
+
+                                            class="h-72-px radius-4 border d-block"
+
+                                            style="background:<?php echo $theme['text_color']; ?>;">
+
+                                        </span>
+
+                                        <span
+
+                                            class="text-secondary-light text-md fw-semibold mt-8 d-block">
+
+                                            Text
+
+                                        </span>
+
+                                    </span>
+
+                                </span>
+
+                            </label>
+
+                        </div>
+
+                        <?php } ?>
+
                         <!-- Custom Colors Title -->
                         <div class="col-12 pb-0">
 
@@ -873,5 +1196,172 @@ window.addEventListener('load', () => {
 </script>
 
 <?php } ?>
+
+<?php if($customThemeSaved){ ?>
+
+<script>
+
+Swal.fire({
+
+icon:'success',
+
+title:'Theme Added',
+
+text:'Theme added successfully.',
+
+confirmButtonColor:'#1e8a8a'
+
+}).then(()=>{
+
+window.location='theme_colors.php';
+
+});
+
+</script>
+
+<?php } ?>
+
+<!-- ==========================================================
+     ADD NEW THEME COLOR MODAL
+========================================================== -->
+
+<div class="modal fade"
+     id="addThemeColorModal"
+     tabindex="-1"
+     aria-labelledby="addThemeColorModalLabel"
+     aria-hidden="true">
+
+    <div class="modal-dialog modal-dialog-centered">
+
+        <div class="modal-content">
+
+            <form
+                id="addThemeColorForm"
+                method="POST"
+                action="">
+
+                <!-- Header -->
+                <div class="modal-header">
+
+                    <h5 class="modal-title"
+                        id="addThemeColorModalLabel">
+
+                        Add New Theme Color
+
+                    </h5>
+
+                    <button type="button"
+                            class="btn-close"
+                            data-bs-dismiss="modal"
+                            aria-label="Close">
+                    </button>
+
+                </div>
+
+                <!-- Body -->
+                <div class="modal-body">
+
+                    <!-- Color Name -->
+                    <div class="mb-20">
+
+                        <label class="form-label">
+
+                            Color Name
+
+                        </label>
+
+                        <input
+                            type="text"
+                            class="form-control"
+                            id="themeColorName"
+                            name="theme_color_name"
+                            placeholder="Enter Color Name"
+                            required>
+
+                    </div>
+
+                    <!-- Main Color -->
+                    <div class="mb-20">
+
+                        <label class="form-label">
+
+                            Main Color
+
+                        </label>
+
+                        <input
+                            type="color"
+                            class="form-control form-control-color w-100"
+                            id="themeMainColor"
+                            name="theme_main_color"
+                            required>
+
+                    </div>
+
+                    <!-- Focus Color -->
+                    <div class="mb-20">
+
+                        <label class="form-label">
+
+                            Focus Color
+
+                        </label>
+
+                        <input
+                            type="color"
+                            class="form-control form-control-color w-100"
+                            id="themeFocusColor"
+                            name="theme_focus_color"
+                            required>
+
+                    </div>
+
+                    <!-- Text Color -->
+                    <div class="mb-20">
+
+                        <label class="form-label">
+
+                            Text Color
+
+                        </label>
+
+                        <input
+                            type="color"
+                            class="form-control form-control-color w-100"
+                            id="themeTextColor"
+                            name="theme_text_color"
+                            required>
+
+                    </div>
+
+                </div>
+
+                <!-- Footer -->
+                <div class="modal-footer">
+
+                    <button type="button"
+                            class="btn btn-secondary"
+                            data-bs-dismiss="modal">
+
+                        Close
+
+                    </button>
+
+                    <button type="submit"
+                            class="btn lufera-bg lufera-text">
+
+                        Save
+
+                    </button>
+
+                </div>
+
+            </form>
+
+        </div>
+
+    </div>
+
+</div>
 
 <?php include './partials/layouts/layoutBottom.php' ?>
