@@ -402,7 +402,8 @@
                     margin:0;
                     text-align:left;'>
                             <tr>
-                                <td style='background:#fec600;padding:18px;font-size:22px;font-weight:700'>
+                                <!-- <td style='background:#fec600;padding:18px;font-size:22px;font-weight:700'> -->
+                                <td style='background:#1e8a8a;padding:18px;font-size:22px;font-weight:700'>
                                     Lufera Infotech
                                 </td>
                             </tr>
@@ -491,7 +492,8 @@
                     <tr><td align='center'>
                     <table width='640' style='background:#fff;border-radius:6px'>
                         <tr>
-                            <td style='background:#fec600;padding:18px;font-size:22px;font-weight:700'>
+                            <!-- <td style='background:#fec600;padding:18px;font-size:22px;font-weight:700'> -->
+                            <td style='background:#1e8a8a;padding:18px;font-size:22px;font-weight:700'>
                                 Lufera Infotech
                             </td>
                         </tr>
@@ -710,7 +712,8 @@
 
                 <!-- Top brand (outside card) -->
                 <div class="page-brand">
-                    <img src="assets/images/Image.jfif" class="brand-logo">
+                    <!-- <img src="assets/images/Image.jfif" class="brand-logo"> -->
+                    <img src="assets/images/Lufera-icon.png" class="brand-logo">
                     Lufera Infotech
                 </div>
 
@@ -734,7 +737,8 @@
                         Put work on easy mode with work management that adapts to your needs.
                         <div class="footer-brand">
                             Powered by
-                            <img src="assets/images/Image.jfif" class="brand-logo">
+                            <!-- <img src="assets/images/Image.jfif" class="brand-logo"> -->
+                            <img src="assets/images/Lufera-icon.png" class="brand-logo">
                             <a href="https://luferatech.com/" target="_blank">
                                 Lufera Infotech
                             </a>
@@ -1037,7 +1041,8 @@
         }
 
         .public-form-logo img {
-            max-height: 60px;
+            /* max-height: 60px; */
+            max-height: 30px;
         }
 
         /* .public-form-title {
@@ -2357,7 +2362,8 @@
                     <div class="public-form-wrapper">
 
                         <div class="public-form-logo">
-                            <img src="assets/images/logo_lufera.png" alt="Company Logo">
+                            <!-- <img src="assets/images/logo_lufera.png" alt="Company Logo"> -->
+                            <img src="assets/images/LuferaInfotech-Logo.png" alt="Company Logo">
                         </div>
 
                         <div class="public-form-title">
