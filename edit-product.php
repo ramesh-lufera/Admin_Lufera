@@ -388,7 +388,7 @@ $featureStmt->close();
                                 </div>
                             </div>
                         </div>
-                        <div class="mb-2">
+                        <!-- <div class="mb-2">
                             <div class="row">
                                 <label class="form-label fw-semibold text-primary-light text-sm mb-8">
                                     Preview Images <span class="text-danger-600">*</span>
@@ -407,7 +407,7 @@ $featureStmt->close();
                                 </div>
                                 <?php } ?>
                             </div>
-                        </div>
+                        </div> -->
                         <div class="form-group mb-2">
                           <label class="form-label">Product name <span class="text-danger-600">*</span></label>
                             <div class="has-validation">

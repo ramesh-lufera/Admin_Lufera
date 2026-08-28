@@ -1127,20 +1127,6 @@ background: #009688;
 .package-next{
     right:-8px;
 }
-
-/* Footer */
-
-footer .col-auto{
-    width:100%;
-    justify-content:center !important;
-    margin-bottom:5px;
-    text-align:center;
-}
-
-footer .col-auto:last-child{
-    flex-wrap:wrap;
-}
-
 }
 
 /* ==========================================
@@ -2754,8 +2740,8 @@ enableSwipe(slider);
     const slider = container.querySelector(".featured-slider");
     if(!slider) return;
 enableSwipe(slider);
-    const next = container.querySelector(".feature-next");
-    const prev = container.querySelector(".feature-prev");
+    const next = container.querySelector(".top-next");
+    const prev = container.querySelector(".top-prev");
     const width = slider.clientWidth;
     next.addEventListener("click",()=>{
         slider.scrollBy({

@@ -11,7 +11,7 @@
     }
     .btn{
         width:130px;
-    }
+    }    
 </style>
 </head>
 
@@ -563,7 +563,7 @@
         </div>
         <div class="card">
             <div class="card-body">
-            <div class="table-responsive scroll-sm">
+            <div class="">
                 <table class="table bordered-table mb-0" id="userTable">
                     <thead>
                         <tr>
@@ -586,7 +586,7 @@
                         <tr>
                             <td>
                                 <div class="fw-medium">
-                                    <img src="<?= $photo ?>" alt="" class="flex-shrink-0 me-12 radius-8" style="width: 30px; height: 30px;">
+                                    <!-- <img src="<?= $photo ?>" alt="" class="flex-shrink-0 me-12 radius-8" style="width: 30px; height: 30px;"> -->
                                     <?php echo $row['first_name']; ?> <?php echo $row['last_name']; ?>
                                 </div>
                             </td>
