@@ -14728,7 +14728,7 @@ td.fc-header-center {
   width: 17.625rem;
   height: 100vh;
   background-color: var(--white);
-  z-index: 3;
+  z-index: 11;
 }
 
 @media (min-width: 1200px) {
@@ -15180,6 +15180,16 @@ table.dataTable thead>tr>th.dt-orderable-asc:hover, table.dataTable thead>tr>th.
 @media (max-width: 1200px) {
   .sidebar-logo img {
     width: 200px;
+  }
+}
+.dt-layout-cell {
+  overflow-x: auto;
+}
+@media (max-width: 767px) {
+  footer .col-auto {
+  width: 100%;
+  margin-bottom: 5px;
+  text-align: center;
   }
 }
 /* === footer css end === */

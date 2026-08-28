@@ -12,14 +12,14 @@
 ?>
 <?php $script = '<script>
                     function printInvoice() {
-                        // Optional: You can still add pdf-mode if you want the same font/color tweaks
                         document.body.classList.add("pdf-mode");
-                    
-                        window.print();
-                    
-                        // Restore (only needed if you added pdf-mode)
-                        document.body.classList.remove("pdf-mode");
+                        setTimeout(function () {
+                            window.print();
+                        }, 100);
                     }
+                    window.addEventListener("afterprint", function () {
+                        document.body.classList.remove("pdf-mode");
+                    });
                 </script>';?>
 <?php
 // Indian Rupees style number to words (supports up to crores)
@@ -253,58 +253,345 @@ function numberToWords($num) {
     }
 
     /* Hide everything by default when printing */
+    /* =========================================================
+   PRINT INVOICE
+   Fixed Header + Fixed Footer
+   Existing invoice layout is preserved
+   ========================================================= */
+
 @media print {
-    body * {
-        /*color: #000;*/
-        visibility: hidden;
-        /* Optional: remove margins/padding that browsers add */
-        margin: 0 !important;
-        padding: 0 !important;
-    }
 
-    /* Only show the invoice and its children */
-    #invoice,
-    #invoice * {
-        visibility: visible;
-    }
+/* A4 page */
+@page {
 
-    /* Position it properly on the printed page */
-    #invoice {
-        position: absolute;
-        left: 0;
-        top: 0;
-        width: 100%;
-        /* Optional: better control over page breaks */
-        page-break-inside: avoid;
-    }
-    
-    /* Hide buttons, modals, sidebars etc. (extra safety) */
-    .card-header,
-    .modal,
-    .navbar-header,
-    .sidebar,
-    .d-footer,
-    .titlesec,
-    button[onclick*="printInvoice"],
-    button[onclick*="downloadPDF"] {
-        display: none !important;
-    }
-    .col-sec{
-        width:100% !important;
-        flex: 0 0 auto;
-    }
-    .pdf-footer {
-        position: fixed !important;  /* ← fixed instead of absolute */
-        bottom: 0mm !important;     /* matches the @page bottom margin */
-        left: 0mm;
-        right: 0mm;
-        width: -webkit-fill-available !important;   /* = left + right margin */
-        text-align: center;
-        padding-top: 8px;
-        border-top: 1px solid #dde2e6;
-        font-size: 11px;
-        color: #555;
-    }
+    /*
+     * TOP    = header reserved space
+     * RIGHT  = normal side margin
+     * BOTTOM = footer + gap reserved space
+     * LEFT   = normal side margin
+     */
+    margin: 10mm 8mm 10mm 8mm;
+}
+
+
+/* -----------------------------------------------------
+   BASIC PRINT RESET
+   ----------------------------------------------------- */
+
+html,
+body {
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #fff !important;
+}
+
+
+/*
+ * Hide the rest of the page,
+ * but keep invoice visible.
+ */
+body * {
+    visibility: hidden;
+}
+
+#invoice,
+#invoice * {
+    visibility: visible;
+}
+
+
+/* -----------------------------------------------------
+   VERY IMPORTANT
+   Do NOT change your invoice layout.
+   Your .pdf-mode currently makes #invoice flex.
+   Override that here.
+   ----------------------------------------------------- */
+
+.pdf-mode #invoice {
+    display: block !important;
+    position: relative !important;
+
+    width: 100% !important;
+    max-width: 100% !important;
+
+    margin: 0 !important;
+    padding: 0 !important;
+
+    flex-direction: initial !important;
+
+    page-break-inside: auto !important;
+    break-inside: auto !important;
+}
+
+.pdf-mode #invoice > div {
+    display: block !important;
+
+    flex: none !important;
+    flex-direction: initial !important;
+
+    page-break-inside: auto !important;
+    break-inside: auto !important;
+}
+
+/* -----------------------------------------------------
+   FIXED HEADER
+   ----------------------------------------------------- */
+
+#invoice .pdf-header {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    border-bottom:1px solid #ccc;
+    width: 100% !important;
+
+    /*
+     * Change ONLY this if your header is taller/shorter.
+     */
+    height: 28mm !important;
+    margin: 0 !important;
+    padding: 0 0 3mm 0 !important;
+    background: #fff !important;
+
+    /* border-bottom: 1px solid #dde2e6 !important; */
+
+    box-sizing: border-box !important;
+    z-index: 99999 !important;
+
+    /*
+     * Prevent header itself from being split.
+     */
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+}
+
+/*
+ * Header logo
+ */
+#invoice .pdf-header .invoice-logo {
+    max-width: 55mm !important;
+    max-height: 18mm !important;
+
+    width: auto !important;
+    height: auto !important;
+
+    object-fit: contain !important;
+}
+
+/*
+ * Header text
+ */
+#invoice .pdf-header h6 {
+    margin-top: 0 !important;
+    margin-bottom: 2px !important;
+}
+
+#invoice .pdf-header p {
+    margin-top: 0 !important;
+    margin-bottom: 1px !important;
+    line-height: 1.25 !important;
+}
+
+
+/* -----------------------------------------------------
+   IMPORTANT:
+   Since the header is fixed, the normal content needs
+   to start BELOW the header.
+   ----------------------------------------------------- */
+
+#invoice .p-20:has(.pdf-header) {
+
+    /*
+     * Header = 24mm
+     * Extra gap = 3mm
+     */
+    box-sizing: border-box !important;
+}
+
+
+/* -----------------------------------------------------
+   FIXED FOOTER
+   ----------------------------------------------------- */
+
+#invoice .pdf-footer {
+    position: fixed !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    width: 100% !important;
+
+    /*
+     * Footer height
+     */
+    height: 12mm !important;
+    margin: 0 !important;
+
+    /*
+     * Space inside footer
+     */
+    padding: 2mm 0 !important;
+    background: #fff !important;
+    border-top: 1px solid #dde2e6 !important;
+    box-sizing: border-box !important;
+    z-index: 99999 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 4px !important;
+    font-size: 9px !important;
+
+    /*
+     * Don't allow footer to break.
+     */
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+}
+
+
+#invoice .pdf-footer .footer-logo {
+
+    max-width: 30mm !important;
+    max-height: 7mm !important;
+
+    width: auto !important;
+    height: auto !important;
+
+    margin: 0 !important;
+}
+
+
+/* -----------------------------------------------------
+   RESERVE SPACE ABOVE FOOTER
+   
+   This is the important part for your requirement:
+   content must NOT touch/cross the footer.
+   ----------------------------------------------------- */
+
+#invoice .col-sec {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+
+    /*
+     * 18mm = footer + safety gap.
+     */
+    padding-bottom: 22mm !important;
+    box-sizing: border-box !important;
+}
+
+
+/*
+ * Additional safety space at the bottom of the
+ * actual invoice content.
+ */
+#invoice .py-28 {
+    padding-bottom: 8mm !important;
+    box-sizing: border-box !important;
+}
+
+
+/* -----------------------------------------------------
+   TABLES
+   ----------------------------------------------------- */
+
+table {
+    width: auto !important;
+    border-collapse: collapse !important;
+}
+
+
+/*
+ * Repeat table heading on every page.
+ */
+#invoice table thead {
+    display: table-header-group !important;
+}
+
+
+/*
+ * Don't split individual invoice rows.
+ */
+#invoice table tr {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+}
+
+#invoice table td,
+#invoice table th {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+}
+
+/*
+ * But allow the table itself to continue
+ * onto the next page.
+ */
+#invoice .table-responsive {
+    overflow: visible !important;
+    height: auto !important;
+    max-height: none !important;
+    page-break-inside: auto !important;
+    break-inside: auto !important;
+}
+
+
+/* -----------------------------------------------------
+   IMPORTANT:
+   Don't force the complete invoice onto one page.
+   ----------------------------------------------------- */
+
+#invoice,
+#invoice .col-sec,
+#invoice .shadow-4,
+#invoice .py-28 {
+    page-break-inside: auto !important;
+    break-inside: auto !important;
+}
+
+
+/* -----------------------------------------------------
+   HIDE PRINT BUTTONS / SCREEN UI
+   ----------------------------------------------------- */
+
+.card-header,
+.modal,
+.navbar-header,
+.sidebar,
+.d-footer,
+.titlesec,
+button[onclick*="printInvoice"],
+button[onclick*="downloadPDF"] {
+    display: none !important;
+}
+
+
+/* -----------------------------------------------------
+   REMOVE OLD FOOTER MARGINS
+   ----------------------------------------------------- */
+
+.pdf-mode .pdf-footer,
+.pdf-footer.mt-40 {
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
+    top: auto !important;
+    bottom: 0 !important;
+}
+
+
+/* -----------------------------------------------------
+   KEEP YOUR EXISTING PRINT FONT SIZING
+   ----------------------------------------------------- */
+
+.pdf-mode p,
+.pdf-mode span,
+.pdf-mode td,
+.pdf-mode th,
+.pdf-mode div,
+.pdf-mode li {
+    line-height: 1.4 !important;
+}
+
 }
 
     .col-sec{
@@ -326,7 +613,6 @@ function numberToWords($num) {
     .divider {
         display: flex;
         align-items: center;
-        margin-top:1rem;
     }
     .divider::before,
     .divider::after {
@@ -388,11 +674,9 @@ function numberToWords($num) {
         flex: 0 0 100% !important;
     }
     .pdf-mode .pdf-footer {
-        /* margin-top: 70% !important; */
-        margin-top: 47% !important;
-        padding-top: 10px;
-        bottom:10px;
-    }
+    margin: 0 !important;
+    bottom: 0 !important;
+}
     .pdf-mode {
     font-size: 10px !important;
     }
@@ -430,15 +714,6 @@ function numberToWords($num) {
     }
     .pdf-mode .bill_to {
         margin-bottom: 4px !important;
-    }
-    .pdf-mode #invoice {
-    display: flex;
-    flex-direction: column;
-    }
-    .pdf-mode #invoice > div {
-        flex: 1;
-        display: flex;
-        flex-direction: column;
     }
     .pdf-mode .footer-text {
         margin-top: auto !important;
@@ -718,10 +993,9 @@ if (isset($_POST['send_invoice'])) {
                 flex: 0 0 100% !important;
             }
             .pdf-mode .pdf-footer {
-                margin-top: 70% !important;
-                padding-top: 10px;
-                bottom:10px;
-            }
+    margin: 0 !important;
+    bottom: 0 !important;
+}
             .pdf-mode {
             font-size: 10px !important;
             }
@@ -1547,11 +1821,9 @@ if (isset($_POST['send_invoice'])) {
                 <div class="col-sec">
                     <div class="shadow-4 border radius-8">
                         <div class="p-20">
-                            <!-- <div class="d-flex flex-column flex-md-row justify-content-between gap-3 mb-3"> -->
-                            <div class="d-flex justify-content-between gap-3 mb-3">
-                                <!-- <div class="align-content-end"> -->
+                            <div class="d-flex justify-content-between gap-3 mb-3 pdf-header">
                                 <div class="align-content-center">
-                                    <img src="uploads/company_logo/<?php echo $logo; ?>" alt="site logo" class="invoice-logo">
+                                    <img src="uploads/company_logo/<?php echo $company_row['logo']; ?>" alt="site logo" class="invoice-logo">
                                 </div>
 
                                 <div class="text-end">
@@ -1561,21 +1833,20 @@ if (isset($_POST['send_invoice'])) {
                                         <?php echo $company_row['city']; ?>,
                                         <?php echo $company_row['state']; ?>,
                                         <?php echo $company_row['zip_code']; ?>,
-                                        <?php echo $company_row['country']; ?>
+                                        <?php echo $company_row['country']; ?>  
                                     </p>
-                                    <p class="mb-0 text-sm"><?php echo $company_row['phone_no']; ?></p>
-                                    <p class="mb-0 text-sm"><?php echo $company_row['website']; ?></p>
-                                    <p class="mb-0 text-sm">GSTIN: <?php echo $company_row['gst_in']; ?></p>
+                                <p class="mb-0 text-sm"><?php echo $company_row['phone_no']; ?></p>
+                                <p class="mb-0 text-sm"><?php echo $company_row['website']; ?></p>
+                                <p class="mb-0 text-sm">GSTIN: <?php echo $company_row['gst_in']; ?></p>
                                 </div>
                             </div>
-                            <div class="text-center">
-                                <?php if($row['balance_due'] != "0.00" ){ ?> 
-                                    <p class="divider text-xl">Proforma Invoice</p>
-                                <?php } else {?>
-                                    <p class="divider text-xl">Tax Invoice</p>
+                            <div class="divider">
+                                <?php if($row['balance_due'] != "0.00") { ?>
+                                    Proforma Invoice
+                                <?php } else { ?>
+                                    Tax Invoice
                                 <?php } ?>
-                                
-                            </div>
+                            </div>  
                             <!-- <div class="d-flex flex-column flex-md-row align-items-start justify-content-between gap-3 mt-3"> -->
                             <div class="d-flex align-items-start justify-content-between gap-3 mt-3">
                                 <div>
@@ -1614,8 +1885,8 @@ if (isset($_POST['send_invoice'])) {
                                     <thead>
                                         <th class="w-10 inv-table text-center">S.No</th>
                                         <th class="w-25 inv-table">Item</th>
-                                        <th class="w-25 inv-table">Rate</th>
-                                        <th class="w-25 inv-table">Tax</th>
+                                        <th class="text-end w-25 inv-table">Rate</th>
+                                        <th class="text-end w-25 inv-table">Tax</th>
                                         <th class="text-end w-25 inv-table">Amount</th>
                                     </thead>
                                     <tbody>
@@ -1957,14 +2228,17 @@ if (isset($_POST['send_invoice'])) {
                                 }
                             ?>
 
-                            <div class="text-center border-footer mt-40 pt-20 pdf-footer">
-                                <p class="d-inline">Crafted with ease using</p> 
-                                <img src="uploads/invoice/<?php echo $invoice_logo; ?>" class="footer-logo" alt="Lufera Logo" class="mb-4" style="margin-bottom: 6px; max-width: 120px;">
-                            </div>
+                            <!-- FIXED PRINT FOOTER -->
+                <div class="text-center border-footer mt-40 pt-20 pdf-footer">
+                    <span>Crafted with easess using</span>
+                    <img src="uploads/invoice/<?php echo $invoice_logo; ?>" class="footer-logo" alt="Lufera Logo" style="margin-bottom: 6px; max-width: 120px;">
+                </div>
                             
                         </div>
                     </div>
                 </div>
+
+                
             </div>
         </div>
     </div>

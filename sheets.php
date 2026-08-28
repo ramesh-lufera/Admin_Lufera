@@ -1740,8 +1740,19 @@ if (c !== 1) {
             container.dataset.c = c;
             container.id = cellId(r, c);
 
-            container.addEventListener("mouseenter", showCellPreview);
-            container.addEventListener("mousemove", moveCellPreview);
+            container.addEventListener("mouseenter", function (e) {
+                // Only show preview if content is actually truncated
+                if (container.scrollWidth > container.clientWidth) {
+                    showCellPreview(e);
+                }
+            });
+
+            container.addEventListener("mousemove", function (e) {
+                if (container.scrollWidth > container.clientWidth) {
+                    moveCellPreview(e);
+                }
+            });
+
             container.addEventListener("mouseleave", hideCellPreview);
 
             if (c === 1) {

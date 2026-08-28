@@ -1,7 +1,7 @@
 <?php include './partials/layouts/layoutTop.php'; 
-ini_set('display_errors', 1);
-ini_set('display_startup_errors', 1);
-error_reporting(E_ALL);
+// ini_set('display_errors', 1);
+// ini_set('display_startup_errors', 1);
+// error_reporting(E_ALL);
 
 $categoryQuery = $conn->query("SELECT cat_id, cat_name, cat_type FROM categories ORDER BY cat_name ASC");
 $categories = [];
@@ -25,61 +25,42 @@ while($row = $categoryQuery->fetch_assoc()){
     -webkit-appearance: none;
     margin: 0;
     }
-
     .sortable-list{
-    min-height:250px;
-}
+        min-height:250px;
+    }
 
 .sortable-list .list-group-item{
-
     display:flex;
     justify-content:space-between;
     align-items:center;
-
     cursor:move;
-
     margin-bottom:8px;
-
     border-radius:8px;
-
     transition:.2s;
     border-top-width: 1;
 }
 
 .sortable-list .list-group-item:hover{
-
     background:#f8f9fa;
-
 }
 
 .drag-icon{
-
     color:#999;
-
     font-size:18px;
-
     cursor:grab;
-
 }
 
 .sortable-ghost{
-
     opacity:.5;
-
     background:#e9ecef;
-
 }
 
 .sortable-chosen{
-
     background:#fff3cd;
-
 }
 
 .sortable-drag{
-
     transform:rotate(2deg);
-
 }
 </style>
 
@@ -115,10 +96,10 @@ while($row = $categoryQuery->fetch_assoc()){
                             Add New
                         </button>
                         <button class="btn lufera-bg lufera-text" id="swapMarketplaceBtn">
-        <i class="fa fa-exchange-alt"></i> Swap Marketplace
-    </button>
+                            <i class="fa fa-exchange-alt"></i> Swap Marketplace
+                        </button>
                     </div>
-                    <div class="table-responsive scroll-sm">
+                    <div class="">
                         <table class="table bordered-table mb-0" id="role-table">
                             <thead>
                                 <tr>
@@ -242,11 +223,7 @@ while($row = $categoryQuery->fetch_assoc()){
                     <select class="form-control radius-8" name="cat_id" id="cat_id" required>
                         <option value="">Select Category</option>
                         <?php foreach($categories as $cat){ ?>
-                            <option
-                                value="<?= $cat['cat_id']; ?>"
-                                data-type="<?= strtolower($cat['cat_type']); ?>">
-                                <?= htmlspecialchars($cat['cat_name']); ?>
-                            </option>
+                            <option value="<?= $cat['cat_id']; ?>" data-type="<?= strtolower($cat['cat_type']); ?>"> <?= htmlspecialchars($cat['cat_name']); ?></option>
                         <?php } ?>
                     </select>
                 </div>
@@ -277,46 +254,29 @@ while($row = $categoryQuery->fetch_assoc()){
 <div class="modal fade" id="swapMarketplaceModal" tabindex="-1" aria-labelledby="swapMarketplaceLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-lg">
         <div class="modal-content">
-
             <div class="modal-header">
                 <h5 class="modal-title" id="swapMarketplaceLabel">
                     Swap Marketplace Order
                 </h5>
 
-                <button type="button"
-                        class="btn-close"
-                        data-bs-dismiss="modal">
+                <button type="button" class="btn-close" data-bs-dismiss="modal">
                 </button>
             </div>
-
             <div class="modal-body">
-
                 <p class="text-muted mb-3">
                     Drag and drop the categories to change their display order.
                 </p>
-
                 <ul class="list-group sortable-list" id="sortableMarketplace">
-
-                    <!-- Loaded by AJAX -->
-
                 </ul>
-
             </div>
-
             <div class="modal-footer">
-
-                <button class="btn btn-secondary"
-                        data-bs-dismiss="modal">
+                <button class="btn btn-secondary" data-bs-dismiss="modal">
                     Cancel
                 </button>
-
-                <button class="btn lufera-bg lufera-text"
-                        id="saveMarketplaceOrder">
+                <button class="btn lufera-bg lufera-text" id="saveMarketplaceOrder">
                     Update Order
                 </button>
-
             </div>
-
         </div>
     </div>
 </div>
@@ -614,7 +574,6 @@ while($row = $categoryQuery->fetch_assoc()){
 
 // Open Swap Modal
 $("#swapMarketplaceBtn").click(function () {
-
     $.ajax({
         url: "marketplace_crud.php",
         type: "POST",
@@ -623,35 +582,27 @@ $("#swapMarketplaceBtn").click(function () {
         },
         dataType: "json",
         success: function (res) {
-
             if (res.status == "success") {
-
                 let html = "";
-
                 res.data.forEach(function (item) {
-
                     html += `
                         <li class="list-group-item" data-id="${item.id}">
                             <div>
                                 <strong>${item.cat_name}</strong><br>
                                 <!--<small class="text-muted">${item.cat_type}</small>-->
                             </div>
-
                             <span class="drag-icon">
                                 <i class="fa fa-grip-lines"></i>
                             </span>
                         </li>
                     `;
-
                 });
 
                 $("#sortableMarketplace").html(html);
-
                 // Destroy old sortable instance
                 if (sortable) {
                     sortable.destroy();
                 }
-
                 // Create new sortable
                 sortable = new Sortable(
                     document.getElementById("sortableMarketplace"),
@@ -662,87 +613,60 @@ $("#swapMarketplaceBtn").click(function () {
                         dragClass: "sortable-drag"
                     }
                 );
-
                 $("#swapMarketplaceModal").modal("show");
-
             } else {
-
                 Swal.fire(
                     "Error",
                     res.message,
                     "error"
                 );
-
             }
-
         }
     });
-
 });
 
 $("#saveMarketplaceOrder").click(function () {
 
 let order = [];
-
 $("#sortableMarketplace li").each(function () {
-
     order.push($(this).data("id"));
-
 });
 
 $.ajax({
-
     url: "marketplace_crud.php",
-
     type: "POST",
-
     data: {
         action: "swap",
         order: order
     },
-
     dataType: "json",
-
     success: function (res) {
-
         if (res.status == "success") {
-
             Swal.fire(
                 "Success",
                 res.message,
                 "success"
             ).then(function () {
-
                 location.reload();
-
             });
-
         } else {
-
             Swal.fire(
                 "Error",
                 res.message,
                 "error"
             );
-
         }
-
     },
 
     error: function (xhr) {
-
         console.log(xhr.responseText);
-
         Swal.fire(
             "Error",
             "Something went wrong.",
             "error"
         );
-
     }
-
 });
-
 });
 </script>
 <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.6/Sortable.min.js"></script>

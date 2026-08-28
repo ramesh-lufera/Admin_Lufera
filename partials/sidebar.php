@@ -229,37 +229,37 @@
                         Preview Images Upload
                         ========================== */
 
-                        \$preview_fields = [
-                            'preview_images1',
-                            'preview_images2',
-                            'preview_images3',
-                            'preview_images4'
-                        ];
+                        // \$preview_fields = [
+                        //     'preview_images1',
+                        //     'preview_images2',
+                        //     'preview_images3',
+                        //     'preview_images4'
+                        // ];
 
-                        foreach (\$preview_fields as \$field) {
+                        // foreach (\$preview_fields as \$field) {
 
-                            if (
-                                isset(\$_FILES[\$field]) &&
-                                \$_FILES[\$field]['error'] == 0
-                            ) {
+                        //     if (
+                        //         isset(\$_FILES[\$field]) &&
+                        //         \$_FILES[\$field]['error'] == 0
+                        //     ) {
 
-                                \$preview_name = time() . '_' . \$field . '_' . basename(\$_FILES[\$field]['name']);
-                                \$preview_path = \$target_dir . \$preview_name;
+                        //         \$preview_name = time() . '_' . \$field . '_' . basename(\$_FILES[\$field]['name']);
+                        //         \$preview_path = \$target_dir . \$preview_name;
 
-                                if (move_uploaded_file(\$_FILES[\$field]['tmp_name'], \$preview_path)) {
-                                    \$image_data['preview_images'][] = \$preview_name;
-                                }
-                            }
-                        }
+                        //         if (move_uploaded_file(\$_FILES[\$field]['tmp_name'], \$preview_path)) {
+                        //             \$image_data['preview_images'][] = \$preview_name;
+                        //         }
+                        //     }
+                        // }
 
-                        /* First Preview Image Required */
-                        if (empty(\$image_data['preview_images'])) {
-                            echo "<script>
-                                alert('Please upload at least one preview image.');
-                                window.history.back();
-                            </script>";
-                            exit;
-                        }
+                        // /* First Preview Image Required */
+                        // if (empty(\$image_data['preview_images'])) {
+                        //     echo "<script>
+                        //         alert('Please upload at least one preview image.');
+                        //         window.history.back();
+                        //     </script>";
+                        //     exit;
+                        // }
 
                         \$image_json = json_encode(\$image_data);
                         \$stmt = \$conn->prepare("INSERT INTO package (package_img, image_data, package_name, title, subtitle, short_description, description, cat_id, created_at, template, addon_service, addon_package, addon_product, gst_id, is_login) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
@@ -1692,7 +1692,7 @@
                                             </div>
                                         </div>
 
-                                        <div class="row">
+                                        <!--<div class="row">
                                             <label class="form-label fw-semibold text-primary-light text-sm mb-8">
                                                 Preview Images <span class="text-danger-600">*</span>
                                             </label>
@@ -1744,7 +1744,7 @@
                                                     </label>
                                                 </div>
                                             </div>
-                                        </div>
+                                        </div>-->
 
                                         <div class="mb-2">
                                             <label for="name" class="form-label fw-semibold text-primary-light text-sm mb-8">Package name <span class="text-danger-600">*</span></label>
@@ -1801,9 +1801,15 @@
                                                     <input type="number" name="duration_values[]" class="form-control radius-8" required min="1" style="width: 25%;" onkeydown="return event.key !== 'e'" placeholder="Value">
                                                     <select name="duration_units[]" class="form-control radius-8" required style="width: 25%;">
                                                         <option value="">Select Unit</option>
-                                                        <option value="days">Days</option>
-                                                        <option value="months">Months</option>
-                                                        <option value="years">Years</option>
+                                                        <option value="days" <?php echo \$duration_unit === 'days' ? 'selected' : ''; ?>>
+                                                            <?php echo (\$duration_value == 1) ? 'Day' : 'Days'; ?>
+                                                        </option>
+                                                        <option value="months" <?php echo \$duration_unit === 'months' ? 'selected' : ''; ?>>
+                                                            <?php echo (\$duration_value == 1) ? 'Month' : 'Months'; ?>
+                                                        </option>
+                                                        <option value="years" <?php echo \$duration_unit === 'years' ? 'selected' : ''; ?>>
+                                                            <?php echo (\$duration_value == 1) ? 'Year' : 'Years'; ?>
+                                                        </option>
                                                     </select>
                                                     <input type="number" name="prices[]" class="form-control radius-8" required min="0" style="width: 25%;" onkeydown="return event.key !== 'e'" placeholder="Enter price">
                                                     <input type="number" name="pre_prices[]" class="form-control radius-8" required min="0" style="width: 25%;" onkeydown="return event.key !== 'e'" placeholder="Enter preview price">
@@ -2022,11 +2028,39 @@
                                 <button type="button" class="btn btn-sm btn-danger remove-duration">−</button>
                             `;
                             durationWrapper.appendChild(newGroup);
+                            const valueInput = newGroup.querySelector('input[name="duration_values[]"]');
+                            valueInput.addEventListener('input', function () {
+                                updateDurationUnitLabels(newGroup);
+                            });
+                            updateDurationUnitLabels(newGroup);
                         }
                         if (e.target && e.target.classList.contains("remove-duration")) {
                             e.preventDefault();
                             e.target.parentElement.remove();
                         }
+                    });
+
+                    function updateDurationUnitLabels(group) {
+                        const valueInput = group.querySelector('input[name="duration_values[]"]');
+                        const unitSelect = group.querySelector('select[name="duration_units[]"]');
+                        if (!valueInput || !unitSelect) return;
+                        const value = parseInt(valueInput.value, 10);
+                        const isSingular = value === 1;
+                        unitSelect.options[1].text = isSingular ? 'Day' : 'Days';
+                        unitSelect.options[2].text = isSingular ? 'Month' : 'Months';
+                        unitSelect.options[3].text = isSingular ? 'Year' : 'Years';
+                    }
+
+                    document.querySelectorAll('.duration-group').forEach(group => {
+                    const valueInput = group.querySelector('input[name="duration_values[]"]')
+                    if (valueInput) {
+                        valueInput.addEventListener('input', function () {
+                            updateDurationUnitLabels(group);
+                        });
+                        // Set correct labels when page loads
+                        updateDurationUnitLabels(group);
+                    }
+
                     });
 
                     // Inclusive
@@ -2355,6 +2389,8 @@
                         <span>Settings</span>
                     </a>
                     <ul class="sidebar-submenu">
+                        <li><a href="activity_log.php"><i class="ri-circle-fill circle-icon text-warning-600 w-auto"></i> Activity Log</a></li>
+                        <li><a href="backup.php"><i class="ri-circle-fill circle-icon text-warning-600 w-auto"></i> Backup</a></li>
                         <li><a href="bank_details.php"><i class="ri-circle-fill circle-icon text-warning-600 w-auto"></i> Bank Details</a></li>
                         <li><a href="buy_for_customer.php"><i class="ri-circle-fill circle-icon text-warning-600 w-auto"></i> Buy For Customer</a></li>
                         <li><a href="company.php"><i class="ri-circle-fill circle-icon text-warning-600 w-auto"></i> Company</a></li>

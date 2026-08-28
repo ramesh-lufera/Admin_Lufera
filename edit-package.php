@@ -492,7 +492,7 @@ if ($oldSlug !== $newSlug) {
                             </div>
                             
                         </div>
-                        <div class="mb-2">
+                        <!-- <div class="mb-2">
                             <div class="row">
                                 <label class="form-label fw-semibold text-primary-light text-sm mb-8">
                                     Preview Images <span class="text-danger-600">*</span>
@@ -511,7 +511,7 @@ if ($oldSlug !== $newSlug) {
                                 </div>
                                 <?php } ?>
                             </div>
-                        </div>  
+                        </div>   -->
                         <div class="mb-2">
                             <label class="form-label fw-semibold text-primary-light text-sm mb-8">
                                 Package name <span class="text-danger-600">*</span>
@@ -585,16 +585,37 @@ if ($oldSlug !== $newSlug) {
                                     <?php foreach ($durations as $index => $duration): ?>
                                         <?php
                                             $duration_parts = explode(' ', trim($duration['duration']));
-                                            $duration_value = isset($duration_parts[0]) && is_numeric($duration_parts[0]) ? intval($duration_parts[0]) : '';
-                                            $duration_unit = isset($duration_parts[1]) ? $duration_parts[1] : 'days';
+                                            $duration_value = isset($duration_parts[0]) && is_numeric($duration_parts[0])
+                                                ? intval($duration_parts[0])
+                                                : '';                                        
+                                            $stored_unit = strtolower($duration_parts[1] ?? 'days');
+                                            // Convert stored singular/plural unit to dropdown value
+                                            if ($stored_unit === 'day' || $stored_unit === 'days') {
+                                                $duration_unit = 'days';
+                                            } elseif ($stored_unit === 'month' || $stored_unit === 'months') {
+                                                $duration_unit = 'months';
+                                            } elseif ($stored_unit === 'year' || $stored_unit === 'years') {
+                                                $duration_unit = 'years';
+                                            } else {
+                                                $duration_unit = 'days';
+                                            }
                                         ?>
                                         <div class="duration-group mb-10 d-flex gap-2 align-items-center">
                                             <input type="number" name="duration_values[]" class="form-control radius-8" required min="1" style="width: 25%;" onkeydown="return event.key !== 'e'" placeholder="Value" value="<?php echo htmlspecialchars($duration_value); ?>">
                                             <select name="duration_units[]" class="form-control radius-8" required style="width: 25%;">
                                                 <option value="">Select Unit</option>
-                                                <option value="days" <?php echo $duration_unit === 'days' ? 'selected' : ''; ?>>Days</option>
-                                                <option value="months" <?php echo $duration_unit === 'months' ? 'selected' : ''; ?>>Months</option>
-                                                <option value="years" <?php echo $duration_unit === 'years' ? 'selected' : ''; ?>>Years</option>
+
+                                                <option value="days" <?php echo $duration_unit === 'days' ? 'selected' : ''; ?>>
+                                                    <?php echo ($duration_value == 1) ? 'Day' : 'Days'; ?>
+                                                </option>
+
+                                                <option value="months" <?php echo $duration_unit === 'months' ? 'selected' : ''; ?>>
+                                                    <?php echo ($duration_value == 1) ? 'Month' : 'Months'; ?>
+                                                </option>
+
+                                                <option value="years" <?php echo $duration_unit === 'years' ? 'selected' : ''; ?>>
+                                                    <?php echo ($duration_value == 1) ? 'Year' : 'Years'; ?>
+                                                </option>
                                             </select>
                                             <input type="number" name="prices[]" class="form-control radius-8" required min="0" style="width: 25%;" onkeydown="return event.key !== 'e'" placeholder="Enter price" value="<?php echo htmlspecialchars($duration['price']); ?>">
                                             <input type="number" name="pre_prices[]" class="form-control radius-8" required min="0" style="width: 25%;" onkeydown="return event.key !== 'e'" placeholder="Enter preview price" value="<?php echo htmlspecialchars($duration['preview_price']); ?>">
@@ -824,6 +845,11 @@ if ($oldSlug !== $newSlug) {
                     <button type="button" class="btn btn-sm btn-danger remove-duration">−</button>
                 `;
                 durationWrapper.appendChild(newGroup);
+                const valueInput = newGroup.querySelector('input[name="duration_values[]"]');
+                valueInput.addEventListener('input', function () {
+                    updateDurationUnitLabels(newGroup);
+                });
+                updateDurationUnitLabels(newGroup);
             }
             if (e.target && e.target.classList.contains("remove-duration")) {
                 e.preventDefault();
@@ -925,6 +951,33 @@ if ($oldSlug !== $newSlug) {
     }
 
     });
+    function updateDurationUnitLabels(group) {
+    const valueInput = group.querySelector('input[name="duration_values[]"]');
+    const unitSelect = group.querySelector('select[name="duration_units[]"]');
+
+    if (!valueInput || !unitSelect) return;
+
+    const value = parseInt(valueInput.value, 10) || 0;
+
+    const options = unitSelect.options;
+
+    options[1].textContent = value === 1 ? 'Day' : 'Days';
+    options[2].textContent = value === 1 ? 'Month' : 'Months';
+    options[3].textContent = value === 1 ? 'Year' : 'Years';
+}
+
+// Existing duration rows
+document.querySelectorAll('.duration-group').forEach(group => {
+    const valueInput = group.querySelector('input[name="duration_values[]"]');
+
+    if (valueInput) {
+        valueInput.addEventListener('input', function () {
+            updateDurationUnitLabels(group);
+        });
+
+        updateDurationUnitLabels(group);
+    }
+});
 </script>
 
 <?php include './partials/layouts/layoutBottom.php' ?>
