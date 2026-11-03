@@ -1,9 +1,6 @@
 <?php
     $isViewMode = isset($_GET['mode']) && $_GET['mode'] === 'view';
 
-    // $sheet_id_from_url = isset($_GET['sheet_id']) && is_numeric($_GET['sheet_id'])
-    // ? (int)$_GET['sheet_id']: 0;
-
     $sheet_id_from_url =
     (isset($_POST['sheet_id']) && is_numeric($_POST['sheet_id']))
         ? (int)$_POST['sheet_id']
@@ -31,6 +28,52 @@
     include './partials/recaptcha/recaptcha.php';
 
     $recaptchaAction = "form_builder";
+
+    /* ======================================================
+    DYNAMIC COMPANY LOGO - VIEW FORMS ONLY
+    ====================================================== */
+
+    // Default logo: retain the existing image as a fallback.
+    $companyLogoSrc = 'assets/images/LuferaInfotech-Logo.png';
+
+    // Retrieve the company logo only when viewing a form.
+    if ($isViewMode && isset($conn)) {
+
+        $stmtCompanyLogo = $conn->prepare(
+            "SELECT logo FROM company LIMIT 1"
+        );
+
+        if ($stmtCompanyLogo) {
+
+            if ($stmtCompanyLogo->execute()) {
+
+                $stmtCompanyLogo->bind_result($companyLogoFile);
+
+                if (
+                    $stmtCompanyLogo->fetch()
+                    && !empty($companyLogoFile)
+                ) {
+
+                    // Keep the filename only.
+                    $companyLogoFile = basename($companyLogoFile);
+
+                    // Verify the image exists in the upload directory.
+                    $companyLogoPhysicalPath =
+                        __DIR__ . '/uploads/company_logo/' . $companyLogoFile;
+
+                    if (is_file($companyLogoPhysicalPath)) {
+
+                        // Set the browser-accessible image path.
+                        $companyLogoSrc =
+                            'uploads/company_logo/' .
+                            rawurlencode($companyLogoFile);
+                    }
+                }
+            }
+
+            $stmtCompanyLogo->close();
+        }
+    }
 ?>
 
 <?php
@@ -112,6 +155,68 @@
         $newData  = json_decode($_POST['sheet_data'], true);
 
         /* =========================================
+        AUTOMATIC TIMESTAMP FOR EACH SUBMISSION
+        ========================================= */
+
+        // Ensure the submission contains the required structure.
+        $newData['headers'] = $newData['headers'] ?? [];
+        $newData['cells']   = $newData['cells'] ?? [];
+
+        /*
+        * Find the Timestamp column.
+        * If it does not exist, append it to the end.
+        */
+        $timestampIndex = array_search(
+            'Timestamp',
+            $newData['headers'],
+            true
+        );
+
+        if ($timestampIndex === false) {
+            $newData['headers'][] = 'Timestamp';
+            $timestampIndex = count($newData['headers']) - 1;
+        }
+
+        /*
+        * Form fields start at column B.
+        * Column A remains reserved.
+        *
+        * Header index 0 = column B
+        * Header index 1 = column C
+        * Header index 2 = column D
+        * And so on.
+        */
+        $columnNumber = $timestampIndex + 2;
+        $timestampColumn = '';
+
+        while ($columnNumber > 0) {
+            $remainder = ($columnNumber - 1) % 26;
+
+            $timestampColumn =
+                chr(65 + $remainder) . $timestampColumn;
+
+            $columnNumber = intdiv($columnNumber - 1, 26);
+        }
+
+        /*
+        * Generate the submission timestamp on the server.
+        * Time zone: India Standard Time.
+        */
+        $timestamp = new DateTime(
+            'now',
+            new DateTimeZone('Asia/Kolkata')
+        );
+
+        $timestampValue = $timestamp->format('Y-m-d H:i:s');
+
+        /*
+        * Store the timestamp in row 1 of the submission
+        * payload. The existing PHP code will move it to
+        * the correct sheet row when saving the submission.
+        */
+        $newData['cells'][$timestampColumn . '1'] = $timestampValue;
+
+        /* =========================================
         FILE UPLOAD HANDLING FOR SHEET
         ========================================= */
 
@@ -121,33 +226,168 @@
             mkdir($uploadDir, 0777, true);
         }
 
+        /*
+        * Keep uploaded file information separately.
+        *
+        * IMPORTANT:
+        * We do NOT store the attachment path
+        * inside $newData['cells'].
+        *
+        * The attachment will be inserted into
+        * sheet_attachments after we know:
+        *
+        * 1. sheet_id
+        * 2. sheet_row
+        */
+        $uploadedAttachments = [];
+
         if (!empty($_FILES['uploaded_files'])) {
 
             foreach ($_FILES['uploaded_files']['name'] as $index => $fileName) {
 
-                if ($_FILES['uploaded_files']['error'][$index] === UPLOAD_ERR_OK) {
+                if (
+                    isset($_FILES['uploaded_files']['error'][$index]) &&
+                    $_FILES['uploaded_files']['error'][$index] === UPLOAD_ERR_OK
+                ) {
 
                     $tmpName = $_FILES['uploaded_files']['tmp_name'][$index];
 
-                    // Keep original filename (sanitize only)
-                    $safeName = preg_replace('/[^a-zA-Z0-9._-]/', '_', $fileName);
+                    /*
+                    * The JavaScript uses:
+                    *
+                    * uploaded_files[0] → first form field
+                    * uploaded_files[1] → second form field
+                    * etc.
+                    *
+                    * Your sheet fields start from column B.
+                    *
+                    * Therefore:
+                    *
+                    * index 0 → B
+                    * index 1 → C
+                    * index 2 → D
+                    */
+                    $columnNumber = ((int)$index) + 2;
 
-                    $targetPath = $uploadDir . $safeName;
+                    /*
+                    * Convert column number to Excel-style column name.
+                    *
+                    * 2  → B
+                    * 3  → C
+                    * ...
+                    * 26 → Z
+                    * 27 → AA
+                    */
+                    $columnLetter = '';
 
-                    // Overwrite if file exists
-                    if (file_exists($targetPath)) {
-                        unlink($targetPath);
+                    $n = $columnNumber;
+
+                    while ($n > 0) {
+
+                        $remainder = ($n - 1) % 26;
+
+                        $columnLetter =
+                            chr(65 + $remainder) . $columnLetter;
+
+                        $n = intdiv($n - 1, 26);
                     }
 
+                    /*
+                    * Keep the actual original filename
+                    * for sheet_attachments.original_name.
+                    */
+                    $originalName = $fileName;
+
+                    /*
+                    * Sanitize the physical filename.
+                    */
+                    $safeName = preg_replace(
+                        '/[^a-zA-Z0-9._-]/',
+                        '_',
+                        $originalName
+                    );
+
+                    /*
+                    * Create a unique physical filename.
+                    *
+                    * This prevents:
+                    *
+                    * Resume.pdf
+                    * Resume.pdf
+                    *
+                    * from overwriting each other.
+                    */
+                    $fileExtension = pathinfo(
+                        $safeName,
+                        PATHINFO_EXTENSION
+                    );
+
+                    $fileBaseName = pathinfo(
+                        $safeName,
+                        PATHINFO_FILENAME
+                    );
+
+                    $uniqueName =
+                        $fileBaseName . '_' . uniqid('', true);
+
+                    if ($fileExtension !== '') {
+                        $uniqueName .= '.' . $fileExtension;
+                    }
+
+                    $targetPath = $uploadDir . $uniqueName;
+
+                    /*
+                    * Move physical file.
+                    */
                     if (move_uploaded_file($tmpName, $targetPath)) {
 
-                        foreach ($newData['cells'] as $cellKey => $cellValue) {
+                        /*
+                        * Save attachment information in memory.
+                        *
+                        * It will be inserted into
+                        * sheet_attachments after the
+                        * sheet row is known.
+                        */
+                        $uploadedAttachments[] = [
 
-                            if ($cellValue === $fileName) {
+                            'field_index' => (int)$index,
 
-                                $newData['cells'][$cellKey] =
-                                    'uploads/sheet_attachments/' . $safeName;
-                            }
+                            'column' => $columnLetter,
+
+                            'original_name' => $originalName,
+
+                            'file_path' =>
+                                'uploads/sheet_attachments/' .
+                                $uniqueName,
+
+                            'file_size' =>
+                                (int)$_FILES['uploaded_files']['size'][$index],
+
+                            'mime_type' =>
+                                !empty($_FILES['uploaded_files']['type'][$index])
+                                    ? $_FILES['uploaded_files']['type'][$index]
+                                    : null
+                        ];
+
+                        /*
+                        * IMPORTANT:
+                        *
+                        * Do NOT store the filename/path
+                        * inside sheets.data.
+                        *
+                        * The cell remains empty.
+                        */
+                        if (
+                            isset(
+                                $newData['cells'][
+                                    $columnLetter . '1'
+                                ]
+                            )
+                        ) {
+
+                            $newData['cells'][
+                                $columnLetter . '1'
+                            ] = '';
                         }
                     }
                 }
@@ -248,10 +488,22 @@
             $stmt->bind_param(
                 "iss",
                 $formId,
-                $finalSheetName, // sheet name = form title
+                $finalSheetName,
                 $sheetJSON
             );
+
             $stmt->execute();
+
+            /*
+            * FIRST SUBMISSION:
+            * Get the newly created sheet ID.
+            */
+            $sheetId = $conn->insert_id;
+
+            /*
+            * First submission is always row 1.
+            */
+            $nextRow = 1;
         } else {
             /* NEXT SUBMISSIONS → APPEND ROW */
             $row = $result->fetch_assoc();
@@ -262,10 +514,20 @@
             $sheetData['cells']   = $sheetData['cells']   ?? [];
             $sheetData['headers'] = $sheetData['headers'] ?? [];
 
-            /* STEP 3: Set headers ONCE */
+            /* STEP 3: Keep headers and Timestamp synchronized */
             if (empty($sheetData['headers']) && !empty($newData['headers'])) {
                 $sheetData['headers'] = $newData['headers'];
             }
+
+            // Ensure Timestamp exists as the last header.
+            $sheetData['headers'] = array_values(
+                array_filter(
+                    $sheetData['headers'],
+                    fn($header) => $header !== 'Timestamp'
+                )
+            );
+
+            $sheetData['headers'][] = 'Timestamp';
 
             /* STEP 4: Row calculation — FIXED */
             /* FIND NEXT AVAILABLE ROW BASED ON FILLED CELLS */
@@ -275,8 +537,6 @@
                     $maxFilledRow = max($maxFilledRow, (int)$m[0]);
                 }
             }
-
-            // $nextRow = $maxFilledRow + 1;
 
             /* INSERT POSITION LOGIC */
             if ($submissionPosition === 'Top of the sheet') {
@@ -299,6 +559,28 @@
                 $sheetData['cells'] = $shiftedCells;
 
                 $nextRow = 1;  // Insert new submission at top
+
+                /*
+                * =========================================
+                * SHIFT EXISTING ATTACHMENTS DOWN
+                * =========================================
+                *
+                * Because the new submission is inserted
+                * at row 1, all existing attachment rows
+                * must also move down by one row.
+                */
+                $stmtShiftAttachments = $conn->prepare(
+                    "UPDATE sheet_attachments
+                    SET sheet_row = sheet_row + 1
+                    WHERE sheet_id = ?"
+                );
+
+                $stmtShiftAttachments->bind_param(
+                    "i",
+                    $sheetId
+                );
+
+                $stmtShiftAttachments->execute();
 
             } else {
 
@@ -342,6 +624,76 @@
             $stmt->execute();
         }
 
+        /* =========================================
+        SAVE SUBMITTED ATTACHMENTS
+        ========================================= */
+
+        if (
+            !empty($uploadedAttachments) &&
+            !empty($sheetId)
+        ) {
+
+            /*
+            * For public form submissions there may not
+            * be a logged-in user.
+            *
+            * The sheet_attachments.created_by column
+            * is NOT NULL, so use the existing logged-in
+            * user ID when available.
+            */
+            $createdBy = (
+                isset($loggedInUserId) &&
+                is_numeric($loggedInUserId)
+            )
+                ? (int)$loggedInUserId
+                : 0;
+
+            $stmtAttachment = $conn->prepare(
+                "INSERT INTO sheet_attachments
+                (
+                    sheet_id,
+                    sheet_row,
+                    original_name,
+                    file_path,
+                    file_size,
+                    mime_type,
+                    created_at,
+                    created_by
+                )
+                VALUES (?, ?, ?, ?, ?, ?, NOW(), ?)"
+            );
+
+            foreach ($uploadedAttachments as $attachment) {
+
+                $originalName =
+                    $attachment['original_name'];
+
+                $filePath =
+                    $attachment['file_path'];
+
+                $fileSize =
+                    $attachment['file_size'];
+
+                $mimeType =
+                    $attachment['mime_type'];
+
+                $stmtAttachment->bind_param(
+                    "iissisi",
+                    $sheetId,
+                    $nextRow,
+                    $originalName,
+                    $filePath,
+                    $fileSize,
+                    $mimeType,
+                    $createdBy
+                );
+
+                $stmtAttachment->execute();
+            }
+
+            $stmtAttachment->close();
+        }
+
         /* ===============================
         EMAIL TO USER (FIXED + STABLE)
         =============================== */
@@ -350,7 +702,6 @@
             isset($_POST['send_copy']) &&
             !empty($_POST['user_email'])
         ) {
-
 
                 $fieldRowsHtml = '';
                 $headers = $newData['headers'] ?? [];
@@ -397,10 +748,10 @@
                     <table width='100%' style='padding:30px'>
                         <tr><td>
                         <table width='640'
-            style='background:#fff;
-                    border-radius:6px;
-                    margin:0;
-                    text-align:left;'>
+                        style='background:#fff;
+                        border-radius:6px;
+                        margin:0;
+                        text-align:left;'>
                             <tr>
                                 <!-- <td style='background:#fec600;padding:18px;font-size:22px;font-weight:700'> -->
                                 <td style='background:#1e8a8a;padding:18px;font-size:22px;font-weight:700'>
@@ -435,8 +786,6 @@
             $adminEmailEnabled &&
             !empty($adminEmails)
         ) {
-
-
 
             // Reuse already-built $fieldRowsHtml
             // (If user email was not sent, build it once here)
@@ -1817,10 +2166,26 @@
                     $colIndex++;
                     $cols++;
                 }
- 
+                
+                /* =========================================
+                ADD TIMESTAMP AS THE LAST SHEET COLUMN
+                ========================================= */
+
+                // Add Timestamp after all existing form fields.
+                $headers[] = 'Timestamp';
+
+                // $colIndex already points to the next available
+                // sheet column after the form fields.
+                $columnTypes[$colIndex] = [
+                    'type' => 'datetime-local'
+                ];
+
+                // Include the Timestamp column in the column count.
+                $cols++;
+
                 $emptySheetData = json_encode([
                     "rows"         => 10,
-                    "cols"         => $cols + 1,   // +1 because A is reserved
+                    "cols"         => $cols + 1, // Column A is reserved
                     "headers"      => $headers,
                     "columnTypes"  => $columnTypes,
                     "cells"        => []
@@ -2362,8 +2727,10 @@
                     <div class="public-form-wrapper">
 
                         <div class="public-form-logo">
-                            <!-- <img src="assets/images/logo_lufera.png" alt="Company Logo"> -->
-                            <img src="assets/images/LuferaInfotech-Logo.png" alt="Company Logo">
+                            <img
+                                src="<?= htmlspecialchars($companyLogoSrc, ENT_QUOTES, 'UTF-8') ?>"
+                                alt="Company Logo"
+                            >
                         </div>
 
                         <div class="public-form-title">
@@ -2650,8 +3017,9 @@
 
                         sheetForm.appendChild(fileInput);
 
-                        // Only store original filename in JSON
-                        value = file.name;
+                        // Attachment is stored separately in sheet_attachments.
+                        // Do not store filename/path in sheets.data.
+                        value = "";
 
                     } else {
 
@@ -2659,7 +3027,17 @@
                     }
                 }
 
-                cells[`${col}${row}`] = value;
+                /*
+                * IMPORTANT:
+                * Do not store file/attachment fields inside sheets.data.
+                *
+                * The actual uploaded file is stored separately in
+                * the sheet_attachments table.
+                */
+                if (f.type !== "file") {
+                    cells[`${col}${row}`] = value;
+                }
+
                 headers.push(f.label || col);
                 colIndex++;
             });
@@ -2819,11 +3197,25 @@
                     removeBtn.onclick = (e) => {
                         e.stopPropagation();
 
-                        if (!confirm("Remove this field?")) return;
+                        Swal.fire({
+                            title: "Remove this field?",
+                            text: "Are you sure you want to remove this field?",
+                            icon: "warning",
+                            showCancelButton: true,
+                            confirmButtonText: "Yes, remove it",
+                            cancelButtonText: "Cancel",
+                            confirmButtonColor: "#fec700",
+                            cancelButtonColor: "#6b7280",
+                            reverseButtons: true
+                        }).then((result) => {
 
-                        fields.splice(i, 1);
-                        selectedIndex = -1;
-                        render();
+                            if (result.isConfirmed) {
+                                fields.splice(i, 1);
+                                selectedIndex = -1;
+                                render();
+                            }
+
+                        });
                     };
 
                     el.appendChild(removeBtn);
@@ -2896,41 +3288,6 @@
 
                 const btn = document.createElement("button");
                 btn.type = "button";
-
-                // btn.onclick = () => {
-
-                //     if (!validateFormFieldsInline()) return;
-
-                //     const payload = buildSheetPayload();
-                //     document.getElementById("sheetJSON").value = JSON.stringify(payload);
-
-                //     /* ===============================
-                //     PASS USER EMAIL DATA TO SERVER
-                //     =============================== */
-                //     const sendCopy = document.getElementById("sendCopyToggle");
-                //     const emailInput = document.getElementById("userEmailInput");
-
-                //     if (sendCopy && sendCopy.checked) {
-
-                //         // Hidden input: tells server user opted in
-                //         const hiddenSend = document.createElement("input");
-                //         hiddenSend.type = "hidden";
-                //         hiddenSend.name = "send_copy";
-                //         hiddenSend.value = "1";
-
-                //         // Hidden input: user email address
-                //         const hiddenEmail = document.createElement("input");
-                //         hiddenEmail.type = "hidden";
-                //         hiddenEmail.name = "user_email";
-                //         hiddenEmail.value = emailInput.value;
-
-                //         const form = document.getElementById("sheetForm");
-                //         form.appendChild(hiddenSend);
-                //         form.appendChild(hiddenEmail);
-                //     }
-
-                //     document.getElementById("sheetForm").submit();
-                // };
 
                 // btn.onclick = () => {
 
@@ -3415,11 +3772,6 @@
         };
         });
 
-        // function copyLink(){
-        //   navigator.clipboard.writeText(formLink);
-        //   showToast();
-        // }
-
         function copyLink(){
         navigator.clipboard.writeText(formLink).then(() => {
             Swal.fire({
@@ -3431,18 +3783,12 @@
         });
         }
 
-
         function updateEmbed(){
         embedCode.value =
             `<iframe width="${embedWidth.value}" height="${embedHeight.value}" src="${formLink}"></iframe>`;
         }
 
         embedWidth.oninput = embedHeight.oninput = updateEmbed;
-
-        // function copyEmbed(){
-        //   navigator.clipboard.writeText(embedCode.value);
-        //   showToast();
-        // }
 
         function copyEmbed(){
         navigator.clipboard.writeText(embedCode.value).then(() => {
@@ -3454,35 +3800,6 @@
             });
         });
         }
-
-
-        // function sendShareEmail(){
-        //   const to = shareEmailTo.value.trim();
-        //   if(!to){
-        //     alert("Enter email address");
-        //     return;
-        //   }
-
-        //   const data = new FormData();
-        //   data.append("share_email","1");
-        //   data.append("to",to);
-        //   data.append("subject",shareEmailSubject.value);
-        //   data.append("message",shareEmailMessage.value);
-        //   data.append("link",formLink);
-        //   data.append("cc",ccMe.checked ? 1 : 0);
-
-        //   fetch(window.location.href,{
-        //     method:"POST",
-        //     body:data
-        //   }).then(res=>{
-        //     if(res.ok){
-        //       showToast();
-        //       closeShareModal();
-        //     } else {
-        //       alert("Email failed");
-        //     }
-        //   });
-        // }
 
         function sendShareEmail(){
 

@@ -972,6 +972,18 @@
                                     color:#fff;
                                     border-color:#fff;
                                 }
+
+                                @media (min-width: 992px) {
+                                    .col-lg-4 {
+                                        width: 31.33333333% !important;
+                                    }
+                                }
+
+                                @media (min-width: 768px) {
+                                    .col-md-4 {
+                                        width: 31.33333333% !important;
+                                    }
+                                }
                             </style>
                             </head>
                             <body>
@@ -1392,8 +1404,25 @@
 
                                                                 <div class="col-lg-4 col-md-4 col-sm-6">
 
+                                                                    <?php
+                                                                        // Get product name from database
+                                                                        \$productName = \$row['name'] ?? '';
+
+                                                                        // Convert product name to lowercase
+                                                                        \$productSlug = strtolower(trim(\$productName));
+
+                                                                        // Replace spaces and special characters with "-"
+                                                                        \$productSlug = preg_replace('/[^a-z0-9]+/i', '-', \$productSlug);
+
+                                                                        // Remove extra "-" from beginning/end
+                                                                        \$productSlug = trim(\$productSlug, '-');
+
+                                                                        // Final dynamic URL
+                                                                        \$productUrl = \$productSlug . ".php";
+                                                                    ?>
+
                                                                     <?php if (\$isActive): ?>
-                                                                        <a href="product-details.php?id=<?php echo \$row['id']; ?>" class="d-block">
+                                                                        <a href="<?= htmlspecialchars(\$productUrl) ?>" class="d-block">
                                                                     <?php endif; ?>
 
                                                                     <div class="pb-16 hover-scale-img border radius-16 overflow-hidden <?php echo !\$isActive ? 'inactive-product' : ''; ?>">
@@ -1404,23 +1433,6 @@
                                                                         </div>
 
                                                                         <div class="py-16 px-24">
-
-                                                                            <?php
-                                                                                // Get product name from database
-                                                                                \$productName = \$row['name'] ?? '';
-
-                                                                                // Convert product name to lowercase
-                                                                                \$productSlug = strtolower(trim(\$productName));
-
-                                                                                // Replace spaces and special characters with "-"
-                                                                                \$productSlug = preg_replace('/[^a-z0-9]+/i', '-', \$productSlug);
-
-                                                                                // Remove extra "-" from beginning/end
-                                                                                \$productSlug = trim(\$productSlug, '-');
-
-                                                                                // Final dynamic URL
-                                                                                \$productUrl = \$productSlug . ".php";
-                                                                            ?>
 
                                                                             <h6 class="mb-4">
                                                                                 <a href="<?= htmlspecialchars(\$productUrl) ?>"
@@ -2795,6 +2807,18 @@
                         .swal2-container {
                             z-index: 1000000 !important;
                         }
+
+                        @media (min-width: 992px) {
+                            .col-lg-4 {
+                                width: 31.33333333% !important;
+                            }
+                        }
+
+                        @media (min-width: 768px) {
+                            .col-md-4 {
+                                width: 30.33333333% !important;
+                            }
+                        }
                     </style>
                     </head>
                     <body>
@@ -3137,8 +3161,29 @@
 
                                                         <div class="col-lg-4 col-md-4 col-sm-6">
 
+                                                            <?php
+                                                                // ==============================
+                                                                // GENERATE PRODUCT SEO URL
+                                                                // ==============================
+
+                                                                // Get product name from database
+                                                                \$productName = \$row['name'];
+
+                                                                // Convert to lowercase
+                                                                \$productSlug = strtolower(\$productName);
+
+                                                                // Replace spaces and special characters with hyphen
+                                                                \$productSlug = preg_replace('/[^a-z0-9]+/i', '-', \$productSlug);
+
+                                                                // Remove extra hyphens from start/end
+                                                                \$productSlug = trim(\$productSlug, '-');
+
+                                                                // Final product URL
+                                                                \$productUrl = "../../pages/products/" . \$productSlug . ".php";
+                                                            ?>
+
                                                             <?php if (\$isActive): ?>
-                                                                <a href="../../product-details.php?id=<?php echo \$row['id']; ?>" class="d-block">
+                                                                <a href="<?php echo htmlspecialchars(\$productUrl); ?>" class="d-block">
                                                             <?php endif; ?>
 
                                                             <div class="pb-16 hover-scale-img border radius-16 overflow-hidden <?php echo !\$isActive ? 'inactive-product' : ''; ?>">
@@ -3149,27 +3194,6 @@
                                                                 </div>
 
                                                                 <div class="py-16 px-24">
-
-                                                                    <?php
-                                                                        // ==============================
-                                                                        // GENERATE PRODUCT SEO URL
-                                                                        // ==============================
-
-                                                                        // Get product name from database
-                                                                        \$productName = \$row['name'];
-
-                                                                        // Convert to lowercase
-                                                                        \$productSlug = strtolower(\$productName);
-
-                                                                        // Replace spaces and special characters with hyphen
-                                                                        \$productSlug = preg_replace('/[^a-z0-9]+/i', '-', \$productSlug);
-
-                                                                        // Remove extra hyphens from start/end
-                                                                        \$productSlug = trim(\$productSlug, '-');
-
-                                                                        // Final product URL
-                                                                        \$productUrl = "../../pages/products/" . \$productSlug . ".php";
-                                                                    ?>
 
                                                                     <!-- PRODUCT NAME WITH DYNAMIC URL -->
                                                                     <h6 class="mb-4">

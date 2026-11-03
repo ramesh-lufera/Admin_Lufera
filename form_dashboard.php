@@ -221,9 +221,27 @@
 </div>
 
 <script>
-    function copyShortcode(text){
-        navigator.clipboard.writeText(text).then(function(){
-            alert('Shortcode copied: ' + text);
+    function copyShortcode(text) {
+        navigator.clipboard.writeText(text).then(function () {
+
+            Swal.fire({
+                title: 'Copied!',
+                text: 'Shortcode copied: ' + text,
+                icon: 'success',
+                confirmButtonText: 'OK',
+                confirmButtonColor: '#fec700'
+            });
+
+        }).catch(function () {
+
+            Swal.fire({
+                title: 'Copy Failed!',
+                text: 'Unable to copy the shortcode. Please try again.',
+                icon: 'error',
+                confirmButtonText: 'OK',
+                confirmButtonColor: '#fec700'
+            });
+
         });
     }
 </script>
