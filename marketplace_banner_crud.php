@@ -24,10 +24,16 @@ case "create":
 
     $images = [];
     $titles = [];
+    $descriptions = [];
+    $buttonTexts = [];
+    $buttonLinks = [];
 
     for($i=1;$i<=3;$i++){
 
         $titles[] = $_POST["slide{$i}_title"];
+        $descriptions[] = $_POST["slide{$i}_description"] ?? "";
+        $buttonTexts[] = $_POST["slide{$i}_button_text"] ?? "";
+        $buttonLinks[] = $_POST["slide{$i}_button_link"] ?? "";
 
         if(isset($_FILES["slide{$i}_image"]) && $_FILES["slide{$i}_image"]['error']==0){
 
@@ -52,17 +58,23 @@ case "create":
 
     $images_json = json_encode($images);
     $titles_json = json_encode($titles);
+    $descriptions_json = json_encode($descriptions);
+    $buttonTexts_json = json_encode($buttonTexts);
+    $buttonLinks_json = json_encode($buttonLinks);
 
     $stmt = $conn->prepare("
         INSERT INTO marketplace_banner
-        (images,title,created_by,created_at)
-        VALUES(?,?,?,NOW())
+        (images,title,description,button_text,button_link,created_by,created_at)
+        VALUES(?,?,?,?,?,?,NOW())
     ");
 
     $stmt->bind_param(
-        "ssi",
+        "sssssi",
         $images_json,
         $titles_json,
+        $descriptions_json,
+        $buttonTexts_json,
+        $buttonLinks_json,
         $created_by
     );
 
@@ -103,6 +115,9 @@ case "get":
 
         $row['images'] = json_decode($row['images'],true);
         $row['title'] = json_decode($row['title'],true);
+        $row['description'] = json_decode($row['description'] ?? '', true) ?: ["", "", ""];
+        $row['button_text'] = json_decode($row['button_text'] ?? '', true) ?: ["", "", ""];
+        $row['button_link'] = json_decode($row['button_link'] ?? '', true) ?: ["", "", ""];
 
         echo json_encode([
             "status"=>"success",
@@ -138,10 +153,16 @@ case "update":
 
     $images = [];
     $titles = [];
+    $descriptions = [];
+    $buttonTexts = [];
+    $buttonLinks = [];
 
     for($i=1;$i<=3;$i++){
 
         $titles[] = $_POST["slide{$i}_title"];
+        $descriptions[] = $_POST["slide{$i}_description"] ?? "";
+        $buttonTexts[] = $_POST["slide{$i}_button_text"] ?? "";
+        $buttonLinks[] = $_POST["slide{$i}_button_link"] ?? "";
 
         if(isset($_FILES["slide{$i}_image"]) && $_FILES["slide{$i}_image"]['error']==0){
 
@@ -172,19 +193,28 @@ case "update":
 
     $images_json = json_encode($images);
     $titles_json = json_encode($titles);
+    $descriptions_json = json_encode($descriptions);
+    $buttonTexts_json = json_encode($buttonTexts);
+    $buttonLinks_json = json_encode($buttonLinks);
 
     $stmt = $conn->prepare("
         UPDATE marketplace_banner
         SET
         images=?,
-        title=?
+        title=?,
+        description=?,
+        button_text=?,
+        button_link=?
         WHERE id=?
     ");
 
     $stmt->bind_param(
-        "ssi",
+        "sssssi",
         $images_json,
         $titles_json,
+        $descriptions_json,
+        $buttonTexts_json,
+        $buttonLinks_json,
         $id
     );
 

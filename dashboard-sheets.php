@@ -48,8 +48,15 @@ if (
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'create_sheet') {
     $sheet_name = trim($_POST['sheet_name'] ?? '');
     if (strlen($sheet_name) >= 1 && strlen($sheet_name) <= 100) {  // adjust length limit as needed
-        $stmt = $conn->prepare("INSERT INTO sheets (name, created_at, updated_at) VALUES (?, NOW(), NOW())");
-        $stmt->bind_param("s", $sheet_name);        
+        $defaultData = json_encode([
+            "rows"        => 1,
+            "cols"        => 5,
+            "headers"     => ["Column Field", "Column Field", "Column Field", "Timestamp"],
+            "columnTypes" => [],
+            "cells"       => []
+        ]);
+        $stmt = $conn->prepare("INSERT INTO sheets (name, data, created_at, updated_at) VALUES (?, ?, NOW(), NOW())");
+        $stmt->bind_param("ss", $sheet_name, $defaultData);
         if ($stmt->execute()) {
             $new_sheet_id = $conn->insert_id;
             logActivity(

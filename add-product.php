@@ -698,7 +698,7 @@ $productLandingContent = <<<'PRODUCT'
         </style>
     </head>
     <body>
-        <div class="container">
+        <div class="content-wrapper">
             <!-- HERO -->
             <div class="top-header">
                 <!-- LEFT: LOGO -->
@@ -767,7 +767,7 @@ $productLandingContent = <<<'PRODUCT'
                             </div>
                         </div>
                     </div>
-                </div>
+                
                 <?php
                 // Currency
                 $symbol = "$";
@@ -834,6 +834,7 @@ $productLandingContent = <<<'PRODUCT'
                     <button onclick="openContactPopup()" class="btn btn-yellow" style="margin-top:10px;">
                         Contact Us
                     </button>
+                </div>
                 </div>
             </div>
             <!-- ===== FOOTER ===== -->

@@ -74,6 +74,14 @@ if ($isLoggedIn) {
         ON c.cat_id = m.cat_id
     ORDER BY m.display_order ASC
     ");
+
+    // Absolute URL of the embed-only page (hero slider through packages/products,
+    // no header/footer) used by the "Copy Shortcode" button for WordPress's
+    // [lufera_marketplace] shortcode.
+    $embedProtocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https://' : 'http://';
+    $embedHost = $_SERVER['HTTP_HOST'] ?? '';
+    $embedDir = rtrim(str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME'] ?? '')), '/');
+    $marketplaceEmbedUrl = $embedProtocol . $embedHost . $embedDir . '/marketplace-embed.php';
 ?>
 <html>
 <head>
@@ -151,6 +159,211 @@ if(!isLoggedIn){
             color: var(--lufera-text-color);
     background-color: var(--lufera-main-color);
         }
+/* ===== Hero slider (split image/content layout) ===== */
+.hero-slider-section{
+    margin-top:24px;
+    margin-bottom:8px;
+}
+.hero-slider{
+    position:relative;
+    background:#f8f9f1;
+    border-radius:20px;
+    overflow:hidden;
+    z-index:1;
+    width:100%;
+}
+.hero-slide-bg-1{
+    background:#f8f9f1 url('../../assets/images/marketplace/hero-slider-bg-1.svg') center center / cover no-repeat;
+}
+.hero-slide-bg-2{
+    background:#0C1E21 url('../../assets/images/marketplace/hero-slider-bg-2-dark.svg') center center / cover no-repeat;
+}
+.hero-slide-bg-3{
+    background:#f8f9f1 url('../../assets/images/marketplace/hero-slider-bg-3.svg') center center / cover no-repeat;
+}
+.hero-slide-bg-sale{
+    background:#f8f9f1 url('../../assets/images/marketplace/hero-slider-bg-sale.svg') center center / cover no-repeat;
+}
+.hero-slide-dark .hero-slide-title{
+    color:#F2F8F7;
+}
+.hero-slide-dark .hero-slide-desc{
+    color:#C7DCDA;
+}
+.hero-slide-dark .hero-slide-cta{
+    background:#ffffff;
+    color:#0C1E21;
+}
+.hero-slide-dark .hero-slide-cta:hover{
+    background:#19AFBE;
+    color:#ffffff;
+}
+.hero-slider .swiper-wrapper{
+    display:flex;
+}
+.hero-slide{
+    display:flex !important;
+    align-items:center;
+    gap:40px;
+    min-height:360px;
+    padding:40px 48px;
+    flex-shrink:0;
+    width:100%;
+}
+.hero-slide-zigzag{
+    flex-direction:row-reverse;
+}
+.hero-slide-centered{
+    flex-direction:column;
+    text-align:center;
+    justify-content:center;
+    gap:24px;
+}
+.hero-slide-centered .hero-slide-media{
+    flex:0 0 auto;
+    max-width:260px;
+}
+.hero-slide-centered .hero-slide-media img{
+    width:260px;
+    max-width:260px;
+    height:auto;
+}
+.hero-slide-centered .hero-slide-content{
+    max-width:640px;
+}
+.hero-slide-centered .hero-slide-desc{
+    margin-left:auto;
+    margin-right:auto;
+}
+.hero-slide-media{
+    flex:0 0 40%;
+    max-width:40%;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+}
+.hero-slide-media img{
+    width:500px;
+    max-width:500px;
+    height:280px;
+    object-fit:contain;
+}
+.hero-slide-content{
+    flex:1 1 auto;
+    min-width:0;
+}
+.hero-slide-title{
+    font-size:2.1rem !important;
+    color:#0C1E21;
+    margin-bottom:14px;
+    line-height:1.25;
+}
+.hero-slide-desc{
+    font-size:1.05rem;
+    color:#45585B;
+    max-width:460px;
+    margin-bottom:22px;
+    line-height:1.6;
+}
+.hero-slide-cta{
+    display:inline-block;
+    background:#1F8A8A;
+    color:#fff;
+    font-weight:600;
+    padding:11px 26px;
+    border-radius:8px;
+    text-decoration:none;
+    transition:background .2s ease;
+}
+.hero-slide-cta:hover{
+    background:#176e6e;
+    color:#fff;
+}
+.hero-slider-arrow{
+    flex-shrink:0;
+    width:44px;
+    height:44px;
+    border-radius:50%;
+    border:1.5px solid #c7d6d6;
+    background:#fff;
+    color:#0C1E21;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    cursor:pointer;
+    z-index:5;
+    transition:.2s ease;
+}
+.hero-slider-arrow:hover{
+    background:#1F8A8A;
+    border-color:#1F8A8A;
+    color:#fff;
+}
+.hero-slider-footer{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:14px;
+    margin-top:18px;
+}
+.hero-slider-controls-center{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:14px;
+    flex:1 1 auto;
+}
+.hero-slider-pagination{
+    display:flex;
+    align-items:center;
+    gap:6px;
+}
+.hero-slider-pagination .swiper-pagination-bullet{
+    width:22px;
+    height:4px;
+    border-radius:3px;
+    background:#c7d6d6;
+    opacity:1;
+    margin:0 !important;
+    transition:.3s;
+    cursor:pointer;
+}
+.hero-slider-pagination .swiper-pagination-bullet-active{
+    background:#1F8A8A;
+    width:30px;
+}
+.hero-slider-playpause{
+    width:30px;
+    height:30px;
+    border-radius:50%;
+    border:1.5px solid #c7d6d6;
+    background:#fff;
+    color:#0C1E21;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    cursor:pointer;
+    font-size:11px;
+    flex-shrink:0;
+}
+.hero-slider-playpause:hover{
+    background:#1F8A8A;
+    border-color:#1F8A8A;
+    color:#fff;
+}
+@media (max-width:900px){
+    .hero-slide{
+        flex-direction:column;
+        text-align:center;
+        min-height:auto;
+        padding:30px 20px;
+        gap:20px;
+    }
+    .hero-slide-media{ flex:0 0 auto; max-width:220px; }
+    .hero-slide-desc{ margin-left:auto; margin-right:auto; }
+    .hero-slider-footer{ gap:8px; }
+    .hero-slider-arrow{ width:36px; height:36px; }
+}
 /* banner */
 %transition_all_03s {
   transition:all .3s ease;
@@ -191,7 +404,8 @@ if(!isLoggedIn){
 }
 .swiper-container {
   width: 100%;
-  height: 550px;
+  height: 450px;
+  border-radius:14px;
   transition:opacity .6s ease, transform .3s ease;
   &.nav-slider{
     width:20%;
@@ -237,7 +451,7 @@ if(!isLoggedIn){
     width:100%;
     height:100%;
     background-position:center;
-    background-size:cover;
+    background-size:contain;
   }
   .entity-img{
     display:none;
@@ -286,8 +500,8 @@ if(!isLoggedIn){
 }
 /* Banner Image Animation */
 .main-slider .slide-bgimg{
-    transform:scale(1);
-    transition:transform 6s ease;
+    /* transform:scale(1);
+    transition:transform 6s ease; */
 }
 
 .main-slider .swiper-slide-active .slide-bgimg{
@@ -500,15 +714,12 @@ section {
         }
 
         .product-slider{
-            display:flex;
-            gap:20px;
+            position:relative;
             overflow:hidden;
-            scroll-behavior:smooth;
         }
 
-        /* Show exactly 3 cards */
+        /* Card width/count per view is controlled by Swiper's slidesPerView */
         .product-card{
-            flex:0 0 calc((100% - (2 * 20px)) / 3);
             background:#fff;
             border-radius:12px;
             overflow:hidden;
@@ -565,14 +776,11 @@ section {
         }
 
     .top-slider{
-        display:flex;
-        gap:20px;
+        position:relative;
         overflow:hidden;
-        scroll-behavior:smooth;
     }
 
     .feed-card{
-        flex:0 0 calc((100% - 40px)/3);
         background:#fff;
         border-radius:10px;
         overflow:hidden;
@@ -590,9 +798,8 @@ section {
 
     /* Slider 3 */
     .featured-slider{
-        display:flex;
+        position:relative;
         overflow:hidden;
-        scroll-behavior:smooth;
     }
 
     .featured-items{
@@ -682,14 +889,11 @@ section {
    Marketplace Packages
 ======================= */
 .package-grid{
-    display:flex;
-    gap:25px;
+    position:relative;
     overflow:hidden;
-    scroll-behavior:smooth;
 }
 
 .package-card{
-    flex:0 0 calc((100% - 50px)/3);
     position:relative;
     background:#fff;
     border-radius:20px;
@@ -699,6 +903,7 @@ section {
     display:flex;
     flex-direction:column;
     transition:.3s;
+    font-family:'Inter', sans-serif;
 }
 .package-card:hover{
     transform:translateY(-5px);
@@ -708,29 +913,38 @@ section {
     color:var(--lufera-text-color);
 }
 .package-title{
-    font-size:30px;
+    font-size:24px;
     font-weight:700;
+    line-height:1.2;
     margin-bottom:8px;
-/*color:var(--lufera-text-color);*/
+    color:#0c1e21;
+}
+.package-card.dark .package-title{
+    color:#fff;
 }
 .package-subtitle{
     font-size:15px;
     margin-bottom:20px;
-    color:#666;
+    color:#555;
 }
 .package-card.dark .package-subtitle{
-    color:var(--lufera-text-color);
+    color:#fff;
 }
 .old-price{
+    font-size:15px;
     text-decoration:line-through;
-    opacity:.6;
+    opacity:.7;
     margin-bottom:6px;
 }
 .package-price{
-    font-size:36px;
-    font-weight:700;
+    font-size:40px;
+    font-weight:800;
+    line-height:1;
     margin-bottom:25px;
-    /*color: var(--lufera-text-color);*/
+    color:#0c1e21;
+}
+.package-card.dark .package-price{
+    color:#fff;
 }
 .package-price span{
     font-size:18px;
@@ -738,52 +952,105 @@ section {
 }
 .package-btn{
     width:100%;
-    padding:10px;
-    border-radius:10px;
+    height:56px;
+    padding:12px;
+    border-radius:100px;
     border:none;
+    font-size:16px;
     font-weight:600;
-    margin-bottom:25px;
+    margin-bottom:30px;
     transition:.3s;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:10px;
+    color:#222;
 }
 .package-card:not(.dark) .package-btn{
     background:#fff;
-    border:2px solid var(--lufera-main-color);
-    /*color:var(--lufera-main-color);*/
+    border:1.5px solid var(--lufera-main-color);
 }
 
 .package-card.dark .package-btn{
     background:#fff;
-    color:var(--lufera-main-color);
 }
 .package-btn:hover{
     transform:scale(1.02);
+}
+.package-btn-icon{
+    width:26px;
+    height:26px;
+    flex-shrink:0;
+    border-radius:50%;
+    background:#0c1e21;
+    color:#fff;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    font-size:11px;
 }
 .package-features{
     list-style:none;
     padding:0;
     margin:0;
-/*color: var(--lufera-text-color);*/
+    flex:1;
 }
 .package-features li{
     display:flex;
+    align-items:flex-start;
     gap:12px;
-    margin-bottom:14px;
+    margin-bottom:15px;
+    font-size:15px;
+    line-height:1.5;
+    color:#444;
+}
+.package-card.dark .package-features li{
+    color:#fff;
+}
+.package-viewmore-btn{
+    display:flex;
+    width:100%;
+    align-items:center;
+    justify-content:center;
+    gap:8px;
+    margin-top:20px;
+    padding:14px;
+    border-radius:100px;
+    font-size:16px;
+    font-weight:600;
+    text-decoration:none;
+    background:var(--lufera-main-color);
+    color:#fff;
+    transition:.3s;
+}
+.package-card.dark .package-viewmore-btn{
+    background:#fff;
+    color:var(--lufera-main-color);
+}
+.package-viewmore-btn:hover{
+    transform:scale(1.03);
+    color:#fff;
+}
+.package-card.dark .package-viewmore-btn:hover{
+    color:var(--lufera-main-color);
 }
 .package-icon{
-    width:22px;
-    height:22px;
+    width:24px;
+    height:24px;
     border-radius:50%;
     display:flex;
     align-items:center;
     justify-content:center;
-    background:#1e8a8a;
+    background:var(--lufera-main-color);
     color:#fff;
-    font-size:12px;
+    font-size:11px;
+    font-weight:bold;
     flex-shrink:0;
+    margin-top:2px;
 }
 .package-card.dark .package-icon{
     background:#fff;
-    color:#1e8a8a;
+    color:var(--lufera-main-color);
 }
 .package-inactive{
     position:absolute;
@@ -794,6 +1061,54 @@ section {
     padding:4px 12px;
     border-radius:20px;
     font-size:12px;
+}
+
+/* This page renders without a <!DOCTYPE html>, which puts the browser in
+   quirks mode. In quirks mode, Swiper's own height:100% on .swiper-wrapper/
+   .swiper-slide resolves against the viewport instead of stopping at our
+   auto-height slider containers, ballooning every card to viewport height
+   and leaving huge empty gaps below each section. Overriding both back to
+   height:auto makes the row shrink-wrap to its tallest card again, and
+   align-items:stretch (flexbox's default, set explicitly here) still makes
+   every card in that row match that tallest card's height. */
+.product-slider .swiper-wrapper,
+.top-slider .swiper-wrapper,
+.featured-slider .swiper-wrapper,
+.package-grid .swiper-wrapper{
+    height:auto;
+    align-items:stretch;
+}
+.product-card.swiper-slide,
+.feed-card.swiper-slide,
+.featured-items.swiper-slide,
+.package-card.swiper-slide{
+    height:auto;
+}
+
+.duration-tabs{
+    display:flex;
+    justify-content:center;
+    gap:8px;
+    margin:0 0 30px;
+    flex-wrap:wrap;
+}
+.duration-tab-btn{
+    border:none;
+    background:transparent;
+    padding:10px 26px;
+    border-radius:30px;
+    font-weight:600;
+    font-size:15px;
+    color:#666;
+    cursor:pointer;
+    transition:.25s;
+}
+.duration-tab-btn.active{
+    background:var(--lufera-main-color);
+    color:var(--lufera-text-color);
+}
+.duration-tab-btn:not(.active):hover{
+    color:var(--lufera-main-color);
 }
 
 .view-more-btn{
@@ -965,19 +1280,7 @@ background: #009688;
     font-size:24px !important;
 }
 
-/* Product Slider */
-
-.product-card{
-    flex:0 0 calc((100% - 20px)/2);
-}
-
-.feed-card{
-    flex:0 0 calc((100% - 20px)/2);
-}
-
-.package-card{
-    flex:0 0 calc((100% - 20px)/2);
-}
+/* Card width/count per view at this breakpoint is set via Swiper breakpoints in JS */
 
 .product-grid{
     grid-template-columns:repeat(2,1fr);
@@ -1045,12 +1348,6 @@ background: #009688;
 }
 
 /* Product Cards */
-
-.product-card,
-.feed-card,
-.package-card{
-    flex:0 0 100%;
-}
 
 .product-grid{
     grid-template-columns:1fr;
@@ -1169,19 +1466,6 @@ background: #009688;
     font-size:24px;
 }
 
-}
-.product-slider,
-.top-slider,
-.package-grid,
-.featured-slider{
-    scroll-snap-type: x mandatory;
-}
-
-.product-card,
-.feed-card,
-.package-card,
-.featured-items{
-    scroll-snap-align: start;
 }
 .navbar-toggler-icon{
 width: 20px !important;
@@ -1333,6 +1617,7 @@ padding: 0.75rem 1.5rem !important;
             display: flex;
             align-items: center;
             gap: 12px;
+            margin-top:15px;
         }
 
         .cat-slider-description {
@@ -1541,10 +1826,9 @@ object-fit:contain;
             .category-description, .cat-slider-description {
                 flex-direction: column;
                 align-items: flex-start;
-
                 padding: 0 5px;
-
                 gap: 12px;
+                margin-top:15px;
             }
 
 
@@ -1607,6 +1891,37 @@ object-fit:contain;
 </head>
 <body>
 <div id="pageContent">
+    
+    <script>
+        (function(){
+            var embedUrl = <?php echo json_encode($marketplaceEmbedUrl); ?>;
+            var shortcode = '[lufera_marketplace url="' + embedUrl + '"]';
+            var btn = document.getElementById('copyMarketplaceShortcodeBtn');
+            var toast = document.getElementById('marketplaceShortcodeToast');
+
+            function showToast(){
+                toast.style.display = 'block';
+                clearTimeout(toast._hideTimer);
+                toast._hideTimer = setTimeout(function(){ toast.style.display = 'none'; }, 2500);
+            }
+
+            btn.addEventListener('click', function(){
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    navigator.clipboard.writeText(shortcode).then(showToast, showToast);
+                } else {
+                    var tmp = document.createElement('textarea');
+                    tmp.value = shortcode;
+                    tmp.style.position = 'fixed';
+                    tmp.style.opacity = '0';
+                    document.body.appendChild(tmp);
+                    tmp.select();
+                    try { document.execCommand('copy'); } catch (e) {}
+                    document.body.removeChild(tmp);
+                    showToast();
+                }
+            });
+        })();
+    </script>
     <header class="main-header">
         <div class="container">
             <nav class="navbar navbar-expand-lg my-10">
@@ -1805,94 +2120,87 @@ object-fit:contain;
     </header>
     <?php
     $bannerQuery = mysqli_query($conn, "
-        SELECT images, title
+        SELECT images, title, description, button_text, button_link
         FROM marketplace_banner
         LIMIT 1
     ");
 
     $banner = mysqli_fetch_assoc($bannerQuery);
-    $bannerImages = json_decode($banner['images'], true);
-    $bannerTitles = json_decode($banner['title'], true);
-    ?>
-    
+    $bannerImages = $banner ? json_decode($banner['images'], true) : [];
+    $bannerTitles = $banner ? json_decode($banner['title'], true) : [];
+    $bannerDescriptions = $banner ? json_decode($banner['description'] ?? '', true) : [];
+    $bannerButtonTexts = $banner ? json_decode($banner['button_text'] ?? '', true) : [];
+    $bannerButtonLinks = $banner ? json_decode($banner['button_link'] ?? '', true) : [];
+    $bannerImages = is_array($bannerImages) ? $bannerImages : [];
+    $bannerTitles = is_array($bannerTitles) ? $bannerTitles : [];
+    $bannerDescriptions = is_array($bannerDescriptions) ? $bannerDescriptions : [];
+    $bannerButtonTexts = is_array($bannerButtonTexts) ? $bannerButtonTexts : [];
+    $bannerButtonLinks = is_array($bannerButtonLinks) ? $bannerButtonLinks : [];
 
-<!-- Banner section start-->
- <section class="container">
-    <div class="swiper-container main-slider">
+    // One background style per slide (slide 1 is the darker LuferaOne variant)
+    $heroSlideBgClasses = ['hero-slide-bg-2 hero-slide-dark', 'hero-slide-bg-sale', 'hero-slide-bg-3'];
+    ?>
+
+
+<!-- Hero slider section start-->
+<section class="container hero-slider-section">
+    <div class="hero-slider">
         <div class="swiper-wrapper">
             <?php
                 $bannerImages = array_slice($bannerImages, 0, 3);
                 $bannerTitles = array_slice($bannerTitles, 0, 3);
+                $bannerDescriptions = array_slice($bannerDescriptions, 0, 3);
+                $bannerButtonTexts = array_slice($bannerButtonTexts, 0, 3);
+                $bannerButtonLinks = array_slice($bannerButtonLinks, 0, 3);
 
                 foreach ($bannerImages as $i => $image) {
+                    if (empty($image)) continue;
+
+                    $ctaText = !empty($bannerButtonTexts[$i]) ? $bannerButtonTexts[$i] : 'Explore Marketplace';
+                    $ctaLink = !empty($bannerButtonLinks[$i]) ? $bannerButtonLinks[$i] : '#marketplace-products';
+                    $bgClass = $heroSlideBgClasses[$i % count($heroSlideBgClasses)];
+                    $layoutClass = ($i === 1) ? 'hero-slide-zigzag' : '';
             ?>
-            <div class="swiper-slide">
-                <figure class="slide-bgimg"
-                    style="background-image:url('../../<?php echo htmlspecialchars($image); ?>')">
-
+            <div class="swiper-slide hero-slide <?php echo $bgClass; ?> <?php echo $layoutClass; ?>">
+                <div class="hero-slide-media">
                     <img src="../../<?php echo htmlspecialchars($image); ?>"
-                        class="entity-img"
-                        alt="Banner">
-
-                </figure>
-                <div class="content">
-                    <p class="title">
+                        alt="<?php echo htmlspecialchars($bannerTitles[$i] ?? 'Lufera Infotech'); ?>">
+                </div>
+                <div class="hero-slide-content">
+                    <h2 class="hero-slide-title">
                         <?php echo htmlspecialchars($bannerTitles[$i] ?? ''); ?>
+                    </h2>
+                    <?php if (!empty($bannerDescriptions[$i])) { ?>
+                    <p class="hero-slide-desc">
+                        <?php echo htmlspecialchars($bannerDescriptions[$i]); ?>
                     </p>
+                    <?php } ?>
+                    <a href="<?php echo htmlspecialchars($ctaLink); ?>" class="hero-slide-cta" target="_blank"><?php echo htmlspecialchars($ctaText); ?></a>
                 </div>
             </div>
             <?php } ?>
         </div>
-        <div class="swiper-pagination"></div>
-        <!-- <div class="swiper-button-prev"></div>
-        <div class="swiper-button-next"></div> -->
     </div>
 
-</section>
-<!-- Banner section end-->
-<section class="marketplace-features">
-    <div class="container">
-        <div class="row">
+    <div class="hero-slider-footer">
+        <button type="button" class="hero-slider-arrow hero-slider-prev" aria-label="Previous slide">
+            <i class="fa fa-chevron-left"></i>
+        </button>
 
-            <div class="col-lg-4 col-md-6 mb-3">
-                <div class="feature-card">
-                    <div class="feature-icon icon-blue">
-                        <i class="fas fa-store"></i>
-                    </div>
-                    <h3>Trusted Marketplace</h3>
-                    <p>
-                    Discover high-quality software, website templates, plugins, mobile apps, graphics, and digital resources designed to help individuals and businesses grow.
-                    </p>
-                </div>
-            </div>
-
-            <div class="col-lg-4 col-md-6 mb-3">
-                <div class="feature-card">
-                    <div class="feature-icon icon-green">
-                        <i class="fas fa-shipping-fast"></i>
-                    </div>
-                    <h3>Fast &amp; Easy Purchase</h3>
-                    <p>
-                    Purchase and access your digital products immediately after payment. No shipping delays—download your files anytime, anywhere, with just a few clicks.
-                    </p>
-                </div>
-            </div>
-
-            <div class="col-lg-4 col-md-6 mb-3">
-                <div class="feature-card">
-                    <div class="feature-icon icon-purple">
-                        <i class="fas fa-tags"></i>
-                    </div>
-                    <h3>Updates &amp; Support</h3>
-                    <p>
-                    Receive product updates, documentation, and dedicated seller support to ensure you always have the latest features and assistance when needed.
-                    </p>
-                </div>
-            </div>
-
+        <div class="hero-slider-controls-center">
+            <div class="hero-slider-pagination"></div>
+            <button type="button" class="hero-slider-playpause" id="heroSliderPlayPause" aria-label="Pause slideshow">
+                <i class="fa fa-pause"></i>
+            </button>
         </div>
+
+        <button type="button" class="hero-slider-arrow hero-slider-next" aria-label="Next slide">
+            <i class="fa fa-chevron-right"></i>
+        </button>
     </div>
 </section>
+<div id="marketplace-products"></div>
+<!-- Hero slider section end-->
     <?php while($market = mysqli_fetch_assoc($marketplaceQuery)){ ?>
 
     <?php
@@ -1971,6 +2279,7 @@ object-fit:contain;
                 <div class="slider-wrapper">
                     <button class="nav prev fa fa-chevron-left lufera-bg lufera-text"></button>
                     <div class="product-slider">
+                    <div class="swiper-wrapper">
                     <?php while($row=mysqli_fetch_assoc($productQuery)){ ?>
 <?php
 $url = strtolower($row['name']);
@@ -1991,7 +2300,7 @@ $url = preg_replace('/-+/', '-', $url);
 $url = trim($url, '-');
 ?>
                         <!-- Product Card -->
-                        <div class="product-card">
+                        <div class="product-card swiper-slide">
                             <!-- Main Image -->
                             <?php
 $imageData = json_decode($row['image_data'], true);
@@ -2035,6 +2344,7 @@ $productBanner = !empty($imageData['breadcrumb_image'])
                             </div>
                         </div>
                     <?php } ?>
+                    </div>
                     </div>
                     <button class="nav next fa fa-chevron-right lufera-bg lufera-text"></button>
                 </div>
@@ -2122,6 +2432,7 @@ $productBanner = !empty($imageData['breadcrumb_image'])
 
                 </div>
                 <div class="top-slider">
+                <div class="swiper-wrapper">
                 <?php while($row=mysqli_fetch_assoc($productQuery)){ ?>
 <?php
 $url = strtolower($row['name']);
@@ -2141,7 +2452,7 @@ $url = preg_replace('/-+/', '-', $url);
 // Trim hyphens from the beginning/end
 $url = trim($url, '-');
 ?>
-                    <div class="feed-card">
+                    <div class="feed-card swiper-slide">
                         <img src="../../uploads/products/<?php echo $row['product_image']; ?>">
                         <div class="feed-content">
 <a href="../products/<?php echo $url; ?>.php"><h5><?php echo $row['name']; ?></h5></a>
@@ -2171,6 +2482,7 @@ $url = trim($url, '-');
                         </div>
                     </div>
                 <?php } ?>
+                </div>
                 </div>
             </div>
         <?php } ?>
@@ -2255,6 +2567,7 @@ $url = trim($url, '-');
 
                 </div>
                 <div class="featured-slider">
+                    <div class="swiper-wrapper">
                     <?php while($row=mysqli_fetch_assoc($productQuery)){ ?>
                     <?php
                     $url = strtolower($row['name']);
@@ -2275,7 +2588,7 @@ $url = trim($url, '-');
                     $url = trim($url, '-');
                     ?>
 
-                    <div class="featured-items">
+                    <div class="featured-items swiper-slide">
                         <div class="featured-image">
                             <img src="../../uploads/products/<?php echo $row['product_image']; ?>">
                         </div>
@@ -2321,6 +2634,7 @@ $url = trim($url, '-');
                         </div>
                     </div>
                     <?php } ?>
+                    </div>
                 </div>
             </div>
         <?php } ?>
@@ -2437,6 +2751,41 @@ if(!$packageQuery){
     die("Package Query Error : ".mysqli_error($conn));
 }
 
+// Buffer the packages so we can pre-fetch every duration (month/year/etc.)
+// for all of them in one query before rendering the cards.
+$packagesList = [];
+while($pkgRow = mysqli_fetch_assoc($packageQuery)){
+    $packagesList[] = $pkgRow;
+}
+
+$durationsByPackage = [];
+$distinctDurations  = [];
+
+if(!empty($packagesList)){
+    $pkgIds = array_map(fn($p) => (int)$p['id'], $packagesList);
+    $pkgIdsStr = implode(',', $pkgIds);
+
+    $durRes = mysqli_query($conn, "
+    SELECT *
+    FROM durations
+    WHERE package_id IN ($pkgIdsStr)
+    ORDER BY id ASC
+    ");
+
+    if(!$durRes){
+        die("Duration Error : ".mysqli_error($conn));
+    }
+
+    while($d = mysqli_fetch_assoc($durRes)){
+        $durationsByPackage[$d['package_id']][$d['duration']] = $d;
+        if(!in_array($d['duration'], $distinctDurations, true)){
+            $distinctDurations[] = $d['duration'];
+        }
+    }
+}
+
+$defaultDuration = $distinctDurations[0] ?? null;
+
 ?>
 
     <div class="container mt-3">
@@ -2491,70 +2840,62 @@ if(!$packageQuery){
                 </div>
 
             </div>
+    <?php if(count($distinctDurations) > 1): ?>
+    <div class="duration-tabs" data-cat="<?php echo htmlspecialchars($catId); ?>">
+        <?php foreach($distinctDurations as $di => $durName): ?>
+            <button
+                type="button"
+                class="duration-tab-btn<?php echo $di === 0 ? ' active' : ''; ?>"
+                data-duration="<?php echo htmlspecialchars($durName); ?>"
+            >
+                <?php echo htmlspecialchars($durName); ?>
+            </button>
+        <?php endforeach; ?>
+    </div>
+    <?php endif; ?>
     <div class="slider-wrapper">
     <button class="nav package-prev fa fa-chevron-left lufera-text lufera-bg"></button>
-    <div class="package-grid">
+    <div class="package-grid" data-cat="<?php echo htmlspecialchars($catId); ?>">
+        <div class="swiper-wrapper">
         <?php
         $i=0;
-        while($package=mysqli_fetch_assoc($packageQuery)){
+        foreach($packagesList as $package){
+        $packageDurations = $durationsByPackage[$package['id']] ?? [];
+
+        if(empty($packageDurations)){
+            continue;
+        }
+
+        $duration = $packageDurations[$defaultDuration] ?? reset($packageDurations);
         ?>
         <?php
         $class = ($i%2==0) ? "" : "dark";
         ?>
-        <div class="package-card <?php echo $class; ?>">
-            <?php
-            $durationResult = mysqli_query($conn,"
-            SELECT *
-            FROM durations
-            WHERE package_id='".$package['id']."'
-            ORDER BY id ASC
-            LIMIT 1
-            ");
-
-            if(!$durationResult){
-                die("Duration Error : ".mysqli_error($conn));
-            }
-
-            $duration = mysqli_fetch_assoc($durationResult);
-
-            if(!$duration){
-                continue;
-            }
-            ?>
+        <div class="package-card swiper-slide <?php echo $class; ?>">
             <div class="package-title">
                 <?php echo $package['title']; ?>
             </div>
             <div class="package-subtitle">
                 <?php echo $package['subtitle']; ?>
             </div>
-            <?php if($duration['preview_price']>0){ ?>
-            <div class="old-price">
-                ₹<?php echo number_format($duration['preview_price']); ?>
+            <?php foreach($packageDurations as $durName => $durRow): ?>
+            <div
+                class="package-price-variant<?php echo $durName === $defaultDuration ? '' : ' d-none'; ?>"
+                data-duration="<?php echo htmlspecialchars($durName); ?>"
+            >
+                <?php if($durRow['preview_price']>0){ ?>
+                <div class="old-price">
+                    ₹<?php echo number_format($durRow['preview_price']); ?>
+                </div>
+                <?php } ?>
+                <div class="package-price">
+                    ₹<?php echo number_format($durRow['price']); ?>
+                    <span>
+                    /<?php echo htmlspecialchars($durName); ?>
+                    </span>
+                </div>
             </div>
-            <?php } ?>
-            <div class="package-price">
-                ₹<?php echo number_format($duration['price']); ?>
-                <span>
-                /<?php echo $duration['duration']; ?>
-                </span>
-            </div>
-            <div class="mt-4 d-flex gap-3">
-                <form action="../../cart.php" method="POST">
-                    <input type="hidden" name="type" value="package">
-                    <input type="hidden" name="id" value="<?= htmlspecialchars($package['id']) ?>">
-                    <input type="hidden" name="plan_name" value="<?= htmlspecialchars($package['package_name']) ?>">
-                    <input type="hidden" name="title" value="<?= htmlspecialchars($package['title']) ?>">
-                    <input type="hidden" name="subtitle" value="<?= htmlspecialchars($package['subtitle']) ?>">
-                    <input type="hidden" name="price" value="<?= htmlspecialchars($duration['price']) ?>">
-                    <input type="hidden" name="duration" value="<?= htmlspecialchars($duration['duration']) ?>">
-                    <input type="hidden" name="created_on" value="<?= date("Y-m-d") ?>">
-                    <!-- <input type="hidden" name="addon_service" value="<?= htmlspecialchars($package['addon_service']) ?>">
-                    <input type="hidden" name="addon_package" value="<?= htmlspecialchars($package['addon_package']) ?>">
-                    <input type="hidden" name="addon_product" value="<?= htmlspecialchars($package['addon_product']) ?>">
-                    <input type="hidden" name="gst_id" value="<?= htmlspecialchars($package['gst_id']) ?>"> -->
-
-                    <button type="submit" class="package-btn w-auto">Buy Now</button>
-                </form>  
+            <?php endforeach; ?>
 <?php
 $url_pack = strtolower($package['package_name']);
 
@@ -2573,8 +2914,29 @@ $url_pack = preg_replace('/-+/', '-', $url_pack);
 // Trim hyphens from the beginning/end
 $url_pack = trim($url_pack, '-');
 ?>
-                <a href="../packages/<?php echo $url_pack; ?>.php"><button type="submit" class="package-btn w-auto">View More</button></a>
-            </div>
+            <form action="../../cart.php" method="POST">
+                <input type="hidden" name="type" value="package">
+                <input type="hidden" name="id" value="<?= htmlspecialchars($package['id']) ?>">
+                <input type="hidden" name="plan_name" value="<?= htmlspecialchars($package['package_name']) ?>">
+                <input type="hidden" name="title" value="<?= htmlspecialchars($package['title']) ?>">
+                <input type="hidden" name="subtitle" value="<?= htmlspecialchars($package['subtitle']) ?>">
+                <input
+                    type="hidden"
+                    name="price"
+                    class="package-price-input"
+                    value="<?= htmlspecialchars($duration['price']) ?>"
+                    data-prices="<?= htmlspecialchars(json_encode(array_map(fn($d) => $d['price'], $packageDurations))) ?>"
+                >
+                <input type="hidden" name="duration" class="package-duration-input" value="<?= htmlspecialchars($duration['duration']) ?>">
+                <input type="hidden" name="created_on" value="<?= date("Y-m-d") ?>">
+                <input type="hidden" name="gst_id" value="<?= htmlspecialchars($package['gst_id']) ?>">
+                <!-- <input type="hidden" name="addon_service" value="<?= htmlspecialchars($package['addon_service']) ?>">
+                <input type="hidden" name="addon_package" value="<?= htmlspecialchars($package['addon_package']) ?>">
+                <input type="hidden" name="addon_product" value="<?= htmlspecialchars($package['addon_product']) ?>">
+                "> -->
+
+                <button type="submit" class="package-btn">Choose Package <span class="package-btn-icon"><i class="fa fa-external-link-alt"></i></span></button>
+            </form>
             <ul class="package-features">
             <?php
             $feature=mysqli_query($conn,"
@@ -2586,16 +2948,18 @@ $url_pack = trim($url_pack, '-');
             while($f=mysqli_fetch_assoc($feature)){
             ?>
                 <li>
-                    <span class="package-icon">✓</span>
+                    <span class="package-icon"><i class="fa fa-play"></i></span>
                     <span><?php echo $f['feature']; ?></span>
                 </li>
             <?php } ?>
             </ul>
+            <a href="../packages/<?php echo $url_pack; ?>.php" class="package-viewmore-btn">Show More</a>
         </div>
         <?php
         $i++;
         }
         ?>
+        </div>
     </div>
     <button class="nav package-next fa fa-chevron-right lufera-text lufera-bg"></button>
     </div>
@@ -2627,27 +2991,46 @@ $url_pack = trim($url_pack, '-');
 <div class="mobile-overlay"></div>
 
 <script>
-var bannerSwiper = new Swiper('.main-slider', {
+var bannerSwiper = new Swiper('.hero-slider', {
     slidesPerView: 1,
     spaceBetween: 0,
     loop: true,
-    speed: 1200,
+    autoHeight: true,
+    speed: 900,
     autoplay: {
-        delay: 3000,
+        delay: 4500,
         disableOnInteraction: false
     },
     navigation: {
-        nextEl: '.swiper-button-next',
-        prevEl: '.swiper-button-prev'
+        nextEl: '.hero-slider-next',
+        prevEl: '.hero-slider-prev'
     },
     pagination:{
-        el:'.swiper-pagination',
+        el:'.hero-slider-pagination',
         clickable:true
     },
     effect: 'slide',
     allowTouchMove: true,
     grabCursor: true
 });
+
+const heroPlayPauseBtn = document.getElementById('heroSliderPlayPause');
+if (heroPlayPauseBtn) {
+    heroPlayPauseBtn.addEventListener('click', function () {
+        const icon = this.querySelector('i');
+        if (bannerSwiper.autoplay.running) {
+            bannerSwiper.autoplay.stop();
+            icon.classList.remove('fa-pause');
+            icon.classList.add('fa-play');
+            this.setAttribute('aria-label', 'Play slideshow');
+        } else {
+            bannerSwiper.autoplay.start();
+            icon.classList.remove('fa-play');
+            icon.classList.add('fa-pause');
+            this.setAttribute('aria-label', 'Pause slideshow');
+        }
+    });
+}
 </script>
 
 <script>
@@ -2668,124 +3051,133 @@ overlay.addEventListener("click", function () {
 </script>
        
 <script>
-function enableSwipe(slider) {
-    let startX = 0;
-    let endX = 0;
+// Every marketplace slider below (the hero banner above has its own Swiper
+// instance, with its own autoplay) shares this one setup routine, so they all
+// get the exact same infinite-loop behavior with no autoplay — manual arrow
+// navigation only. Only the layout options passed in differ, which is what
+// gives each slider its own distinct per-view design.
+function initCategorySwiper(rootSelector, sliderSelector, options) {
+    document.querySelectorAll(rootSelector).forEach(scope => {
+        const el = scope.querySelector(sliderSelector);
+        if (!el || !el.querySelector(".swiper-slide")) return;
 
-    slider.addEventListener("touchstart", (e) => {
-        startX = e.touches[0].clientX;
-    }, { passive: true });
+        const next = options.nextEl ? scope.querySelector(options.nextEl) : null;
+        const prev = options.prevEl ? scope.querySelector(options.prevEl) : null;
 
-    slider.addEventListener("touchend", (e) => {
-        endX = e.changedTouches[0].clientX;
-
-        const diff = startX - endX;
-
-        // Ignore small swipes
-        if (Math.abs(diff) < 50) return;
-
-        slider.scrollBy({
-            left: diff > 0 ? slider.clientWidth : -slider.clientWidth,
-            behavior: "smooth"
+        const swiper = new Swiper(el, {
+            loop: true,
+            // Auto-disables sliding/looping when there aren't enough slides
+            // to overflow the view, instead of forcing a glitchy loop.
+            watchOverflow: true,
+            speed: 600,
+            grabCursor: true,
+            slidesPerView: options.slidesPerView,
+            spaceBetween: options.spaceBetween,
+            breakpoints: options.breakpoints
         });
-    }, { passive: true });
+
+        el._swiper = swiper;
+
+        if (next) next.addEventListener("click", () => swiper.slideNext());
+        if (prev) prev.addEventListener("click", () => swiper.slidePrev());
+    });
 }
-    document.querySelectorAll(".slider-wrapper").forEach(wrapper => {
-    const slider = wrapper.querySelector(".product-slider");
-    const nextBtn = wrapper.querySelector(".next");
-    const prevBtn = wrapper.querySelector(".prev");
-    const card = wrapper.querySelector(".product-card");
-    if(!slider || !card) return;
-enableSwipe(slider);
-    const cardWidth = card.offsetWidth + 20;
-    nextBtn.addEventListener("click", () => {
-        slider.scrollBy({
-            left: cardWidth,
-            behavior: "smooth"
-        });
-    });
-    prevBtn.addEventListener("click", () => {
-        slider.scrollBy({
-            left: -cardWidth,
-            behavior: "smooth"
-        });
-    });
-    });
 
-    // Slider 2
-    document.querySelectorAll(".container").forEach(container=>{
-    const slider = container.querySelector(".top-slider");
-    if(!slider) return;
-enableSwipe(slider);
-    const next = container.querySelector(".top-next");
-    const prev = container.querySelector(".top-prev");
-    const card = slider.querySelector(".feed-card");
-    const width = card.offsetWidth + 20;
-    next.addEventListener("click",()=>{
-        slider.scrollBy({
-            left:width,
-            behavior:"smooth"
-        });
-    });
-    prev.addEventListener("click",()=>{
-        slider.scrollBy({
-            left:-width,
-            behavior:"smooth"
-        });
-    });
-    });
+// Slider 1 - product cards: 3 per view on desktop, 2 on tablet, 1 on mobile
+initCategorySwiper(".slider-wrapper", ".product-slider", {
+    nextEl: ".next",
+    prevEl: ".prev",
+    slidesPerView: 3,
+    spaceBetween: 20,
+    breakpoints: {
+        0: { slidesPerView: 1, spaceBetween: 20 },
+        768: { slidesPerView: 2, spaceBetween: 20 },
+        992: { slidesPerView: 3, spaceBetween: 20 }
+    }
+});
 
-    // Slider 3
-    document.querySelectorAll(".container").forEach(container=>{
-    const slider = container.querySelector(".featured-slider");
-    if(!slider) return;
-enableSwipe(slider);
-    const next = container.querySelector(".top-next");
-    const prev = container.querySelector(".top-prev");
-    const width = slider.clientWidth;
-    next.addEventListener("click",()=>{
-        slider.scrollBy({
-            left:width,
-            behavior:"smooth"
-        });
+// Slider 2 - feed cards: same 3/2/1 layout as Slider 1
+initCategorySwiper(".container", ".top-slider", {
+    nextEl: ".top-next",
+    prevEl: ".top-prev",
+    slidesPerView: 3,
+    spaceBetween: 20,
+    breakpoints: {
+        0: { slidesPerView: 1, spaceBetween: 20 },
+        768: { slidesPerView: 2, spaceBetween: 20 },
+        992: { slidesPerView: 3, spaceBetween: 20 }
+    }
+});
 
-    });
-    prev.addEventListener("click",()=>{
-        slider.scrollBy({
-            left:-width,
-            behavior:"smooth"
-        });
-    });
-    });
-</script>  
+// Slider 3 - full-width featured items: always a single slide per view
+initCategorySwiper(".container", ".featured-slider", {
+    nextEl: ".top-next",
+    prevEl: ".top-prev",
+    slidesPerView: 1,
+    spaceBetween: 0
+});
+
+// Packages - 3/2/1 per view, wider gap to match the package card design
+initCategorySwiper(".slider-wrapper", ".package-grid", {
+    nextEl: ".package-next",
+    prevEl: ".package-prev",
+    slidesPerView: 3,
+    spaceBetween: 25,
+    breakpoints: {
+        0: { slidesPerView: 1, spaceBetween: 25 },
+        768: { slidesPerView: 1, spaceBetween: 25 },
+        992: { slidesPerView: 1, spaceBetween: 25 }
+    }
+});
+</script>
 <script>
-document.querySelectorAll(".slider-wrapper").forEach(wrapper => {
+document.querySelectorAll(".duration-tabs").forEach(tabGroup => {
+    const catId = tabGroup.dataset.cat;
+    const grid = document.querySelector(`.package-grid[data-cat="${CSS.escape(catId)}"]`);
+    if(!grid) return;
 
-const slider = wrapper.querySelector(".package-grid");
-if(!slider) return;
-enableSwipe(slider);
-const next = wrapper.querySelector(".package-next");
-const prev = wrapper.querySelector(".package-prev");
-const card = slider.querySelector(".package-card");
+    tabGroup.querySelectorAll(".duration-tab-btn").forEach(btn => {
+        btn.addEventListener("click", () => {
+            const duration = btn.dataset.duration;
 
-if(!card) return;
+            tabGroup.querySelectorAll(".duration-tab-btn").forEach(b => {
+                b.classList.toggle("active", b === btn);
+            });
 
-const width = card.offsetWidth + 25;
+            grid.querySelectorAll(".package-card").forEach(card => {
+                const variant = card.querySelector(`.package-price-variant[data-duration="${CSS.escape(duration)}"]`);
 
-next.addEventListener("click", () => {
-    slider.scrollBy({
-        left: width,
-        behavior: "smooth"
+                // Hide the whole card if this package has no price set for the
+                // selected duration, otherwise swap to the matching price block
+                card.style.display = variant ? "" : "none";
+                card.querySelectorAll(".package-price-variant").forEach(v => {
+                    v.classList.toggle("d-none", v !== variant);
+                });
+
+                const priceInput = card.querySelector(".package-price-input");
+                const durationInput = card.querySelector(".package-duration-input");
+
+                if(priceInput && priceInput.dataset.prices){
+                    const prices = JSON.parse(priceInput.dataset.prices);
+                    if(prices[duration] !== undefined){
+                        priceInput.value = prices[duration];
+                    }
+                }
+
+                if(durationInput && variant){
+                    durationInput.value = duration;
+                }
+            });
+
+            // Swapping which cards are visible changes the slider's real
+            // content, so the Swiper loop's clones need to be rebuilt to match.
+            if(grid._swiper){
+                grid._swiper.loopDestroy();
+                grid._swiper.loopCreate();
+                grid._swiper.update();
+            }
+        });
     });
-});
-
-prev.addEventListener("click", () => {
-    slider.scrollBy({
-        left: -width,
-        behavior: "smooth"
-    });
-});
-
 });
 </script>
 <script>
