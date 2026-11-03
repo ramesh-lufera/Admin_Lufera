@@ -78,6 +78,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     th{top:0;font-weight:600;vertical-align:middle;}
     thead th{background-color:#f4f4f4 !important}
     .row-header{left:0;width:40px;text-align:center;background:var(--header-bg);border-right: 1px solid #e6e6e6;}
+    .row-header{display:table-cell;}
+    .row-select-checkbox{
+        -webkit-appearance:checkbox !important;
+        appearance:checkbox !important;
+        width:15px !important;
+        height:15px !important;
+        min-width:15px;
+        min-height:15px;
+        display:inline-block !important;
+        vertical-align:middle;
+        margin-right:6px;
+        cursor:pointer;
+        accent-color:#1F8A8A;
+    }
+    .row-header .row-num{vertical-align:middle;}
     /* .cell{font-size:14px;height:40px;min-width:var(--cell-width);padding:4px;box-sizing:border-box;cursor:text;align-content: center;} */
     /* .cell:focus{outline:2px solid #2563eb} */
     /* .selected{background:rgba(37,99,235,0.08)} */
@@ -222,6 +237,13 @@ tr:hover .task-actions {
 /* NEW: If row has comment OR attachment → force full visibility */
 .task-actions.has-activity {
     opacity: 1 !important;           /* Always visible if has comment or attachment */
+    pointer-events: auto !important;
+}
+
+/* Keep the row's action icons (and its open ellipsis menu) visible while the
+   ellipsis dropdown is open, even after the cursor leaves the row */
+.task-actions.menu-open {
+    opacity: 1 !important;
     pointer-events: auto !important;
 }
 
@@ -428,6 +450,7 @@ outline-offset:-2px;
 .row-dropdown {
     position: relative;
     display: inline-block;
+    z-index: auto;
 }
 
 .row-menu-btn {
@@ -459,6 +482,12 @@ outline-offset:-2px;
 /* ONLY JavaScript controls open/close */
 .row-dropdown.open > .row-dropdown-menu {
     display: block;
+}
+
+/* Flip the menu to open upward when there isn't room below (e.g. last rows) */
+.row-dropdown-menu.drop-up {
+    top: auto;
+    bottom: 0;
 }
 
 /* Menu buttons */
@@ -646,6 +675,7 @@ body.column-resizing * {
     background: #fff;
     border-color: #dee2e6;
 }
+
 </style>
   
 </head>
@@ -794,13 +824,24 @@ body.column-resizing * {
 </div>
 
 <!-- Right Section -->
-<input
-    type="text"
-    id="tableSearch"
-    class="form-control mb-3"
-    placeholder="Search..."
-    style="border-radius:25px;max-width: fit-content;"
->
+<div class="d-flex align-items-center gap-2 mb-3">
+    <button
+        id="deleteSelectedBtn"
+        type="button"
+        class="btn btn-sm btn-danger mb-0"
+        style="display:none;border-radius:20px;white-space:nowrap;align-items:center;"
+        onclick="deleteSelectedRows()">
+        <i class="fa fa-trash me-1"></i> Delete Selected (<span id="selectedRowCount">0</span>)
+    </button>
+
+    <input
+        type="text"
+        id="tableSearch"
+        class="form-control mb-0"
+        placeholder="Search..."
+        style="border-radius:25px;max-width: fit-content;"
+    >
+</div>
 
 </div>
             
@@ -1053,11 +1094,42 @@ if (button) {
     document.querySelectorAll('.row-dropdown.open').forEach(function (item) {
         if (item !== dropdown) {
             item.classList.remove('open');
+            item.querySelector('.row-dropdown-menu')?.classList.remove('drop-up');
+            const otherActions = item.closest('.task-actions');
+            if (otherActions && !otherActions.classList.contains('has-activity')) {
+                otherActions.classList.remove('menu-open');
+            }
         }
     });
 
     // Toggle this dropdown
-    dropdown.classList.toggle('open');
+    const isNowOpen = dropdown.classList.toggle('open');
+
+    // Keep the row's icons visible while this dropdown stays open, so moving
+    // the cursor away doesn't hide/close the popup
+    const taskActions = dropdown.closest('.task-actions');
+    if (taskActions) {
+        taskActions.classList.toggle('menu-open', isNowOpen);
+    }
+
+    // Flip the menu upward if there isn't enough room below within the sheet
+    // (e.g. the last rows), otherwise keep it dropping down as usual
+    const menu = dropdown.querySelector('.row-dropdown-menu');
+    if (menu) {
+        if (isNowOpen) {
+            const sheetEl = document.getElementById('sheet');
+            const sheetRect = sheetEl ? sheetEl.getBoundingClientRect() : null;
+            const btnRect = button.getBoundingClientRect();
+            const menuHeight = menu.offsetHeight;
+            const containerBottom = sheetRect ? sheetRect.bottom : window.innerHeight;
+            const containerTop = sheetRect ? sheetRect.top : 0;
+            const spaceBelow = containerBottom - btnRect.bottom;
+            const spaceAbove = btnRect.top - containerTop;
+            menu.classList.toggle('drop-up', spaceBelow < menuHeight && spaceAbove > spaceBelow);
+        } else {
+            menu.classList.remove('drop-up');
+        }
+    }
 
     return;
 }
@@ -1065,6 +1137,11 @@ if (button) {
 // Clicked outside → close all row dropdowns
 document.querySelectorAll('.row-dropdown.open').forEach(function (dropdown) {
     dropdown.classList.remove('open');
+    dropdown.querySelector('.row-dropdown-menu')?.classList.remove('drop-up');
+    const taskActions = dropdown.closest('.task-actions');
+    if (taskActions && !taskActions.classList.contains('has-activity')) {
+        taskActions.classList.remove('menu-open');
+    }
 });
 
 });
@@ -1222,6 +1299,7 @@ let selectedCell = null;
 const data = {};
 let ROWS = 10;
 let COLS = 4;
+let selectedRows = new Set();
 let columnHeaders = {};
 let columnTypes = {};
 let columnWidths = {};
@@ -1472,19 +1550,21 @@ function renderCellContent(cellEl, col) {
             break;
 
         case "file":
-            // Treat as a file/url field stored as plain text.
-            // User can paste a file URL or relative path (e.g. uploads/...).
-            input = document.createElement("input");
-            input.type = "file";
-            input.placeholder = "Enter file URL or path";
-            input.value = saved;
-            cellEl.classList.add("file");
-            break;
+        // Treat as a file/url field stored as plain text.
+        // User can paste a file URL or relative path (e.g. uploads/...).
+        input = document.createElement("input");
+        input.type = "file";
+        input.placeholder = "Enter file URL or path";
+        input.value = saved;
+        cellEl.classList.add("file");
+        break;
 
         case "text":
         default:
-            cellEl.textContent = saved;
-            cellEl.dataset.fulltext = saved;
+            const headerName = (columnHeaders[col] || "").trim().toLowerCase();
+            const displayValue = (headerName === "timestamp" && saved) ? formatDate(saved) : saved;
+            cellEl.textContent = displayValue;
+            cellEl.dataset.fulltext = displayValue;
             cellEl.contentEditable = true;
             cellEl.classList.add("text");
             applyStyle(cellEl);
@@ -1517,17 +1597,29 @@ recalcAll();
    BUILD TABLE
 ------------------------------------------------------------ */
 function buildTable() {
+    selectedRows.clear();
+    updateDeleteSelectedButton();
+
     const sheetEl = document.getElementById("sheet");
     const table = document.createElement("table");
     //table.className = "table table-striped table-hover";
     const thead = document.createElement("thead");
     const hRow = document.createElement("tr");
-    hRow.appendChild(Object.assign(document.createElement("th"), { className: "row-header" }));
+
+    const cornerTh = document.createElement("th");
+    cornerTh.className = "row-header";
+    const selectAllCb = document.createElement("input");
+    selectAllCb.type = "checkbox";
+    selectAllCb.className = "row-select-checkbox select-all-rows";
+    selectAllCb.title = "Select all rows";
+    selectAllCb.addEventListener("change", () => toggleSelectAllRows(selectAllCb.checked));
+    cornerTh.appendChild(selectAllCb);
+    hRow.appendChild(cornerTh);
 
     for (let c = 1; c <= COLS; c++) {
         const config = columnTypes[c] || { type: "text" };
 
-        // Hide file-type columns entirely from the visible sheet
+        //Hide file-type columns entirely from the visible sheet
         if (c !== 1 && config.type === "file") {
             continue;
         }
@@ -1722,7 +1814,20 @@ if (c !== 1) {
         const rh = document.createElement("th");
         rh.className = "row-header";
         rh.style.minWidth = "70px";
-        rh.textContent = r;
+
+        const rowCb = document.createElement("input");
+        rowCb.type = "checkbox";
+        rowCb.className = "row-select-checkbox";
+        rowCb.dataset.row = r;
+        rowCb.addEventListener("click", (e) => e.stopPropagation());
+        rowCb.addEventListener("change", () => toggleRowSelection(r, rowCb.checked));
+        rh.appendChild(rowCb);
+
+        const rowNum = document.createElement("span");
+        rowNum.className = "row-num";
+        rowNum.textContent = r;
+        rh.appendChild(rowNum);
+
         tr.appendChild(rh);
 
         for (let c = 1; c <= COLS; c++) {
@@ -2815,13 +2920,22 @@ document.getElementById("save-db").onclick = async () => {
     cells: {}
 };
 
-    // Collect visible header names (from UI)
-    document.querySelectorAll("thead th[data-c]").forEach(th => {
-        if (th.dataset.c && th.dataset.c != "1") {
+    // Collect header names for every data column (2..COLS) in order.
+    // File-type columns have no <th> in the DOM (buildTable hides them from
+    // the visible sheet), so reading only rendered <th> elements collapses
+    // those gaps and shifts every header after a file column left by one.
+    // Falling back to columnHeaders[c] keeps the array aligned with columnTypes.
+    for (let c = 2; c <= COLS; c++) {
+        const th = document.querySelector(`thead th[data-c="${c}"]`);
+        if (th) {
             const nameSpan = th.querySelector("span");
-            payload.headers.push(nameSpan ? nameSpan.textContent.trim() : "");
+            const name = nameSpan ? nameSpan.textContent.trim() : "";
+            payload.headers.push(name);
+            columnHeaders[c] = name;
+        } else {
+            payload.headers.push(columnHeaders[c] || "");
         }
-    });
+    }
 
     // Collect cell data (including styles)
     document.querySelectorAll(".cell").forEach(cell => {
@@ -3007,7 +3121,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 return;
             }
 
-            const choices = sheets.map(s => `${s.id}: ${s.name || 'Untitled'} (${s.updated_at || '—'})`).join('\n');
+            const choices = sheets.map(s => `${s.id}: ${s.name || 'Untitled'} (${s.updated_at ? formatDate(s.updated_at) : '—'})`).join('\n');
             const idStr = prompt("Saved Sheets:\n" + choices + "\n\nEnter ID to load:");
 
             const id = parseInt(idStr);
@@ -3133,7 +3247,8 @@ function formatDate(dateString) {
         year: "numeric",
         hour: "2-digit",
         minute: "2-digit",
-        hour12: true
+        second: "2-digit",
+        hour12: false
     }).replace(",", "");
 }
 /* ------------------------------------------------------------
@@ -3382,7 +3497,7 @@ async function loadAttachments() {
             f.original_name,
             { 
                 rowLabel: rowInfo, 
-                createdLabel: f.created_at ? new Date(f.created_at).toLocaleString() : "—"                            
+                createdLabel: f.created_at ? formatDate(f.created_at) : "—"
             },
             f.file_size,           // file size
             f.created_at,          // upload date
@@ -3475,6 +3590,29 @@ function shiftRowActivityForInsert(insertRow) {
     delete rowComments[insertRow];
     delete rowAttachments[insertRow];
     delete rowReminders[insertRow];
+}
+
+// Persist row deletion to the comments/attachments/reminders tables:
+// drops the deleted row(s)' own activity, then pulls every row below
+// them up by one so sheet_row stays in sync with the renumbered sheet.
+async function shiftRowActivityForDelete(rows) {
+    const response = await fetch("shift_row_activity.php", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+            sheet_id: activeSheetId,
+            mode: "delete",
+            rows: rows
+        })
+    });
+
+    const result = await response.json();
+
+    if (!result.success) {
+        throw new Error(result.error || "Failed to shift row activity");
+    }
 }
 function addRowBefore(row) {
 
@@ -3573,53 +3711,240 @@ try {
 }
 }
 
-function deleteRow(row) {
-    if (ROWS <= 1) {
+// --------------------------------------------------
+// Core single-row removal (no confirm dialog, no rebuild/toast).
+// Shared by deleteRow() and deleteSelectedRows() so multi-delete
+// can apply several removals before doing one rebuild.
+// --------------------------------------------------
+function removeRowCore(row) {
+
+    // 1. Remove the selected row's data
+    for (let c = 1; c <= COLS; c++) {
+        delete data[cellId(row, c)];
+    }
+
+    // 2. Shift every row below UP by one
+    //
+    // Example:
+    // Delete row 3
+    //
+    // Row 4 -> Row 3
+    // Row 5 -> Row 4
+    // Row 6 -> Row 5
+    // etc.
+    for (let r = row; r < ROWS; r++) {
+        for (let c = 1; c <= COLS; c++) {
+            const currentId = cellId(r, c);
+            const nextId = cellId(r + 1, c);
+
+            if (data[nextId]) {
+                data[currentId] = structuredClone(data[nextId]);
+            } else {
+                delete data[currentId];
+            }
+        }
+    }
+
+    // 3. Remove the old last row
+    for (let c = 1; c <= COLS; c++) {
+        delete data[cellId(ROWS, c)];
+    }
+
+    // 4. Shift row activity UP (comments / attachments / reminders)
+    for (let r = row; r < ROWS; r++) {
+        if (rowComments[r + 1] !== undefined) {
+            rowComments[r] = rowComments[r + 1];
+        } else {
+            delete rowComments[r];
+        }
+
+        if (rowAttachments[r + 1] !== undefined) {
+            rowAttachments[r] = rowAttachments[r + 1];
+        } else {
+            delete rowAttachments[r];
+        }
+
+        if (rowReminders[r + 1] !== undefined) {
+            rowReminders[r] = rowReminders[r + 1];
+        } else {
+            delete rowReminders[r];
+        }
+    }
+
+    // Remove activity from the old last row
+    delete rowComments[ROWS];
+    delete rowAttachments[ROWS];
+    delete rowReminders[ROWS];
+
+    // 5. Decrease row count
+    ROWS--;
+}
+
+async function deleteRow(row) {
+
+if (ROWS <= 1) {
+    Swal.fire({
+        icon: 'error',
+        title: 'Cannot delete',
+        text: 'You cannot delete the last row.',
+        confirmButtonColor: '#dc2626'
+    });
+    return;
+}
+
+const result = await Swal.fire({
+    title: `Delete row ${row}?`,
+    text: "This action cannot be undone. All data in this row will be lost.",
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonColor: '#d33',
+    cancelButtonColor: '#6b7280',
+    confirmButtonText: 'Yes, delete it!',
+    cancelButtonText: 'No, keep it'
+});
+
+if (!result.isConfirmed) {
+    return;
+}
+
+try {
+    // First update database activity references (comments/attachments/reminders)
+    await shiftRowActivityForDelete([row]);
+} catch (error) {
+    console.error("Delete row failed:", error);
+    Swal.fire({
+        icon: 'error',
+        title: 'Delete failed',
+        text: error.message || 'Could not delete row.'
+    });
+    return;
+}
+
+// Save current state for undo
+saveHistory();
+
+removeRowCore(row);
+
+rebuildPreserveData();
+
+// Reload activity counts from DB
+loadCountsAndRefreshIcons();
+
+hasUnsavedChanges = true;
+
+Swal.fire({
+    icon: 'success',
+    title: 'Deleted!',
+    text: `Row ${row} has been removed.`,
+    timer: 1600,
+    showConfirmButton: false
+});
+}
+
+/* ------------------------------------------------------------
+   MULTI-SELECT ROW DELETE
+------------------------------------------------------------ */
+function toggleRowSelection(row, checked) {
+    if (checked) {
+        selectedRows.add(row);
+    } else {
+        selectedRows.delete(row);
+    }
+    updateDeleteSelectedButton();
+
+    const selectAllCb = document.querySelector(".select-all-rows");
+    if (selectAllCb) {
+        selectAllCb.checked = selectedRows.size === ROWS && ROWS > 0;
+        selectAllCb.indeterminate = selectedRows.size > 0 && selectedRows.size < ROWS;
+    }
+}
+
+function toggleSelectAllRows(checked) {
+    document.querySelectorAll(".row-select-checkbox[data-row]").forEach(cb => {
+        cb.checked = checked;
+        const row = parseInt(cb.dataset.row);
+        if (checked) {
+            selectedRows.add(row);
+        } else {
+            selectedRows.delete(row);
+        }
+    });
+    updateDeleteSelectedButton();
+}
+
+function updateDeleteSelectedButton() {
+    const btn = document.getElementById("deleteSelectedBtn");
+    const countEl = document.getElementById("selectedRowCount");
+    if (!btn || !countEl) return;
+
+    countEl.textContent = selectedRows.size;
+    btn.style.display = selectedRows.size > 0 ? "inline-flex" : "none";
+}
+
+async function deleteSelectedRows() {
+
+    const rows = Array.from(selectedRows).sort((a, b) => a - b);
+
+    if (rows.length === 0) return;
+
+    if (rows.length >= ROWS) {
         Swal.fire({
             icon: 'error',
             title: 'Cannot delete',
-            text: 'You cannot delete the last row.',
+            text: 'You cannot delete every row in the sheet.',
             confirmButtonColor: '#dc2626'
         });
         return;
     }
 
-    Swal.fire({
-        title: `Delete row ${row}?`,
-        text: "This action cannot be undone. All data in this row will be lost.",
+    const result = await Swal.fire({
+        title: `Delete ${rows.length} selected row${rows.length > 1 ? 's' : ''}?`,
+        text: "This action cannot be undone. All data in these rows will be lost.",
         icon: 'warning',
         showCancelButton: true,
         confirmButtonColor: '#d33',
         cancelButtonColor: '#6b7280',
-        confirmButtonText: 'Yes, delete it!',
-        cancelButtonText: 'No, keep it'
-    }).then((result) => {
-        if (result.isConfirmed) {
-            // ────────────────────────────────────────────────
-            // ONLY HERE — perform the actual deletion
-            for (let c = 1; c <= COLS; c++) {
-                const id = cellId(row, c);
-                delete data[id];
-            }
+        confirmButtonText: 'Yes, delete them!',
+        cancelButtonText: 'No, keep them'
+    });
 
-            // Remove comment/attachment tracking
-            delete rowComments[row];
-            delete rowAttachments[row];
+    if (!result.isConfirmed) {
+        return;
+    }
 
-            ROWS--;
-            rebuildPreserveData();
+    // Remove from highest row number to lowest so earlier removals
+    // don't shift the row numbers still queued for deletion.
+    const rowsDescending = [...rows].sort((a, b) => b - a);
 
-            // Success feedback
-            Swal.fire({
-                icon: 'success',
-                title: 'Deleted!',
-                text: `Row ${row} has been removed.`,
-                timer: 1600,
-                showConfirmButton: false
-            });
-            // ────────────────────────────────────────────────
-        }
-        // else → user clicked cancel → do nothing
+    try {
+        // First update database activity references (comments/attachments/reminders)
+        await shiftRowActivityForDelete(rowsDescending);
+    } catch (error) {
+        console.error("Delete selected rows failed:", error);
+        Swal.fire({
+            icon: 'error',
+            title: 'Delete failed',
+            text: error.message || 'Could not delete selected rows.'
+        });
+        return;
+    }
+
+    saveHistory();
+
+    rowsDescending.forEach(row => removeRowCore(row));
+
+    selectedRows.clear();
+    rebuildPreserveData();
+    loadCountsAndRefreshIcons();
+
+    hasUnsavedChanges = true;
+
+    Swal.fire({
+        icon: 'success',
+        title: 'Deleted!',
+        text: `${rows.length} row${rows.length > 1 ? 's' : ''} removed.`,
+        timer: 1600,
+        showConfirmButton: false
     });
 }
 
@@ -3808,7 +4133,7 @@ function openReminderModal(row) {
                         const safeDate = r.display_at || r.remind_at || "";
                         const safeMsg  = r.message || "";
                         return `<div style="padding:6px 4px; border-bottom:1px solid #f3f4f6;">
-                                    <div style="font-size:12px; color:#6b7280;">${formatDate(r.safeDate)}</div>
+                                    <div style="font-size:12px; color:#6b7280;">${formatDate(safeDate)}</div>
                                     <div style="font-size:13px;">${safeMsg}</div>
                                 </div>`;
                     }).join("");
@@ -4111,7 +4436,7 @@ function openPreviewModal(filePath, fileName, fileSize = null, createdAt = null,
     }
 
     // Date
-    dateEl.textContent = createdAt ? new Date(createdAt).toLocaleString() : "—";
+    dateEl.textContent = createdAt ? formatDate(createdAt) : "—";
 
     // Extra info
     if (extra && Object.keys(extra).length > 0) {

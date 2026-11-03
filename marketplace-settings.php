@@ -297,9 +297,23 @@ while($row = $categoryQuery->fetch_assoc()){
                             <label>Image</label>
                             <input type="file" class="form-control" name="slide1_image">
                         </div>
-                        <div>
+                        <div class="mb-3">
                             <label>Title</label>
                             <input type="text" class="form-control" name="slide1_title">
+                        </div>
+                        <div class="mb-3">
+                            <label>Description</label>
+                            <textarea class="form-control" name="slide1_description" rows="2"></textarea>
+                        </div>
+                        <div class="row">
+                            <div class="col-6">
+                                <label>Button Text</label>
+                                <input type="text" class="form-control" name="slide1_button_text" placeholder="Explore Marketplace">
+                            </div>
+                            <div class="col-6">
+                                <label>Button Link</label>
+                                <input type="text" class="form-control" name="slide1_button_link" placeholder="#marketplace-products">
+                            </div>
                         </div>
                     </div>
 
@@ -310,9 +324,23 @@ while($row = $categoryQuery->fetch_assoc()){
                             <label>Image</label>
                             <input type="file" class="form-control" name="slide2_image">
                         </div>
-                        <div>
+                        <div class="mb-3">
                             <label>Title</label>
                             <input type="text" class="form-control" name="slide2_title">
+                        </div>
+                        <div class="mb-3">
+                            <label>Description</label>
+                            <textarea class="form-control" name="slide2_description" rows="2"></textarea>
+                        </div>
+                        <div class="row">
+                            <div class="col-6">
+                                <label>Button Text</label>
+                                <input type="text" class="form-control" name="slide2_button_text" placeholder="Explore Marketplace">
+                            </div>
+                            <div class="col-6">
+                                <label>Button Link</label>
+                                <input type="text" class="form-control" name="slide2_button_link" placeholder="#marketplace-products">
+                            </div>
                         </div>
                     </div>
 
@@ -323,9 +351,23 @@ while($row = $categoryQuery->fetch_assoc()){
                             <label>Image</label>
                             <input type="file" class="form-control" name="slide3_image">
                         </div>
-                        <div>
+                        <div class="mb-3">
                             <label>Title</label>
                             <input type="text" class="form-control" name="slide3_title">
+                        </div>
+                        <div class="mb-3">
+                            <label>Description</label>
+                            <textarea class="form-control" name="slide3_description" rows="2"></textarea>
+                        </div>
+                        <div class="row">
+                            <div class="col-6">
+                                <label>Button Text</label>
+                                <input type="text" class="form-control" name="slide3_button_text" placeholder="Explore Marketplace">
+                            </div>
+                            <div class="col-6">
+                                <label>Button Link</label>
+                                <input type="text" class="form-control" name="slide3_button_link" placeholder="#marketplace-products">
+                            </div>
                         </div>
                     </div>
                 </form>
@@ -366,6 +408,15 @@ while($row = $categoryQuery->fetch_assoc()){
                     $('input[name="slide1_title"]').val(data.data.title[0]);
                     $('input[name="slide2_title"]').val(data.data.title[1]);
                     $('input[name="slide3_title"]').val(data.data.title[2]);
+                    $('textarea[name="slide1_description"]').val(data.data.description[0]);
+                    $('textarea[name="slide2_description"]').val(data.data.description[1]);
+                    $('textarea[name="slide3_description"]').val(data.data.description[2]);
+                    $('input[name="slide1_button_text"]').val(data.data.button_text[0]);
+                    $('input[name="slide2_button_text"]').val(data.data.button_text[1]);
+                    $('input[name="slide3_button_text"]').val(data.data.button_text[2]);
+                    $('input[name="slide1_button_link"]').val(data.data.button_link[0]);
+                    $('input[name="slide2_button_link"]').val(data.data.button_link[1]);
+                    $('input[name="slide3_button_link"]').val(data.data.button_link[2]);
                     $('#bannerModal .modal-title').text('Edit Banner');
                     $('#saveBanner').text('Update');
                     $('#bannerModal').modal('show');

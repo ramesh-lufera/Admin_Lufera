@@ -803,7 +803,7 @@
                                                         \$stmt->close();
                                                         if (!empty(\$data)) {
                                                             \$ids = implode(',', array_keys(\$data));
-                                                            \$sql = "SELECT d.*, p.title, p.subtitle, p.description,
+                                                            \$sql = "SELECT d.*, p.title, p.subtitle, p.description, p.gst_id,
                                                                         p.package_name, p.is_active pkg_active
                                                                     FROM durations d
                                                                     JOIN package p ON d.package_id = p.id
@@ -898,10 +898,11 @@
                                                                                                     <input type="hidden" name="price" value="<?= htmlspecialchars(\$package['price']) ?>">
                                                                                                     <input type="hidden" name="duration" value="<?= htmlspecialchars(\$package['duration']) ?>">
                                                                                                     <input type="hidden" name="created_on" value="<?= date("Y-m-d") ?>">
+                                                                                                    <input type="hidden" name="gst_id" value="<?= htmlspecialchars(\$package['gst_id']) ?>">
                                                                                                     <!-- <input type="hidden" name="addon_service" value="<?= htmlspecialchars(\$package['addon_service']) ?>">
                                                                                                     <input type="hidden" name="addon_package" value="<?= htmlspecialchars(\$package['addon_package']) ?>">
                                                                                                     <input type="hidden" name="addon_product" value="<?= htmlspecialchars(\$package['addon_product']) ?>">
-                                                                                                    <input type="hidden" name="gst_id" value="<?= htmlspecialchars(\$package['gst_id']) ?>"> -->
+                                                                                                     -->
                                                                                                     <button type="submit" class="lufera-bg text-center text-white text-sm btn-sm px-12 py-10 w-100 radius-8 mt-28" <?= !\$isActive ? 'disabled' : '' ?>>Get started</button>
                                                                                                 </form>
                                                                                             </div>
@@ -1197,7 +1198,7 @@
                         </head>
                         <body>    
                             <!-- Header Navbar -->
-                            <div class="container">
+                            <div class="container-fluid">
                                 <section class="breadcrumb-hero position-relative w-100 mt-20 mx-auto d-flex align-items-center m-20">
                                     <div class="container">
                                         <div class="row">
